@@ -120,7 +120,7 @@ export default function CadastroAcougue() {
         </CardHeader>
         <CardContent className="space-y-6">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Dados do Perfil */}
+
             <div>
               <h2 className="font-semibold mb-2">Dados do Perfil</h2>
               <div className="grid gap-3">
@@ -142,7 +142,6 @@ export default function CadastroAcougue() {
               </div>
             </div>
 
-            {/* Endereço */}
             <div>
               <h2 className="font-semibold mb-2">Endereço</h2>
               <div className="grid gap-3">
@@ -157,7 +156,6 @@ export default function CadastroAcougue() {
               </div>
             </div>
 
-            {/* Dados de Login */}
             <div>
               <h2 className="font-semibold mb-2">Dados de Login</h2>
               <div className="grid gap-1">
