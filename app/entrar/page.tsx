@@ -49,7 +49,7 @@ export default function Page() {
                 </button>
               </div>
               <div className="mt-1">
-                <Link href="#" className="text-sm text-red-600 hover:underline left-1">
+                <Link href="/recuperar" className="text-sm text-red-600 hover:underline left-1">
                   Esqueceu sua senha?
                 </Link>
               </div>

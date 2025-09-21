@@ -72,10 +72,10 @@ export default function CadastroAcougue() {
     const newErrors: Record<string, boolean> = {};
 
     const requiredFields = [
-      "nomeFantasia", "razaoSocial", "cnpj", "telefone",
+      "nomeFantasia", "razaoSocial", "cnpj",
       "cep", "logradouro", "numero", "complemento",
       "bairro", "cidade", "estado", "pais",
-      "email", "senha", "confirmarSenha"
+      "email", "senha", "confirmarSenha", "celular"
     ];
 
     requiredFields.forEach(field => {
@@ -128,6 +128,7 @@ export default function CadastroAcougue() {
                 <Input name="razaoSocial" placeholder="Razão Social" onChange={handleChange} className={inputClass("razaoSocial")} />
                 <Input name="cnpj" placeholder="CNPJ" onChange={handleChange} className={inputClass("cnpj")} />
                 <Input name="telefone" placeholder="Telefone" onChange={handleChange} className={inputClass("telefone")} />
+                <Input name="celular" placeholder="Celular" onChange={handleChange} className={inputClass("celular")} />
                 <label className="flex items-center gap-2 cursor-pointer w-fit px-4 py-2 border rounded-lg bg-gray-50 hover:bg-gray-100">
                   <ImageIcon className="w-5 h-5 text-gray-500" />
                   <span className="text-sm text-gray-600">Selecionar logo</span>
