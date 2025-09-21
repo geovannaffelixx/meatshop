@@ -18,5 +18,14 @@ pnpm dev
 bun dev
 ```
 
+
+Caso não tenha o Next instalado, execute o comando abaixo:
+
+```bash
+$ npm i next
+```
+
+
+
 Abra [http://localhost:3000](http://localhost:3000) no seu navegador.
 
