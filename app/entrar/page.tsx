@@ -55,12 +55,14 @@ export default function Page() {
               </div>
             </div>
 
+            <Link href="/home" className="">
             <button
               type="submit"
               className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-md font-semibold mt-4"
             >
-              ENTRAR
+            ENTRAR
             </button>
+            </Link>
           </form>
 
           <p className="text-center text-sm text-gray-600">
