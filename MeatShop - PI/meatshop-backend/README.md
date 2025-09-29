@@ -16,9 +16,9 @@
 
 ### <ins>Backend com npm install</ins>
 1. Rodar os comandos:
-  - cd meatshop-backend
-  - npm install
-  - npm run start:dev
+    - cd meatshop-backend
+    - npm install
+    - npm run start:dev
 
 ### <ins>Frontend</ins>
 1. Rodar os comandos:
