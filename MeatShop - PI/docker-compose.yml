@@ -1,0 +1,24 @@
+services:
+  backend:
+    build: ./meatshop-backend
+    container_name: meatshop-backend
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+    volumes:
+      - ./meatshop-backend/data:/usr/src/app/data
+    restart: unless-stopped
+
+  frontend:
+    build: ./meatshop-main
+    container_name: meatshop-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://backend:3001
+    depends_on:
+      - backend
+    restart: unless-stopped
