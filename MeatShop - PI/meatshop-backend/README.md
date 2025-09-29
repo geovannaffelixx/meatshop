@@ -35,8 +35,8 @@
 4. Backend e Frontend já vão estar integrados e funcionando em conjunto, permitindo o cadastro, login e etc.
 ------------------------------------------------------------------
 
-- <ins>Backend roda em: http://localhost:3001  
-- Frontend roda em: http://localhost:3000</ins>
+**- Backend roda em: http://localhost:3001**
+**- Frontend roda em: http://localhost:3000**
 
 # Endpoints:
 - `POST /auth/register` — cadastra usuário (com todos os campos do açougue).  
