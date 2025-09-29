@@ -2,7 +2,7 @@
 import { Body, Controller, HttpException, HttpStatus, Post } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Usuario } from '../entities/usuario.entity';
+import { User } from '../entities/usuario.entity';
 import * as bcrypt from 'bcryptjs';
 
 @Controller('auth')
