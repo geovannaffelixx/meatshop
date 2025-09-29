@@ -12,7 +12,7 @@
 - **Testes**: Jest (back-end)
 ------------------------------------------------------------------
 
-## Como rodar
+# Como executar
 
 ### Backend com npm install
 1. Rodar os comandos:
