@@ -2,12 +2,12 @@
 import { Body, Controller, HttpException, HttpStatus, Post } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from '../entities/usuario.entity';
+import { User } from '../entities/user.entity';
 import * as bcrypt from 'bcryptjs';
 
 @Controller('auth')
 export class AuthController {
-  constructor(@InjectRepository(Usuario) private readonly users: Repository<Usuario>) {}
+  constructor(@InjectRepository(User) private readonly users: Repository<User>) {}
 
   @Post('register')
   async register(@Body() body: any) {
