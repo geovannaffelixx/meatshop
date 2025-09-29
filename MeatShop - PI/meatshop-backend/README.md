@@ -12,7 +12,7 @@
 - **Testes**: Jest (back-end)
 ------------------------------------------------------------------
 
-# 🚀 Como executar:
+# **🚀 Como executar:**
 
 ### <ins>Backend com npm install</ins>
 1. Rodar os comandos:
@@ -22,9 +22,9 @@
 
 ### <ins>Frontend</ins>
 1. Rodar os comandos:
-  - cd meatshop-main
-  - npm install
-  - npm run dev
+      - cd meatshop-main
+      - npm install
+      - npm run dev
 
 ### <ins>Backend e Frontend juntos com Docker:</ins>
 1. Abrir o docker desktop.
