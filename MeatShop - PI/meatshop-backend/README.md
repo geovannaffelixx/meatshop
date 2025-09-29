@@ -1,11 +1,11 @@
-## MeatShop Backend — NestJS + SQLite + TypeORM
+# MeatShop Backend — NestJS + SQLite + TypeORM
 - Endpoints: /health, /metrics, /auth/register, /auth/login, /auth/verify-code, /auth/reset-password, /users/me, /dashboard
 - Banco: data/meatshop.db com SQLite
 - Dockerfile (porta 3001)
 - Utiliza Token Fake e banco local então não tem arquivo/configuração .env
 
 ------------------------------------------------------------------
-## 🚀 Tecnologias utilizadas:                                     
+# 🚀 Tecnologias utilizadas:                                     
 - **Back-end**: NestJS + SQLite                                  
 - **Front-end**: Next.js 14 + Tailwind
 - **Containerização**: Docker + Docker Compose
@@ -38,7 +38,7 @@
 - Backend roda em: http://localhost:3001  
 - Frontend roda em: http://localhost:3000
 
-## Endpoints principais
+# Endpoints:
 - `POST /auth/register` — cadastra usuário (com todos os campos do açougue).  
 - `POST /auth/login` — autentica por usuário **ou** e-mail + senha, retorna token fake.  
 - `POST /auth/verify-code` — simula verificação de código (1234).  
