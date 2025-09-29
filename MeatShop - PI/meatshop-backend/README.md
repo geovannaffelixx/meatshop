@@ -28,8 +28,8 @@
       - cd meatshop-main
       - npm install
       - npm run dev
-2. Acessar:
-       - http://localhost:3000
+2. Acessar:  
+        - http://localhost:3000
 
 ### <ins>Backend e Frontend juntos com Docker:</ins>
 1. Abrir o docker desktop.
