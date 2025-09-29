@@ -12,7 +12,7 @@
 - **Testes**: Jest (back-end)
 ------------------------------------------------------------------
 
-# **🚀 Como executar:**
+# 🚀 Como executar:
 
 ### <ins>Backend com npm install</ins>
 1. Rodar os comandos:
@@ -35,8 +35,8 @@
 4. Backend e Frontend já vão estar integrados e funcionando em conjunto, permitindo o cadastro, login e etc.
 ------------------------------------------------------------------
 
-- Backend roda em: http://localhost:3001  
-- Frontend roda em: http://localhost:3000
+- <ins>Backend roda em: http://localhost:3001  
+- Frontend roda em: http://localhost:3000</ins>
 
 # Endpoints:
 - `POST /auth/register` — cadastra usuário (com todos os campos do açougue).  
