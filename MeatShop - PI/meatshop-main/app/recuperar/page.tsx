@@ -10,14 +10,47 @@ import Link from "next/link";
 
 export default function RecuperarSenha() {
   const [email, setEmail] = useState("");
-  const [showAlert, setShowAlert] = useState(false);
+  const [senha, setSenha] = useState("");
+  const [confirmarSenha, setConfirmarSenha] = useState("");
+  const [msg, setMsg] = useState("");
+  const [alertType, setAlertType] = useState<"success" | "error" | "">("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    setMsg("");
+    setAlertType("");
 
-    // chama a api aqui pra recuperar a senha
-    setShowAlert(true);
+    if (!email.trim() || !senha.trim() || !confirmarSenha.trim()) {
+      setMsg("Preencha todos os campos.");
+      setAlertType("error");
+      return;
+    }
+
+    if (senha !== confirmarSenha) {
+      setMsg("As senhas não coincidem.");
+      setAlertType("error");
+      return;
+    }
+
+    try {
+      const res = await fetch("http://localhost:3001/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ usuario: email, senha }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.message || "Erro ao redefinir senha");
+      }
+
+      setMsg("Senha redefinida com sucesso! Você já pode fazer login.");
+      setAlertType("success");
+    } catch (err: any) {
+      setMsg(err.message);
+      setAlertType("error");
+    }
   };
 
   return (
@@ -31,19 +64,43 @@ export default function RecuperarSenha() {
         </CardHeader>
         <CardContent className="space-y-6">
           <p className="text-center text-gray-600 text-sm">
-            Um código será enviado para seu e-mail para redefinir sua senha.
+            Informe seu e-mail ou usuário e defina uma nova senha.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Endereço de e-mail
+                E-mail ou Usuário
               </label>
               <Input
-                type="email"
-                placeholder="Digite seu e-mail"
+                type="text"
+                placeholder="Digite seu e-mail ou usuário"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nova Senha
+              </label>
+              <Input
+                type="password"
+                placeholder="Digite a nova senha"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Confirmar Senha
+              </label>
+              <Input
+                type="password"
+                placeholder="Confirme a nova senha"
+                value={confirmarSenha}
+                onChange={(e) => setConfirmarSenha(e.target.value)}
               />
             </div>
 
@@ -58,12 +115,10 @@ export default function RecuperarSenha() {
             </Link>
           </div>
 
-          {showAlert && (
+          {msg && (
             <Alert className="mt-4">
-              <AlertTitle>Verifique seu e-mail</AlertTitle>
-              <AlertDescription>
-                Enviamos um código para o endereço informado. Siga as instruções para redefinir sua senha.
-              </AlertDescription>
+              <AlertTitle>{alertType === "success" ? "Sucesso!" : "Erro"}</AlertTitle>
+              <AlertDescription>{msg}</AlertDescription>
             </Alert>
           )}
         </CardContent>
