@@ -4,7 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { User } from './entities/user.entity';
 import { Order } from './entities/order.entity';
-import { AuthController } from './auth.controller';
+import { AuthController } from './auth/auth.controller';
 import { UsersController } from './users.controller';
 import { DashboardController } from './dashboard.controller';
 
