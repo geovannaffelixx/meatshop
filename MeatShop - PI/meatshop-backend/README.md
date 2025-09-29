@@ -1,7 +1,8 @@
 # MeatShop Backend — NestJS + SQLite + TypeORM
 - Endpoints: /health, /metrics, /auth/register, /auth/login, /auth/verify-code, /auth/reset-password, /users/me, /dashboard
-- Banco: data/meatshop.db
+- Banco: data/meatshop.db com SQLite
 - Dockerfile (porta 3001)
+- Utiliza Token Fake e banco local então não tem arquivo/configuração .env
 
 ## Como rodar
 
