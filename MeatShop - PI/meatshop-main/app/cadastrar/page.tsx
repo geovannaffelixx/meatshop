@@ -54,6 +54,7 @@ export default function CadastroAcougue() {
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [passwordError, setPasswordError] = useState("");
   const [msg, setMsg] = useState("");
+  const [alertType, setAlertType] = useState<"success" | "error" | "">("");
   const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -104,6 +105,7 @@ export default function CadastroAcougue() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setMsg("");
+    setAlertType("");
 
     if (!validate()) return;
 
@@ -139,9 +141,11 @@ export default function CadastroAcougue() {
       }
 
       setMsg("Cadastro realizado com sucesso! Redirecionando...");
+      setAlertType("success");
       setTimeout(() => router.push("/entrar"), 3000);
     } catch (err: any) {
       setMsg(err.message);
+      setAlertType("error");
     }
   };
 
@@ -158,23 +162,70 @@ export default function CadastroAcougue() {
         </CardHeader>
         <CardContent className="space-y-6">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Seções mantidas iguais */}
-            {/* ... */}
+
+            <div>
+              <h2 className="font-semibold mb-2">Dados do Perfil</h2>
+              <div className="grid gap-3">
+                <Input name="nomeFantasia" placeholder="Nome Fantasia" onChange={handleChange} className={inputClass("nomeFantasia")} />
+                <Input name="razaoSocial" placeholder="Razão Social" onChange={handleChange} className={inputClass("razaoSocial")} />
+                <Input name="cnpj" placeholder="CNPJ" onChange={handleChange} className={inputClass("cnpj")} />
+                <Input name="telefone" placeholder="Telefone" onChange={handleChange} className={inputClass("telefone")} />
+                <Input name="celular" placeholder="Celular" onChange={handleChange} className={inputClass("celular")} />
+                <label className="flex items-center gap-2 cursor-pointer w-fit px-4 py-2 border rounded-lg bg-gray-50 hover:bg-gray-100">
+                  <ImageIcon className="w-5 h-5 text-gray-500" />
+                  <span className="text-sm text-gray-600">Selecionar logo</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    name="imagemPerfil"
+                    className="hidden"
+                    onChange={handleChange}
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <h2 className="font-semibold mb-2">Endereço</h2>
+              <div className="grid gap-3">
+                <Input name="cep" placeholder="CEP" onChange={handleChange} className={inputClass("cep")} />
+                <Input name="logradouro" placeholder="Logradouro" onChange={handleChange} className={inputClass("logradouro")} />
+                <Input name="numero" placeholder="N°" onChange={handleChange} className={inputClass("numero")} />
+                <Input name="complemento" placeholder="Complemento" onChange={handleChange} className={inputClass("complemento")} />
+                <Input name="bairro" placeholder="Bairro" onChange={handleChange} className={inputClass("bairro")} />
+                <Input name="cidade" placeholder="Cidade" onChange={handleChange} className={inputClass("cidade")} />
+                <Input name="estado" placeholder="Estado" onChange={handleChange} className={inputClass("estado")} />
+                <Input name="pais" placeholder="País" onChange={handleChange} className={inputClass("pais")} />
+              </div>
+            </div>
+
+            <div>
+              <h2 className="font-semibold mb-2">Dados de Login</h2>
+              <div className="grid gap-1">
+                <Input name="email" placeholder="E-mail" onChange={handleChange} className={inputClass("email")} />
+                <Input name="usuario" placeholder="Usuário" onChange={handleChange} className={inputClass("usuario")} />
+                <Input type="password" name="senha" placeholder="Senha" onChange={handleChange} className={inputClass("senha")} />
+                <Input type="password" name="confirmarSenha" placeholder="Confirmação de Senha" onChange={handleChange} className={inputClass("confirmarSenha")} />
+                <p className="text-sm text-gray-500 mt-1">
+                  Mínimo 8 caracteres <br /> Pelo menos 1 letra maiúscula
+                </p>
+                {passwordError && (
+                  <Alert className="mt-2">
+                    <AlertTitle>Erro!</AlertTitle>
+                    <AlertDescription>{passwordError}</AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            </div>
+
             <Button type="submit" className="w-full bg-[#BE2C1B] hover:bg-[#BE2C1B]/70">
               Cadastrar
             </Button>
           </form>
 
-          {passwordError && (
-            <Alert className="mt-4">
-              <AlertTitle>Erro!</AlertTitle>
-              <AlertDescription>{passwordError}</AlertDescription>
-            </Alert>
-          )}
-
           {msg && (
             <Alert className="mt-4">
-              <AlertTitle>Mensagem</AlertTitle>
+              <AlertTitle>{alertType === "success" ? "Sucesso!" : "Erro"}</AlertTitle>
               <AlertDescription>{msg}</AlertDescription>
             </Alert>
           )}
