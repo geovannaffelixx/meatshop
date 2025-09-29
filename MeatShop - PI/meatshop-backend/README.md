@@ -19,12 +19,17 @@
     - cd meatshop-backend
     - npm install
     - npm run start:dev
+2. Acessar:
+    - http://localhost:3001/health
+    - http://localhost:3001/metrics
 
 ### <ins>Frontend:</ins>
 1. Rodar os comandos:
       - cd meatshop-main
       - npm install
       - npm run dev
+2. Acessar:
+       - http://localhost:3000
 
 ### <ins>Backend e Frontend juntos com Docker:</ins>
 1. Abrir o docker desktop.
