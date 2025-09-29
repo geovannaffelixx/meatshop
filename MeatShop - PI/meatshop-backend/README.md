@@ -1,32 +1,32 @@
-# MeatShop Backend — NestJS + SQLite + TypeORM
+# 💾 MeatShop Backend — NestJS + SQLite + TypeORM
 - Endpoints: /health, /metrics, /auth/register, /auth/login, /auth/verify-code, /auth/reset-password, /users/me, /dashboard
 - Banco: data/meatshop.db com SQLite
 - Dockerfile (porta 3001)
 - Utiliza Token Fake e banco local então não tem arquivo/configuração .env
 
 ------------------------------------------------------------------
-# 🚀 Tecnologias utilizadas:                                     
-- **Back-end**: NestJS + SQLite                                  
-- **Front-end**: Next.js 14 + Tailwind
+# 💻 Tecnologias utilizadas:                                     
+- **Back-end**: NestJS + SQLite + TypeORM                                 
+- **Front-end**: Next.js 14 + Tailwind + ESLint 
 - **Containerização**: Docker + Docker Compose
 - **Testes**: Jest (back-end)
 ------------------------------------------------------------------
 
-# Como executar
+# 🚀 Como executar:
 
-### Backend com npm install
+### <ins>Backend com npm install</ins>
 1. Rodar os comandos:
   - cd meatshop-backend
   - npm install
   - npm run start:dev
 
-### Frontend
+### <ins>Frontend</ins>
 1. Rodar os comandos:
   - cd meatshop-main
   - npm install
   - npm run dev
 
-### Backend e Frontend juntos com Docker:
+### <ins>Backend e Frontend juntos com Docker:</ins>
 1. Abrir o docker desktop.
 2. Rodar no terminal o comando:
    - docker compose up --build
