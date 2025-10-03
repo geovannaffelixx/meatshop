@@ -5,15 +5,13 @@ yarn-error.log
 pnpm-debug.log
 
 # Builds locais
-dist
+.next
+out
 coverage
 
-# Logs e banco
+# Logs
 logs
 *.log
-data/*.db
-data/*.sqlite
-data/*.db-journal
 
 # Arquivos de controle Git
 .git

@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: "meatshop-backend"
+    static_configs:
+      - targets: ["meatshop-backend:3001"]

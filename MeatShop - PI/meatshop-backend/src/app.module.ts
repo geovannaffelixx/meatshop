@@ -7,6 +7,7 @@ import { Order } from './entities/order.entity';
 import { AuthController } from './auth/auth.controller';
 import { UsersController } from './users.controller';
 import { DashboardController } from './dashboard.controller';
+import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 
 @Module({
   imports: [
@@ -17,6 +18,13 @@ import { DashboardController } from './dashboard.controller';
       synchronize: true,
     }),
     TypeOrmModule.forFeature([User, Order]),
+
+    PrometheusModule.register({
+      path: '/metrics',
+      defaultMetrics: {
+        enabled: true,
+      },
+    }),
   ],
   controllers: [AppController, AuthController, UsersController, DashboardController],
   providers: [AppService],

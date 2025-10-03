@@ -1,2 +1,57 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+# ==============================
+# Padronização de finais de linha
+# ==============================
+* text=auto eol=lf
+
+# ==============================
+# Arquivos de código tratados como texto
+# ==============================
+*.js   text
+*.ts   text
+*.tsx  text
+*.json text
+*.yml  text
+*.yaml text
+*.md   text
+*.css  text
+*.scss text
+*.html text
+*.dockerignore text
+*.gitignore text
+*.gitattributes text
+
+# ==============================
+# Scripts
+# ==============================
+*.sh text eol=lf
+
+# ==============================
+# Arquivos binários (não normalizar)
+# ==============================
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.docx binary
+*.zip binary
+*.db binary
+*.sqlite binary
+
+# ==============================
+# Controle de merge
+# ==============================
+# Lock de dependências não deve gerar conflito em merge
+package-lock.json merge=ours
+yarn.lock merge=ours
+pnpm-lock.yaml merge=ours
+
+# ==============================
+# Estatísticas do GitHub Linguist
+# ==============================
+meatshop-backend/dist/* linguist-vendored
+meatshop-main/.next/* linguist-vendored
+coverage/* linguist-vendored
