@@ -57,7 +57,6 @@ export default function Page() {
       <div className="min-h-screen w-full bg-gray-100 bg-[url('/BackgroundClaro.png')] bg-repeat">
         <div className="container mx-auto px-4 py-6 space-y-8">
 
-          {/* Pedidos */}
           <div className="bg-gray/70 backdrop-blur-md rounded-xl p-6 shadow">
             <h2 className="text-2xl font-bold text-red-700 text-center mb-4">
               Pedidos pendentes
