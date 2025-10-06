@@ -13,6 +13,7 @@ interface FormData {
   razaoSocial: string;
   cnpj: string;
   telefone: string;
+  celular: string;
   cep: string;
   logradouro: string;
   numero: string;
@@ -33,6 +34,7 @@ export default function CadastroAcougue() {
     razaoSocial: "",
     cnpj: "",
     telefone: "",
+    celular: "",
     cep: "",
     logradouro: "",
     numero: "",
@@ -47,6 +49,7 @@ export default function CadastroAcougue() {
     imagemPerfil: null,
   });
 
+  const [semNumero, setSemNumero] = useState(false);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [passwordError, setPasswordError] = useState("");
   const [showAlert, setShowAlert] = useState(false);
@@ -68,6 +71,50 @@ export default function CadastroAcougue() {
     }
   };
 
+  const maskCNPJ = (value: string) => {
+    return value
+      .replace(/\D/g, "")
+      .replace(/^(\d{2})(\d)/, "$1.$2")
+      .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+      .replace(/\.(\d{3})(\d)/, ".$1/$2")
+      .replace(/(\d{4})(\d)/, "$1-$2")
+      .slice(0, 18);
+  };
+
+  const maskTelefone = (value: string) => {
+    return value
+      .replace(/\D/g, "")
+      .replace(/^(\d{2})(\d)/, "($1) $2")
+      .replace(/(\d{4})(\d)/, "$1-$2")
+      .slice(0, 14);
+  };
+
+  const maskCelular = (value: string) => {
+    return value
+      .replace(/\D/g, "")
+      .replace(/^(\d{2})(\d)/, "($1) $2")
+      .replace(/(\d{1})(\d{4})(\d)/, "$1 $2-$3")
+      .slice(0, 16);
+  };
+
+  const maskCEP = (value: string) => {
+    return value
+      .replace(/\D/g, "")
+      .replace(/^(\d{5})(\d)/, "$1-$2")
+      .slice(0, 9);
+  };
+
+  const handleNumeroChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, ""); 
+    setForm({ ...form, numero: value });
+  };
+
+  const handleSemNumeroChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const checked = e.target.checked;
+    setSemNumero(checked);
+    if (checked) setForm({ ...form, numero: "" }); 
+  };
+
   const validate = () => {
     const newErrors: Record<string, boolean> = {};
 
@@ -80,6 +127,7 @@ export default function CadastroAcougue() {
 
     requiredFields.forEach(field => {
       if (!form[field as keyof FormData] || form[field as keyof FormData]?.toString().trim() === "") {
+        if (field === "numero" && semNumero) return;
         newErrors[field] = true;
       }
     });
@@ -126,9 +174,31 @@ export default function CadastroAcougue() {
               <div className="grid gap-3">
                 <Input name="nomeFantasia" placeholder="Nome Fantasia" onChange={handleChange} className={inputClass("nomeFantasia")} />
                 <Input name="razaoSocial" placeholder="Razão Social" onChange={handleChange} className={inputClass("razaoSocial")} />
-                <Input name="cnpj" placeholder="CNPJ" onChange={handleChange} className={inputClass("cnpj")} />
-                <Input name="telefone" placeholder="Telefone" onChange={handleChange} className={inputClass("telefone")} />
-                <Input name="celular" placeholder="Celular" onChange={handleChange} className={inputClass("celular")} />
+
+                <Input
+                  name="cnpj"
+                  placeholder="CNPJ"
+                  value={form.cnpj}
+                  onInput={(e) => setForm({ ...form, cnpj: maskCNPJ(e.currentTarget.value) })}
+                  className={inputClass("cnpj")}
+                />
+
+                <Input
+                  name="telefone"
+                  placeholder="Telefone"
+                  value={form.telefone}
+                  onInput={(e) => setForm({ ...form, telefone: maskTelefone(e.currentTarget.value) })}
+                  className={inputClass("telefone")}
+                />
+
+                <Input
+                  name="celular"
+                  placeholder="Celular"
+                  value={form.celular}
+                  onInput={(e) => setForm({ ...form, celular: maskCelular(e.currentTarget.value) })}
+                  className={inputClass("celular")}
+                />
+
                 <label className="flex items-center gap-2 cursor-pointer w-fit px-4 py-2 border rounded-lg bg-gray-50 hover:bg-gray-100">
                   <ImageIcon className="w-5 h-5 text-gray-500" />
                   <span className="text-sm text-gray-600">Selecionar logo</span>
@@ -146,9 +216,30 @@ export default function CadastroAcougue() {
             <div>
               <h2 className="font-semibold mb-2">Endereço</h2>
               <div className="grid gap-3">
-                <Input name="cep" placeholder="CEP" onChange={handleChange} className={inputClass("cep")} />
+                <Input
+                  name="cep"
+                  placeholder="CEP"
+                  value={form.cep}
+                  onInput={(e) => setForm({ ...form, cep: maskCEP(e.currentTarget.value) })}
+                  className={inputClass("cep")}
+                />
                 <Input name="logradouro" placeholder="Logradouro" onChange={handleChange} className={inputClass("logradouro")} />
-                <Input name="numero" placeholder="N°" onChange={handleChange} className={inputClass("numero")} />
+
+                <div className="flex items-center gap-2">
+                  <Input
+                    name="numero"
+                    placeholder="N°"
+                    value={form.numero}
+                    onChange={handleNumeroChange}
+                    disabled={semNumero}
+                    className={`${inputClass("numero")} ${semNumero ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                  />
+                  <label className="flex items-center gap-1 text-sm">
+                    <input type="checkbox" checked={semNumero} onChange={handleSemNumeroChange} />
+                    S/N
+                  </label>
+                </div>
+
                 <Input name="complemento" placeholder="Complemento" onChange={handleChange} className={inputClass("complemento")} />
                 <Input name="bairro" placeholder="Bairro" onChange={handleChange} className={inputClass("bairro")} />
                 <Input name="cidade" placeholder="Cidade" onChange={handleChange} className={inputClass("cidade")} />
