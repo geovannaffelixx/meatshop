@@ -201,7 +201,7 @@ O arquivo de configuração fica em `.github/workflows/ci.yml`.
 
 --> ✅ Esta lista será atualizada continuamente conforme o desenvolvimento e as próximas entregas do PI.
 
------------------------------------
+------------------------------------
 
 # 📃 Resumo geral (Serviços e Endpoints):
 
