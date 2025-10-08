@@ -38,6 +38,6 @@ async function bootstrap() {
   const logger = winston.createLogger({
     transports: [new winston.transports.Console()],
   });
-  logger.info(`🚀 Backend rodando em http://localhost:${port}`);
+  logger.info(`Backend rodando em http://localhost:${port}`);
 }
 bootstrap();
