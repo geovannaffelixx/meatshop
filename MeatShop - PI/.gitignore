@@ -22,9 +22,10 @@ coverage/
 *.lcov
 
 # ===================================
-# Logs
+# Logs (Ignora arquivos de log, mas mantém a pasta)
 # ===================================
-logs/
+logs/*.log
+!logs/.gitkeep
 *.log
 
 # ===================================
