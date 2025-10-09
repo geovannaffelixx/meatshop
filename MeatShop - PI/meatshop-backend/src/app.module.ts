@@ -7,10 +7,11 @@ import { Order } from './entities/order.entity';
 import { AuthController } from './auth/auth.controller';
 import { UsersController } from './users.controller';
 import { DashboardController } from './dashboard.controller';
-import { PrometheusModule } from '@willsoto/nestjs-prometheus';
+import { MetricsModule } from './metrics/metrics.module';
 
 @Module({
   imports: [
+    MetricsModule,
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: 'data/meatshop.db',
@@ -18,13 +19,6 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
       synchronize: true,
     }),
     TypeOrmModule.forFeature([User, Order]),
-
-    PrometheusModule.register({
-      path: '/metrics',
-      defaultMetrics: {
-        enabled: true,
-      },
-    }),
   ],
   controllers: [AppController, AuthController, UsersController, DashboardController],
   providers: [AppService],

@@ -49,6 +49,18 @@
 
 4. Backend e Frontend já vão estar integrados e funcionando em conjunto, permitindo o cadastro, login e etc.
 
+### <ins>Conectar o prometheus como DataSource do graphana</ins>
+1. Acessar o grafana no link:
+   - [http://localhost:3002](http://localhost:3002)  
+2. Clicar em connections e depois Data sources.
+3. Selecionar o Prometheus como Data source.
+4. No Prometheus server URL colocar:
+   - http://prometheus:9090
+5. Clicar em Save & test com as opções defaults.
+
+### <ins>Parar o container docker:</ins>
+   - docker compose down 
+
 -----------------------------------
 
 # 🧪 Testes automatizados:
