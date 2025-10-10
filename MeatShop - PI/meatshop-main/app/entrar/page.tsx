@@ -2,26 +2,30 @@
 
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
-import { Input } from "@/components/ui/input"
+import { Input } from "@/components/ui/input";
 import Link from "next/link";
+import InputMask from "react-input-mask";
 import { useRouter } from "next/navigation";
 
 export default function Page() {
   const [showPassword, setShowPassword] = useState(false);
+  const [cnpj, setCnpj] = useState("");
   const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
   const [msg, setMsg] = useState("");
+  const [alertType, setAlertType] = useState<"success" | "error" | "">("");
   const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setMsg("");
+    setAlertType("");
 
     try {
       const res = await fetch("http://localhost:3001/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ usuario, senha }),
+        body: JSON.stringify({ cnpj, usuario, senha }),
       });
 
       const data = await res.json();
@@ -30,13 +34,15 @@ export default function Page() {
         throw new Error(data?.message || "Falha no login");
       }
 
-      // Salvar token
       localStorage.setItem("token", data.token);
 
-      setMsg("Login realizado com sucesso!");
-      router.push("/home"); // redireciona após sucesso
+      setMsg("Login realizado com sucesso! Redirecionando...");
+      setAlertType("success");
+
+      setTimeout(() => router.push("/home"), 2000);
     } catch (err: any) {
       setMsg(err.message);
+      setAlertType("error");
     }
   }
 
@@ -56,9 +62,29 @@ export default function Page() {
 
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Usuário ou E-mail</label>
+              <label className="block text-sm font-medium text-gray-700">CNPJ</label>
               <Input
-                placeholder="Informe seu usuário ou e-mail"
+                placeholder="Informe o CNPJ"
+                maxLength={18}
+                value={cnpj}
+                onInput={(e) => {
+                  let value = (e.target as HTMLInputElement).value;
+                  value = value.replace(/\D/g, "");
+                  value = value
+                    .replace(/^(\d{2})(\d)/, "$1.$2")
+                    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+                    .replace(/\.(\d{3})(\d)/, ".$1/$2")
+                    .replace(/(\d{4})(\d)/, "$1-$2");
+                  (e.target as HTMLInputElement).value = value;
+                  setCnpj(value);
+                }}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Usuário</label>
+              <Input
+                placeholder="Informe seu usuário"
                 value={usuario}
                 onChange={(e) => setUsuario(e.target.value)}
               />
@@ -82,7 +108,10 @@ export default function Page() {
                 </button>
               </div>
               <div className="mt-1">
-                <Link href="/recuperar" className="text-sm text-red-600 hover:underline left-1">
+                <Link
+                  href="/recuperar"
+                  className="text-sm text-red-600 hover:underline left-1"
+                >
                   Esqueceu sua senha?
                 </Link>
               </div>
@@ -97,7 +126,13 @@ export default function Page() {
           </form>
 
           {msg && (
-            <p className="text-center text-sm text-red-600 mt-2">{msg}</p>
+            <p
+              className={`text-center text-sm mt-2 ${
+                alertType === "success" ? "text-green-600" : "text-red-600"
+              }`}
+            >
+              {msg}
+            </p>
           )}
 
           <p className="text-center text-sm text-gray-600">
