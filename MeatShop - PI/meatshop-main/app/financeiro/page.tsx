@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, X } from "lucide-react"
+import { Plus } from "lucide-react"
 import Resultados from "@/components/resultados"
 import {
   BarChart,
@@ -30,20 +30,23 @@ type Expense = {
   id: string
   cpfCnpj: string
   fornecedor: string
-  tipo: string
+  tipo: "Compras" | "Serviços" | "Outros"
   valor: number
   desconto: number
   valorPago: number
   dataLancamento?: string
   dataPagamento?: string
   observacoes?: string
-  formaPagamento: string
+  formaPagamento: "Pix" | "Crédito" | "Débito" | "Dinheiro" | "Boleto"
 }
 
-type Receita = {
-  dia: number
-  valor: number
-}
+type Receita = { dia: number; valor: number }
+type PaymentSlice = { name: string; value: number }
+
+type RevenueApi = { series: { day: number; value: number }[]; revenueTotal: number }
+type SummaryApi = { revenueTotal: number; expensesTotal: number; payments: PaymentSlice[] }
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
 
 function parseCurrencyToNumber(formatted: string) {
   if (!formatted) return 0
@@ -52,7 +55,16 @@ function parseCurrencyToNumber(formatted: string) {
   const cents = parseInt(digits, 10)
   return cents / 100
 }
-
+function parseCurrencyToNumberBR(formatted: string) {
+  if (!formatted) return 0
+  const raw = formatted.replace(/\s/g, "").replace("R$", "").trim()
+  const normalized = raw.replace(/\./g, "").replace(",", ".")
+  const n = Number(normalized)
+  return Number.isFinite(n) ? n : 0
+}
+function toDecimalStringBR(n: number) {
+  return (Math.round(n * 100) / 100).toFixed(2)
+}
 function formatCpfCnpj(raw: string) {
   const digits = raw.replace(/\D/g, "").slice(0, 14)
   if (digits.length <= 11) {
@@ -79,134 +91,101 @@ function formatCpfCnpj(raw: string) {
     return s
   }
 }
-
-// --- Funções Auxiliares para Mock ---
-const FORNECEDORES = ["Frigorífico São João", "Fornecedor de Embalagens", "Distribuidora Água Azul", "Contabilidade ABC", "Eletro Manutenção"]
-const TIPOS = ["Compras", "Serviços", "Outros"]
-const FORMAS_PAGAMENTO = ["Pix", "Crédito", "Débito", "Dinheiro", "Boleto"]
-const getCurrentMonthYear = () => {
-  // Usamos um mês fixo (ex: Outubro) para que o mock seja estável
-  return `2025-10` 
-}
-
-function generateMockExpenses(): Expense[] {
-  const expenses: Expense[] = []
-  const currentMonthYear = getCurrentMonthYear()
-  const daysInMonth = 31
-
-  // Gera 15 despesas fictícias espalhadas
-  for (let i = 1; i <= 15; i++) { 
-    const diaLancamento = Math.floor(Math.random() * daysInMonth) + 1
-    const diaPagamento = Math.min(diaLancamento + Math.floor(Math.random() * 3), daysInMonth)
-    
-    const valor = Math.floor(100 + Math.random() * 3000)
-    const desconto = Math.random() < 0.2 ? Math.floor(Math.random() * valor * 0.1) : 0
-    const valorPago = Math.max(valor - desconto, 0)
-
-    const tipo = TIPOS[Math.floor(Math.random() * TIPOS.length)]
-    const fornecedor = FORNECEDORES[Math.floor(Math.random() * FORNECEDORES.length)]
-    const formaPagamento = FORMAS_PAGAMENTO[Math.floor(Math.random() * FORMAS_PAGAMENTO.length)]
-    const cpfCnpj = Math.random() < 0.5 ? "12.345.678/0001-90" : "987.654.321-00" 
-
-    expenses.push({
-      id: String(Date.now() + i),
-      cpfCnpj: cpfCnpj,
-      fornecedor: fornecedor,
-      tipo: tipo,
-      valor: valor,
-      desconto: desconto,
-      valorPago: valorPago,
-      dataLancamento: `${currentMonthYear}-${String(diaLancamento).padStart(2, '0')}`,
-      dataPagamento: `${currentMonthYear}-${String(diaPagamento).padStart(2, '0')}`,
-      observacoes: `Despesa gerada automaticamente ${i}`,
-      formaPagamento: formaPagamento,
-    })
-  }
-
-  // Adiciona as 3 despesas fixas originais
-  expenses.push({
-    id: "1",
-    cpfCnpj: "12.345.678/0001-90",
-    fornecedor: "Frigorífico São João",
-    tipo: "Compras",
-    valor: 1800,
-    desconto: 0,
-    valorPago: 1800,
-    dataLancamento: "2025-10-01",
-    dataPagamento: "2025-10-02",
-    formaPagamento: "Pix",
-    observacoes: "Lote semanal",
-  },
-  {
-    id: "2",
-    cpfCnpj: "987.654.321-00",
-    fornecedor: "Fornecedor de embalagens",
-    tipo: "Compras",
-    valor: 620,
-    desconto: 20,
-    valorPago: 600,
-    dataLancamento: "2025-10-03",
-    dataPagamento: "2025-10-04",
-    formaPagamento: "Crédito",
-    observacoes: "Bobinas e caixas",
-  },
-  {
-    id: "3",
-    cpfCnpj: "55.444.333/0001-22",
-    fornecedor: "Distribuidora Água Azul",
-    tipo: "Serviços",
-    valor: 300,
-    desconto: 0,
-    valorPago: 300,
-    dataLancamento: "2025-10-05",
-    dataPagamento: "2025-10-05",
-    formaPagamento: "Dinheiro",
-    observacoes: "Fornecimento de gelo",
-  })
-  
-  return expenses.sort((a, b) => new Date(b.dataPagamento ?? "").getTime() - new Date(a.dataPagamento ?? "").getTime())
+function getMonthParam() {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, "0")
+  return `${y}-${m}`
 }
 
 export default function FinanceiroPage() {
   const [open, setOpen] = useState(false)
+  const [month, setMonth] = useState(getMonthParam())
+
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [receitas, setReceitas] = useState<Receita[]>([])
   const [receitasTotal, setReceitasTotal] = useState(0)
-  
-  // ===============================================
-  // 1. ATUALIZAÇÃO: ADICIONANDO 'idFornecedor'
-  // ===============================================
+  const [despesasTotal, setDespesasTotal] = useState(0)
+  const [pagamentos, setPagamentos] = useState<PaymentSlice[]>([])
+
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
   const [form, setForm] = useState({
-    id: "", // ID Despesa
-    idFornecedor: "", // NOVO CAMPO: ID Fornecedor
+    id: "",
+    idFornecedor: "",
     cpfCnpj: "",
     fornecedor: "",
-    tipo: "Compras",
+    tipo: "Compras" as Expense["tipo"],
     valor: "",
     desconto: "",
     valorPago: "",
     dataLancamento: "",
     dataPagamento: "",
     observacoes: "",
-    formaPagamento: "Pix",
+    formaPagamento: "Pix" as Expense["formaPagamento"],
   })
 
-  // --- MOCK DE DADOS FIXOS/FICTÍCIOS ---
   useEffect(() => {
-    // Mock de Receitas (Garante 31 dias)
-    const receitasFicticias: Receita[] = Array.from({ length: 31 }, (_, i) => ({
-      dia: i + 1,
-      valor: Math.floor(3000 + Math.random() * 1500),
-    }))
-    setReceitas(receitasFicticias)
-    setReceitasTotal(receitasFicticias.reduce((s, r) => s + r.valor, 0))
+    const load = async () => {
+      try {
+        setLoading(true)
+        setError(null)
 
-    // Mock de Despesas
-    const despesasFicticias: Expense[] = generateMockExpenses()
-    setExpenses(despesasFicticias)
-  }, [])
+        // 1) Receitas (revenue)
+        const r1 = await fetch(`${API_URL}/finance/revenue?month=${month}`)
+        const revenue: RevenueApi = await r1.json()
 
-  // --- AUTO CÁLCULO DE VALOR PAGO ---
+        const byDay = new Map<number, number>()
+        revenue.series.forEach(s => byDay.set(s.day, s.value))
+
+        const daysInMonth = new Date(
+          Number(month.split("-")[0]),
+          Number(month.split("-")[1]),
+          0
+        ).getDate()
+
+        const receitasArr: Receita[] = Array.from({ length: daysInMonth }, (_, i) => ({
+          dia: i + 1,
+          valor: byDay.get(i + 1) ?? 0,
+        }))
+        setReceitas(receitasArr)
+        setReceitasTotal(revenue.revenueTotal || 0)
+
+        // 2) Despesas (expenses)
+        const r2 = await fetch(`${API_URL}/finance/expenses?month=${month}`)
+        const expensesApi = await r2.json()
+        const mapped: Expense[] = (expensesApi as any[]).map((e) => ({
+          id: String(e.id),
+          cpfCnpj: e.cpfCnpj ?? "",
+          fornecedor: e.supplierName,
+          tipo: e.type,
+          valor: Number(e.amount),
+          desconto: Number(e.discount ?? 0),
+          valorPago: Number(e.paidAmount),
+          dataLancamento: e.postedAt ?? "",
+          dataPagamento: e.paidAt ?? "",
+          observacoes: e.notes ?? "",
+          formaPagamento: e.paymentMethod,
+        }))
+        setExpenses(mapped)
+
+        // 3) Resumo (summary)
+        const r3 = await fetch(`${API_URL}/finance/summary?month=${month}`)
+        const summary: SummaryApi = await r3.json()
+        setDespesasTotal(summary.expensesTotal ?? 0)
+        setPagamentos(summary.payments ?? [])
+      } catch (err) {
+        console.error(err)
+        setError("Falha ao carregar dados do Financeiro.")
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [month])
+
+  // Cálcular o valor pago
   useEffect(() => {
     const valor = parseCurrencyToNumber(form.valor)
     const desconto = parseCurrencyToNumber(form.desconto)
@@ -215,26 +194,12 @@ export default function FinanceiroPage() {
       setForm((p) => ({
         ...p,
         valorPago: valorPago
-          ? valorPago.toLocaleString("pt-BR", {
-              style: "currency",
-              currency: "BRL",
-            })
+          ? valorPago.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
           : "",
       }))
     }
   }, [form.valor, form.desconto])
 
-  // --- RESUMOS ---
-  const despesasTotal = expenses.reduce((s, e) => s + e.valorPago, 0) 
-  const pagamentos = (() => {
-    const map = new Map<string, number>()
-    expenses.forEach((e) => {
-      map.set(e.formaPagamento, (map.get(e.formaPagamento) ?? 0) + e.valorPago)
-    })
-    return Array.from(map.entries()).map(([name, value]) => ({ name, value }))
-  })()
-
-  // --- FORM HANDLERS ---
   const handleFormChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     if (name === "cpfCnpj") return setForm((p) => ({ ...p, cpfCnpj: formatCpfCnpj(value) }))
@@ -246,84 +211,139 @@ export default function FinanceiroPage() {
         : ""
       return setForm((p) => ({ ...p, [name]: formatted }))
     }
-    
-    // ===============================================
-    // 2. ATUALIZAÇÃO: LÓGICA PARA 'id' e 'idFornecedor'
-    // ===============================================
-    if (name === "id") { // ID Despesa
+    if (name === "id") {
       const digits = value.replace(/\D/g, "").slice(0, 10)
       return setForm((p) => ({ ...p, id: digits }))
     }
-    if (name === "idFornecedor") { // NOVO CAMPO: ID Fornecedor
+    if (name === "idFornecedor") {
       const digits = value.replace(/\D/g, "").slice(0, 10)
       return setForm((p) => ({ ...p, idFornecedor: digits }))
     }
-    // ===============================================
-    
     setForm((p) => ({ ...p, [name]: value }))
   }
 
-  const handleAddExpense = () => {
+  const handleAddExpense = async () => {
     if (!form.fornecedor || !form.valor) return alert("Preencha fornecedor e valor.")
-    const valor = parseCurrencyToNumber(form.valor)
-    const desconto = parseCurrencyToNumber(form.desconto)
-    const valorPago = Math.max(valor - desconto, 0)
-    const newExp: Expense = {
-      id: form.id || String(Date.now()),
-      cpfCnpj: form.cpfCnpj,
-      fornecedor: form.fornecedor,
-      tipo: form.tipo,
-      valor,
-      desconto,
-      valorPago,
-      dataLancamento: form.dataLancamento,
-      dataPagamento: form.dataPagamento,
-      observacoes: form.observacoes + (form.idFornecedor ? ` | ID Fornecedor: ${form.idFornecedor}` : ''), // Adiciona idFornecedor nas observações, pois não existe na Expense type
-      formaPagamento: form.formaPagamento || "Pix",
+    try {
+      setLoading(true)
+      setError(null)
+
+      const valor = parseCurrencyToNumberBR(form.valor as any)
+      const desconto = parseCurrencyToNumberBR(form.desconto as any)
+      const valorPago = Math.max(valor - desconto, 0)
+
+      const payload = {
+        supplierName: form.fornecedor,
+        type: form.tipo,
+        amount: toDecimalStringBR(valor),
+        discount: toDecimalStringBR(desconto),
+        paidAmount: toDecimalStringBR(valorPago),
+        postedAt: form.dataLancamento || null,
+        paidAt: form.dataPagamento || null,
+        paymentMethod: form.formaPagamento || "Pix",
+        notes: (form.observacoes || "") + (form.idFornecedor ? ` | SupplierID: ${form.idFornecedor}` : ""),
+        cpfCnpj: form.cpfCnpj || null,
+        supplierId: form.idFornecedor || null,
+      }
+
+      const res = await fetch(`${API_URL}/finance/expenses`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const msg = await res.text()
+        throw new Error(msg || "Erro ao salvar despesa")
+      }
+
+      // Recarrega lista e resumo
+      const [rExp, rSum] = await Promise.all([
+        fetch(`${API_URL}/finance/expenses?month=${month}`),
+        fetch(`${API_URL}/finance/summary?month=${month}`),
+      ])
+
+      const expensesApi = await rExp.json()
+      const mapped: Expense[] = (expensesApi as any[]).map((e) => ({
+        id: String(e.id),
+        cpfCnpj: e.cpfCnpj ?? "",
+        fornecedor: e.supplierName,
+        tipo: e.type,
+        valor: Number(e.amount),
+        desconto: Number(e.discount ?? 0),
+        valorPago: Number(e.paidAmount),
+        dataLancamento: e.postedAt ?? "",
+        dataPagamento: e.paidAt ?? "",
+        observacoes: e.notes ?? "",
+        formaPagamento: e.paymentMethod,
+      }))
+      setExpenses(mapped)
+
+      const summary: SummaryApi = await rSum.json()
+      setDespesasTotal(summary.expensesTotal ?? 0)
+      setPagamentos(summary.payments ?? [])
+
+      // Limpa form e fecha modal
+      setForm({
+        id: "",
+        idFornecedor: "",
+        cpfCnpj: "",
+        fornecedor: "",
+        tipo: "Compras",
+        valor: "",
+        desconto: "",
+        valorPago: "",
+        dataLancamento: "",
+        dataPagamento: "",
+        observacoes: "",
+        formaPagamento: "Pix",
+      })
+      setOpen(false)
+    } catch (err) {
+      console.error(err)
+      alert("Erro ao salvar despesa. Verifique os campos e tente novamente.")
+    } finally {
+      setLoading(false)
     }
-    setExpenses((prev) => [newExp, ...prev])
-    setForm({
-      id: "",
-      idFornecedor: "", // Resetar o novo campo
-      cpfCnpj: "",
-      fornecedor: "",
-      tipo: "Compras",
-      valor: "",
-      desconto: "",
-      valorPago: "",
-      dataLancamento: "",
-      dataPagamento: "",
-      observacoes: "",
-      formaPagamento: "Pix",
-    })
-    setOpen(false)
   }
 
-  // --- GRÁFICOS (Garante 31 barras alinhadas) ---
-  const pieColors = ["#16a34a", "#ef4444", "#f59e0b", "#3b82f6", "#7c3aed"]
-  
-  // Mapeamento das despesas por dia
+  // Gráfico de despesas por dia (baseado em dataPagamento)
   const despesasPorDiaMap = new Map<number, number>()
   expenses.forEach(e => {
     if (e.dataPagamento) {
-      // Pega o dia do mês (1 a 31)
       const dia = new Date(e.dataPagamento).getDate()
       const current = despesasPorDiaMap.get(dia) ?? 0
       despesasPorDiaMap.set(dia, current + e.valorPago)
     }
   })
 
-  // Cria o array de dados com EXATAMENTE 31 dias, preenchendo com o valor ou 0
-  const despesasPorDia: Receita[] = Array.from({ length: 31 }, (_, i) => ({
+  const daysInMonth = new Date(
+    Number(month.split("-")[0]),
+    Number(month.split("-")[1]),
+    0
+  ).getDate()
+
+  const despesasPorDia: Receita[] = Array.from({ length: daysInMonth }, (_, i) => ({
     dia: i + 1,
     valor: despesasPorDiaMap.get(i + 1) ?? 0,
   }))
+
+  const pieColors = ["#16a34a", "#ef4444", "#f59e0b", "#3b82f6", "#7c3aed"]
 
   return (
     <PadraoPage titulo="Financeiro" imagem="/logoClaraEscrita.png">
       <div className="min-h-screen w-full bg-[url('/BackgroundClaro.png')] bg-cover bg-center">
         <div className="max-w-6xl mx-auto px-6 py-10 space-y-10">
           <h1 className="text-3xl font-bold text-center text-red-600 mb-6">Financeiro</h1>
+
+          {/* Seletor de mês */}
+          <div className="flex justify-center">
+            <input
+              type="month"
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              className="border rounded px-3 py-2"
+            />
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* RECEITAS */}
@@ -333,18 +353,18 @@ export default function FinanceiroPage() {
                 <p className="text-sm text-gray-500">Total de vendas no mês</p>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart 
-                    data={receitas} 
-                    margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
-                    barCategoryGap="1%" // Adicionado para forçar o espaçamento consistente
-                  >
-                    <XAxis dataKey="dia" hide interval={0} tickCount={31} /> 
-                    <YAxis hide />
-                    <Tooltip />
-                    <Bar dataKey="valor" fill="#16a34a" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                {error ? (
+                  <div className="text-center text-red-600">{error}</div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={receitas} margin={{ top: 0, right: 0, left: 0, bottom: 0 }} barCategoryGap="1%">
+                      <XAxis dataKey="dia" hide interval={0} tickCount={daysInMonth} />
+                      <YAxis hide />
+                      <Tooltip />
+                      <Bar dataKey="valor" fill="#16a34a" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
               </CardContent>
             </Card>
 
@@ -355,7 +375,7 @@ export default function FinanceiroPage() {
                   <CardTitle className="text-red-600">Despesas</CardTitle>
                   <Dialog open={open} onOpenChange={setOpen}>
                     <DialogTrigger asChild>
-                      <Button className="bg-red-600 hover:bg-red-700 rounded-full w-8 h-8 flex items-center justify-center text-white shadow-md">
+                      <Button disabled={loading} className="bg-red-600 hover:bg-red-700 rounded-full w-8 h-8 flex items-center justify-center text-white shadow-md">
                         <Plus size={18} />
                       </Button>
                     </DialogTrigger>
@@ -366,12 +386,7 @@ export default function FinanceiroPage() {
                         </DialogTitle>
                       </DialogHeader>
 
-
                       <div className="p-6 grid grid-cols-12 gap-4">
-                        {/* =============================================== */}
-                        {/* 3. ATUALIZAÇÃO: ESTRUTURA DOS CAMPOS DE ID/CPF/CNPJ/FORNECEDOR */}
-                        {/* Ajustado de col-span-2, col-span-4, col-span-6 para 4 campos */}
-                        {/* =============================================== */}
                         <div className="col-span-2">
                           <label className="text-sm font-medium text-gray-700">ID</label>
                           <Input name="id" value={form.id} onChange={handleFormChange} inputMode="numeric" />
@@ -391,9 +406,7 @@ export default function FinanceiroPage() {
                           <label className="text-sm font-medium text-gray-700">Fornecedor</label>
                           <Input name="fornecedor" value={form.fornecedor} onChange={handleFormChange} />
                         </div>
-                        {/* =============================================== */}
 
-                        {/* Linha de tipo, valor, desconto e valor pago */}
                         <div className="col-span-3 mt-3 flex flex-col justify-end">
                           <label className="text-sm font-medium text-gray-700 mb-1">Tipo</label>
                           <select
@@ -423,7 +436,6 @@ export default function FinanceiroPage() {
                           <Input name="valorPago" value={form.valorPago} readOnly disabled />
                         </div>
 
-                        {/* Linha única para datas e forma de pagamento */}
                         <div className="col-span-12 mt-3 grid grid-cols-3 gap-4 items-end">
                           <div>
                             <label className="text-sm font-medium text-gray-700 mb-1">Data lançamento</label>
@@ -459,7 +471,9 @@ export default function FinanceiroPage() {
 
                         <div className="col-span-12 mt-6 flex justify-end gap-3">
                           <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-                          <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={handleAddExpense}>Salvar</Button>
+                          <Button disabled={loading} className="bg-red-600 hover:bg-red-700 text-white" onClick={handleAddExpense}>
+                            {loading ? "Salvando..." : "Salvar"}
+                          </Button>
                         </div>
                       </div>
 
@@ -471,12 +485,8 @@ export default function FinanceiroPage() {
 
               <CardContent>
                 <ResponsiveContainer width="100%" height={200}>
-                  <BarChart 
-                    data={despesasPorDia} 
-                    margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
-                    barCategoryGap="1%" // Adicionado para forçar o espaçamento consistente
-                  >
-                    <XAxis dataKey="dia" hide interval={0} tickCount={31} /> 
+                  <BarChart data={despesasPorDia} margin={{ top: 0, right: 0, left: 0, bottom: 0 }} barCategoryGap="1%">
+                    <XAxis dataKey="dia" hide interval={0} tickCount={daysInMonth} />
                     <YAxis hide />
                     <Tooltip />
                     <Bar dataKey="valor" fill="#dc2626" radius={[4, 4, 0, 0]} />
@@ -487,7 +497,11 @@ export default function FinanceiroPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Resultados receitasTotal={receitasTotal} despesasTotal={despesasTotal} pagamentos={pagamentos} />
+            <Resultados
+              receitasTotal={receitasTotal}
+              despesasTotal={despesasTotal}
+              pagamentos={pagamentos}
+            />
 
             <Card className="bg-white/70 backdrop-blur-md shadow-lg">
               <CardHeader className="px-4 pt-4 text-center">
@@ -509,7 +523,7 @@ export default function FinanceiroPage() {
           </div>
 
           <div className="text-center text-gray-600 text-sm mt-6">
-            MeatShop © 2025 — Todos os direitos reservados
+            MeatShop © {new Date().getFullYear()} — Todos os direitos reservados
           </div>
         </div>
       </div>

@@ -8,18 +8,14 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get()
-  getHello(): string {
+  root() {
     this.logger.log('Endpoint / chamado');
-    return this.appService.getHello();
+    return this.appService.getInfo();
   }
 
-  @Get('/health')
-  getHealth() {
+  @Get('health')
+  health() {
     this.logger.log('Endpoint /health chamado');
-    return {
-      status: 'ok',
-      uptime: process.uptime(),
-      timestamp: new Date().toISOString(),
-    };
+    return this.appService.getHealth();
   }
 }

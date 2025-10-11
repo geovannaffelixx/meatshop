@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -31,10 +32,18 @@ async function bootstrap() {
     credentials: true,
   });
 
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,             // remove campos desconhecidos do payload
+      forbidNonWhitelisted: false, // (true: retorna 400 ao invés de só remover)
+      transform: true,             // habilita transformação (e.g., ParseIntPipe implícito)
+      transformOptions: { enableImplicitConversion: true },
+    }),
+  );
+
   const port = Number(process.env.PORT ?? 3001);
   await app.listen(port);
 
-  // Log final
   const logger = winston.createLogger({
     transports: [new winston.transports.Console()],
   });
