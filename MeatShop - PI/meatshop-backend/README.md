@@ -52,11 +52,13 @@
 ### <ins>Conectar o prometheus como DataSource do graphana</ins>
 1. Acessar o grafana no link:
    - [http://localhost:3002](http://localhost:3002)  
+   - Usuario: admin
+   - Senha: admin
 2. Clicar em connections e depois Data sources.
 3. Selecionar o Prometheus como Data source.
 4. No Prometheus server URL colocar:
    - http://prometheus:9090
-5. Clicar em Save & test com as opções defaults.
+5. Clicar em Save & test com as opções padrões.
 
 ### <ins>Parar o container docker:</ins>
    - docker compose down 

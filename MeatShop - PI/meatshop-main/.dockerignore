@@ -6,7 +6,6 @@ pnpm-debug.log
 
 # Builds locais
 .next
-out
 coverage
 
 # Logs

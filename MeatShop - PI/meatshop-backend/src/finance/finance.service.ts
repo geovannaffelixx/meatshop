@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Like, Repository, Between } from 'typeorm';
+import { Like, Repository, Between, IsNull } from 'typeorm';
 import { Expense } from '../entities/expense.entity';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
@@ -46,7 +46,7 @@ export class FinanceService {
     return this.expenses.find({
       where: [
         { paidAt: Like(`${y}-${mm}-%`) },
-        { paidAt: null, postedAt: Like(`${y}-${mm}-%`) },
+        { paidAt: IsNull(), postedAt: Like(`${y}-${mm}-%`) },
       ],
       order: { paidAt: 'DESC', id: 'DESC' },
     });
@@ -135,7 +135,7 @@ export class FinanceService {
     const expenses = await this.expenses.find({
       where: [
         { paidAt: Like(`${y}-${mm}-%`) },
-        { paidAt: null, postedAt: Like(`${y}-${mm}-%`) },
+        { paidAt: IsNull(), postedAt: Like(`${y}-${mm}-%`) },
       ],
     });
 
