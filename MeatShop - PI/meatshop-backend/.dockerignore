@@ -4,8 +4,7 @@ npm-debug.log
 yarn-error.log
 pnpm-debug.log
 
-# Builds locais
-dist
+# Builds e relatórios
 coverage
 
 # Logs e banco
@@ -15,7 +14,7 @@ data/*.db
 data/*.sqlite
 data/*.db-journal
 
-# Arquivos de controle Git
+# Arquivos Git
 .git
 .gitignore
 .gitattributes
