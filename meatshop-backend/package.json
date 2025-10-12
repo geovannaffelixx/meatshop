@@ -2,11 +2,12 @@
   "name": "meatshop-backend",
   "version": "0.0.1",
   "private": true,
+  "type": "module",
   "scripts": {
     "start": "node dist/main.js",
     "start:dev": "nest start --watch",
     "build": "nest build",
-    "lint": "eslint . --max-warnings=0",
+    "lint": "eslint src test --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "jest --runInBand --coverage"
   },

@@ -10,13 +10,14 @@ export default [
     languageOptions: {
       parser,
       parserOptions: {
-        project: "./tsconfig.json",
+        project: "./tsconfig.eslint.json", 
         sourceType: "module",
       },
       globals: {
-        process: "readonly",   
-        module: "readonly",    
-        describe: "readonly",  
+        process: "readonly",
+        console: "readonly",
+        __dirname: "readonly",
+        describe: "readonly",
         it: "readonly",
         expect: "readonly",
         beforeAll: "readonly",
@@ -27,7 +28,11 @@ export default [
       "@typescript-eslint": tseslint,
     },
     rules: {
-      "@typescript-eslint/no-unused-vars": ["warn"],
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
+      ],
       "@typescript-eslint/explicit-module-boundary-types": "off"
     }
   }
