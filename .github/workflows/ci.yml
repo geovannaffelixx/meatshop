@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: 20
+
+jobs:
+  build-test-and-integration:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (with cache)
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            meatshop-backend/package-lock.json
+            meatshop-main/package-lock.json
+
+      # =========================
+      # BACKEND
+      # =========================
+      - name: Backend - Install
+        working-directory: meatshop-backend
+        run: npm ci
+
+      - name: Backend - Lint
+        working-directory: meatshop-backend
+        run: npm run lint
+
+      - name: Backend - Typecheck
+        working-directory: meatshop-backend
+        run: npm run typecheck
+
+      - name: Backend - Tests (coverage)
+        working-directory: meatshop-backend
+        run: npm test -- --runInBand --coverage
+
+      - name: Backend - Build
+        working-directory: meatshop-backend
+        run: npm run build
+
+      # =========================
+      # FRONTEND
+      # =========================
+      - name: Frontend - Install
+        working-directory: meatshop-main
+        run: npm ci
+
+      - name: Frontend - Lint
+        working-directory: meatshop-main
+        run: npm run lint
+
+      - name: Frontend - Typecheck
+        working-directory: meatshop-main
+        run: npm run typecheck
+
+      - name: Frontend - Tests (coverage)
+        working-directory: meatshop-main
+        run: npm test -- --runInBand --coverage
+
+      - name: Frontend - Build
+        working-directory: meatshop-main
+        run: npm run build
+
+      # =========================
+      # INTEGRAÇÃO (Docker Compose)
+      # =========================
+      - name: Docker Compose Up (backend+frontend+prometheus+grafana)
+        run: |
+          docker compose up -d --build
+          echo "Aguardando backend em http://localhost:3001/health..."
+          # espera saudável (até ~90s)
+          for i in {1..45}; do
+            if curl -fsS http://localhost:3001/health >/dev/null; then
+              echo "Backend OK"
+              break
+            fi
+            sleep 2
+          done
+          # falha se não subiu
+          curl -fsS http://localhost:3001/health >/dev/null
+
+          echo "Coletando /metrics..."
+          curl -fsS http://localhost:3001/metrics > metrics_output.txt
+
+          echo "Checando frontend em http://localhost:3000 ..."
+          for i in {1..45}; do
+            if curl -fsS http://localhost:3000 >/dev/null; then
+              echo "Frontend OK"
+              break
+            fi
+            sleep 2
+          done
+          curl -fsS http://localhost:3000 >/dev/null
+
+      - name: Capturar logs do Compose
+        if: always()
+        run: |
+          docker compose logs > compose_logs.txt || true
+
+      - name: Upload artifacts (logs, metrics, coverage, compose logs)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs-and-coverage
+          path: |
+            meatshop-backend/logs/app.log
+            meatshop-backend/coverage
+            meatshop-main/coverage
+            metrics_output.txt
+            compose_logs.txt
+          retention-days: 7

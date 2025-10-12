@@ -1,0 +1,24 @@
+# Dependências locais
+node_modules
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Builds locais
+.next
+coverage
+
+# Logs
+logs
+*.log
+
+# Arquivos de controle Git
+.git
+.gitignore
+.gitattributes
+
+# Sistema/Editor
+.DS_Store
+Thumbs.db
+.vscode
+.idea

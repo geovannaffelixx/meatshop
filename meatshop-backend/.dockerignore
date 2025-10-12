@@ -1,0 +1,26 @@
+# Dependências locais
+node_modules
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Builds e relatórios
+coverage
+
+# Logs e banco
+logs
+*.log
+data/*.db
+data/*.sqlite
+data/*.db-journal
+
+# Arquivos Git
+.git
+.gitignore
+.gitattributes
+
+# Sistema/Editor
+.DS_Store
+Thumbs.db
+.vscode
+.idea
