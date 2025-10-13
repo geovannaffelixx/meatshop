@@ -5,17 +5,25 @@ import { Expense } from '../entities/expense.entity';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
 import { Order } from '../entities/order.entity';
+import { AppLogger } from '../common/logger/app.logger';
 
 @Injectable()
 export class FinanceService {
   constructor(
-    @InjectRepository(Expense) private readonly expenses: Repository<Expense>,
-    @InjectRepository(Order) private readonly orders: Repository<Order>,
+    @InjectRepository(Expense)
+    private readonly expenses: Repository<Expense>,
+
+    @InjectRepository(Order)
+    private readonly orders: Repository<Order>,
+
+    private readonly logger: AppLogger,
   ) {}
 
   private normalizeMonthRange(month?: string) {
-    if (!month) throw new BadRequestException('Query param "month" (YYYY-MM) is required.');
-    if (!/^\d{4}-\d{2}$/.test(month)) throw new BadRequestException('Invalid "month" format. Use YYYY-MM.');
+    if (!month)
+      throw new BadRequestException('Query param "month" (YYYY-MM) is required.');
+    if (!/^\d{4}-\d{2}$/.test(month))
+      throw new BadRequestException('Invalid "month" format. Use YYYY-MM.');
     const [y, m] = month.split('-').map(Number);
     const start = new Date(Date.UTC(y, m - 1, 1));
     const end = new Date(Date.UTC(y, m, 1)); // exclusive
@@ -23,7 +31,6 @@ export class FinanceService {
     return { start, end, y, m, daysInMonth };
   }
 
-  // Converte "1.234,56" ou "1234.56" ou "1234" -> number
   private toNum(x: string | number | null | undefined): number {
     if (x == null) return 0;
     if (typeof x === 'number') return x;
@@ -32,24 +39,24 @@ export class FinanceService {
     return Number.isFinite(v) ? v : 0;
   }
 
-  // Somatório seguro (usa toNum)
   private n(x: any): number {
     return this.toNum(x);
   }
 
   // -------- DESPESAS --------
 
-  // Lista despesas do mês (YYYY-MM)
   async listExpenses(month: string) {
     const { y, m } = this.normalizeMonthRange(month);
     const mm = String(m).padStart(2, '0');
-    return this.expenses.find({
+    const data = await this.expenses.find({
       where: [
         { paidAt: Like(`${y}-${mm}-%`) },
         { paidAt: IsNull(), postedAt: Like(`${y}-${mm}-%`) },
       ],
       order: { paidAt: 'DESC', id: 'DESC' },
     });
+    this.logger.info('Listagem de despesas concluída', { month });
+    return data;
   }
 
   async createExpense(dto: CreateExpenseDto) {
@@ -66,7 +73,19 @@ export class FinanceService {
       cpfCnpj: dto.cpfCnpj ?? null,
       supplierId: dto.supplierId ?? null,
     });
-    return this.expenses.save(ent);
+
+    const saved = await this.expenses.save(ent);
+
+    // ✅ Loga a criação da despesa
+    this.logger.info('Despesa criada', {
+      id: saved.id,
+      fornecedor: saved.supplierName,
+      valor: saved.amount,
+      tipo: saved.type,
+      metodo: saved.paymentMethod,
+    });
+
+    return saved;
   }
 
   async updateExpense(id: number, dto: UpdateExpenseDto) {
@@ -80,32 +99,42 @@ export class FinanceService {
       cpfCnpj: dto.cpfCnpj ?? null,
       supplierId: dto.supplierId ?? null,
     };
+
     if (dto.amount !== undefined) patch.amount = this.toNum(dto.amount as any);
     if (dto.discount !== undefined) patch.discount = this.toNum(dto.discount as any);
     if (dto.paidAmount !== undefined) patch.paidAmount = this.toNum(dto.paidAmount as any);
 
     await this.expenses.update({ id }, patch);
     const updated = await this.expenses.findOne({ where: { id } });
+
     if (!updated) throw new BadRequestException('Expense not found.');
+
+    // ✅ Loga atualização
+    this.logger.warn('Despesa atualizada', {
+      id,
+      fornecedor: updated.supplierName,
+      novoValor: updated.amount,
+      metodo: updated.paymentMethod,
+    });
+
     return updated;
   }
 
   async deleteExpense(id: number) {
     await this.expenses.delete({ id });
+    // ✅ Loga exclusão
+    this.logger.warn('Despesa removida', { id });
     return { ok: true };
   }
 
   // -------- RECEITAS --------
 
-  // Receita total por dia (orders com status 'Entregue') no mês
   async monthlyRevenue(month: string) {
     const { start, end, daysInMonth } = this.normalizeMonthRange(month);
 
-    const rows = await this.orders.createQueryBuilder('o')
-      .select([
-        "strftime('%d', o.criadoEm) AS day",
-        'SUM(o.valor) AS total',
-      ])
+    const rows = await this.orders
+      .createQueryBuilder('o')
+      .select(["strftime('%d', o.criadoEm) AS day", 'SUM(o.valor) AS total'])
       .where('o.status = :st', { st: 'Entregue' })
       .andWhere('o.criadoEm >= :start AND o.criadoEm < :end', { start, end })
       .groupBy("strftime('%d', o.criadoEm)")
@@ -123,6 +152,10 @@ export class FinanceService {
     }));
 
     const revenueTotal = series.reduce((s, r) => s + r.value, 0);
+
+    // ✅ Loga cálculo de receita
+    this.logger.info('Receita mensal calculada', { month, revenueTotal });
+
     return { series, revenueTotal };
   }
 
@@ -146,9 +179,20 @@ export class FinanceService {
       const key = e.paymentMethod ?? 'Outros';
       paymentsMap.set(key, (paymentsMap.get(key) ?? 0) + this.n(e.paidAmount));
     }
-    const payments = Array.from(paymentsMap.entries()).map(([name, value]) => ({ name, value }));
+
+    const payments = Array.from(paymentsMap.entries()).map(([name, value]) => ({
+      name,
+      value,
+    }));
 
     const { revenueTotal } = await this.monthlyRevenue(`${y}-${mm}`);
+
+    // ✅ Loga geração do resumo
+    this.logger.info('Resumo financeiro gerado', {
+      month,
+      revenueTotal,
+      expensesTotal,
+    });
 
     return { revenueTotal, expensesTotal, payments };
   }

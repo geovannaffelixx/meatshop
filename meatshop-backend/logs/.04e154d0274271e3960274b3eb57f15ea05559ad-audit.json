@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "C:\\Users\\mdoLo\\Documents\\GitHub\\Projeto-Integrador-MeatShop\\meatshop-backend\\logs\\.04e154d0274271e3960274b3eb57f15ea05559ad-audit.json",
+    "files": [
+        {
+            "date": 1760363004054,
+            "name": "C:\\Users\\mdoLo\\Documents\\GitHub\\Projeto-Integrador-MeatShop\\meatshop-backend\\logs\\app-2025-10-13.log",
+            "hash": "3ebca8c5945f35d33d093a16ad4958bbb9d3c288ce5c7af90c040bf40090f6ea"
+        }
+    ],
+    "hashType": "sha256"
+}

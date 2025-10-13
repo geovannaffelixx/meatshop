@@ -17,8 +17,11 @@ import { DashboardController } from './dashboard.controller';
 // Módulos
 import { MetricsModule } from './metrics/metrics.module';
 import { FinanceModule } from './finance/finance.module';
+import { LoggerModule } from './common/logger/logger.module';
+
 @Module({
   imports: [
+    LoggerModule,
     MetricsModule,
     TypeOrmModule.forRoot({
       type: 'sqlite',
