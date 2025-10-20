@@ -19,14 +19,17 @@ export function createAppLogger() {
     winston.format.timestamp({ format: 'HH:mm:ss' }),
     winston.format.printf(({ level, message, timestamp, ...meta }) => {
       const metaStr = Object.keys(meta).length ? JSON.stringify(meta) : '';
-      return colorizer.colorize(level, `[${timestamp}] ${level.toUpperCase()}: ${message} ${metaStr}`);
-    })
+      return colorizer.colorize(
+        level,
+        `[${timestamp}] ${level.toUpperCase()}: ${message} ${metaStr}`,
+      );
+    }),
   );
 
   const fileFormat = winston.format.combine(
     winston.format.timestamp(),
     winston.format.errors({ stack: true }),
-    winston.format.json()
+    winston.format.json(),
   );
 
   return winston.createLogger({

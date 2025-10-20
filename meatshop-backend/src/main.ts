@@ -1,8 +1,9 @@
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { NestFactory } from '@nestjs/core';
-import { NestExpressApplication } from '@nestjs/platform-express';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import cookieParser from 'cookie-parser';
 import {
   createAppLogger,
   AppLogger,
@@ -17,7 +18,9 @@ async function bootstrap() {
   const winstonLogger = createAppLogger();
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  
+
+  app.use(cookieParser());
+
   const appLogger = new AppLogger(winstonLogger);
 
   let metricsService: MetricsService | null = null;
@@ -48,9 +51,12 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: [/^http:\/\/localhost:\d+$/, /^http:\/\/127\.0\.0\.1:\d+$/],
+    origin: process.env.FRONTEND_URL
+      ? [process.env.FRONTEND_URL]
+      : [/^http:\/\/localhost:\d+$/, /^http:\/\/127\.0\.0\.1:\d+$/],
     credentials: true,
   });
+  appLogger.info('CORS e CookieParser configurados com sucesso');
 
   const port = Number(process.env.PORT ?? 3001);
   await app.listen(port);
@@ -62,4 +68,4 @@ async function bootstrap() {
     startupTimeMs,
   });
 }
-bootstrap();
+void bootstrap();

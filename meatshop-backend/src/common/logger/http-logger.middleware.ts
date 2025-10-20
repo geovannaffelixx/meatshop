@@ -29,9 +29,8 @@ export class HttpLoggerMiddleware implements NestMiddleware {
       });
 
       try {
-        const metricsService = (req.app.get('MetricsService') as any);
+        const metricsService = req.app.get('MetricsService') as any;
         metricsService?.incrementHttpRequests?.();
-
       } catch (err: any) {
         logger.warn('Falha ao incrementar métricas', { error: err?.message });
       }

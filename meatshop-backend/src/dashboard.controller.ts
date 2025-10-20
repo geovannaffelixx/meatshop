@@ -11,11 +11,13 @@ export class DashboardController {
   async getDashboard() {
     const count = await this.orders.count();
     if (count === 0) {
-      const seed = Array.from({ length: 12 }).map((_, i) => this.orders.create({
-        cliente: `Cliente ${i + 1}`,
-        status: i % 3 === 0 ? 'Entregue' : i % 3 === 1 ? 'Pendente' : 'Cancelado',
-        valor: 50 + i * 10,
-      }));
+      const seed = Array.from({ length: 12 }).map((_, i) =>
+        this.orders.create({
+          cliente: `Cliente ${i + 1}`,
+          status: i % 3 === 0 ? 'Entregue' : i % 3 === 1 ? 'Pendente' : 'Cancelado',
+          valor: 50 + i * 10,
+        }),
+      );
       await this.orders.save(seed);
     }
     const recent = await this.orders.find({ order: { id: 'DESC' }, take: 10 });
@@ -27,7 +29,13 @@ export class DashboardController {
     };
     return {
       vendasSemana,
-      pedidosRecentes: recent.map(o => ({ id: o.id, cliente: o.cliente, status: o.status, valor: o.valor, criadoEm: o.criadoEm })),
+      pedidosRecentes: recent.map((o) => ({
+        id: o.id,
+        cliente: o.cliente,
+        status: o.status,
+        valor: o.valor,
+        criadoEm: o.criadoEm,
+      })),
       porStatus,
     };
   }

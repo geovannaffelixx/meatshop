@@ -1,22 +1,48 @@
 services:
+  # --- Banco de Dados PostgreSQL ---
+  db:
+    image: postgres:16
+    container_name: meatshop-postgres
+    environment:
+      - POSTGRES_DB=meatshop
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - TZ=America/Sao_Paulo
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./meatshop-backend/db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # --- Backend NestJS ---
   backend:
     build: ./meatshop-backend
     container_name: meatshop-backend
+    depends_on:
+      - db
     ports:
       - "3001:3001"
     environment:
       - NODE_ENV=production
       - PORT=3001
-      - DB_TYPE=sqlite
-      - DB_PATH=./data/meatshop.db
-      - DB_SYNCHRONIZE=true
+
+      - DB_TYPE=postgres
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE=meatshop
+      - DB_SYNCHRONIZE=false
+
       - LOG_LEVEL=info
       - LOG_DIR=logs
       - LOG_MAX_DAYS=14d
       - TZ=America/Sao_Paulo
+
     volumes:
-      - ./meatshop-backend/data:/usr/src/app/data
-      - ./meatshop-backend/logs:/usr/src/app/logs   
+      - ./meatshop-backend/logs:/usr/src/app/logs
+      - ./meatshop-backend/migrations:/usr/src/app/migrations
+
     restart: unless-stopped
 
   frontend:

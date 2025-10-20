@@ -1,15 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import {
-  collectDefaultMetrics,
-  Registry,
-  Counter,
-  Histogram,
-} from 'prom-client';
+import { collectDefaultMetrics, Registry, Counter, Histogram } from 'prom-client';
 
 @Injectable()
 export class MetricsService {
   private readonly register: Registry;
-  
+
   private readonly httpRequestsTotal: Counter;
 
   private readonly httpRequestDuration: Histogram;
@@ -35,24 +30,12 @@ export class MetricsService {
     this.register.registerMetric(this.httpRequestDuration);
   }
 
-  incrementHttpRequests(
-    method = 'GET',
-    route = 'unknown',
-    statusCode = 200,
-  ): void {
+  incrementHttpRequests(method = 'GET', route = 'unknown', statusCode = 200): void {
     this.httpRequestsTotal.inc({ method, route, status_code: statusCode });
   }
 
-  observeHttpLatency(
-    method: string,
-    route: string,
-    durationMs: number,
-    statusCode: number,
-  ): void {
-    this.httpRequestDuration.observe(
-      { method, route, status_code: statusCode },
-      durationMs,
-    );
+  observeHttpLatency(method: string, route: string, durationMs: number, statusCode: number): void {
+    this.httpRequestDuration.observe({ method, route, status_code: statusCode }, durationMs);
   }
 
   async getMetrics(): Promise<string> {

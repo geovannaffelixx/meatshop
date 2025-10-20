@@ -20,8 +20,7 @@ export class FinanceService {
   ) {}
 
   private normalizeMonthRange(month?: string) {
-    if (!month)
-      throw new BadRequestException('Query param "month" (YYYY-MM) is required.');
+    if (!month) throw new BadRequestException('Query param "month" (YYYY-MM) is required.');
     if (!/^\d{4}-\d{2}$/.test(month))
       throw new BadRequestException('Invalid "month" format. Use YYYY-MM.');
     const [y, m] = month.split('-').map(Number);
