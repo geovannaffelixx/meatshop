@@ -6,7 +6,6 @@ import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 import { Response, Request } from 'express';
 import { User } from '../entities/user.entity';
-import { PgUser } from '../entities/pg-user.entity';
 import { RefreshToken } from '../entities/refresh-token.entity';
 
 @Injectable()
@@ -18,7 +17,6 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
     @InjectRepository(User) private readonly usersRepo: Repository<User>,
-    @InjectRepository(PgUser) private readonly pgUsersRepo: Repository<PgUser>,
     @InjectRepository(RefreshToken) private readonly refreshRepo: Repository<RefreshToken>,
   ) {}
 
@@ -26,7 +24,7 @@ export class AuthService {
     return {
       httpOnly: true,
       secure: this.config.get('COOKIE_SECURE') === 'true',
-      sameSite: (this.config.get('COOKIE_SAMESITE') as any) || 'strict',
+      sameSite: (this.config.get('COOKIE_SAMESITE') as any) || 'lax',
       path: '/',
       maxAge,
     };
@@ -50,16 +48,8 @@ export class AuthService {
     return this.jwt.sign(payload, options as any);
   }
 
-  private pickRepo() {
-    return (this.config.get('DB_TYPE') || 'sqlite') === 'postgres'
-      ? this.pgUsersRepo
-      : this.usersRepo;
-  }
-
   async validateUser(usuario: string, senha: string) {
-    const repo = this.pickRepo();
-
-    const user: any = await repo.findOne({
+    const user: any = await this.usersRepo.findOne({
       where: [{ usuario }, { email: usuario }],
     });
     if (!user) throw new UnauthorizedException('Usuário não encontrado');
@@ -75,7 +65,7 @@ export class AuthService {
 
   async login(usuario: string, senha: string, res: Response) {
     const user = await this.validateUser(usuario, senha);
-    const payload = { sub: user.id, email: user.email, role: user.role_global || 'USER' };
+    const payload = { sub: user.id, email: user.email, role: user.roleGlobal || 'USER' };
 
     const accessToken = await this.generateAccessToken(payload);
     const refreshToken = await this.generateRefreshToken({ sub: user.id });
@@ -116,7 +106,7 @@ export class AuthService {
     stored.revokedAt = new Date();
     await this.refreshRepo.save(stored);
 
-    const user = stored.user || stored.pgUser;
+    const user = stored.user;
     const newAccess = await this.generateAccessToken({
       sub: user!.id,
       email: user!.email,

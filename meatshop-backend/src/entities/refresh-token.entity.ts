@@ -7,7 +7,6 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { User } from './user.entity';
-import { PgUser } from './pg-user.entity';
 
 @Entity('refresh_tokens')
 export class RefreshToken {
@@ -23,9 +22,6 @@ export class RefreshToken {
 
   @ManyToOne(() => User, { eager: true, nullable: true, onDelete: 'CASCADE' })
   user?: User | null;
-
-  @ManyToOne(() => PgUser, { eager: true, nullable: true, onDelete: 'CASCADE' })
-  pgUser?: PgUser | null;
 
   @Column({ type: 'timestamp' })
   expiresAt: Date;

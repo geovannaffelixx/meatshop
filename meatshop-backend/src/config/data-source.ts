@@ -7,7 +7,6 @@ import { User } from '../entities/user.entity';
 import { Order } from '../entities/order.entity';
 import { Expense } from '../entities/expense.entity';
 import { RefreshToken } from '../entities/refresh-token.entity';
-import { PgUser } from '../entities/pg-user.entity';
 
 const type = process.env.DB_TYPE === 'postgres' ? 'postgres' : 'sqlite';
 
@@ -21,7 +20,7 @@ export default new DataSource({
     type === 'postgres'
       ? process.env.DB_DATABASE
       : process.env.DB_PATH || 'data/meatshop.db',
-  entities: [User, PgUser, Order, Expense, RefreshToken],
+  entities: [User, Order, Expense, RefreshToken],
   migrations: ['src/migrations/*.{ts,js}'],
   synchronize: false,
   logging: process.env.NODE_ENV !== 'production',

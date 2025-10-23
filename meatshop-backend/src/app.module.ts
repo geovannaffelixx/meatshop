@@ -9,7 +9,6 @@ import { User } from './entities/user.entity';
 import { Order } from './entities/order.entity';
 import { Expense } from './entities/expense.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
-import { PgUser } from './entities/pg-user.entity';
 
 // Controllers
 import { AuthController } from './auth/auth.controller';
@@ -43,7 +42,7 @@ import { AuthModule } from './auth/auth.module';
             dbType === 'postgres'
               ? config.get<string>('DB_DATABASE')
               : config.get<string>('DB_PATH') || 'data/meatshop.db',
-          entities: [User, PgUser, Order, Expense, RefreshToken],
+          entities: [User, Order, Expense, RefreshToken],
 
           autoLoadEntities: true,
           synchronize: config.get<string>('DB_SYNCHRONIZE') === 'true',

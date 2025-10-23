@@ -30,7 +30,6 @@ export class Expense {
   @Column('decimal', { precision: 10, scale: 2 })
   paidAmount: number;
 
-  // YYYY-MM-DD (opcionais)
   @Column({ type: 'text', nullable: true })
   postedAt?: string | null;
 

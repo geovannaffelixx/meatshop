@@ -9,7 +9,6 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { User } from '../entities/user.entity';
-import { PgUser } from '../entities/pg-user.entity';
 import { RefreshToken } from '../entities/refresh-token.entity';
 
 /**
@@ -18,9 +17,9 @@ import { RefreshToken } from '../entities/refresh-token.entity';
  */
 @Module({
   imports: [
-    ConfigModule, // lê variáveis do .env
-    PassportModule, // integra o Passport (autenticação)
-    TypeOrmModule.forFeature([User, PgUser, RefreshToken]), // entidades usadas
+    ConfigModule,
+    PassportModule,
+    TypeOrmModule.forFeature([User, RefreshToken]),
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService): JwtModuleOptions => ({
