@@ -98,7 +98,7 @@ jobs:
         working-directory: meatshop-backend
         run: |
           npm run build
-          npx typeorm migration:run -d dist/data-source.js
+          npx typeorm migration:run -d dist/config/data-source.js
 
       - name: Backend - Tests (coverage)
         working-directory: meatshop-backend
