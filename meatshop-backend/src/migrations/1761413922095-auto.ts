@@ -1,10 +1,10 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class Auto1761413922095 implements MigrationInterface {
-    name = 'Auto1761413922095'
+  name = 'Auto1761413922095';
 
-    public async up(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`
+  async up(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`
             CREATE TABLE "users" (
                 "id" SERIAL NOT NULL,
                 "nome_fantasia" character varying(120) NOT NULL,
@@ -35,7 +35,7 @@ export class Auto1761413922095 implements MigrationInterface {
                 CONSTRAINT "PK_a3ffb1c0c8416b9fc6f907b7433" PRIMARY KEY ("id")
             )
         `);
-        await queryRunner.query(`
+    await queryRunner.query(`
             CREATE TABLE "orders" (
                 "id" SERIAL NOT NULL,
                 "cliente" character varying NOT NULL,
@@ -45,7 +45,7 @@ export class Auto1761413922095 implements MigrationInterface {
                 CONSTRAINT "PK_710e2d4957aa5878dfe94e4ac2f" PRIMARY KEY ("id")
             )
         `);
-        await queryRunner.query(`
+    await queryRunner.query(`
             CREATE TABLE "expenses" (
                 "id" SERIAL NOT NULL,
                 "supplierName" character varying NOT NULL,
@@ -64,10 +64,10 @@ export class Auto1761413922095 implements MigrationInterface {
                 CONSTRAINT "PK_94c3ceb17e3140abc9282c20610" PRIMARY KEY ("id")
             )
         `);
-        await queryRunner.query(`
+    await queryRunner.query(`
             CREATE INDEX "IDX_d56aee4d1775f4caeba629dece" ON "expenses" ("paidAt")
         `);
-        await queryRunner.query(`
+    await queryRunner.query(`
             CREATE TABLE "refresh_tokens" (
                 "id" SERIAL NOT NULL,
                 "token" text NOT NULL,
@@ -79,37 +79,36 @@ export class Auto1761413922095 implements MigrationInterface {
                 CONSTRAINT "PK_7d8bee0204106019488c4c50ffa" PRIMARY KEY ("id")
             )
         `);
-        await queryRunner.query(`
+    await queryRunner.query(`
             CREATE UNIQUE INDEX "IDX_4542dd2f38a61354a040ba9fd5" ON "refresh_tokens" ("token")
         `);
-        await queryRunner.query(`
+    await queryRunner.query(`
             ALTER TABLE "refresh_tokens"
             ADD CONSTRAINT "FK_610102b60fea1455310ccd299de" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION
         `);
-    }
+  }
 
-    public async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`
+  async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`
             ALTER TABLE "refresh_tokens" DROP CONSTRAINT "FK_610102b60fea1455310ccd299de"
         `);
-        await queryRunner.query(`
+    await queryRunner.query(`
             DROP INDEX "public"."IDX_4542dd2f38a61354a040ba9fd5"
         `);
-        await queryRunner.query(`
+    await queryRunner.query(`
             DROP TABLE "refresh_tokens"
         `);
-        await queryRunner.query(`
+    await queryRunner.query(`
             DROP INDEX "public"."IDX_d56aee4d1775f4caeba629dece"
         `);
-        await queryRunner.query(`
+    await queryRunner.query(`
             DROP TABLE "expenses"
         `);
-        await queryRunner.query(`
+    await queryRunner.query(`
             DROP TABLE "orders"
         `);
-        await queryRunner.query(`
+    await queryRunner.query(`
             DROP TABLE "users"
         `);
-    }
-
+  }
 }
