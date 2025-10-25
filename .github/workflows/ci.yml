@@ -19,6 +19,9 @@ env:
   DB_PASSWORD: meatshop_pass
   DB_DATABASE: meatshop
   DB_SYNCHRONIZE: "false"
+  JWT_SECRET: ${{ secrets.JWT_SECRET }}
+  REFRESH_SECRET: ${{ secrets.REFRESH_SECRET }}
+  COOKIE_SECRET: ${{ secrets.COOKIE_SECRET }}
 
 jobs:
   build-test-and-integration:
@@ -51,10 +54,34 @@ jobs:
           cache-dependency-path: |
             meatshop-backend/package-lock.json
             meatshop-main/package-lock.json
+      
+      - name: Garantir chaves JWT disponíveis
+        run: |
+          if [ -z "$JWT_SECRET" ]; then
+            echo "⚠️ JWT_SECRET ausente — gerando chave temporária..."
+            echo "JWT_SECRET=$(openssl rand -hex 32)" >> $GITHUB_ENV
+          fi
+          if [ -z "$REFRESH_SECRET" ]; then
+            echo "⚠️ REFRESH_SECRET ausente — gerando chave temporária..."
+            echo "REFRESH_SECRET=$(openssl rand -hex 32)" >> $GITHUB_ENV
+          fi
+          if [ -z "$COOKIE_SECRET" ]; then
+            echo "⚠️ COOKIE_SECRET ausente — gerando chave temporária..."
+            echo "COOKIE_SECRET=$(openssl rand -hex 32)" >> $GITHUB_ENV
+          fi
 
       # =========================
       # BACKEND
       # =========================
+      - name: Verificar variáveis obrigatórias
+        run: |
+          for var in JWT_SECRET REFRESH_SECRET; do
+            if [ -z "${!var}" ]; then
+              echo "❌ Erro: variável $var não definida!"
+              exit 1
+            fi
+          done
+
       - name: Backend - Install
         working-directory: meatshop-backend
         run: npm ci

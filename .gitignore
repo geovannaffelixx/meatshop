@@ -29,7 +29,7 @@ logs/*.log
 *.log
 
 # ===================================
-# Banco de Dados (SQLite)
+# Banco de Dados
 # ===================================
 meatshop-backend/db-data/
 
@@ -39,6 +39,7 @@ meatshop-backend/db-data/
 .env
 .env.local
 .env.*.local
+.env.docker
 
 # ===================================
 # Docker

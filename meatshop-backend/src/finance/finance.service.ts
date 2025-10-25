@@ -75,7 +75,6 @@ export class FinanceService {
 
     const saved = await this.expenses.save(ent);
 
-    // ✅ Loga a criação da despesa
     this.logger.info('Despesa criada', {
       id: saved.id,
       fornecedor: saved.supplierName,
@@ -108,7 +107,6 @@ export class FinanceService {
 
     if (!updated) throw new BadRequestException('Expense not found.');
 
-    // ✅ Loga atualização
     this.logger.warn('Despesa atualizada', {
       id,
       fornecedor: updated.supplierName,
@@ -121,7 +119,6 @@ export class FinanceService {
 
   async deleteExpense(id: number) {
     await this.expenses.delete({ id });
-    // ✅ Loga exclusão
     this.logger.warn('Despesa removida', { id });
     return { ok: true };
   }
@@ -133,10 +130,10 @@ export class FinanceService {
 
     const rows = await this.orders
       .createQueryBuilder('o')
-      .select(["strftime('%d', o.criadoEm) AS day", 'SUM(o.valor) AS total'])
+      .select(["TO_CHAR(o.criadoEm, 'DD') AS day", 'SUM(o.valor) AS total'])
       .where('o.status = :st', { st: 'Entregue' })
       .andWhere('o.criadoEm >= :start AND o.criadoEm < :end', { start, end })
-      .groupBy("strftime('%d', o.criadoEm)")
+      .groupBy("TO_CHAR(o.criadoEm, 'DD')")
       .getRawMany<{ day: string; total: string }>();
 
     const map = new Map<number, number>();
@@ -152,7 +149,7 @@ export class FinanceService {
 
     const revenueTotal = series.reduce((s, r) => s + r.value, 0);
 
-    // ✅ Loga cálculo de receita
+    // Loga cálculo de receita
     this.logger.info('Receita mensal calculada', { month, revenueTotal });
 
     return { series, revenueTotal };
@@ -186,7 +183,7 @@ export class FinanceService {
 
     const { revenueTotal } = await this.monthlyRevenue(`${y}-${mm}`);
 
-    // ✅ Loga geração do resumo
+    // Loga geração do resumo
     this.logger.info('Resumo financeiro gerado', {
       month,
       revenueTotal,

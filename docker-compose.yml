@@ -11,9 +11,9 @@ services:
       POSTGRES_PASSWORD: meatshop_pass
       TZ: America/Sao_Paulo
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
-      - ./meatshop-backend/db-data:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U meatshop_user -d meatshop"]
       interval: 10s
@@ -45,8 +45,8 @@ services:
       DB_TYPE: postgres
       DB_HOST: db
       DB_PORT: 5432
-      DB_USERNAME: postgres
-      DB_PASSWORD: postgres
+      DB_USERNAME: meatshop_user
+      DB_PASSWORD: meatshop_pass
       DB_DATABASE: meatshop
       DB_SYNCHRONIZE: "false"
       DB_SSL: "false"
@@ -63,12 +63,37 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    # Limita recursos (evita travamentos em pipelines)
     deploy:
       resources:
         limits:
           memory: 512M
           cpus: "0.75"
+
+  # ==========================================
+  # Migrator - executa migrations automaticamente
+  # ==========================================
+  migrator:
+    build:
+      context: ./meatshop-backend
+      dockerfile: Dockerfile
+    container_name: meatshop-migrator
+    command: >
+      sh -c "npm run migration:run:prod &&
+             echo '✅ Migrations aplicadas com sucesso!'"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DB_TYPE: postgres
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USERNAME: meatshop_user
+      DB_PASSWORD: meatshop_pass
+      DB_DATABASE: meatshop
+    volumes:
+      - ./meatshop-backend/migrations:/usr/src/app/migrations
+    restart: "no"
 
   # ==========================================
   # Frontend - Next.js
