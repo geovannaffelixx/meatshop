@@ -31,9 +31,7 @@ logs/*.log
 # ===================================
 # Banco de Dados (SQLite)
 # ===================================
-data/*.db
-data/*.sqlite
-data/*.db-journal
+meatshop-backend/db-data/
 
 # ===================================
 # Ambiente
