@@ -3,16 +3,21 @@ import { IsIn, IsNotEmpty, IsOptional, IsString, Length, Matches } from 'class-v
 import { PaymentMethod } from '../../entities/expense.entity';
 
 export class CreateExpenseDto {
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   supplierId?: string;
 
-  @IsOptional() @IsString() @Length(11, 18)
+  @IsOptional()
+  @IsString()
+  @Length(11, 18)
   cpfCnpj?: string;
 
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   supplierName!: string;
 
-  @IsString() @IsIn(['Compras', 'Serviços', 'Outros'])
+  @IsString()
+  @IsIn(['Compras', 'Serviços', 'Outros'])
   type!: 'Compras' | 'Serviços' | 'Outros';
 
   // Aceita inteiros e decimais com ponto OU vírgula (ex.: "1800", "1800.00", "1800,00")
@@ -22,22 +27,30 @@ export class CreateExpenseDto {
 
   @IsOptional()
   @IsString()
-  @Matches(/^\d+(?:[.,]\d{1,2})?$/, { message: 'discount deve ser número com até 2 casas decimais' })
+  @Matches(/^\d+(?:[.,]\d{1,2})?$/, {
+    message: 'discount deve ser número com até 2 casas decimais',
+  })
   discount?: string;
 
   @IsString()
-  @Matches(/^\d+(?:[.,]\d{1,2})?$/, { message: 'paidAmount deve ser número com até 2 casas decimais' })
+  @Matches(/^\d+(?:[.,]\d{1,2})?$/, {
+    message: 'paidAmount deve ser número com até 2 casas decimais',
+  })
   paidAmount!: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   postedAt?: string; // YYYY-MM-DD
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   paidAt?: string; // YYYY-MM-DD
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   notes?: string;
 
-  @IsString() @IsIn(['Pix', 'Crédito', 'Débito', 'Dinheiro', 'Boleto'])
+  @IsString()
+  @IsIn(['Pix', 'Crédito', 'Débito', 'Dinheiro', 'Boleto'])
   paymentMethod!: PaymentMethod;
 }

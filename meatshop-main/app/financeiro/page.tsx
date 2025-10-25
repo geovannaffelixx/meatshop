@@ -306,11 +306,12 @@ export default function FinanceiroPage() {
     }
   }
 
-  // Gráfico de despesas por dia (baseado em dataPagamento)
+  // Gráfico de despesas por dia
   const despesasPorDiaMap = new Map<number, number>()
   expenses.forEach(e => {
-    if (e.dataPagamento) {
-      const dia = new Date(e.dataPagamento).getDate()
+    const rawDate = e.dataPagamento || e.dataLancamento
+    if (rawDate) {
+      const dia = Number(String(rawDate).slice(8, 10))
       const current = despesasPorDiaMap.get(dia) ?? 0
       despesasPorDiaMap.set(dia, current + e.valorPago)
     }

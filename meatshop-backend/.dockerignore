@@ -1,26 +1,55 @@
-# Dependências locais
+# ======================================
+# DEPENDÊNCIAS LOCAIS
+# ======================================
 node_modules
-npm-debug.log
-yarn-error.log
-pnpm-debug.log
+.npm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-# Builds e relatórios
+# ======================================
+# BUILDS E RELATÓRIOS
+# ======================================
+dist
 coverage
+build
+tmp
+.cache
 
-# Logs e banco
+# ======================================
+# LOGS E BANCOS LOCAIS
+# ======================================
 logs
 *.log
-data/*.db
-data/*.sqlite
-data/*.db-journal
+data/
+db-data/
+*.sqlite
+*.db
+*.db-journal
 
-# Arquivos Git
+# ======================================
+# VARIÁVEIS DE AMBIENTE E CONFIGS
+# ======================================
+.env
+.env.*
+.env.local
+.env.development
+.env.test
+.env.production
+
+# ======================================
+# ARQUIVOS GIT E CONTROLE DE VERSÃO
+# ======================================
 .git
 .gitignore
 .gitattributes
 
-# Sistema/Editor
+# ======================================
+# SISTEMA / EDITOR / SO
+# ======================================
 .DS_Store
 Thumbs.db
 .vscode
 .idea
+*.swp

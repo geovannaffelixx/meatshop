@@ -15,7 +15,11 @@
     "sourceMap": true,
     "outDir": "./dist",
     "rootDir": "./src",
-    "baseUrl": "./",
+
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["*"]
+    },
 
     "strict": true,
     "strictPropertyInitialization": false,
