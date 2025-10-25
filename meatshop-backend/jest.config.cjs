@@ -5,10 +5,9 @@ module.exports = {
     '**/test/**/*.e2e-spec.ts',
     '**/*.spec.ts',
   ],
-  transform: {
-    '^.+\\.(t|j)s$': 'ts-jest',
-  },
+  transform: { '^.+\\.(t|j)s$': 'ts-jest' },
   collectCoverageFrom: ['src/**/*.(t|j)s'],
   coverageDirectory: 'coverage',
   testEnvironment: 'node',
+  transformIgnorePatterns: ['<rootDir>/dist/'],
 };

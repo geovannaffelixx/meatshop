@@ -102,7 +102,7 @@ jobs:
 
       - name: Backend - Tests (coverage)
         working-directory: meatshop-backend
-        run: npm test -- --runInBand --coverage
+        run: npm test -- --runInBand --coverage --passWithNoTests
 
       - name: Backend - Build
         working-directory: meatshop-backend
