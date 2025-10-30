@@ -61,25 +61,6 @@ export default function Page() {
           <h2 className="text-2xl font-bold text-center text-gray-800">Bem-vindo</h2>
 
           <form onSubmit={handleSubmit} className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">CNPJ</label>
-              <Input
-                placeholder="Informe o CNPJ"
-                maxLength={18}
-                value={cnpj}
-                onInput={(e) => {
-                  let value = (e.target as HTMLInputElement).value;
-                  value = value.replace(/\D/g, "");
-                  value = value
-                    .replace(/^(\d{2})(\d)/, "$1.$2")
-                    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
-                    .replace(/\.(\d{3})(\d)/, ".$1/$2")
-                    .replace(/(\d{4})(\d)/, "$1-$2");
-                  (e.target as HTMLInputElement).value = value;
-                  setCnpj(value);
-                }}
-              />
-            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700">Usuário</label>
