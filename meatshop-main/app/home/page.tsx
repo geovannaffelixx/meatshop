@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import PadraoPage from "@/components/layoutPadrao"
 import Link from "next/link"
@@ -28,6 +28,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart"
 
+// AQUI ENTRA O BACKEND: Dados do gráfico de vendas (esses dados devem vir do backend)
 const chartData = [
   { day: "Seg", vendas: 2000 },
   { day: "Ter", vendas: 1800 },
@@ -38,6 +39,7 @@ const chartData = [
   { day: "Dom", vendas: 3210 },
 ]
 
+// AQUI ENTRA O BACKEND: Configuração do gráfico de vendas (aqui também seria configurado no backend)
 const chartConfig = {
   vendas: {
     label: "Vendas",
@@ -46,6 +48,7 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export default function Page() {
+  // AQUI ENTRA O BACKEND: Lista de pedidos, que deve vir do backend
   const pedidos = Array(20).fill({
     id: "#12345",
     cliente: "Nome do cliente",
