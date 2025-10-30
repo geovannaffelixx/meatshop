@@ -8,6 +8,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Image as ImageIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
+function LabelObrigatorio({ label, required = false }: { label: string; required?: boolean }) {
+  return (
+    <label className="font-medium text-sm text-gray-700">
+      {label}
+      {required && <span className="text-red-500 ml-1">*</span>}
+    </label>
+  );
+}
+
+function LabelNaoObrigatorio({ label }: { label: string }) {
+  return (
+    <label className="font-medium text-sm text-gray-700">
+      {label}
+    </label>
+  );
+}
+
 interface FormData {
   nomeFantasia: string;
   razaoSocial: string;
@@ -211,32 +228,37 @@ export default function CadastroAcougue() {
 
             <div>
               <h2 className="font-semibold mb-2">Dados do Perfil</h2>
-              <div className="grid gap-3">
-                <Input name="nomeFantasia" placeholder="Nome Fantasia" onChange={handleChange} className={inputClass("nomeFantasia")} />
-                <Input name="razaoSocial" placeholder="Razão Social" onChange={handleChange} className={inputClass("razaoSocial")} />
+              <div className="grid gap-0.5">
+                <LabelObrigatorio label="Nome Fantasia" required />
+                <Input name="nomeFantasia" placeholder="" onChange={handleChange} className={inputClass("nomeFantasia")} />
+                <LabelObrigatorio label="Razão Social" required />
+                <Input name="razaoSocial" placeholder="" onChange={handleChange} className={inputClass("razaoSocial")} />
+                <LabelObrigatorio label="CNPJ" required />
                 <Input
                   name="cnpj"
-                  placeholder="CNPJ"
+                  placeholder=""
                   value={form.cnpj}
                   onInput={(e) => setForm({ ...form, cnpj: maskCNPJ(e.currentTarget.value) })}
                   className={inputClass("cnpj")}
                 />
+                <LabelNaoObrigatorio label="Telefone"/>
                 <Input
                   name="telefone"
-                  placeholder="Telefone"
+                  placeholder=""
                   value={form.telefone}
                   onInput={(e) => setForm({ ...form, telefone: maskTelefone(e.currentTarget.value) })}
                   className={inputClass("telefone")}
                 />
+                <LabelObrigatorio label="Celular" required />
                 <Input
                   name="celular"
-                  placeholder="Celular"
+                  placeholder=""
                   value={form.celular}
                   onInput={(e) => setForm({ ...form, celular: maskCelular(e.currentTarget.value) })}
                   className={inputClass("celular")}
                 />
 
-                <label className="flex items-center gap-2 cursor-pointer w-fit px-4 py-2 border rounded-lg bg-gray-50 hover:bg-gray-100">
+                <label className="flex items-center gap-2 cursor-pointer w-fit px-4 py-2 border rounded-lg bg-gray-50 hover:bg-gray-100 mt-2">
                   <ImageIcon className="w-5 h-5 text-gray-500" />
                   <span className="text-sm text-gray-600">Selecionar logo</span>
                   <input
@@ -252,19 +274,22 @@ export default function CadastroAcougue() {
 
             <div>
               <h2 className="font-semibold mb-2">Endereço</h2>
-              <div className="grid gap-3">
+              <LabelObrigatorio label="CEP" required />
+              <div className="grid gap-1">
                 <Input
-                  name="cep"
-                  placeholder="CEP"
+                  name="cep" 
+                  placeholder=""
                   value={form.cep}
                   onInput={(e) => setForm({ ...form, cep: maskCEP(e.currentTarget.value) })}
                   className={inputClass("cep")}
                 />
-                <Input name="logradouro" placeholder="Logradouro" onChange={handleChange} className={inputClass("logradouro")} />
+                <LabelObrigatorio label="Logradouro" required />
+                <Input name="logradouro" placeholder="" onChange={handleChange} className={inputClass("logradouro")} />
+                <LabelObrigatorio label="Número" required />
                 <div className="flex items-center gap-2">
                   <Input
                     name="numero"
-                    placeholder="N°"
+                    placeholder=""
                     value={form.numero}
                     onChange={handleNumeroChange}
                     disabled={semNumero}
@@ -275,21 +300,30 @@ export default function CadastroAcougue() {
                     S/N
                   </label>
                 </div>
-                <Input name="complemento" placeholder="Complemento" onChange={handleChange} className={inputClass("complemento")} />
-                <Input name="bairro" placeholder="Bairro" onChange={handleChange} className={inputClass("bairro")} />
-                <Input name="cidade" placeholder="Cidade" onChange={handleChange} className={inputClass("cidade")} />
-                <Input name="estado" placeholder="Estado" onChange={handleChange} className={inputClass("estado")} />
-                <Input name="pais" placeholder="País" onChange={handleChange} className={inputClass("pais")} />
+                <LabelNaoObrigatorio label="Complemento"/>
+                <Input name="complemento" placeholder="" onChange={handleChange} className={inputClass("complemento")} />
+                <LabelObrigatorio label="Bairro" required />
+                <Input name="bairro" placeholder="" onChange={handleChange} className={inputClass("bairro")} />
+                <LabelObrigatorio label="Cidade" required />
+                <Input name="cidade" placeholder="" onChange={handleChange} className={inputClass("cidade")} />
+                <LabelObrigatorio label="Estado" required />
+                <Input name="estado" placeholder="Estdo" onChange={handleChange} className={inputClass("estado")} />
+                <LabelObrigatorio label="País" required />
+                <Input name="pais" placeholder="" onChange={handleChange} className={inputClass("pais")} />
               </div>
             </div>
 
             <div>
               <h2 className="font-semibold mb-2">Dados de Login</h2>
               <div className="grid gap-1">
-                <Input name="email" placeholder="E-mail" onChange={handleChange} className={inputClass("email")} />
-                <Input name="usuario" placeholder="Usuário" onChange={handleChange} className={inputClass("usuario")} />
-                <Input type="password" name="senha" placeholder="Senha" onChange={handleChange} className={inputClass("senha")} />
-                <Input type="password" name="confirmarSenha" placeholder="Confirmação de Senha" onChange={handleChange} className={inputClass("confirmarSenha")} />
+                <LabelObrigatorio label="E-mail" required />
+                <Input name="email" placeholder="" onChange={handleChange} className={inputClass("email")} />
+                <LabelObrigatorio label="Usuário" required />
+                <Input name="usuario" placeholder="" onChange={handleChange} className={inputClass("usuario")} />
+                <LabelObrigatorio label="Senha" required />
+                <Input type="password" name="senha" placeholder="" onChange={handleChange} className={inputClass("senha")} />
+                <LabelObrigatorio label="Confirme sua senha" required />
+                <Input type="password" name="confirmarSenha" placeholder="" onChange={handleChange} className={inputClass("confirmarSenha")} />
                 <p className="text-sm text-gray-500 mt-1">
                   Mínimo 8 caracteres <br /> Pelo menos 1 letra maiúscula
                 </p>
