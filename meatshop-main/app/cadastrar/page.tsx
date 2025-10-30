@@ -307,7 +307,7 @@ export default function CadastroAcougue() {
                 <LabelObrigatorio label="Cidade" required />
                 <Input name="cidade" placeholder="" onChange={handleChange} className={inputClass("cidade")} />
                 <LabelObrigatorio label="Estado" required />
-                <Input name="estado" placeholder="Estdo" onChange={handleChange} className={inputClass("estado")} />
+                <Input name="estado" placeholder="" onChange={handleChange} className={inputClass("estado")} />
                 <LabelObrigatorio label="País" required />
                 <Input name="pais" placeholder="" onChange={handleChange} className={inputClass("pais")} />
               </div>
