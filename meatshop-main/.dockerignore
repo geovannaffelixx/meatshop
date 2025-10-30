@@ -1,0 +1,51 @@
+# ======================================
+# DEPENDÊNCIAS E CACHE LOCAIS
+# ======================================
+node_modules
+.npm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json.old
+
+# ======================================
+# BUILDS E TESTES
+# ======================================
+.next
+out
+coverage
+build
+dist
+
+# ======================================
+# LOGS E DADOS TEMPORÁRIOS
+# ======================================
+logs
+*.log
+*.tmp
+
+# ======================================
+# AMBIENTE E CONFIGS LOCAIS
+# ======================================
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# ======================================
+# GIT E CONTROLE DE VERSÃO
+# ======================================
+.git
+.gitignore
+.gitattributes
+
+# ======================================
+# SISTEMA / EDITOR / SO
+# ======================================
+.DS_Store
+Thumbs.db
+.vscode
+.idea
+*.swp

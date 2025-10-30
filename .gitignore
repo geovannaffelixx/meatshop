@@ -1,41 +1,57 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
+# ===================================
+# Dependências Node.js
+# ===================================
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
+pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# ===================================
+# Build & Compilados
+# ===================================
+dist/
+build/
+.next/
+out/
 
-# vercel
-.vercel
+# ===================================
+# Testes & Cobertura
+# ===================================
+coverage/
+*.lcov
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+# ===================================
+# Logs (Ignora arquivos de log, mas mantém a pasta)
+# ===================================
+logs/*.log
+!logs/.gitkeep
+*.log
+
+# ===================================
+# Banco de Dados
+# ===================================
+meatshop-backend/db-data/
+
+# ===================================
+# Ambiente
+# ===================================
+.env
+.env.local
+.env.*.local
+.env.docker
+
+# ===================================
+# Docker
+# ===================================
+docker-compose.override.yml
+.docker/
+*.pid
+
+# ===================================
+# SO / Editor
+# ===================================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

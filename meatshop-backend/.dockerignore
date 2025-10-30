@@ -1,0 +1,55 @@
+# ======================================
+# DEPENDÊNCIAS LOCAIS
+# ======================================
+node_modules
+.npm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ======================================
+# BUILDS E RELATÓRIOS
+# ======================================
+dist
+coverage
+build
+tmp
+.cache
+
+# ======================================
+# LOGS E BANCOS LOCAIS
+# ======================================
+logs
+*.log
+data/
+db-data/
+*.sqlite
+*.db
+*.db-journal
+
+# ======================================
+# VARIÁVEIS DE AMBIENTE E CONFIGS
+# ======================================
+.env
+.env.*
+.env.local
+.env.development
+.env.test
+.env.production
+
+# ======================================
+# ARQUIVOS GIT E CONTROLE DE VERSÃO
+# ======================================
+.git
+.gitignore
+.gitattributes
+
+# ======================================
+# SISTEMA / EDITOR / SO
+# ======================================
+.DS_Store
+Thumbs.db
+.vscode
+.idea
+*.swp
