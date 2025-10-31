@@ -36,10 +36,7 @@ meatshop-backend/db-data/
 # ===================================
 # Ambiente
 # ===================================
-.env
-.env.local
-.env.*.local
-.env.docker
+
 
 # ===================================
 # Docker

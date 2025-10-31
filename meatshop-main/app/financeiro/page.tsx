@@ -160,9 +160,9 @@ export default function FinanceiroPage() {
           cpfCnpj: e.cpfCnpj ?? "",
           fornecedor: e.supplierName,
           tipo: e.type,
-          valor: Number(e.amount),
-          desconto: Number(e.discount ?? 0),
-          valorPago: Number(e.paidAmount),
+          valor: parseFloat(e.amount?.toString().replace(',', '.')) || 0,
+          desconto: parseFloat(e.discount?.toString().replace(',', '.')) || 0,
+          valorPago: parseFloat(e.paidAmount?.toString().replace(',', '.')) || 0,
           dataLancamento: e.postedAt ?? "",
           dataPagamento: e.paidAt ?? "",
           observacoes: e.notes ?? "",
@@ -173,8 +173,13 @@ export default function FinanceiroPage() {
         // 3) Resumo (summary)
         const r3 = await fetch(`${API_URL}/finance/summary?month=${month}`)
         const summary: SummaryApi = await r3.json()
-        setDespesasTotal(summary.expensesTotal ?? 0)
-        setPagamentos(summary.payments ?? [])
+        setDespesasTotal(parseFloat(summary.expensesTotal?.toString().replace(',', '.')) || 0)
+        setPagamentos(
+          (summary.payments ?? []).map(p => ({
+            name: p.name,
+            value: parseFloat(p.value?.toString().replace(',', '.')) || 0
+          }))
+        )
       } catch (err) {
         console.error(err)
         setError("Falha ao carregar dados do Financeiro.")
@@ -268,9 +273,9 @@ export default function FinanceiroPage() {
         cpfCnpj: e.cpfCnpj ?? "",
         fornecedor: e.supplierName,
         tipo: e.type,
-        valor: Number(e.amount),
-        desconto: Number(e.discount ?? 0),
-        valorPago: Number(e.paidAmount),
+        valor: parseFloat(e.amount?.toString().replace(',', '.')) || 0,
+        desconto: parseFloat(e.discount?.toString().replace(',', '.')) || 0,
+        valorPago: parseFloat(e.paidAmount?.toString().replace(',', '.')) || 0,
         dataLancamento: e.postedAt ?? "",
         dataPagamento: e.paidAt ?? "",
         observacoes: e.notes ?? "",

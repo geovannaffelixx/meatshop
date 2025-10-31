@@ -102,12 +102,15 @@ services:
     build:
       context: ./meatshop-main
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://backend:3001
     container_name: meatshop-frontend
     ports:
       - "3000:3000"
+    env_file:
+      - ./meatshop-main/.env.docker
     environment:
       NODE_ENV: production
-      NEXT_PUBLIC_API_URL: http://backend:3001
       TZ: America/Sao_Paulo
     depends_on:
       backend:

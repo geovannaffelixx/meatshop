@@ -17,9 +17,14 @@ RUN npm ci
 # Copia o código-fonte e arquivos de config
 COPY . .
 
-# Gera o build otimizado do Next.js
-RUN npm run build
+# ==============================
+# 🌍 ARG + ENV (injetar variável no build)
+# ==============================
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
+# Gera o build otimizado do Next.js
+RUN echo "Building with NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}" && npm run build
 
 # ============================================
 # 🚀 STAGE 2 — RUNTIME (produção)

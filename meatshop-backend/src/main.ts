@@ -59,7 +59,7 @@ async function bootstrap() {
   appLogger.info('CORS e CookieParser configurados com sucesso');
 
   const port = Number(process.env.PORT ?? 3001);
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 
   const startupTimeMs = Date.now() - startAt;
   appLogger.info('Backend iniciado', {
