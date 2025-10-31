@@ -28,9 +28,9 @@ const navData = [
   {
     title: "Configurações",
     items: [
-      { title: "Perfil", url: "/perfil", icon: User },
-      { title: "Usuários", url: "/usuarios", icon: Users },
-      { title: "Segurança", url: "/seguranca", icon: Shield },
+      { title: "Perfil", url: "configuracoes/perfil", icon: User },
+      { title: "Usuários", url: "configuracoes/usuario", icon: Users },
+      { title: "Segurança", url: "configuracoes/seguranca", icon: Shield },
     ],
   },
 ]
