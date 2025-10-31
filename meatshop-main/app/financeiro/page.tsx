@@ -522,10 +522,6 @@ export default function FinanceiroPage() {
               </CardContent>
             </Card>
           </div>
-
-          <div className="text-center text-gray-600 text-sm mt-6">
-            MeatShop © {new Date().getFullYear()} — Todos os direitos reservados
-          </div>
         </div>
       </div>
     </PadraoPage>
