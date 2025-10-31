@@ -63,7 +63,9 @@ export class AuthService {
     return user;
   }
 
-  async login(usuario: string, senha: string, res: Response) {
+  async login(dto: { usuario: string; senha: string; cnpj?: string }, res: Response) {
+    const { usuario, senha } = dto;
+
     const user = await this.validateUser(usuario, senha);
     const payload = { sub: user.id, email: user.email, role: user.roleGlobal || 'USER' };
 

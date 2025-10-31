@@ -16,7 +16,7 @@ import * as bcrypt from 'bcrypt';
 import { User } from '../entities/user.entity';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
-
+import { LoginDto } from './dto/login.dto';
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -89,12 +89,12 @@ export class AuthController {
   }
 
   @Post('login')
-  async login(@Body() body: any, @Res({ passthrough: true }) res: Response) {
-    const { usuario, senha } = body;
+  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
+    const { usuario, senha } = dto;
     if (!usuario || !senha)
       throw new HttpException('Informe usuário/e-mail e senha', HttpStatus.BAD_REQUEST);
 
-    return this.authService.login(usuario, senha, res);
+    return this.authService.login(dto, res);
   }
 
   @Post('refresh')
