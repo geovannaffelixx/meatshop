@@ -27,7 +27,7 @@ export class Expense {
   @Column('decimal', { precision: 10, scale: 2, default: 0 })
   discount: number;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
   paidAmount: number;
 
   @Column({ type: 'text', nullable: true })

@@ -28,11 +28,19 @@ export default function Page() {
         body: JSON.stringify({ cnpj, usuario, senha }),
       });
 
-      const data = await res.json();
+      let data: any;
+      try {
+        data = await res.json();
+      } catch {
+        const text = await res.text();
+        console.error("Resposta bruta do servidor:", text);
+        throw new Error("Erro inesperado do servidor. Veja o console.");
+      }
 
       if (!res.ok) {
-        throw new Error(data?.message || "Falha no login");
+        throw new Error(data?.message || `Falha no login (${res.status})`);
       }
+
 
       localStorage.setItem("token", data.token);
 

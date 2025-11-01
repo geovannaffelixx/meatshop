@@ -30,18 +30,6 @@ export class FinanceService {
     return { start, end, y, m, daysInMonth };
   }
 
-  private toNum(x: string | number | null | undefined): number {
-    if (x == null) return 0;
-    if (typeof x === 'number') return x;
-    const normalized = x.replace(/\./g, '').replace(',', '.');
-    const v = Number(normalized);
-    return Number.isFinite(v) ? v : 0;
-  }
-
-  private n(x: any): number {
-    return this.toNum(x);
-  }
-
   // -------- DESPESAS --------
 
   async listExpenses(month: string) {
@@ -62,9 +50,9 @@ export class FinanceService {
     const ent = this.expenses.create({
       supplierName: dto.supplierName,
       type: dto.type,
-      amount: this.toNum(dto.amount),
-      discount: this.toNum(dto.discount ?? 0),
-      paidAmount: this.toNum(dto.paidAmount),
+      amount: dto.amount,
+      discount: dto.discount ?? 0,
+      paidAmount: dto.paidAmount,
       postedAt: dto.postedAt ?? null,
       paidAt: dto.paidAt ?? null,
       paymentMethod: dto.paymentMethod,
@@ -98,9 +86,9 @@ export class FinanceService {
       supplierId: dto.supplierId ?? null,
     };
 
-    if (dto.amount !== undefined) patch.amount = this.toNum(dto.amount as any);
-    if (dto.discount !== undefined) patch.discount = this.toNum(dto.discount as any);
-    if (dto.paidAmount !== undefined) patch.paidAmount = this.toNum(dto.paidAmount as any);
+    if (dto.amount !== undefined) patch.amount = dto.amount;
+    if (dto.discount !== undefined) patch.discount = dto.discount;
+    if (dto.paidAmount !== undefined) patch.paidAmount = dto.paidAmount;
 
     await this.expenses.update({ id }, patch);
     const updated = await this.expenses.findOne({ where: { id } });
@@ -131,7 +119,7 @@ export class FinanceService {
     const rows = await this.orders
       .createQueryBuilder('o')
       .select(["TO_CHAR(o.criadoEm, 'DD') AS day", 'SUM(o.valor) AS total'])
-      .where('o.status = :st', { st: 'Entregue' })
+      .where('o.status = :st', { st: ['Entregue', 'Pago'] })
       .andWhere('o.criadoEm >= :start AND o.criadoEm < :end', { start, end })
       .groupBy("TO_CHAR(o.criadoEm, 'DD')")
       .getRawMany<{ day: string; total: string }>();
@@ -139,7 +127,7 @@ export class FinanceService {
     const map = new Map<number, number>();
     for (const r of rows) {
       const d = Number(r.day);
-      map.set(d, (map.get(d) ?? 0) + this.n(r.total));
+      map.set(d, (map.get(d) ?? 0) + Number(r.total));
     }
 
     const series = Array.from({ length: daysInMonth }, (_, i) => ({
@@ -168,12 +156,12 @@ export class FinanceService {
       ],
     });
 
-    const expensesTotal = expenses.reduce((s, e) => s + this.n(e.paidAmount), 0);
+    const expensesTotal = expenses.reduce((s, e) => s + Number(e.paidAmount ?? 0), 0);
 
     const paymentsMap = new Map<string, number>();
     for (const e of expenses) {
       const key = e.paymentMethod ?? 'Outros';
-      paymentsMap.set(key, (paymentsMap.get(key) ?? 0) + this.n(e.paidAmount));
+      paymentsMap.set(key, (paymentsMap.get(key) ?? 0) + Number(e.paidAmount ?? 0));
     }
 
     const payments = Array.from(paymentsMap.entries()).map(([name, value]) => ({

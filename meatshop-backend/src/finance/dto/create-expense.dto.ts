@@ -1,5 +1,5 @@
-// src/finance/dto/create-expense.dto.ts
-import { IsIn, IsNotEmpty, IsOptional, IsString, Length, Matches } from 'class-validator';
+import { IsIn, IsNotEmpty, IsOptional, IsString, IsNumber, Length } from 'class-validator';
+import { Type } from 'class-transformer';
 import { PaymentMethod } from '../../entities/expense.entity';
 
 export class CreateExpenseDto {
@@ -20,23 +20,19 @@ export class CreateExpenseDto {
   @IsIn(['Compras', 'Serviços', 'Outros'])
   type!: 'Compras' | 'Serviços' | 'Outros';
 
-  // Aceita inteiros e decimais com ponto OU vírgula (ex.: "1800", "1800.00", "1800,00")
-  @IsString()
-  @Matches(/^\d+(?:[.,]\d{1,2})?$/, { message: 'amount deve ser número com até 2 casas decimais' })
-  amount!: string;
+  // Agora o valor é um número real (não string)
+  @Type(() => Number)
+  @IsNumber({}, { message: 'amount deve ser um número válido' })
+  amount!: number;
 
+  @Type(() => Number)
   @IsOptional()
-  @IsString()
-  @Matches(/^\d+(?:[.,]\d{1,2})?$/, {
-    message: 'discount deve ser número com até 2 casas decimais',
-  })
-  discount?: string;
+  @IsNumber({}, { message: 'discount deve ser um número válido' })
+  discount?: number;
 
-  @IsString()
-  @Matches(/^\d+(?:[.,]\d{1,2})?$/, {
-    message: 'paidAmount deve ser número com até 2 casas decimais',
-  })
-  paidAmount!: string;
+  @Type(() => Number)
+  @IsNumber({}, { message: 'paidAmount deve ser um número válido' })
+  paidAmount!: number;
 
   @IsOptional()
   @IsString()

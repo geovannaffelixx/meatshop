@@ -228,7 +228,11 @@ export default function FinanceiroPage() {
   }
 
   const handleAddExpense = async () => {
-    if (!form.fornecedor || !form.valor) return alert("Preencha fornecedor e valor.")
+    if (!form.fornecedor || !form.valor) {
+      alert("Preencha fornecedor e valor.");
+      return;
+    }
+
     try {
       setLoading(true)
       setError(null)
@@ -240,16 +244,18 @@ export default function FinanceiroPage() {
       const payload = {
         supplierName: form.fornecedor,
         type: form.tipo,
-        amount: toDecimalStringBR(valor),
-        discount: toDecimalStringBR(desconto),
-        paidAmount: toDecimalStringBR(valorPago),
+        amount: Number(valor),
+        discount: Number(desconto),
+        paidAmount: Number(valorPago),
         postedAt: form.dataLancamento || null,
         paidAt: form.dataPagamento || null,
         paymentMethod: form.formaPagamento || "Pix",
         notes: (form.observacoes || "") + (form.idFornecedor ? ` | SupplierID: ${form.idFornecedor}` : ""),
         cpfCnpj: form.cpfCnpj || null,
         supplierId: form.idFornecedor || null,
-      }
+      };
+
+      console.log(" Payload enviado:", payload);
 
       const res = await fetch(`${API_URL}/finance/expenses`, {
         method: "POST",
@@ -265,7 +271,7 @@ export default function FinanceiroPage() {
       const [rExp, rSum] = await Promise.all([
         fetch(`${API_URL}/finance/expenses?month=${month}`),
         fetch(`${API_URL}/finance/summary?month=${month}`),
-      ])
+      ]);
 
       const expensesApi = await rExp.json()
       const mapped: Expense[] = (expensesApi as any[]).map((e) => ({
@@ -280,12 +286,17 @@ export default function FinanceiroPage() {
         dataPagamento: e.paidAt ?? "",
         observacoes: e.notes ?? "",
         formaPagamento: e.paymentMethod,
-      }))
+      }));
       setExpenses(mapped)
 
       const summary: SummaryApi = await rSum.json()
-      setDespesasTotal(summary.expensesTotal ?? 0)
-      setPagamentos(summary.payments ?? [])
+      setDespesasTotal(Number(summary.expensesTotal ?? 0));
+      setPagamentos(
+        (summary.payments ?? []).map((p) => ({
+          name: p.name,
+          value: Number(p.value ?? 0),
+        }))
+      );
 
       // Limpa form e fecha modal
       setForm({
@@ -304,12 +315,12 @@ export default function FinanceiroPage() {
       })
       setOpen(false)
     } catch (err) {
-      console.error(err)
+      console.error("Erro ao salvar despesa:", err);
       alert("Erro ao salvar despesa. Verifique os campos e tente novamente.")
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Gráfico de despesas por dia
   const despesasPorDiaMap = new Map<number, number>()
@@ -366,7 +377,11 @@ export default function FinanceiroPage() {
                     <BarChart data={receitas} margin={{ top: 0, right: 0, left: 0, bottom: 0 }} barCategoryGap="1%">
                       <XAxis dataKey="dia" hide interval={0} tickCount={daysInMonth} />
                       <YAxis hide />
-                      <Tooltip />
+                      <Tooltip 
+                        formatter={(value: number) =>
+                          value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                        }
+                      />
                       <Bar dataKey="valor" fill="#16a34a" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -494,7 +509,11 @@ export default function FinanceiroPage() {
                   <BarChart data={despesasPorDia} margin={{ top: 0, right: 0, left: 0, bottom: 0 }} barCategoryGap="1%">
                     <XAxis dataKey="dia" hide interval={0} tickCount={daysInMonth} />
                     <YAxis hide />
-                    <Tooltip />
+                    <Tooltip 
+                      formatter={(value: number) =>
+                        value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                      }
+                    />
                     <Bar dataKey="valor" fill="#dc2626" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -521,7 +540,11 @@ export default function FinanceiroPage() {
                         <Cell key={i} fill={pieColors[i % pieColors.length]} />
                       ))}
                     </Pie>
-                    <Tooltip />
+                    <Tooltip 
+                      formatter={(value: number) =>
+                        value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                      }
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </CardContent>
