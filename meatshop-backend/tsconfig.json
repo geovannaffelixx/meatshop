@@ -14,7 +14,7 @@
 
     "sourceMap": true,
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": ".",
 
     "baseUrl": "./src",
     "paths": {
@@ -26,6 +26,6 @@
     "noEmitOnError": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
+  "include": ["src/**/*", "test/**/*"],
+  "exclude": ["node_modules", "dist"]
 }
