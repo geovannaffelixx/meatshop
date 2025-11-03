@@ -119,7 +119,7 @@ export class FinanceService {
     const rows = await this.orders
       .createQueryBuilder('o')
       .select(["TO_CHAR(o.criadoEm, 'DD') AS day", 'SUM(o.valor) AS total'])
-      .where('o.status = :st', { st: ['Entregue', 'Pago'] })
+      .where('o.status = :st', { st: 'Entregue' })
       .andWhere('o.criadoEm >= :start AND o.criadoEm < :end', { start, end })
       .groupBy("TO_CHAR(o.criadoEm, 'DD')")
       .getRawMany<{ day: string; total: string }>();
@@ -143,36 +143,42 @@ export class FinanceService {
     return { series, revenueTotal };
   }
 
-  // -------- RESUMO --------
+  // -------- RESUMO (mostrando RECEITAS no gráfico de pizza) --------
 
   async summary(month: string) {
-    const { y, m } = this.normalizeMonthRange(month);
+    const { y, m, start, end } = this.normalizeMonthRange(month);
     const mm = String(m).padStart(2, '0');
 
+    // ---- Despesas totais (mantém para cálculo do saldo) ----
     const expenses = await this.expenses.find({
       where: [
         { paidAt: Like(`${y}-${mm}-%`) },
         { paidAt: IsNull(), postedAt: Like(`${y}-${mm}-%`) },
       ],
     });
-
     const expensesTotal = expenses.reduce((s, e) => s + Number(e.paidAmount ?? 0), 0);
 
+    // ---- Resumo ----
+    const orders = await this.orders
+      .createQueryBuilder('o')
+      .where('o.status = :st', { st: 'Entregue' })
+      .andWhere('o.criadoEm >= :start AND o.criadoEm < :end', { start, end })
+      .getMany();
+
     const paymentsMap = new Map<string, number>();
-    for (const e of expenses) {
-      const key = e.paymentMethod ?? 'Outros';
-      paymentsMap.set(key, (paymentsMap.get(key) ?? 0) + Number(e.paidAmount ?? 0));
+    for (const o of orders) {
+      const key = (o as any).paymentMethod ?? 'Outros';
+      paymentsMap.set(key, (paymentsMap.get(key) ?? 0) + Number(o.valor ?? 0));
     }
 
     const payments = Array.from(paymentsMap.entries()).map(([name, value]) => ({
       name,
       value,
     }));
-
     const { revenueTotal } = await this.monthlyRevenue(`${y}-${mm}`);
 
-    // Loga geração do resumo
-    this.logger.info('Resumo financeiro gerado', {
+    // ---- Log informativo ----
+    this.logger.info('Resumo financeiro (foco em receitas)', {
       month,
       revenueTotal,
       expensesTotal,

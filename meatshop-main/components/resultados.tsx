@@ -70,7 +70,7 @@ export default function Resultados({ receitasTotal, despesasTotal, pagamentos }:
 
         {/* Breakdown simples por forma de pagamento */}
         <div className="pt-4">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Formas de pagamento das despesas</h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Formas de pagamento</h4>
           <div className="grid grid-cols-1 gap-2">
             {pagamentos.map((p) => {
               const pct = (p.value / Math.max(despesasTotal, 1)) * 100
