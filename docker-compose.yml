@@ -30,6 +30,7 @@ services:
     build:
       context: ./meatshop-backend
       dockerfile: Dockerfile
+    image: meatshop-backend:latest
     container_name: meatshop-backend
     env_file:
       - ./meatshop-backend/.env.docker
@@ -57,9 +58,11 @@ services:
       TYPEORM_LOGGING: "true"
       TZ: America/Sao_Paulo
 
+    # ⚠️ Não sobrescreve o /usr/src/app (mantém dist intacto)
     volumes:
       - ./meatshop-backend/logs:/usr/src/app/logs
       - ./meatshop-backend/migrations:/usr/src/app/migrations
+      - ./meatshop-backend/data:/usr/src/app/data
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
@@ -73,9 +76,7 @@ services:
   # Migrator - executa migrations automaticamente
   # ==========================================
   migrator:
-    build:
-      context: ./meatshop-backend
-      dockerfile: Dockerfile
+    image: meatshop-backend:latest  # usa o mesmo build do backend
     container_name: meatshop-migrator
     command: >
       sh -c "npm run migration:run:prod &&

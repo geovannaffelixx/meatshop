@@ -1,8 +1,9 @@
 # ======================================
-# DEPENDÊNCIAS E CACHE LOCAIS
+# 🧩 DEPENDÊNCIAS E CACHE LOCAIS
 # ======================================
 node_modules
 .npm
+.npmrc
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -10,39 +11,48 @@ pnpm-debug.log*
 package-lock.json.old
 
 # ======================================
-# BUILDS E TESTES
+# 🏗️ BUILDS E TESTES
 # ======================================
-.next
+.next/cache       # mantém .next para build, mas ignora cache pesado
 out
 coverage
 build
 dist
 
 # ======================================
-# LOGS E DADOS TEMPORÁRIOS
+# 🧾 LOGS E DADOS TEMPORÁRIOS
 # ======================================
 logs
 *.log
 *.tmp
 
 # ======================================
-# AMBIENTE E CONFIGS LOCAIS
+# ⚙️ AMBIENTE E CONFIGS LOCAIS
 # ======================================
 .env
-.env.local
-.env.development
-.env.production
-.env.test
+.env.*
+!.env.docker
+*.local
+*.development
+*.production
+*.test
 
 # ======================================
-# GIT E CONTROLE DE VERSÃO
+# 🔧 CONFIGURAÇÕES E ARQUIVOS DE SISTEMA
+# ======================================
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# ======================================
+# 📚 GIT E CONTROLE DE VERSÃO
 # ======================================
 .git
 .gitignore
 .gitattributes
 
 # ======================================
-# SISTEMA / EDITOR / SO
+# 💻 SISTEMA / EDITOR / SO
 # ======================================
 .DS_Store
 Thumbs.db
