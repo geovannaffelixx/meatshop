@@ -1,8 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import * as path from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { UsersUploadController } from './users/users-upload.controller';
 
 // Entidades
 import { User } from './entities/user.entity';
@@ -26,6 +29,11 @@ import { AuthModule } from './auth/auth.module';
     ConfigModule.forRoot({ isGlobal: true }),
     LoggerModule,
     MetricsModule,
+
+    ServeStaticModule.forRoot({
+      rootPath: path.join(process.cwd(), 'uploads', 'avatars'),
+      serveRoot: '/uploads',
+    }),
 
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
@@ -55,7 +63,13 @@ import { AuthModule } from './auth/auth.module';
     FinanceModule,
     AuthModule,
   ],
-  controllers: [AppController, AuthController, UsersController, DashboardController],
+  controllers: [
+    AppController,
+    AuthController,
+    UsersController,
+    DashboardController,
+    UsersUploadController,
+  ],
   providers: [AppService],
 })
 export class AppModule {}

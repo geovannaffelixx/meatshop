@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from "react"
+import Image from "next/image"
 import {
   Sidebar,
   SidebarContent,
@@ -15,6 +16,7 @@ import {
 import { User, Shield, House, ShoppingBag, Box, PiggyBank, LogOut, ChevronRight, Users } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
+import { useCurrentUser } from "@/hooks/useCurrentUser"
 
 const navData = [
   {
@@ -38,6 +40,7 @@ const navData = [
 type UserData = {
   name: string
   email: string
+  imageUrl?: string | null
 }
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
@@ -46,10 +49,12 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
 
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
   const pathname = usePathname()
+  const { user: currentUser } = useCurrentUser()
 
-  const displayUser = user ?? {
+  const displayUser: UserData = currentUser ?? user ?? {
     name: "Usuário",
     email: "email@exemplo.com",
+    imageUrl: null,
   }
 
   return (
@@ -97,17 +102,28 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
           </Link>
         </div>
 
+        {/* UserCard */}
         <Link
           href="/perfil"
           className="block px-4 py-3 border-t border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
         >
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-pink-500 to-red-500 flex items-center justify-center text-white font-semibold">
-              {displayUser.name.charAt(0).toUpperCase()}
-            </div>
-            <div className="flex flex-col text-sm">
-              <span className="font-medium text-gray-800">{displayUser.name}</span>
-              <span className="text-gray-500">{displayUser.email}</span>
+            {displayUser.imageUrl ? (
+              <Image
+                src={displayUser.imageUrl}
+                alt={displayUser.name}
+                width={32}
+                height={32}
+                className="h-8 w-8 rounded-full object-cover"
+              />
+            ) : (
+              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-pink-500 to-red-500 flex items-center justify-center text-white font-semibold">
+                {displayUser.name.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <div className="flex flex-col text-sm min-w-0">
+              <span className="font-medium text-gray-800 truncate">{displayUser.name}</span>
+              <span className="text-gray-500 truncate">{displayUser.email}</span>
             </div>
             <ChevronRight className="ml-auto h-4 w-4 text-gray-400" />
           </div>

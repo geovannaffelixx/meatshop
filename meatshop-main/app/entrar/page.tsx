@@ -1,10 +1,9 @@
-'use client'
+"use client";
 
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
-import InputMask from "react-input-mask";
 import { useRouter } from "next/navigation";
 
 export default function Page() {
@@ -26,6 +25,7 @@ export default function Page() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ cnpj, usuario, senha }),
+        credentials: "include", // 🔒 mantém cookies httpOnly
       });
 
       let data: any;
@@ -41,15 +41,23 @@ export default function Page() {
         throw new Error(data?.message || `Falha no login (${res.status})`);
       }
 
+      // 🔑 Armazena token e usuário para o UserCard
+      const accessToken: string | undefined = data?.accessToken || data?.token;
+      if (accessToken) {
+        localStorage.setItem("accessToken", accessToken);
+      }
 
-      localStorage.setItem("token", data.token);
+      if (data?.user) {
+        localStorage.setItem("currentUser", JSON.stringify(data.user));
+      }
 
       setMsg("Login realizado com sucesso! Redirecionando...");
       setAlertType("success");
 
-      setTimeout(() => router.push("/home"), 2000);
+      setTimeout(() => router.push("/home"), 800);
     } catch (err: any) {
-      setMsg(err.message);
+      console.error(err);
+      setMsg(err?.message || "Erro inesperado ao fazer login.");
       setAlertType("error");
     }
   }
@@ -66,27 +74,45 @@ export default function Page() {
 
       <div className="w-2/3 flex items-center justify-center bg-white">
         <div className="w-full max-w-md space-y-6 p-8">
-          <h2 className="text-2xl font-bold text-center text-gray-800">Bem-vindo</h2>
+          <h2 className="text-2xl font-bold text-center text-gray-800">
+            Bem-vindo
+          </h2>
 
           <form onSubmit={handleSubmit} className="space-y-3">
-
             <div>
-              <label className="block text-sm font-medium text-gray-700">Usuário</label>
+              <label className="block text-sm font-medium text-gray-700">
+                CNPJ
+              </label>
               <Input
-                placeholder="Informe seu usuário"
-                value={usuario}
-                onChange={(e) => setUsuario(e.target.value)}
+                placeholder="Informe seu CNPJ"
+                value={cnpj}
+                onChange={(e) => setCnpj(e.target.value)}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Senha</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Usuário
+              </label>
+              <Input
+                placeholder="Informe seu usuário"
+                value={usuario}
+                onChange={(e) => setUsuario(e.target.value)}
+                autoComplete="username"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Senha
+              </label>
               <div className="relative">
                 <Input
                   type={showPassword ? "text" : "password"}
                   placeholder="Informe sua senha"
                   value={senha}
                   onChange={(e) => setSenha(e.target.value)}
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"

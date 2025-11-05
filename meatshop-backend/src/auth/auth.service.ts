@@ -80,13 +80,26 @@ export class AuthService {
     });
     await this.refreshRepo.save(tokenEntity);
 
+    // cookies para navegação SSR/segura
     res.cookie(this.ACCESS_COOKIE, accessToken, this.cookieOptions(15 * 60 * 1000));
     res.cookie(this.REFRESH_COOKIE, refreshToken, this.cookieOptions(7 * 24 * 60 * 60 * 1000));
+
+    // ⚠️ IMPORTANTE: devolver também o accessToken no corpo
+    // e um user "safe" (sem hashes/sensíveis)
+    const safeUser = {
+      id: user.id,
+      email: user.email,
+      usuario: user.usuario,
+      razaoSocial: user.razaoSocial,
+      logoUrl: (user as any).logoUrl ?? null,
+      roleGlobal: user.roleGlobal ?? 'USER',
+    };
 
     return {
       ok: true,
       message: 'Login efetuado com sucesso',
-      user,
+      accessToken,
+      user: safeUser,
     };
   }
 
@@ -112,6 +125,7 @@ export class AuthService {
     const newAccess = await this.generateAccessToken({
       sub: user!.id,
       email: user!.email,
+      role: user!.roleGlobal || 'USER',
     });
     const newRefresh = await this.generateRefreshToken({ sub: user!.id });
 
