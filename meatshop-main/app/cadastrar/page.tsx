@@ -173,7 +173,7 @@ export default function CadastroAcougue() {
     if (!validate()) return;
 
     try {
-      const res = await fetch("http://localhost:3001/auth/register", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -182,7 +182,6 @@ export default function CadastroAcougue() {
           cnpj: form.cnpj,
           telefone: form.telefone,
           celular: form.celular,
-          logoUrl: form.imagemPerfil ? form.imagemPerfil.name : "",
           cep: form.cep,
           logradouro: form.logradouro,
           numero: form.numero || "S/N",
@@ -202,6 +201,35 @@ export default function CadastroAcougue() {
       if (!res.ok) {
         throw new Error(data?.message || "Erro no cadastro");
       }
+      
+      if (data?.accessToken) localStorage.setItem("accessToken", data.accessToken);
+      if (data?.user) localStorage.setItem("currentUser", JSON.stringify(data.user));
+
+    const file = form.imagemPerfil;
+    if (file && data?.user?.id) {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${data.user.id}/logo`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken") || ""}`,
+        },
+        body: formData,
+        credentials: "include",
+      });
+
+      const meRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/me`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken") || ""}`,
+        },
+        credentials: "include",
+      });
+      const meData = await meRes.json();
+      if (meData?.ok && meData?.user) {
+        localStorage.setItem("currentUser", JSON.stringify(meData.user));
+      }
+    }
 
       setMsg("Cadastro realizado com sucesso! Redirecionando...");
       setAlertType("success");
