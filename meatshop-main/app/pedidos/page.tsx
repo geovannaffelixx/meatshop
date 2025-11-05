@@ -5,7 +5,6 @@ import PadraoPage from "@/components/layoutPadrao"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { OrdersTable } from "@/components/orders-table"
-import { SearchFilters } from "@/components/search-filters"
 
 export default function PedidosPage() {
   const [filters, setFilters] = useState({
@@ -26,7 +25,6 @@ export default function PedidosPage() {
   const handleApplyFilters = () => {
     setAppliedFilters(filters)
     setCurrentPage(1)
-    // Aqui entra o backend: Enviar os filtros para o backend e buscar os dados filtrados do banco
   }
 
   return (
@@ -39,7 +37,8 @@ export default function PedidosPage() {
 
           <Card className="bg-gray/70 backdrop-blur-md rounded-xl shadow p-4 mb-6">
             <CardContent className="space-y-4">
-              {/* Primeira linha: Filtros de Data */}
+
+              {/* 1ª linha: datas */}
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6">
                 {/* Data do pedido */}
                 <fieldset className="border p-4 rounded-md">
@@ -69,7 +68,7 @@ export default function PedidosPage() {
                     />
                   </div>
                 </fieldset>
-                
+
                 {/* Data agendada */}
                 <fieldset className="border p-4 rounded-md">
                   <legend className="text-gray-600 font-medium">Data agendada</legend>
@@ -129,9 +128,8 @@ export default function PedidosPage() {
                 </fieldset>
               </div>
 
-              {/* Segunda linha: Filtros de Status e Cliente */}
+              {/* 2ª linha: cliente + status */}
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {/* Filtro de ID */}
                 <fieldset className="border p-4 rounded-md">
                   <legend className="text-gray-600 font-medium">ID</legend>
                   <input
@@ -147,7 +145,6 @@ export default function PedidosPage() {
                   />
                 </fieldset>
 
-                {/* Filtro de Nome */}
                 <fieldset className="border p-4 rounded-md">
                   <legend className="text-gray-600 font-medium">Nome</legend>
                   <input
@@ -163,7 +160,6 @@ export default function PedidosPage() {
                   />
                 </fieldset>
 
-                {/* Filtro de CPF */}
                 <fieldset className="border p-4 rounded-md">
                   <legend className="text-gray-600 font-medium">CPF</legend>
                   <input
@@ -179,7 +175,6 @@ export default function PedidosPage() {
                   />
                 </fieldset>
 
-                {/* Filtro de Status */}
                 <fieldset className="border p-4 rounded-md">
                   <legend className="text-gray-600 font-medium">Status</legend>
                   <select
@@ -190,13 +185,13 @@ export default function PedidosPage() {
                     className="w-full p-2 border rounded-md"
                   >
                     <option value="">Selecione</option>
-                    <option value="ativo">Ativo</option>
-                    <option value="inativo">Inativo</option>
+                    <option value="Pendente">Pendente</option>
+                    <option value="Entregue">Entregue</option>
+                    <option value="Cancelado">Cancelado</option>
                   </select>
                 </fieldset>
               </div>
 
-              {/* Botão de Localizar na mesma linha */}
               <div className="flex justify-start items-center gap-6">
                 <Button
                   onClick={handleApplyFilters}

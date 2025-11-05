@@ -1,42 +1,9 @@
 "use client"
 
-import { useMemo } from "react"
-import { Button } from "@/components/ui/button"
+import React, { useMemo } from "react"
+import { useRouter } from "next/navigation"
 
-type Order = {
-  id: number
-  nomeCliente: string
-  dataPedido: string
-  dataAgendada: string
-  status: string
-  valor: string
-  formaPagamento: string
-}
-
-const orders: Order[] = [
-  { id: 1, nomeCliente: "AMANDA TERESA FÉLIX", dataPedido: "20/08/2025", dataAgendada: "23/08/2025", status: "Pendente", valor: "R$ 159,68", formaPagamento: "DINHEIRO" },
-  { id: 2, nomeCliente: "FLÁVIO FELIPE COUTO", dataPedido: "20/08/2025", dataAgendada: "21/08/2025", status: "Entregue", valor: "R$ 111,28", formaPagamento: "CRÉDITO" },
-  { id: 3, nomeCliente: "RICARDO NOGUEIRA SILVA", dataPedido: "20/08/2025", dataAgendada: "21/08/2025", status: "Entregue", valor: "R$ 630,44", formaPagamento: "CRÉDITO" },
-  { id: 4, nomeCliente: "FERNANDA ALVES MOURA", dataPedido: "20/08/2025", dataAgendada: "20/08/2025", status: "Cancelado", valor: "R$ 55,40", formaPagamento: "CRÉDITO" },
-  { id: 5, nomeCliente: "LUCAS PEREIRA ANDRADE", dataPedido: "20/08/2025", dataAgendada: "20/08/2025", status: "Pendente", valor: "R$ 81,99", formaPagamento: "DÉBITO" },
-  { id: 6, nomeCliente: "CAMILA ROCHA MARTINS", dataPedido: "20/08/2025", dataAgendada: "20/08/2025", status: "Entregue", valor: "R$ 215,18", formaPagamento: "DINHEIRO" },
-  { id: 7, nomeCliente: "JOÃO VICTOR BARBOSA LI", dataPedido: "20/08/2025", dataAgendada: "20/08/2025", status: "Entregue", valor: "R$ 281,35", formaPagamento: "CRÉDITO" },
-  { id: 8, nomeCliente: "MARIANA COSTA FIGUEIRE", dataPedido: "20/08/2025", dataAgendada: "20/08/2025", status: "Entregue", valor: "R$ 158,97", formaPagamento: "DINHEIRO" },
-  { id: 9, nomeCliente: "RAFAEL TORRES ALMEIDA", dataPedido: "20/08/2025", dataAgendada: "20/08/2025", status: "Entregue", valor: "R$ 151,22", formaPagamento: "DINHEIRO" },
-  { id: 10, nomeCliente: "ALINE CARVALHO DUARTE", dataPedido: "19/08/2025", dataAgendada: "20/08/2025", status: "Entregue", valor: "R$ 41,33", formaPagamento: "DÉBITO" },
-  { id: 11, nomeCliente: "BRUNO HENRIQUE MOREIR", dataPedido: "19/08/2025", dataAgendada: "19/08/2025", status: "Entregue", valor: "R$ 215,18", formaPagamento: "DÉBITO" },
-  { id: 12, nomeCliente: "JULIANA MENDES FREITAS", dataPedido: "19/08/2025", dataAgendada: "19/08/2025", status: "Entregue", valor: "R$ 331,45", formaPagamento: "CRÉDITO" },
-  { id: 13, nomeCliente: "FELIPE RAMOS CARDOSO", dataPedido: "19/08/2025", dataAgendada: "19/08/2025", status: "Cancelado", valor: "R$ 220,33", formaPagamento: "DÉBITO" },
-  { id: 14, nomeCliente: "BEATRIZ OLIVEIRA CASTRO", dataPedido: "18/08/2025", dataAgendada: "19/08/2025", status: "Cancelado", valor: "R$ 481,88", formaPagamento: "DÉBITO" },
-  { id: 15, nomeCliente: "ANDRÉ LUIZ FONSECA", dataPedido: "18/08/2025", dataAgendada: "18/08/2025", status: "Entregue", valor: "R$ 117,21", formaPagamento: "DINHEIRO" },
-  { id: 16, nomeCliente: "CAROLINA PIRES GONÇALV", dataPedido: "18/08/2025", dataAgendada: "18/08/2025", status: "Entregue", valor: "R$ 301,22", formaPagamento: "DINHEIRO" },
-  { id: 17, nomeCliente: "GABRIEL SOUZA TAVARES", dataPedido: "18/08/2025", dataAgendada: "18/08/2025", status: "Entregue", valor: "R$ 184,82", formaPagamento: "CRÉDITO" },
-  { id: 18, nomeCliente: "LARISSA MONTEIRO CAMP", dataPedido: "18/08/2025", dataAgendada: "18/08/2025", status: "Entregue", valor: "R$ 253,66", formaPagamento: "DINHEIRO" },
-  { id: 19, nomeCliente: "THIAGO FERREIRA GOMES", dataPedido: "17/08/2025", dataAgendada: "17/08/2025", status: "Cancelado", valor: "R$ 98,55", formaPagamento: "DÉBITO" },
-  { id: 20, nomeCliente: "PATRÍCIA DIAS SANTANA", dataPedido: "17/08/2025", dataAgendada: "17/08/2025", status: "Entregue", valor: "R$ 200,57", formaPagamento: "DINHEIRO" },
-]
-
-type Filters = {
+interface Filters {
   dataPedido: { de: string; ate: string }
   dataAgendada: { de: string; ate: string }
   dataEntrega: { de: string; ate: string }
@@ -44,111 +11,158 @@ type Filters = {
   cliente: { id: string; nome: string; cpf: string }
 }
 
-export function OrdersTable({
-  filters,
-  currentPage,
-  onPageChange,
-}: {
+interface OrdersTableProps {
   filters: Filters
   currentPage: number
   onPageChange: (page: number) => void
-}) {
-  const filteredOrders = useMemo(() => {
-    return orders.filter((order) => {
-      const matchNome =
-        !filters.cliente.nome ||
-        order.nomeCliente
-          .toLowerCase()
-          .includes(filters.cliente.nome.toLowerCase())
+}
 
-      const matchStatus =
-        !filters.status ||
-        order.status.toLowerCase() === filters.status.toLowerCase()
+type Pedido = {
+  id: number
+  cliente: string
+  cpf: string
+  dataPedido: string      // YYYY-MM-DD
+  dataAgendada: string    // YYYY-MM-DD
+  dataEntrega: string     // YYYY-MM-DD
+  status: "Pendente" | "Entregue" | "Cancelado"
+  valor: number
+  formaPagamento: string
+}
 
-      const matchDataPedidoDe =
-        !filters.dataPedido.de ||
-        new Date(order.dataPedido.split("/").reverse().join("-")) >=
-          new Date(filters.dataPedido.de)
+export function OrdersTable({ filters, currentPage, onPageChange }: OrdersTableProps) {
+  const router = useRouter()
 
-      const matchDataPedidoAte =
-        !filters.dataPedido.ate ||
-        new Date(order.dataPedido.split("/").reverse().join("-")) <=
-          new Date(filters.dataPedido.ate)
+  // 🔹 Mock – incluiu CPF e os 3 status pedidos
+  const pedidos: Pedido[] = [
+    { id: 1,  cliente: "AMANDA TERESA FÉLIX", cpf: "714.335.491-07", dataPedido: "2025-08-20", dataAgendada: "2025-08-23", dataEntrega: "2025-08-23", status: "Pendente", valor: 159.68, formaPagamento: "DINHEIRO" },
+    { id: 2,  cliente: "FLÁVIO FELIPE COUTO", cpf: "222.222.222-22", dataPedido: "2025-08-20", dataAgendada: "2025-08-21", dataEntrega: "2025-08-21", status: "Entregue", valor: 111.28, formaPagamento: "CRÉDITO" },
+    { id: 3,  cliente: "RICARDO NOGUEIRA SILVA", cpf: "333.333.333-33", dataPedido: "2025-08-20", dataAgendada: "2025-08-21", dataEntrega: "2025-08-21", status: "Entregue", valor: 630.64, formaPagamento: "CRÉDITO" },
+    { id: 4,  cliente: "FERNANDA ALVES MOURA", cpf: "444.444.444-44", dataPedido: "2025-08-20", dataAgendada: "2025-08-21", dataEntrega: "2025-08-21", status: "Cancelado", valor: 55.40, formaPagamento: "CRÉDITO" },
+    { id: 5,  cliente: "LUCAS PEREIRA ANDRADE", cpf: "555.555.555-55", dataPedido: "2025-08-20", dataAgendada: "2025-08-20", dataEntrega: "2025-08-20", status: "Pendente", valor: 81.99, formaPagamento: "DÉBITO" },
+    { id: 6,  cliente: "CAMILA ROCHA MARTINS", cpf: "666.666.666-66", dataPedido: "2025-08-20", dataAgendada: "2025-08-20", dataEntrega: "2025-08-20", status: "Entregue", valor: 215.18, formaPagamento: "DINHEIRO" },
+    { id: 7,  cliente: "JOÃO VICTOR BARBOSA LIMA", cpf: "777.777.777-77", dataPedido: "2025-08-20", dataAgendada: "2025-08-20", dataEntrega: "2025-08-20", status: "Entregue", valor: 281.36, formaPagamento: "DÉBITO" },
+    { id: 8,  cliente: "MARIANA COSTA FIGUEIREDO", cpf: "888.888.888-88", dataPedido: "2025-08-20", dataAgendada: "2025-08-20", dataEntrega: "2025-08-20", status: "Entregue", valor: 158.97, formaPagamento: "DINHEIRO" },
+    { id: 9,  cliente: "RAFAEL TORRES ALMEIDA", cpf: "999.999.999-99", dataPedido: "2025-08-20", dataAgendada: "2025-08-20", dataEntrega: "2025-08-20", status: "Entregue", valor: 151.22, formaPagamento: "DÉBITO" },
+    { id: 10, cliente: "ALINE CARVALHO DUARTE", cpf: "010.010.010-10", dataPedido: "2025-08-19", dataAgendada: "2025-08-20", dataEntrega: "2025-08-20", status: "Entregue", valor: 41.33,  formaPagamento: "DÉBITO" },
+    { id: 11, cliente: "BRUNO HENRIQUE MOREIRA", cpf: "011.011.011-11", dataPedido: "2025-08-19", dataAgendada: "2025-08-19", dataEntrega: "2025-08-19", status: "Entregue", valor: 215.18, formaPagamento: "PIX" },
+    { id: 12, cliente: "JULIANA MENDES FREITAS", cpf: "012.012.012-12", dataPedido: "2025-08-19", dataAgendada: "2025-08-19", dataEntrega: "2025-08-19", status: "Entregue", valor: 331.45, formaPagamento: "CRÉDITO" },
+    { id: 13, cliente: "FELIPE RAMOS CARDOSO", cpf: "013.013.013-13", dataPedido: "2025-08-19", dataAgendada: "2025-08-19", dataEntrega: "2025-08-19", status: "Cancelado", valor: 220.33, formaPagamento: "DÉBITO" },
+    { id: 14, cliente: "BEATRIZ OLIVEIRA CASTRO", cpf: "014.014.014-14", dataPedido: "2025-08-18", dataAgendada: "2025-08-18", dataEntrega: "2025-08-18", status: "Cancelado", valor: 481.88, formaPagamento: "CRÉDITO" },
+    { id: 15, cliente: "ANDRÉ LUIZ FONSECA", cpf: "015.015.015-15", dataPedido: "2025-08-18", dataAgendada: "2025-08-18", dataEntrega: "2025-08-18", status: "Entregue", valor: 117.21, formaPagamento: "DINHEIRO" },
+    { id: 16, cliente: "CAROLINA PIRES GONÇALVES", cpf: "016.016.016-16", dataPedido: "2025-08-18", dataAgendada: "2025-08-18", dataEntrega: "2025-08-18", status: "Entregue", valor: 301.22, formaPagamento: "DINHEIRO" },
+    { id: 17, cliente: "GABRIEL SOUZA TAVARES", cpf: "017.017.017-17", dataPedido: "2025-08-18", dataAgendada: "2025-08-18", dataEntrega: "2025-08-18", status: "Entregue", valor: 184.82, formaPagamento: "CRÉDITO" },
+    { id: 18, cliente: "LARISSA MONTEIRO CAMP", cpf: "018.018.018-18", dataPedido: "2025-08-18", dataAgendada: "2025-08-18", dataEntrega: "2025-08-18", status: "Entregue", valor: 235.66, formaPagamento: "DINHEIRO" },
+    { id: 19, cliente: "THIAGO FERREIRA GOMES", cpf: "019.019.019-19", dataPedido: "2025-08-17", dataAgendada: "2025-08-17", dataEntrega: "2025-08-17", status: "Cancelado", valor: 98.55,  formaPagamento: "DÉBITO" },
+    { id: 20, cliente: "PATRÍCIA DIAS SANTANA", cpf: "020.020.020-20", dataPedido: "2025-08-17", dataAgendada: "2025-08-17", dataEntrega: "2025-08-17", status: "Entregue", valor: 200.57, formaPagamento: "DINHEIRO" },
+  ]
 
-      return matchNome && matchStatus && matchDataPedidoDe && matchDataPedidoAte
+  // 🔧 util: checa intervalo de data (YYYY-MM-DD) de forma segura
+  const inRange = (valueISO: string, de: string, ate: string) => {
+    if (!de && !ate) return true
+    const v = new Date(valueISO + "T00:00:00")
+    const from = de ? new Date(de + "T00:00:00") : null
+    const to   = ate ? new Date(ate + "T23:59:59") : null
+    return (!from || v >= from) && (!to || v <= to)
+  }
+
+  // 🔍 aplica TODOS os filtros, incluindo Data Agendada (corrigido)
+  const filtered = useMemo(() => {
+    return pedidos.filter((p) => {
+      const idOk    = filters.cliente.id ? p.id.toString().includes(filters.cliente.id) : true
+      const nomeOk  = filters.cliente.nome ? p.cliente.toLowerCase().includes(filters.cliente.nome.toLowerCase()) : true
+      const cpfOk   = filters.cliente.cpf ? p.cpf.includes(filters.cliente.cpf) : true
+      const statusOk = filters.status ? p.status === (filters.status as Pedido["status"]) : true
+
+      const dataPedidoOk   = inRange(p.dataPedido,   filters.dataPedido.de,   filters.dataPedido.ate)
+      const dataAgendadaOk = inRange(p.dataAgendada, filters.dataAgendada.de, filters.dataAgendada.ate)   // ✅ corrigido
+      const dataEntregaOk  = inRange(p.dataEntrega,  filters.dataEntrega.de,  filters.dataEntrega.ate)
+
+      return idOk && nomeOk && cpfOk && statusOk && dataPedidoOk && dataAgendadaOk && dataEntregaOk
     })
   }, [filters])
 
-  const pageSize = 10
-  const totalPages = Math.ceil(filteredOrders.length / pageSize)
-  const paginatedOrders = filteredOrders.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  )
+  // 🔢 paginação
+  const itemsPerPage = 10
+  const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage))
+  const safePage = Math.min(Math.max(currentPage, 1), totalPages)
+  const start = (safePage - 1) * itemsPerPage
+  const pageData = filtered.slice(start, start + itemsPerPage)
+
+  const changePage = (page: number) => {
+    if (page >= 1 && page <= totalPages) onPageChange(page)
+  }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full text-sm text-left text-gray-700">
-        <thead className="bg-gray-200 text-gray-800 uppercase text-xs">
+    <div className="overflow-x-auto bg-white rounded-xl border border-gray-300 p-4">
+      <table className="w-full text-sm text-left">
+        <thead className="bg-gray-100 text-gray-700 font-semibold">
           <tr>
-            <th className="py-3 px-4">ID</th>
-            <th className="py-3 px-4">Nome Cliente</th>
-            <th className="py-3 px-4">Data do Pedido</th>
-            <th className="py-3 px-4">Data Agendada</th>
-            <th className="py-3 px-4">Status</th>
-            <th className="py-3 px-4">Valor</th>
-            <th className="py-3 px-4">Forma Pagamento</th>
-            <th className="py-3 px-4"></th>
+            <th className="p-2">ID</th>
+            <th className="p-2">Nome Cliente</th>
+            <th className="p-2">Data do Pedido</th>
+            <th className="p-2">Data Agendada</th>
+            <th className="p-2">Status do pedido</th>
+            <th className="p-2">Valor</th>
+            <th className="p-2">Forma de pagamento</th>
+            <th className="p-2 text-center">Ações</th>
           </tr>
         </thead>
         <tbody>
-          {paginatedOrders.map((order) => (
-            <tr
-              key={order.id}
-              className="border-b hover:bg-gray-100 transition-colors"
-            >
-              <td className="py-2 px-4">{order.id}</td>
-              <td className="py-2 px-4">{order.nomeCliente}</td>
-              <td className="py-2 px-4">{order.dataPedido}</td>
-              <td className="py-2 px-4">{order.dataAgendada}</td>
-              <td className="py-2 px-4">{order.status}</td>
-              <td className="py-2 px-4">{order.valor}</td>
-              <td className="py-2 px-4">{order.formaPagamento}</td>
-              <td className="py-2 px-4">
-                <Button variant="link" className="text-red-600 font-semibold">
-                  VER MAIS
-                </Button>
+          {pageData.length > 0 ? (
+            pageData.map((p) => (
+              <tr key={p.id} className="border-t hover:bg-gray-50 transition-colors">
+                <td className="p-2">{p.id}</td>
+                <td className="p-2">{p.cliente}</td>
+                <td className="p-2">{p.dataPedido}</td>
+                <td className="p-2">{p.dataAgendada}</td>
+                <td className="p-2">{p.status}</td>
+                <td className="p-2">R$ {p.valor.toFixed(2)}</td>
+                <td className="p-2">{p.formaPagamento}</td>
+                <td className="p-2 text-center">
+                  <button
+                    onClick={() => router.push(`/pedidos/${p.id}`)}
+                    className="text-red-600 font-semibold hover:underline"
+                  >
+                    VER MAIS
+                  </button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={8} className="text-center p-4 text-gray-500 italic">
+                Nenhum pedido encontrado com os filtros aplicados.
               </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
 
-      {filteredOrders.length === 0 && (
-        <p className="text-center text-gray-500 py-4">
-          Nenhum pedido encontrado.
-        </p>
-      )}
-
-      {/* Paginação */}
-      <div className="flex justify-center items-center gap-2 py-4">
-        <Button
-          variant="outline"
-          onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-          disabled={currentPage === 1}
+      {/* paginação */}
+      <div className="flex justify-center items-center gap-2 mt-4">
+        <button
+          onClick={() => changePage(safePage - 1)}
+          className="px-2 text-gray-600 disabled:opacity-50"
+          disabled={safePage === 1}
         >
-          Anterior
-        </Button>
-        <span className="text-sm text-gray-700">
-          Página {currentPage} de {totalPages}
-        </span>
-        <Button
-          variant="outline"
-          onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-          disabled={currentPage === totalPages}
+          {"<"}
+        </button>
+        {Array.from({ length: totalPages }, (_, i) => (
+          <button
+            key={i + 1}
+            onClick={() => changePage(i + 1)}
+            className={`px-2 ${safePage === i + 1 ? "text-red-700 font-bold" : "text-gray-600"}`}
+          >
+            {i + 1}
+          </button>
+        ))}
+        <button
+          onClick={() => changePage(safePage + 1)}
+          className="px-2 text-gray-600 disabled:opacity-50"
+          disabled={safePage === totalPages}
         >
-          Próxima
-        </Button>
+          {">"}
+        </button>
       </div>
     </div>
   )
