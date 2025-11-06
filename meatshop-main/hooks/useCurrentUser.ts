@@ -6,7 +6,6 @@ export type CurrentUser = {
   name: string;
   email: string;
   imageUrl?: string | null;
-  role?: string;
 };
 
 export function useCurrentUser() {

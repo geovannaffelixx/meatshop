@@ -118,7 +118,9 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
               />
             ) : (
               <div className="h-8 w-8 rounded-full bg-gradient-to-br from-pink-500 to-red-500 flex items-center justify-center text-white font-semibold">
-                {displayUser.name.charAt(0).toUpperCase()}
+                {displayUser?.name
+                  ? displayUser.name.charAt(0).toUpperCase()
+                  : "?"}
               </div>
             )}
             <div className="flex flex-col text-sm min-w-0">

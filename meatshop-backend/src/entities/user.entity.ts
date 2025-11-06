@@ -66,10 +66,7 @@ export class User {
   @Column({ name: 'senha_hash', type: 'varchar' })
   senhaHash: string;
 
-  @Column({ name: 'role_global', type: 'varchar', length: 20, default: 'USER' })
-  roleGlobal: string;
-
-  // 🔹 Metadados
+  // Metadados
   @CreateDateColumn({ name: 'criado_em', type: 'timestamp' })
   criadoEm: Date;
 

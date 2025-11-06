@@ -72,8 +72,7 @@ export class UsersUploadController {
 
     const authUserId = req.user?.userId ?? req.user?.sub;
     const isSelf = String(authUserId) === String(paramId);
-    const isAdmin = req.user?.role === 'ADMIN';
-    if (!isSelf && !isAdmin) {
+    if (!isSelf) {
       throw new ForbiddenException('Sem permissão para alterar este usuário');
     }
 

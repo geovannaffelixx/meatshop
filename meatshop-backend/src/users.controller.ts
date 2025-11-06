@@ -30,7 +30,6 @@ export class UsersController {
         name: user.razaoSocial || user.usuario || 'Usuário',
         email: user.email,
         imageUrl: user.logoUrl ?? null,
-        role: user.roleGlobal ?? 'USER',
       },
     };
   }
