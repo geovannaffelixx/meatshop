@@ -8,7 +8,6 @@ import { useRouter } from "next/navigation";
 
 export default function Page() {
   const [showPassword, setShowPassword] = useState(false);
-  const [cnpj, setCnpj] = useState("");
   const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
   const [msg, setMsg] = useState("");
@@ -24,7 +23,7 @@ export default function Page() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cnpj, usuario, senha }),
+        body: JSON.stringify({ usuario, senha }), // 👈 removido o CNPJ
         credentials: "include", // 🔒 mantém cookies httpOnly
       });
 
@@ -64,6 +63,7 @@ export default function Page() {
 
   return (
     <div className="flex min-h-screen">
+      {/* Lado esquerdo com imagem */}
       <div className="w-1/3 h-screen relative">
         <img
           src="/entrar.png"
@@ -72,6 +72,7 @@ export default function Page() {
         />
       </div>
 
+      {/* Formulário de login */}
       <div className="w-2/3 flex items-center justify-center bg-white">
         <div className="w-full max-w-md space-y-6 p-8">
           <h2 className="text-2xl font-bold text-center text-gray-800">
@@ -79,17 +80,6 @@ export default function Page() {
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                CNPJ
-              </label>
-              <Input
-                placeholder="Informe seu CNPJ"
-                value={cnpj}
-                onChange={(e) => setCnpj(e.target.value)}
-              />
-            </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Usuário
@@ -125,7 +115,7 @@ export default function Page() {
               <div className="mt-1">
                 <Link
                   href="/recuperar"
-                  className="text-sm text-red-600 hover:underline left-1"
+                  className="text-sm text-red-600 hover:underline"
                 >
                   Esqueceu sua senha?
                 </Link>

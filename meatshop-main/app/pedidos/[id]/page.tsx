@@ -1,12 +1,6 @@
 import OrderDetails from "@/components/order-details"
 
-interface OrderDetailsPageProps {
-  params: {
-    id: string
-  }
-}
-
-export default function OrderDetailsPage({ params }: OrderDetailsPageProps) {
+export default function OrderDetailsPage({ params }: any) {
   const { id } = params
   return <OrderDetails orderId={id} />
 }
