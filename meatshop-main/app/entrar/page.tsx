@@ -18,13 +18,19 @@ export default function Page() {
     e.preventDefault();
     setMsg("");
     setAlertType("");
+    
+    if (!usuario.trim() || !senha.trim()) {
+      setMsg("Por favor, preencha usuário e senha para continuar.");
+      setAlertType("error");
+      return;
+    }
 
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ usuario, senha }), // 👈 removido o CNPJ
-        credentials: "include", // 🔒 mantém cookies httpOnly
+        body: JSON.stringify({ usuario, senha }),
+        credentials: "include",
       });
 
       let data: any;
@@ -40,7 +46,7 @@ export default function Page() {
         throw new Error(data?.message || `Falha no login (${res.status})`);
       }
 
-      // 🔑 Armazena token e usuário para o UserCard
+      // Armazena token e usuário para o UserCard
       const accessToken: string | undefined = data?.accessToken || data?.token;
       if (accessToken) {
         localStorage.setItem("accessToken", accessToken);

@@ -74,6 +74,7 @@ export default function CadastroAcougue() {
   const [msg, setMsg] = useState("");
   const [alertType, setAlertType] = useState<"success" | "error" | "">("");
   const router = useRouter();
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const maskCNPJ = (value: string) => {
     return value
@@ -112,7 +113,9 @@ export default function CadastroAcougue() {
     const { name, value, files } = e.target;
 
     if (name === "imagemPerfil" && files) {
+      const file = files[0];
       setForm({ ...form, imagemPerfil: files[0] });
+      setPreviewUrl(file ? URL.createObjectURL(file) : null);
     } else {
       setForm({ ...form, [name]: value });
     }
@@ -228,6 +231,7 @@ export default function CadastroAcougue() {
       const meData = await meRes.json();
       if (meData?.ok && meData?.user) {
         localStorage.setItem("currentUser", JSON.stringify(meData.user));
+        window.dispatchEvent(new Event("currentUserUpdated"));
       }
     }
 
@@ -297,8 +301,19 @@ export default function CadastroAcougue() {
                     onChange={handleChange}
                   />
                 </label>
+                {previewUrl && (
+                  <div className="mt-3 flex items-center gap-3">
+                    <span className="text-sm text-gray-600">Pré-visualização:</span>
+                    <img
+                      src={previewUrl}
+                      alt="Pré-visualização da logo"
+                      className="h-16 w-16 rounded-full object-cover border"
+                    />
+                  </div>
+                )}
               </div>
             </div>
+                
 
             <div>
               <h2 className="font-semibold mb-2">Endereço</h2>

@@ -29,7 +29,7 @@ export class UsersController {
         id: user.id,
         name: user.razaoSocial || user.usuario || 'Usuário',
         email: user.email,
-        imageUrl: user.logoUrl ?? null,
+        logoUrl: user.logoUrl ?? null,
       },
     };
   }

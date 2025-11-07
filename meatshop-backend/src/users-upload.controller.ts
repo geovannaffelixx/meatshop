@@ -86,7 +86,7 @@ export class UsersUploadController {
 
     return {
       ok: true,
-      imageUrl: publicUrl,
+      logoUrl: publicUrl,
       message: 'Imagem atualizada com sucesso',
     };
   }

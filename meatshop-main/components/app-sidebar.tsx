@@ -40,7 +40,7 @@ const navData = [
 type UserData = {
   name: string
   email: string
-  imageUrl?: string | null
+  logoUrl?: string | null
 }
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
@@ -54,8 +54,15 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
   const displayUser: UserData = currentUser ?? user ?? {
     name: "Usuário",
     email: "email@exemplo.com",
-    imageUrl: null,
+    logoUrl: null,
   }
+  
+  const resolvedSrc =
+  displayUser.logoUrl
+    ? (displayUser.logoUrl.startsWith("http")
+        ? displayUser.logoUrl
+        : `${process.env.NEXT_PUBLIC_API_URL}${displayUser.logoUrl}`)
+    : null;
 
   return (
     <Sidebar {...props}>
@@ -102,15 +109,14 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
           </Link>
         </div>
 
-        {/* UserCard */}
         <Link
           href="/perfil"
           className="block px-4 py-3 border-t border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
         >
           <div className="flex items-center gap-3">
-            {displayUser.imageUrl ? (
-              <Image
-                src={displayUser.imageUrl}
+            {resolvedSrc ? (
+              <img
+                src={resolvedSrc}
                 alt={displayUser.name}
                 width={32}
                 height={32}
@@ -123,6 +129,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                   : "?"}
               </div>
             )}
+
             <div className="flex flex-col text-sm min-w-0">
               <span className="font-medium text-gray-800 truncate">{displayUser.name}</span>
               <span className="text-gray-500 truncate">{displayUser.email}</span>

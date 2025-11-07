@@ -5,7 +5,7 @@ export type CurrentUser = {
   id: number;
   name: string;
   email: string;
-  imageUrl?: string | null;
+  logoUrl?: string | null;
 };
 
 export function useCurrentUser() {
@@ -40,6 +40,25 @@ export function useCurrentUser() {
     }
 
     fetchMe();
+  }, []);
+
+    useEffect(() => {
+    function handleUpdate() {
+      try {
+        const raw = localStorage.getItem("currentUser");
+        setUser(raw ? JSON.parse(raw) : null);
+      } catch {
+        setUser(null);
+      }
+    }
+
+    window.addEventListener("currentUserUpdated", handleUpdate);
+    window.addEventListener("storage", handleUpdate);
+
+    return () => {
+      window.removeEventListener("currentUserUpdated", handleUpdate);
+      window.removeEventListener("storage", handleUpdate);
+    };
   }, []);
 
   return { user, loading, setUser };
