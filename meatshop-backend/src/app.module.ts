@@ -23,6 +23,7 @@ import { LoggerModule } from './common/logger/logger.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { FinanceModule } from './finance/finance.module';
 import { AuthModule } from './auth/auth.module';
+import { SeedModule } from './seed/seed.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { AuthModule } from './auth/auth.module';
     TypeOrmModule.forFeature([User, Order]),
     FinanceModule,
     AuthModule,
+    SeedModule,
   ],
   controllers: [
     AppController,
