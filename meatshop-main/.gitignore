@@ -58,8 +58,6 @@ pnpm-debug.log*
 # ==============================
 # Arquivos de ambiente
 # ==============================
-.env*
-!.env.example   # exemplo pode ser versionado
 
 # ==============================
 # Vercel

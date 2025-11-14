@@ -5,18 +5,21 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import * as path from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { UsersUploadController } from './users-upload.controller';
 
 // Entidades
 import { User } from './entities/user.entity';
 import { Order } from './entities/order.entity';
 import { Expense } from './entities/expense.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
+import { Sale } from './entities/sale.entity';
 
 // Controllers
 import { AuthController } from './auth/auth.controller';
 import { UsersController } from './users.controller';
 import { DashboardController } from './dashboard.controller';
+import { UsersUploadController } from './users-upload.controller';
+import { OrdersController } from './orders.controller';
+import { SalesController } from './sales.controller';
 
 // Módulos
 import { LoggerModule } from './common/logger/logger.module';
@@ -27,15 +30,18 @@ import { SeedModule } from './seed/seed.module';
 
 @Module({
   imports: [
+    // Configuração global
     ConfigModule.forRoot({ isGlobal: true }),
     LoggerModule,
     MetricsModule,
 
+    // Servir arquivos estáticos (uploads)
     ServeStaticModule.forRoot({
       rootPath: path.join(process.cwd(), 'uploads', 'avatars'),
       serveRoot: '/uploads',
     }),
 
+    // Configuração do banco de dados (Postgres/SQLite)
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
@@ -51,8 +57,7 @@ import { SeedModule } from './seed/seed.module';
             dbType === 'postgres'
               ? config.get<string>('DB_DATABASE')
               : config.get<string>('DB_PATH') || 'data/meatshop.db',
-          entities: [User, Order, Expense, RefreshToken],
-
+          entities: [User, Order, Expense, RefreshToken, Sale], // ✅ Incluído Sale
           autoLoadEntities: true,
           synchronize: config.get<string>('DB_SYNCHRONIZE') === 'true',
           logging: config.get<string>('NODE_ENV') !== 'production',
@@ -60,7 +65,10 @@ import { SeedModule } from './seed/seed.module';
       },
     }),
 
-    TypeOrmModule.forFeature([User, Order]),
+    // Repositórios disponíveis para injeção
+    TypeOrmModule.forFeature([User, Order, Sale]),
+
+    // Outros módulos
     FinanceModule,
     AuthModule,
     SeedModule,
@@ -71,6 +79,8 @@ import { SeedModule } from './seed/seed.module';
     UsersController,
     DashboardController,
     UsersUploadController,
+    OrdersController,
+    SalesController,
   ],
   providers: [AppService],
 })

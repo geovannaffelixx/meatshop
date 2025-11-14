@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "dotenv -e .env.test -- jest --runInBand --coverage",
     "typeorm": "typeorm-ts-node-commonjs -d src/config/data-source.ts",
-    "migration:generate": "npm run typeorm -- migration:generate ./src/migrations/auto -p",
+    "migration:generate": "cross-env DOTENV_CONFIG_PATH=.env.local-migrations typeorm-ts-node-commonjs -d src/config/data-source.ts migration:generate ./src/migrations/auto -p",
     "migration:run": "cross-env DOTENV_CONFIG_PATH=.env.local-migrations typeorm-ts-node-commonjs -d src/config/data-source.ts migration:run",
     "migration:run:prod": "typeorm -d dist/src/config/data-source.js migration:run",
     "migration:revert": "npm run typeorm -- migration:revert"
@@ -60,6 +60,7 @@
     "@typescript-eslint/eslint-plugin": "^8.46.0",
     "@typescript-eslint/parser": "^8.46.0",
     "@typescript-eslint/utils": "^8.46.0",
+    "cross-env": "^10.1.0",
     "dotenv-cli": "^11.0.0",
     "eslint": "^9.13.0",
     "eslint-config-prettier": "10.1.8",
