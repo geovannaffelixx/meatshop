@@ -18,11 +18,14 @@ type ListOrdersResponse = {
     dataEntrega?: string | null;
     observacoes?: string | null;
   }>;
-  page: number;
-  pageSize: number;
-  total: number;
-  totalPages: number;
 };
+
+/** Ajusta data final para 23:59:59 */
+function endOfDay(dateStr: string) {
+  const d = new Date(dateStr);
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
 
 @Controller('orders')
 export class OrdersController {
@@ -36,9 +39,7 @@ export class OrdersController {
   // ================================
   @Get()
   async list(
-    @Query('page') pageStr = '1',
-    @Query('pageSize') pageSizeStr = '10',
-    // filtros
+    // filtros enviados pelo frontend
     @Query('status') status?: string,
     @Query('clienteNome') clienteNome?: string,
     @Query('clienteCpf') clienteCpf?: string,
@@ -49,48 +50,46 @@ export class OrdersController {
     @Query('dataEntregaDe') dataEntregaDe?: string,
     @Query('dataEntregaAte') dataEntregaAte?: string,
   ): Promise<ListOrdersResponse> {
-    const page = Math.max(parseInt(pageStr, 10) || 1, 1);
-    const pageSize = Math.min(Math.max(parseInt(pageSizeStr, 10) || 10, 1), 100);
-
     const where: any = {};
 
-    // filtros textuais
+    // filtros de texto
     if (status) where.status = status;
     if (clienteNome) where.cliente = Like(`%${clienteNome}%`);
     if (clienteCpf) where.cpfCnpj = Like(`%${clienteCpf}%`);
 
-    // filtros de data do pedido
+    // filtros de data do pedido (criadoEm)
     if (dataPedidoDe && dataPedidoAte) {
-      where.criadoEm = Between(new Date(dataPedidoDe), new Date(dataPedidoAte));
+      where.criadoEm = Between(new Date(dataPedidoDe), endOfDay(dataPedidoAte));
     } else if (dataPedidoDe) {
       where.criadoEm = MoreThanOrEqual(new Date(dataPedidoDe));
     } else if (dataPedidoAte) {
-      where.criadoEm = LessThanOrEqual(new Date(dataPedidoAte));
+      where.criadoEm = LessThanOrEqual(endOfDay(dataPedidoAte));
     }
 
     // filtros de data agendada
     if (dataAgendadaDe && dataAgendadaAte) {
-      where.dataAgendada = Between(new Date(dataAgendadaDe), new Date(dataAgendadaAte));
+      where.dataAgendada = Between(new Date(dataAgendadaDe), endOfDay(dataAgendadaAte));
     } else if (dataAgendadaDe) {
       where.dataAgendada = MoreThanOrEqual(new Date(dataAgendadaDe));
     } else if (dataAgendadaAte) {
-      where.dataAgendada = LessThanOrEqual(new Date(dataAgendadaAte));
+      where.dataAgendada = LessThanOrEqual(endOfDay(dataAgendadaAte));
     }
 
-    // filtros de data de entrega
+    // filtros de data entrega
     if (dataEntregaDe && dataEntregaAte) {
-      where.dataEntrega = Between(new Date(dataEntregaDe), new Date(dataEntregaAte));
+      where.dataEntrega = Between(new Date(dataEntregaDe), endOfDay(dataEntregaAte));
     } else if (dataEntregaDe) {
       where.dataEntrega = MoreThanOrEqual(new Date(dataEntregaDe));
     } else if (dataEntregaAte) {
-      where.dataEntrega = LessThanOrEqual(new Date(dataEntregaAte));
+      where.dataEntrega = LessThanOrEqual(endOfDay(dataEntregaAte));
     }
 
-    const [rows, total] = await this.ordersRepo.findAndCount({
+    // ⚠ Sem paginação — frontend faz sozinho
+    const rows = await this.ordersRepo.find({
       where,
-      order: { criadoEm: 'DESC' },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+      order: {
+        criadoEm: 'DESC',
+      },
     });
 
     return {
@@ -100,18 +99,14 @@ export class OrdersController {
         cpfCnpj: o.cpfCnpj ?? '',
         status: o.status,
         valor: Number(o.valor),
-        desconto: o.desconto ? Number(o.desconto) : undefined,
-        valorPago: o.valorPago ? Number(o.valorPago) : undefined,
+        desconto: o.desconto != null ? Number(o.desconto) : undefined,
+        valorPago: o.valorPago != null ? Number(o.valorPago) : undefined,
         formaPagamento: o.paymentMethod ?? null,
         criadoEm: o.criadoEm?.toISOString() ?? '',
         dataAgendada: o.dataAgendada?.toISOString() ?? null,
         dataEntrega: o.dataEntrega?.toISOString() ?? null,
         observacoes: o.observacoes ?? null,
       })),
-      page,
-      pageSize,
-      total,
-      totalPages: Math.max(Math.ceil(total / pageSize), 1),
     };
   }
 

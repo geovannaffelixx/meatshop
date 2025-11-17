@@ -66,7 +66,7 @@ import { SeedModule } from './seed/seed.module';
     }),
 
     // Repositórios disponíveis para injeção
-    TypeOrmModule.forFeature([User, Order, Sale]),
+    TypeOrmModule.forFeature([User, Order, Expense, Sale]),
 
     // Outros módulos
     FinanceModule,
