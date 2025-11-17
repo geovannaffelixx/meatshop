@@ -1,39 +1,65 @@
 import { Controller, Get } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import { Order } from './entities/order.entity';
 
 @Controller('dashboard')
 export class DashboardController {
-  constructor(@InjectRepository(Order) private readonly orders: Repository<Order>) {}
+  constructor(
+    @InjectRepository(Order)
+    private readonly ordersRepo: Repository<Order>,
+  ) {}
 
   @Get()
   async getDashboard() {
-    const count = await this.orders.count();
-    if (count === 0) {
-      const seed = Array.from({ length: 12 }).map((_, i) =>
-        this.orders.create({
-          cliente: `Cliente ${i + 1}`,
-          status: i % 3 === 0 ? 'Entregue' : i % 3 === 1 ? 'Pendente' : 'Cancelado',
-          valor: 50 + i * 10,
-        }),
-      );
-      await this.orders.save(seed);
-    }
-    const recent = await this.orders.find({ order: { id: 'DESC' }, take: 10 });
-    const vendasSemana = [10, 25, 18, 32, 27, 40, 35];
+    const recent = await this.ordersRepo.find({
+      order: { id: 'DESC' },
+      take: 50,
+    });
+
+    const dias = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom'];
+    const vendasSemana = dias.map((d) => ({ day: d, vendas: 0 }));
+
+    const hoje = new Date();
+    const inicioSemana = new Date(hoje);
+    const diaSemana = hoje.getDay(); // 0=Dom...6=Sab
+
+    // Ajusta para segunda
+    const diff = diaSemana === 0 ? -6 : 1 - diaSemana;
+    inicioSemana.setDate(hoje.getDate() + diff);
+    inicioSemana.setHours(0, 0, 0, 0);
+
+    const fimSemana = new Date(inicioSemana);
+    fimSemana.setDate(inicioSemana.getDate() + 6);
+    fimSemana.setHours(23, 59, 59, 999);
+
+    const pedidosSemana = await this.ordersRepo.find({
+      where: {
+        criadoEm: Between(inicioSemana, fimSemana),
+      },
+    });
+
+    pedidosSemana.forEach((p) => {
+      const d = new Date(p.criadoEm);
+      let idx = d.getDay(); // 0=Dom
+
+      idx = idx === 0 ? 6 : idx - 1; // converte para Seg=0
+      vendasSemana[idx].vendas += Number(p.valorPago);
+    });
+
     const porStatus = {
-      Entregue: await this.orders.count({ where: { status: 'Entregue' } }),
-      Pendente: await this.orders.count({ where: { status: 'Pendente' } }),
-      Cancelado: await this.orders.count({ where: { status: 'Cancelado' } }),
+      Pendente: await this.ordersRepo.count({ where: { status: 'Pendente' } }),
+      Entregue: await this.ordersRepo.count({ where: { status: 'Entregue' } }),
+      Cancelado: await this.ordersRepo.count({ where: { status: 'Cancelado' } }),
     };
+
     return {
       vendasSemana,
       pedidosRecentes: recent.map((o) => ({
         id: o.id,
         cliente: o.cliente,
         status: o.status,
-        valor: o.valor,
+        valor: Number(o.valorPago),
         criadoEm: o.criadoEm,
       })),
       porStatus,
