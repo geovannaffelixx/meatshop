@@ -12,6 +12,7 @@ import { Order } from './entities/order.entity';
 import { Expense } from './entities/expense.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { Sale } from './entities/sale.entity';
+import { Product } from './entities/product.entity';
 
 // Controllers
 import { AuthController } from './auth/auth.controller';
@@ -20,6 +21,7 @@ import { DashboardController } from './dashboard.controller';
 import { UsersUploadController } from './users-upload.controller';
 import { OrdersController } from './orders.controller';
 import { SalesController } from './sales.controller';
+import { ProductsController } from './products.controller';
 
 // Módulos
 import { LoggerModule } from './common/logger/logger.module';
@@ -57,7 +59,7 @@ import { SeedModule } from './seed/seed.module';
             dbType === 'postgres'
               ? config.get<string>('DB_DATABASE')
               : config.get<string>('DB_PATH') || 'data/meatshop.db',
-          entities: [User, Order, Expense, RefreshToken, Sale], // ✅ Incluído Sale
+          entities: [User, Order, Expense, RefreshToken, Sale, Product],
           autoLoadEntities: true,
           synchronize: config.get<string>('DB_SYNCHRONIZE') === 'true',
           logging: config.get<string>('NODE_ENV') !== 'production',
@@ -66,7 +68,7 @@ import { SeedModule } from './seed/seed.module';
     }),
 
     // Repositórios disponíveis para injeção
-    TypeOrmModule.forFeature([User, Order, Expense, Sale]),
+    TypeOrmModule.forFeature([User, Order, Expense, Sale, Product]),
 
     // Outros módulos
     FinanceModule,
@@ -81,6 +83,7 @@ import { SeedModule } from './seed/seed.module';
     UsersUploadController,
     OrdersController,
     SalesController,
+    ProductsController,
   ],
   providers: [AppService],
 })

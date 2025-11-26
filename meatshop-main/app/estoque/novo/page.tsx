@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { apiPost } from "@/lib/api"
 
 type Produto = {
   id: number
@@ -18,23 +19,6 @@ type Produto = {
   descricao: string
 }
 
-const LS_KEY = "meatshop.inventory.v1"
-
-// 🔧 utilitários para storage
-function loadFromStorage(): Record<string, Produto> {
-  if (typeof window === "undefined") return {}
-  try {
-    return JSON.parse(localStorage.getItem(LS_KEY) || "{}")
-  } catch {
-    return {}
-  }
-}
-
-function saveToStorage(map: Record<string, Produto>) {
-  localStorage.setItem(LS_KEY, JSON.stringify(map))
-  window.dispatchEvent(new Event("estoque:updated"))
-}
-
 // 🔢 cálculo automático de status
 function calcularStatus(produto: Produto): Produto["status"] {
   if (produto.status === "INATIVO") return "INATIVO"
@@ -42,11 +26,17 @@ function calcularStatus(produto: Produto): Produto["status"] {
   return "ATIVO"
 }
 
+function mapStatusToApi(status: Produto["status"]) {
+  if (status === "EM PROMOÇÃO") return "ON_SALE"
+  if (status === "INATIVO") return "INACTIVE"
+  return "ACTIVE"
+}
+
 export default function NovoProdutoPage() {
   const router = useRouter()
 
   const [produto, setProduto] = useState<Produto>({
-    id: Date.now(), // id provisório
+    id: Date.now(),
     nome: "",
     categoria: "",
     corte: "",
@@ -67,7 +57,7 @@ export default function NovoProdutoPage() {
   const handleChange = (key: keyof Produto, value: any) => {
     let atualizado = { ...produto, [key]: value }
 
-    // regra: inativo => sem promoção
+    // regra: INATIVO → sem promoção
     if (key === "status" && value === "INATIVO") {
       atualizado.promocaoAtiva = false
     }
@@ -78,8 +68,8 @@ export default function NovoProdutoPage() {
     setOk(false)
   }
 
-  const handleSave = () => {
-    // validações simples
+  const handleSave = async () => {
+    // validações
     if (!produto.nome.trim() || !produto.categoria.trim() || produto.valor <= 0) {
       setErro("Preencha pelo menos o nome, categoria e valor do produto.")
       return
@@ -87,27 +77,36 @@ export default function NovoProdutoPage() {
 
     setSalvando(true)
 
-    // gera id sequencial simples
-    const storage = loadFromStorage()
-    const ids = Object.values(storage).map((p) => p.id)
-    const novoId = ids.length ? Math.max(...ids) + 1 : 1
+    try {
+      // 🔥 Mapeia campos para o backend
+      const body = {
+        name: produto.nome,
+        description: produto.descricao,
+        category: produto.categoria,
+        cut: produto.corte,
+        brand: produto.marca,
+        notes: produto.observacoes,
+        quantity: produto.quantidade,
+        price: produto.valor,
+        promotionalPrice:
+          produto.valorPromocional === 0 ? null : produto.valorPromocional,
+        promotionActive: produto.promocaoAtiva,
+        status: mapStatusToApi(produto.status),
+      }
 
-    const novoProduto = {
-      ...produto,
-      id: novoId,
-      status: calcularStatus(produto),
+      await apiPost("/products", body)
+
+      setOk(true)
+
+      setTimeout(() => {
+        router.push("/estoque")
+      }, 1200)
+    } catch (error) {
+      console.error("Erro ao salvar produto:", error)
+      setErro("Ocorreu um erro ao salvar o produto.")
+    } finally {
+      setSalvando(false)
     }
-
-    storage[novoId.toString().padStart(5, "0")] = novoProduto
-    saveToStorage(storage)
-
-    setSalvando(false)
-    setOk(true)
-
-    // volta pro estoque depois de 1s
-    setTimeout(() => {
-      router.push("/estoque")
-    }, 1200)
   }
 
   return (
@@ -207,7 +206,9 @@ export default function NovoProdutoPage() {
                 <input
                   type="number"
                   value={produto.valor}
-                  onChange={(e) => handleChange("valor", parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    handleChange("valor", parseFloat(e.target.value) || 0)
+                  }
                   className="bg-[#EDEDED] text-center text-sm rounded-md border border-gray-300 py-2"
                 />
               </div>

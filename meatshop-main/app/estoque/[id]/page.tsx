@@ -2,91 +2,44 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
+import { apiGet, apiPatch } from "@/lib/api"
 
-// ========== MOCK INICIAL ==========
-const BASE_PRODUTOS = [
-  {
-    id: 1,
-    nome: "FILÉ MIGNON",
-    categoria: "BOVINO",
-    corte: "FILÉ",
-    marca: "FRIBOI",
-    observacoes: "---",
-    quantidade: "60 KG",
-    valor: 111.28,
-    valorPromocional: 99.99,
-    promocaoAtiva: true,
-    status: "ATIVO",
-    descricao: "Filé Mignon de alta qualidade, ideal para grelhar ou assar.",
-  },
-  {
-    id: 2,
-    nome: "CHANDANGA",
-    categoria: "BOVINO",
-    corte: "CHÃ",
-    marca: "SWIFT",
-    observacoes: "---",
-    quantidade: "45 KG",
-    valor: 111.28,
-    valorPromocional: 95.5,
-    promocaoAtiva: false,
-    status: "INATIVO",
-    descricao: "Carne bovina de primeira, indicada para cozidos e ensopados.",
-  },
-  {
-    id: 3,
-    nome: "ALCATRA",
-    categoria: "BOVINO",
-    corte: "ALCATRA",
-    marca: "FRIBOI",
-    observacoes: "---",
-    quantidade: "50 KG",
-    valor: 630.44,
-    valorPromocional: 580.0,
-    promocaoAtiva: true,
-    status: "ATIVO",
-    descricao: "Corte nobre bovino, suculento e ideal para churrascos.",
-  },
-  {
-    id: 16,
-    nome: "COSTELA BOVINA MINERVA FOODS",
-    categoria: "CARNE BOVINA",
-    corte: "COSTELA",
-    marca: "MINERVA FOODS",
-    observacoes: "---",
-    quantidade: "700 KG",
-    valor: 69.9,
-    valorPromocional: 59.99,
-    promocaoAtiva: true,
-    status: "ATIVO",
-    descricao: "Costela bovina com ótima marmorização, ideal para o forno ou churrasqueira.",
-  },
-]
-// ===================================
+// ========= Tipagem do Produto =========
+type Produto = {
+  id: number
+  nome: string
+  categoria: string
+  corte: string
+  marca: string
+  observacoes: string
+  quantidade: string
+  valor: number
+  valorPromocional: number
+  promocaoAtiva: boolean
+  status: "ATIVO" | "INATIVO" | "EM PROMOÇÃO"
+  descricao: string
+}
+// ======================================
 
-type Produto = typeof BASE_PRODUTOS[number]
-
-const LS_KEY = "meatshop.inventory.v1"
-
-function loadFromStorage(): Record<string, Produto> {
-  if (typeof window === "undefined") return {}
-  try {
-    return JSON.parse(localStorage.getItem(LS_KEY) || "{}")
-  } catch {
-    return {}
-  }
+// Converte status do backend → frontend
+function apiToUiStatus(status: string): Produto["status"] {
+  if (status === "ON_SALE") return "EM PROMOÇÃO"
+  if (status === "INACTIVE") return "INATIVO"
+  return "ATIVO"
 }
 
-function saveToStorage(map: Record<string, Produto>) {
-  localStorage.setItem(LS_KEY, JSON.stringify(map))
-  window.dispatchEvent(new Event("estoque:updated"))
+// Converte status do frontend → backend
+function uiToApiStatus(status: Produto["status"]): "ACTIVE" | "INACTIVE" | "ON_SALE" {
+  if (status === "EM PROMOÇÃO") return "ON_SALE"
+  if (status === "INATIVO") return "INACTIVE"
+  return "ACTIVE"
 }
 
-// Função que calcula o status correto com base nas regras
+// Regras de status (mesmas do backend)
 function calcularStatus(produto: Produto): Produto["status"] {
   if (produto.status === "INATIVO") return "INATIVO"
-  if (produto.status === "ATIVO" && produto.promocaoAtiva) return "EM PROMOÇÃO"
-  return "ATIVO"
+  if (produto.promocaoAtiva && produto.status === "ATIVO") return "EM PROMOÇÃO"
+  return produto.status
 }
 
 export default function ProdutoDetalhesPage() {
@@ -98,44 +51,85 @@ export default function ProdutoDetalhesPage() {
   const [produto, setProduto] = useState<Produto | null>(null)
   const [saved, setSaved] = useState(false)
 
-  // Carrega o produto certo (mock + storage)
+  // ========= CARREGAR PRODUTO DO BACKEND =========
   useEffect(() => {
-    const storage = loadFromStorage()
-    const local = storage[produtoKey]
-    const base = BASE_PRODUTOS.find((p) => p.id === produtoId)
-    const inicial = local || base || null
+    async function load() {
+      try {
+        const res = await apiGet(`/products/${produtoId}`)
 
-    if (inicial) {
-      // Garante que o status inicial seja coerente
-      inicial.status = calcularStatus(inicial)
+        if (!res.ok) {
+          console.error("Produto não encontrado")
+          return
+        }
+
+        const p = res.data
+
+        setProduto({
+          id: p.id,
+          nome: p.name,
+          descricao: p.description,
+          categoria: p.category,
+          corte: p.cut,
+          marca: p.brand ?? "",
+          observacoes: p.notes ?? "",
+          quantidade: p.quantity,
+          valor: p.price,
+          valorPromocional: p.promotionalPrice ?? 0,
+          promocaoAtiva: p.promotionActive,
+          status: apiToUiStatus(p.status),
+        })
+      } catch (err) {
+        console.error("Erro ao carregar produto:", err)
+      }
     }
 
-    setProduto(inicial)
-  }, [produtoId, produtoKey])
+    load()
+  }, [produtoId])
+  // ==================================================
 
   const handleChange = (key: keyof Produto, value: any) => {
     if (!produto) return
+
     let updated = { ...produto, [key]: value }
 
-    // Se inativo → remove promoção automaticamente
+    // Se ficar inativo, promoção desliga automaticamente
     if (key === "status" && value === "INATIVO") {
       updated.promocaoAtiva = false
     }
 
-    // Recalcula o status baseado nas regras
     updated.status = calcularStatus(updated)
     setProduto(updated)
     setSaved(false)
   }
 
-  const handleSave = () => {
+  // ========= SALVAR NO BACKEND =========
+  async function handleSave() {
     if (!produto) return
-    const map = loadFromStorage()
-    const atualizado = { ...produto, status: calcularStatus(produto) }
-    map[produtoKey] = atualizado
-    saveToStorage(map)
-    setSaved(true)
+
+    try {
+      const body = {
+        name: produto.nome,
+        description: produto.descricao,
+        category: produto.categoria,
+        cut: produto.corte,
+        brand: produto.marca,
+        notes: produto.observacoes,
+        quantity: produto.quantidade,
+        price: produto.valor,
+        promotionalPrice: produto.valorPromocional || null,
+        promotionActive: produto.promocaoAtiva,
+        status: uiToApiStatus(produto.status),
+      }
+
+      await apiPatch(`/products/${produto.id}`, body)
+
+      setSaved(true)
+      router.push("/estoque")
+    } catch (err) {
+      console.error("Erro ao salvar produto:", err)
+    }
   }
+  // =====================================
 
   if (!produto) {
     return (
@@ -258,7 +252,7 @@ export default function ProdutoDetalhesPage() {
                   onChange={(e) =>
                     handleChange("promocaoAtiva", e.target.value === "true")
                   }
-                  disabled={produto.status === "INATIVO"} // bloqueia se inativo
+                  disabled={produto.status === "INATIVO"}
                   className={`text-sm font-semibold text-center rounded-md border border-gray-300 py-2 ${
                     produto.promocaoAtiva
                       ? "bg-green-100 text-green-700"

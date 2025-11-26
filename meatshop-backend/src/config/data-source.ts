@@ -5,8 +5,8 @@ import { Order } from '../entities/order.entity';
 import { Expense } from '../entities/expense.entity';
 import { RefreshToken } from '../entities/refresh-token.entity';
 import { Sale } from '../entities/sale.entity'; // <--- ADICIONE AQUI
+import { Product } from '../entities/product.entity';
 
-// 👇 Carrega o .env correto dependendo do script (migration, docker, local)
 dotenv.config({
   path: process.env.DOTENV_CONFIG_PATH || '.env',
 });
@@ -22,7 +22,7 @@ export default new DataSource({
   database: process.env.DB_DATABASE,
   entities: isCompiled
     ? [`${__dirname}/../entities/*.js`]
-    : [User, Order, Expense, RefreshToken, Sale], // <--- IMPORTANTE
+    : [User, Order, Expense, RefreshToken, Sale, Product],
   migrations: [`${__dirname}/../migrations/*.{ts,js}`],
   synchronize: false,
   logging: process.env.NODE_ENV !== 'production',

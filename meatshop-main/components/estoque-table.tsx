@@ -1,172 +1,91 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { apiGet } from "@/lib/api";
 
 type Produto = {
-  id: number
-  descricao: string
-  categoria: string
-  marca: string
-  quantidade: string
-  valor: number
-  status: string
-}
-
-const LS_KEY = "meatshop.inventory.v1"
-
-function loadOverrides(): Record<string, any> {
-  if (typeof window === "undefined") return {}
-  try {
-    return JSON.parse(localStorage.getItem(LS_KEY) || "{}")
-  } catch {
-    return {}
-  }
-}
-
-// 🔧 Recalcula o status conforme regras globais
-function calcularStatus(local: any): string {
-  if (local.status === "INATIVO") return "INATIVO"
-  if (local.promocaoAtiva && local.status !== "INATIVO") return "EM PROMOÇÃO"
-  return "ATIVO"
-}
+  id: number;
+  descricao: string;
+  categoria: string;
+  marca: string;
+  quantidade: string;
+  valor: number;
+  status: string;
+};
 
 export function EstoqueTable({
   filters,
   currentPage,
   onPageChange,
 }: {
-  filters: any
-  currentPage: number
-  onPageChange: (page: number) => void
+  filters: any;
+  currentPage: number;
+  onPageChange: (page: number) => void;
 }) {
-  const router = useRouter()
+  const router = useRouter();
 
-  // Mock inicial
-  const baseProdutos: Produto[] = [
-    {
-      id: 1,
-      descricao: "FILÉ MIGNON",
-      categoria: "BOVINO",
-      marca: "FRIBOI",
-      quantidade: "60,00 KG",
-      valor: 111.28,
-      status: "EM PROMOÇÃO",
-    },
-    {
-      id: 2,
-      descricao: "CHANDANGA",
-      categoria: "BOVINO",
-      marca: "SWIFT",
-      quantidade: "45,90 KG",
-      valor: 111.28,
-      status: "ATIVO",
-    },
-    {
-      id: 3,
-      descricao: "ALCATRA",
-      categoria: "BOVINO",
-      marca: "FRIBOI",
-      quantidade: "50,80 KG",
-      valor: 630.44,
-      status: "ATIVO",
-    },
-    {
-      id: 16,
-      descricao: "COSTELA",
-      categoria: "BOVINO",
-      marca: "MINERVA FOODS",
-      quantidade: "700 KG",
-      valor: 69.9,
-      status: "ATIVO",
-    },
-  ]
+  const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const [produtos, setProdutos] = useState<Produto[]>(baseProdutos)
-
-  // 🧩 Atualiza com dados do localStorage
-  const applyOverrides = () => {
-    const overrides = loadOverrides()
-    const mapOverrides = Object.values(overrides)
-
-    // Combina mock + novos itens
-    const merged = [
-      ...baseProdutos.map((p) => {
-        const key = String(p.id).padStart(5, "0")
-        const local = overrides[key]
-        if (!local) return p
-
-        return {
-          ...p,
-          descricao: local.nome || p.descricao,
-          marca: local.marca || p.marca,
-          categoria: local.categoria || p.categoria,
-          quantidade: local.quantidade || p.quantidade,
-          valor: local.promocaoAtiva
-            ? local.valorPromocional
-            : local.valor || p.valor,
-          status: calcularStatus(local),
-        }
-      }),
-
-      // Adiciona produtos criados manualmente (que não existem no mock)
-      ...mapOverrides
-        .filter(
-          (local: any) =>
-            !baseProdutos.some((p) => p.id === local.id) // evita duplicação
-        )
-        .map((local: any) => ({
-          id: local.id,
-          descricao: local.nome,
-          categoria: local.categoria,
-          marca: local.marca,
-          quantidade: local.quantidade,
-          valor: local.promocaoAtiva
-            ? local.valorPromocional
-            : local.valor,
-          status: calcularStatus(local),
-        })),
-    ]
-
-    // Ordena (mais recente primeiro)
-    const ordenado = merged.sort((a, b) => b.id - a.id)
-    setProdutos(ordenado)
+  // 🔄 Converte STATUS inglês → português (API -> Tela)
+  function mapStatusToPt(status: string): string {
+    if (status === "ON_SALE") return "EM PROMOÇÃO";
+    if (status === "INACTIVE") return "INATIVO";
+    return "ATIVO";
   }
 
-  // 🧠 Atualiza automaticamente sempre que o estoque muda
+  // 🔎 Buscando lista da API
   useEffect(() => {
-    applyOverrides()
+    async function loadProducts() {
+      try {
+        const params = new URLSearchParams();
 
-    const h = () => applyOverrides()
-    window.addEventListener("storage", h)
-    window.addEventListener("estoque:updated", h)
-    return () => {
-      window.removeEventListener("storage", h)
-      window.removeEventListener("estoque:updated", h)
+        if (filters.id) params.append("id", filters.id);
+        if (filters.descricao)
+          params.append("description", filters.descricao);
+        if (filters.categoria)
+          params.append("category", filters.categoria);
+
+        if (filters.status) {
+          const map: Record<string, string> = {
+            "ATIVO": "ACTIVE",
+            "INATIVO": "INACTIVE",
+            "EM PROMOÇÃO": "ON_SALE",
+          };
+          params.append(
+            "status",
+            map[filters.status] ?? filters.status
+          );
+        }
+
+        params.append("page", String(currentPage));
+        params.append("limit", "10");
+
+        const result = await apiGet(`/products?${params.toString()}`);
+
+        const converted = result.data.map((p: any) => ({
+          id: p.id,
+          descricao: p.name,
+          categoria: p.category,
+          marca: p.brand ?? "",
+          quantidade: p.quantity,
+          valor: p.price,
+          status: mapStatusToPt(p.status),
+        }));
+
+        setProdutos(converted);
+        setTotalPages(result.meta.totalPages || 1);
+      } catch (error) {
+        console.error("Erro ao carregar produtos:", error);
+        setProdutos([]);
+        setTotalPages(1);
+      }
     }
-  }, [])
 
-  // 🔍 Filtros simples
-  const filtered = produtos.filter((p) => {
-    const idMatch = filters.id ? p.id.toString().includes(filters.id) : true
-    const descMatch = filters.descricao
-      ? p.descricao.toLowerCase().includes(filters.descricao.toLowerCase())
-      : true
-    const catMatch = filters.categoria
-      ? p.categoria.toLowerCase().includes(filters.categoria.toLowerCase())
-      : true
-    const statusMatch = filters.status
-      ? p.status.toLowerCase().includes(filters.status.toLowerCase())
-      : true
-    return idMatch && descMatch && catMatch && statusMatch
-  })
-
-  // 📄 Paginação
-  const itemsPerPage = 10
-  const totalPages = Math.ceil(filtered.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const paginated = filtered.slice(startIndex, startIndex + itemsPerPage)
+    loadProducts();
+  }, [filters, currentPage]);
 
   return (
     <div className="overflow-x-auto">
@@ -184,7 +103,7 @@ export function EstoqueTable({
           </tr>
         </thead>
         <tbody>
-          {paginated.map((p) => (
+          {produtos.map((p) => (
             <tr
               key={p.id}
               className="border-b border-gray-200 hover:bg-gray-100 transition"
@@ -230,6 +149,7 @@ export function EstoqueTable({
         >
           {"<"}
         </Button>
+
         {Array.from({ length: totalPages }).map((_, i) => (
           <button
             key={i}
@@ -243,6 +163,7 @@ export function EstoqueTable({
             {i + 1}
           </button>
         ))}
+
         <Button
           onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
           disabled={currentPage === totalPages}
@@ -252,5 +173,5 @@ export function EstoqueTable({
         </Button>
       </div>
     </div>
-  )
+  );
 }
