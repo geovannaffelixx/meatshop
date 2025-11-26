@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, Like, Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { Product, ProductStatus } from './entities/product.entity';
 import { CreateProductDto } from './create-product.dto';
 import { UpdateProductDto } from './update-product.dto';
@@ -58,7 +58,7 @@ export class ProductsController {
     }
 
     if (description) {
-      where.description = Like(`%${description}%`);
+      where.description = ILike(`%${description}%`);
     }
 
     if (category) {
