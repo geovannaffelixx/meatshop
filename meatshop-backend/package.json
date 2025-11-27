@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node dist/main.js",
     "start:dev": "nest start --watch",
-    "build": "tsc -p tsconfig.build.jso",
+    "build": "tsc -p tsconfig.build.json",
     "lint": "eslint src test --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "dotenv -e .env.test -- jest --runInBand --passWithNoTests",
