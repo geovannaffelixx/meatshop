@@ -8,7 +8,7 @@
     "build": "nest build",
     "lint": "eslint src test --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test": "dotenv -e .env.test -- jest --runInBand --coverage",
+    "test": "dotenv -e .env.test -- jest --runInBand --passWithNoTests",
     "typeorm": "typeorm-ts-node-commonjs -d src/config/data-source.ts",
     "migration:generate": "cross-env DOTENV_CONFIG_PATH=.env.local-migrations typeorm-ts-node-commonjs migration:generate -d src/config/data-source.ts",
     "migration:run": "cross-env DOTENV_CONFIG_PATH=.env.local-migrations typeorm-ts-node-commonjs -d src/config/data-source.ts migration:run",
