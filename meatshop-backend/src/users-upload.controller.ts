@@ -1,5 +1,4 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import type { Request } from 'express';
+import type { Express } from 'express';
 import {
   BadRequestException,
   Controller,

@@ -52,13 +52,22 @@ pnpm-lock.yaml merge=ours
 # ==============================
 # Estatísticas do GitHub Linguist
 # ==============================
+
 # Ignorar arquivos de build e dependências
 meatshop-backend/dist/* linguist-vendored
+meatshop-backend/coverage/* linguist-vendored
+meatshop-backend/logs/* linguist-vendored
+
 meatshop-main/.next/* linguist-vendored
-node_modules/* linguist-vendored
+meatshop-main/out/* linguist-vendored
+meatshop-main/build/* linguist-vendored
+meatshop-main/coverage/* linguist-vendored
+meatshop-main/public/* linguist-vendored
+
+# Ignorar coverage global caso exista
 coverage/* linguist-vendored
 
-# Ignorar relatórios e arquivos HTML gerados pela IA explicável
+# Ignorar relatórios de IA explicável e documentação
 xai/docs/* linguist-vendored
 docs/* linguist-vendored
 
