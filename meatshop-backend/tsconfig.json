@@ -14,11 +14,11 @@
 
     "sourceMap": true,
     "outDir": "./dist",
-    "rootDir": ".",
+    "rootDir": "./src",
 
-    "baseUrl": "./src",
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["*"]
+      "@/*": ["src/*"]
     },
 
     "strict": true,
@@ -26,6 +26,7 @@
     "noEmitOnError": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*", "test/**/*"],
+
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }
