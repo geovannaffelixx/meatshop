@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Image as ImageIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { apiPost } from "@/lib/api";
 
 function LabelObrigatorio({ label, required = false }: { label: string; required?: boolean }) {
   return (
@@ -176,73 +177,51 @@ export default function CadastroAcougue() {
     if (!validate()) return;
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nomeFantasia: form.nomeFantasia,
-          razaoSocial: form.razaoSocial,
-          cnpj: form.cnpj,
-          telefone: form.telefone,
-          celular: form.celular,
-          cep: form.cep,
-          logradouro: form.logradouro,
-          numero: form.numero || "S/N",
-          complemento: form.complemento,
-          bairro: form.bairro,
-          cidade: form.cidade,
-          estado: form.estado,
-          pais: form.pais,
-          email: form.email,
-          usuario: form.usuario,
-          senha: form.senha,
-        }),
+      // 1) Registro usando api.ts
+      const data = await apiPost("/auth/register", {
+        nomeFantasia: form.nomeFantasia,
+        razaoSocial: form.razaoSocial,
+        cnpj: form.cnpj,
+        telefone: form.telefone,
+        celular: form.celular,
+        cep: form.cep,
+        logradouro: form.logradouro,
+        numero: form.numero || "S/N",
+        complemento: form.complemento,
+        bairro: form.bairro,
+        cidade: form.cidade,
+        estado: form.estado,
+        pais: form.pais,
+        email: form.email,
+        usuario: form.usuario,
+        senha: form.senha,
       });
 
-      const data = await res.json();
+      // 2) Upload da imagem (se houver)
+      const file = form.imagemPerfil;
+      if (file && data?.user?.id) {
+        const formData = new FormData();
+        formData.append("file", file);
 
-      if (!res.ok) {
-        throw new Error(data?.message || "Erro no cadastro");
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${data.user.id}/logo`, {
+          method: "POST",
+          body: formData,
+          credentials: "include", // cookies HttpOnly fazem a autenticação
+        });
       }
-      
-      if (data?.accessToken) localStorage.setItem("accessToken", data.accessToken);
-      if (data?.user) localStorage.setItem("currentUser", JSON.stringify(data.user));
 
-    const file = form.imagemPerfil;
-    if (file && data?.user?.id) {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${data.user.id}/logo`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken") || ""}`,
-        },
-        body: formData,
-        credentials: "include",
-      });
-
-      const meRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/me`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken") || ""}`,
-        },
-        credentials: "include",
-      });
-      const meData = await meRes.json();
-      if (meData?.ok && meData?.user) {
-        localStorage.setItem("currentUser", JSON.stringify(meData.user));
-        window.dispatchEvent(new Event("currentUserUpdated"));
-      }
-    }
-
+      // 3) Mensagem e redirect
       setMsg("Cadastro realizado com sucesso! Redirecionando...");
       setAlertType("success");
+
       setTimeout(() => router.push("/entrar"), 3000);
+
     } catch (err: any) {
       setMsg(err.message);
       setAlertType("error");
     }
   };
+
 
   const inputClass = (name: string) =>
     errors[name] ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "";

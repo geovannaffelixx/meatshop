@@ -47,14 +47,12 @@ export default function Page() {
       }
 
       // Armazena token e usuário para o UserCard
-      const accessToken: string | undefined = data?.accessToken || data?.token;
-      if (accessToken) {
-        localStorage.setItem("accessToken", accessToken);
-      }
-
       if (data?.user) {
         localStorage.setItem("currentUser", JSON.stringify(data.user));
+        window.dispatchEvent(new Event("currentUserUpdated"));
       }
+      localStorage.removeItem("accessToken");
+
 
       setMsg("Login realizado com sucesso! Redirecionando...");
       setAlertType("success");

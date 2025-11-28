@@ -1,5 +1,7 @@
 "use client";
+
 import { useEffect, useState } from "react";
+import { apiGet } from "@/lib/api"; // 👈 IMPORTANTE
 
 export type CurrentUser = {
   id: number;
@@ -12,27 +14,33 @@ export function useCurrentUser() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // ================================
+  // 1) Busca o usuário via /users/me usando cookies HttpOnly
+  // ================================
   async function fetchMe() {
     try {
-      const token = localStorage.getItem("accessToken");
-      if (!token) return setUser(null);
+      const data = await apiGet("/users/me");  // 👈 AGORA USANDO API PADRÃO
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-        credentials: "include",
-      });
-      const data = await res.json();
       if (data?.ok && data?.user) {
         setUser(data.user);
+
+        // Salva no cache local (sidebar instantânea)
         localStorage.setItem("currentUser", JSON.stringify(data.user));
+        window.dispatchEvent(new Event("currentUserUpdated"));
       }
     } catch (err) {
+      // Quando o cookie expirou → 401 → não autenticado
+      setUser(null);
+      localStorage.removeItem("currentUser");
       console.error("Erro ao buscar /users/me", err);
     } finally {
       setLoading(false);
     }
   }
 
+  // ================================
+  // 2) Carrega cache local antes do request
+  // ================================
   useEffect(() => {
     const cached = localStorage.getItem("currentUser");
     if (cached) {
@@ -43,13 +51,18 @@ export function useCurrentUser() {
     fetchMe();
   }, []);
 
+  // ================================
+  // 3) Atualiza quando login/logout acontece
+  // ================================
   useEffect(() => {
     function handleUpdate() {
       const raw = localStorage.getItem("currentUser");
       setUser(raw ? JSON.parse(raw) : null);
     }
+
     window.addEventListener("currentUserUpdated", handleUpdate);
     window.addEventListener("storage", handleUpdate);
+
     return () => {
       window.removeEventListener("currentUserUpdated", handleUpdate);
       window.removeEventListener("storage", handleUpdate);

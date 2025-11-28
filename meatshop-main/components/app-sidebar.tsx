@@ -14,9 +14,10 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { User, Shield, House, ShoppingBag, Box, PiggyBank, LogOut, ChevronRight, Users } from "lucide-react"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
 import { useCurrentUser } from "@/hooks/useCurrentUser"
+import { apiPost } from "@/lib/api"
 
 const navData = [
   {
@@ -49,6 +50,7 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
 
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
   const pathname = usePathname()
+  const router = useRouter()
   const { user: currentUser } = useCurrentUser()
 
   const displayUser: UserData = currentUser ?? user ?? {
@@ -58,11 +60,30 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
   }
   
   const resolvedSrc =
-  displayUser.logoUrl
-    ? (displayUser.logoUrl.startsWith("http")
-        ? displayUser.logoUrl
-        : `${process.env.NEXT_PUBLIC_API_URL}${displayUser.logoUrl}`)
-    : null;
+    displayUser.logoUrl
+      ? (displayUser.logoUrl.startsWith("http")
+          ? displayUser.logoUrl
+          : `${process.env.NEXT_PUBLIC_API_URL}${displayUser.logoUrl}`)
+      : null
+
+  async function handleLogout() {
+    try {
+      // avisa o backend para limpar os cookies HttpOnly (access_token / refresh_token)
+      await apiPost("/auth/logout", {})
+    } catch (error) {
+      console.error("Erro ao fazer logout", error)
+    } finally {
+      // limpa qualquer dado local que possa ter sobrado
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("accessToken") // legado
+        localStorage.removeItem("currentUser")
+        window.dispatchEvent(new Event("currentUserUpdated"))
+      }
+
+      // envia o usuário para a tela de login
+      router.push("/entrar")
+    }
+  }
 
   return (
     <Sidebar {...props}>
@@ -100,13 +121,14 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
         ))}
 
         <div className="mt-auto px-4 py-2">
-          <Link
-            href="/entrar"
-            className="flex items-center gap-2 rounded-md px-2 py-1 text-gray-700 hover:text-red-600 hover:[&>svg]:text-red-600 transition-colors"
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-gray-700 hover:text-red-600 hover:[&>svg]:text-red-600 transition-colors"
           >
             <LogOut className="h-4 w-4" />
             Sair
-          </Link>
+          </button>
         </div>
 
         <Link

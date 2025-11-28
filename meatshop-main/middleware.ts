@@ -1,28 +1,43 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/", "/entrar", "/recuperar"];
+// Rotas públicas — não exigem autenticação
+const PUBLIC_PATHS = ["/", "/entrar", "/cadastrar", "/recuperar"];
+
+function isPublic(pathname: string) {
+  return PUBLIC_PATHS.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  );
+}
+
+// Arquivos estáticos que NÃO devem ser interceptados
+function isStaticAsset(pathname: string) {
+  return /\.(png|jpg|jpeg|svg|gif|webp|ico|css|js)$/i.test(pathname);
+}
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Verifica se a rota atual é pública
-  const isPublicRoute = PUBLIC_PATHS.some(
-    (path) => pathname === path || pathname.startsWith(`${path}/`)
-  );
+  // 0) Se for arquivo estático → NÃO passa pelo middleware
+  if (isStaticAsset(pathname)) {
+    return NextResponse.next();
+  }
 
-  // Cookie que vamos criar no login
-  const token = request.cookies.get("accessToken")?.value;
+  // Cookie HttpOnly enviado automaticamente pelo backend NestJS
+  const token = request.cookies.get("access_token")?.value;
 
-  // 🔒 Se NÃO tiver token e a rota NÃO for pública → manda para /entrar
-  if (!token && !isPublicRoute) {
+  const onPublic = isPublic(pathname);
+
+  // 1) Se NÃO estiver logado e tentar acessar rota privada → /entrar
+  if (!token && !onPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/entrar";
     return NextResponse.redirect(url);
   }
 
-  // 🔁 Se tiver token e a pessoa tentar ir para /entrar → manda pra /home
-  if (token && pathname === "/entrar") {
+  // 2) Se estiver logado e tentar acessar página pública → /home
+  // (exceto a raiz "/")
+  if (token && onPublic && pathname !== "/") {
     const url = request.nextUrl.clone();
     url.pathname = "/home";
     return NextResponse.redirect(url);
@@ -31,13 +46,6 @@ export function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-// Em quais rotas o middleware roda
 export const config = {
-  matcher: [
-    "/home/:path*",
-    "/pedidos/:path*",
-    "/estoque/:path*",
-    "/configuracoes/:path*",
-    // adicione aqui outras rotas que quiser proteger
-  ],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };
