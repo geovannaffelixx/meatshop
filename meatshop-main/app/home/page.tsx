@@ -148,8 +148,13 @@ export default function Page() {
                     {sales.map((s) => (
                       <CarouselItem key={s.id} className="basis-1/5">
                         <div className="flex flex-col items-center justify-center bg-gray-200 rounded-lg overflow-hidden aspect-square">
-                          <div className="flex-1 w-full flex items-center justify-center">
-                            <img src={s.imageUrl} alt={s.name} className="object-cover w-full h-full" />
+                          <div className="w-full bg-gray-200 rounded-t-lg overflow-hidden flex items-center justify-center"
+                              style={{ height: "120px" }}>
+                            <img
+                              src={`${process.env.NEXT_PUBLIC_API_URL}${s.imageUrl}`}
+                              alt={s.name}
+                              className="w-full h-full object-contain"
+                            />
                           </div>
                           <span className="text-sm font-medium mt-2 text-center">{s.name}</span>
                           <span className="text-xs text-gray-500 text-center">Desconto: R$ {s.discountValue}</span>
