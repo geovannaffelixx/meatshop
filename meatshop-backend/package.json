@@ -12,7 +12,7 @@
     "typeorm": "typeorm-ts-node-commonjs -d src/config/data-source.ts",
     "migration:generate": "cross-env DOTENV_CONFIG_PATH=.env.local-migrations typeorm-ts-node-commonjs migration:generate -d src/config/data-source.ts",
     "migration:run": "cross-env DOTENV_CONFIG_PATH=.env.local-migrations typeorm-ts-node-commonjs -d src/config/data-source.ts migration:run",
-    "migration:run:prod": "typeorm -d dist/src/config/data-source.js migration:run",
+    "migration:run:prod": "typeorm -d dist/config/data-source.js migration:run",
     "migration:revert": "npm run typeorm -- migration:revert"
   },
   "dependencies": {

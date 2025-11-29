@@ -19,7 +19,7 @@ type Produto = {
   descricao: string
 }
 
-// 🔢 cálculo automático de status
+// cálculo automático de status
 function calcularStatus(produto: Produto): Produto["status"] {
   if (produto.status === "INATIVO") return "INATIVO"
   if (produto.status === "ATIVO" && produto.promocaoAtiva) return "EM PROMOÇÃO"
@@ -78,7 +78,7 @@ export default function NovoProdutoPage() {
     setSalvando(true)
 
     try {
-      // 🔥 Mapeia campos para o backend
+      // Mapeia campos para o backend
       const body = {
         name: produto.nome,
         description: produto.descricao,

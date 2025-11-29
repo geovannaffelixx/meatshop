@@ -11,6 +11,7 @@ import {
   AllExceptionsFilter,
 } from './common/logger';
 import { MetricsService } from './metrics/metrics.service';
+import { join } from 'path';
 
 async function bootstrap() {
   const startAt = Date.now();
@@ -18,6 +19,9 @@ async function bootstrap() {
   const winstonLogger = createAppLogger();
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+    prefix: '/uploads/',
+  });
 
   app.use(cookieParser());
 

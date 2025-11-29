@@ -12,20 +12,16 @@ RUN npm ci
 
 COPY tsconfig*.json ./
 COPY nest-cli.json ./
-COPY src ./src
 
-# Compila o projeto (usa tsconfig.build.json / Nest CLI)
+# Copiar código-fonte e migrations
+COPY src ./src
+COPY migrations ./migrations
+
+# Compilar projeto
 RUN npm run build
 
-# Verificação: garante que dist foi gerado (com ou sem /src)
-RUN if [ ! -f "dist/main.js" ] && [ ! -f "dist/src/main.js" ]; then \
-      echo "❌ ERRO: dist/main.js ou dist/src/main.js não foram gerados!"; \
-      echo "Conteúdo de dist:"; ls -la dist || true; \
-      exit 1; \
-    fi
-
 # ============================================
-# STAGE 2 — PRODUÇÃO
+# STAGE 2 — RUNTIME
 # ============================================
 FROM node:20-alpine AS runtime
 
@@ -34,8 +30,9 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 RUN npm ci --omit=dev
 
-# Copia os artefatos compilados
+# Copiar dist E migrations para runtime
 COPY --from=builder /usr/src/app/dist ./dist
+COPY --from=builder /usr/src/app/migrations ./migrations
 
 USER node
 
@@ -47,5 +44,4 @@ EXPOSE 3001
 
 VOLUME ["/usr/src/app/data", "/usr/src/app/logs"]
 
-# Fallback inteligente: tenta dist/main.js; se não existir, usa dist/src/main.js
-CMD sh -c 'if [ -f "dist/main.js" ]; then node dist/main.js; else node dist/src/main.js; fi'
+CMD ["node", "dist/main.js"]
