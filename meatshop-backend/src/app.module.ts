@@ -29,7 +29,7 @@ import { MetricsModule } from './metrics/metrics.module';
 import { FinanceModule } from './finance/finance.module';
 import { AuthModule } from './auth/auth.module';
 import { SeedModule } from './seed/seed.module';
-
+import { MercadoPagoModule } from '@/mercadopago/mercadopago.module';
 @Module({
   imports: [
     // Configuração global
@@ -74,6 +74,7 @@ import { SeedModule } from './seed/seed.module';
     FinanceModule,
     AuthModule,
     SeedModule,
+    MercadoPagoModule,
   ],
   controllers: [
     AppController,
