@@ -1,17 +1,18 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
 import { PaymentMethod } from '../entities/order.entity';
 
 @Injectable()
 export class MercadoPagoService {
-  private client: MercadoPagoConfig;
+  private client: MercadoPagoConfig | null = null;
 
   constructor(private readonly config: ConfigService) {
-    const accessToken = this.config.get<string>('MP_ACCESS_TOKEN');
+    const accessToken = (this.config.get<string>('MP_ACCESS_TOKEN') || '').trim();
 
     if (!accessToken) {
-      throw new Error('MP_ACCESS_TOKEN não configurado');
+      this.client = null;
+      return;
     }
 
     this.client = new MercadoPagoConfig({
@@ -20,16 +21,37 @@ export class MercadoPagoService {
     });
   }
 
-  /**
-   * Cria preferência de pagamento no Mercado Pago (Checkout Pro)
-   */
+  private ensureClient() {
+    if (!this.client) {
+      throw new ServiceUnavailableException(
+        'Mercado Pago não configurado: defina MP_ACCESS_TOKEN no ambiente.',
+      );
+    }
+    return this.client;
+  }
+
   async createPreference(params: { orderId: number; amount: number; description: string }) {
-    const preference = new Preference(this.client);
+    const client = this.ensureClient();
 
-    const frontendUrl = this.config.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    const amount = Number(params.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException('Valor do pedido inválido para pagamento (amount <= 0).');
+    }
 
-    const backendPublicUrl =
-      this.config.get<string>('BACKEND_PUBLIC_URL') || 'http://localhost:3001';
+    const preference = new Preference(client);
+
+    const frontendUrl = (this.config.get<string>('FRONTEND_URL') || 'http://localhost:3000').trim();
+    const backendPublicUrl = (
+      this.config.get<string>('BACKEND_PUBLIC_URL') || 'http://localhost:3001'
+    ).trim();
+
+    const webhookPath = (
+      this.config.get<string>('BACKEND_WEBHOOK_PATH') || '/webhooks/mercadopago'
+    ).trim();
+
+    const notificationUrl = `${backendPublicUrl}${webhookPath.startsWith('/') ? '' : '/'}${webhookPath}`;
+
+    const backBase = `${frontendUrl}/`;
 
     const response = await preference.create({
       body: {
@@ -38,57 +60,51 @@ export class MercadoPagoService {
             id: String(params.orderId),
             title: params.description,
             quantity: 1,
-            unit_price: Number(params.amount),
+            unit_price: amount,
             currency_id: 'BRL',
           },
         ],
         external_reference: String(params.orderId),
-        notification_url: `${backendPublicUrl}/webhooks/mercadopago`,
+        notification_url: notificationUrl,
         back_urls: {
-          success: `${frontendUrl}/payment/success?orderId=${params.orderId}`,
-          failure: `${frontendUrl}/payment/failure?orderId=${params.orderId}`,
-          pending: `${frontendUrl}/payment/pending?orderId=${params.orderId}`,
+          success: `${backBase}?payment=success&orderId=${params.orderId}`,
+          failure: `${backBase}?payment=failure&orderId=${params.orderId}`,
+          pending: `${backBase}?payment=pending&orderId=${params.orderId}`,
         },
         auto_return: 'approved',
       },
     });
 
-    if (!response?.id || (!response.init_point && !response.sandbox_init_point)) {
+    const prefId = (response as any)?.id;
+    const initPoint = (response as any)?.init_point;
+    const sandboxInitPoint = (response as any)?.sandbox_init_point;
+
+    if (!prefId || (!initPoint && !sandboxInitPoint)) {
       throw new BadRequestException('Falha ao criar preferência no Mercado Pago');
     }
 
     return {
-      preferenceId: response.id,
-      checkoutUrl: response.init_point ?? response.sandbox_init_point,
+      preferenceId: prefId,
+      checkoutUrl: initPoint ?? sandboxInitPoint,
     };
   }
 
-  /**
-   * Consulta detalhes de um pagamento pelo ID
-   */
   async getPayment(paymentId: string) {
-    const payment = new Payment(this.client);
+    const client = this.ensureClient();
+    const payment = new Payment(client);
     return payment.get({ id: paymentId });
   }
 
-  /**
-   * Converte o payment_type_id do Mercado Pago
-   * para o enum PaymentMethod do sistema
-   */
   mapPaymentMethod(paymentTypeId: string | undefined): PaymentMethod | undefined {
     if (!paymentTypeId) return undefined;
 
     const t = paymentTypeId.toLowerCase();
 
     if (t === 'pix') return PaymentMethod.PIX;
-
     if (t === 'credit_card') return PaymentMethod.CREDITO;
-
     if (t === 'debit_card') return PaymentMethod.DEBITO;
-
     if (t === 'ticket' || t.includes('bol')) return PaymentMethod.BOLETO;
-
-    if (t === 'account_money') return PaymentMethod.DINHEIRO;
+    if (t === 'account_money') return PaymentMethod.SALDO_MP;
 
     return undefined;
   }

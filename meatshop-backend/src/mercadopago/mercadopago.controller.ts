@@ -11,13 +11,11 @@ export class MercadoPagoController {
     private readonly mp: MercadoPagoService,
   ) {}
 
-  // POST /mercadopago/orders/:id/checkout
   @Post('orders/:id/checkout')
   async createCheckout(@Param('id', ParseIntPipe) id: number) {
     const order = await this.ordersRepo.findOne({ where: { id } });
     if (!order) return { ok: false, message: 'Pedido não encontrado' };
 
-    // total = valor - desconto (garante >= 0)
     const total = Math.max(0, Number(order.valor) - Number(order.desconto ?? 0));
 
     const pref = await this.mp.createPreference({

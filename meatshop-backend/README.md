@@ -1,12 +1,10 @@
 # 🥩 MeatShop — Backend (NestJS + PostgreSQL + Docker + Observabilidade)
 
-<!-- BADGES REAIS (DO REPOSITÓRIO) -->
 ![Build Status](https://img.shields.io/github/actions/workflow/status/geovannaffelixx/meatshop/ci.yml?label=CI%2FCD&logo=github)
 ![Último Commit](https://img.shields.io/github/last-commit/geovannaffelixx/meatshop)
 ![Linguagem](https://img.shields.io/github/languages/top/geovannaffelixx/meatshop)
 ![Tamanho](https://img.shields.io/github/repo-size/geovannaffelixx/meatshop)
 
-<!-- BADGES PERSONALIZADAS (VOCÊ, RAFAEL) -->
 ![NestJS](https://img.shields.io/badge/NestJS-Backend-red?logo=nestjs)
 ![PostgreSQL 17](https://img.shields.io/badge/PostgreSQL-17-blue?logo=postgresql)
 ![Docker Ready](https://img.shields.io/badge/Docker-ready-0db7ed?logo=docker)
@@ -23,7 +21,6 @@ Este é o **backend oficial do MeatShop**, desenvolvido em **NestJS + PostgreSQL
 - 📊 **Monitorado** via Prometheus + Grafana
 - 🧪 **Testado** com Jest
 - 🐳 **Containerizado** com Docker
-- 🚀 Base para CI/CD corporativo
 
 ---
 

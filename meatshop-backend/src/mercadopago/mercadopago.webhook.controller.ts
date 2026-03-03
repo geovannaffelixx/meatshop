@@ -1,4 +1,12 @@
-import { Controller, Post, Body, Headers, Query, UnauthorizedException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Headers,
+  Query,
+  UnauthorizedException,
+  HttpCode,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import crypto from 'crypto';
@@ -15,44 +23,53 @@ export class MercadoPagoWebhookController {
   ) {}
 
   @Post('mercadopago')
+  @HttpCode(200)
   async handle(
     @Body() body: any,
     @Query() query: any,
     @Headers('x-signature') xSignature?: string,
     @Headers('x-request-id') xRequestId?: string,
   ) {
-    const paymentId = query?.id || query?.['data.id'] || body?.data?.id;
+    const paymentIdRaw = query?.id || query?.['data.id'] || body?.data?.id;
 
-    if (!paymentId) return { ok: true, ignored: true };
+    if (!paymentIdRaw) return { ok: true, ignored: true, reason: 'missing_payment_id' };
 
-    // ✅ (Opcional) validar assinatura, se MP_WEBHOOK_SECRET estiver configurado
-    const secret = this.config.get<string>('MP_WEBHOOK_SECRET');
+    const paymentId = String(paymentIdRaw).trim();
+
+    if (!/^\d+$/.test(paymentId)) {
+      return { ok: true, ignored: true, reason: 'invalid_payment_id' };
+    }
+
+    const secret = (this.config.get<string>('MP_WEBHOOK_SECRET') || '').trim();
     if (secret) {
       const ok = this.verifySignature({
         secret,
         xSignature,
         xRequestId,
-        paymentId: String(paymentId),
+        paymentId,
       });
 
       if (!ok) throw new UnauthorizedException('Webhook signature inválida');
     }
 
-    // Sempre consultar o pagamento na API antes de atualizar
-    const payment = await this.mp.getPayment(String(paymentId));
+    let payment: any;
+    try {
+      payment = await this.mp.getPayment(paymentId);
+    } catch {
+      return { ok: true, ignored: true, reason: 'payment_lookup_failed' };
+    }
 
-    const orderId = Number(payment.external_reference);
-    if (!orderId) return { ok: true, ignored: true };
+    const orderId = Number(payment?.external_reference);
+    if (!orderId) return { ok: true, ignored: true, reason: 'missing_external_reference' };
 
     const order = await this.ordersRepo.findOne({ where: { id: orderId } });
-    if (!order) return { ok: true, ignored: true };
+    if (!order) return { ok: true, ignored: true, reason: 'order_not_found' };
 
-    // ✅ Idempotência: se já processamos esse paymentId e status não mudou, só confirma.
-    const newStatus = payment.status;
-    const newStatusDetail = payment.status_detail;
+    const newStatus = payment?.status;
+    const newStatusDetail = payment?.status_detail;
 
     const alreadySame =
-      order.mpPaymentId === String(paymentId) &&
+      order.mpPaymentId === paymentId &&
       order.mpStatus === newStatus &&
       order.mpStatusDetail === newStatusDetail;
 
@@ -60,27 +77,24 @@ export class MercadoPagoWebhookController {
       return { ok: true, duplicated: true };
     }
 
-    order.mpPaymentId = String(paymentId);
+    order.mpPaymentId = paymentId;
     order.mpStatus = newStatus;
     order.mpStatusDetail = newStatusDetail;
     order.mpLastEventAt = new Date();
 
-    // Se aprovado, marcar valorPago e mpPaidAt
     if (newStatus === 'approved') {
-      order.valorPago = Number(payment.transaction_amount ?? order.valorPago ?? 0);
-      order.mpPaidAt = payment.date_approved ? new Date(payment.date_approved) : new Date();
+      order.valorPago = Number(payment?.transaction_amount ?? order.valorPago ?? 0);
+      order.mpPaidAt = payment?.date_approved ? new Date(payment.date_approved) : new Date();
 
-      // tenta mapear forma de pagamento
-      const method = this.mp.mapPaymentMethod(payment.payment_type_id);
+      const method = this.mp.mapPaymentMethod(payment?.payment_type_id);
       if (method) order.paymentMethod = method as any;
-
-      // ⚠️ seu status atual é “Pendente / Entregue / Cancelado”
-      // Pagamento aprovado NÃO significa entregue automaticamente.
-      // Então aqui eu recomendo manter Pendente e você entregar manualmente.
-      // Se quiser, você pode mudar para um status “Pago” no futuro.
     }
 
-    await this.ordersRepo.save(order);
+    try {
+      await this.ordersRepo.save(order);
+    } catch {
+      return { ok: true, ignored: true, reason: 'db_save_failed' };
+    }
 
     return { ok: true };
   }

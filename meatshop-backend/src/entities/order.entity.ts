@@ -12,6 +12,7 @@ export enum PaymentMethod {
   DEBITO = 'Débito',
   DINHEIRO = 'Dinheiro',
   BOLETO = 'Boleto',
+  SALDO_MP = 'Saldo MP',
 }
 
 @Entity('orders')
