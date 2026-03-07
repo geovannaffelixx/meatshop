@@ -12,6 +12,7 @@ export enum PaymentMethod {
   DEBITO = 'Débito',
   DINHEIRO = 'Dinheiro',
   BOLETO = 'Boleto',
+  SALDO_MP = 'Saldo MP',
 }
 
 @Entity('orders')
@@ -65,4 +66,22 @@ export class Order {
 
   @UpdateDateColumn({ name: 'atualizado_em' })
   atualizadoEm: Date;
+
+  @Column({ name: 'mp_preference_id', type: 'varchar', length: 120, nullable: true })
+  mpPreferenceId?: string;
+
+  @Column({ name: 'mp_payment_id', type: 'varchar', length: 40, nullable: true })
+  mpPaymentId?: string;
+
+  @Column({ name: 'mp_status', type: 'varchar', length: 30, nullable: true })
+  mpStatus?: string;
+
+  @Column({ name: 'mp_status_detail', type: 'varchar', length: 60, nullable: true })
+  mpStatusDetail?: string;
+
+  @Column({ name: 'mp_last_event_at', type: 'timestamp', nullable: true })
+  mpLastEventAt?: Date;
+
+  @Column({ name: 'mp_paid_at', type: 'timestamp', nullable: true })
+  mpPaidAt?: Date;
 }
