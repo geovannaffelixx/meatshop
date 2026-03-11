@@ -49,40 +49,56 @@ export class MercadoPagoService {
       this.config.get<string>('BACKEND_WEBHOOK_PATH') || '/webhooks/mercadopago'
     ).trim();
 
-    const notificationUrl = `${backendPublicUrl}${webhookPath.startsWith('/') ? '' : '/'}${webhookPath}`;
+    const notificationUrl = `${backendPublicUrl}${webhookPath.startsWith('/') ? webhookPath : '/' + webhookPath}`;
 
-    const backBase = `${frontendUrl}/`;
+    const backBase = frontendUrl.replace(/\/$/, '');
 
-    const response = await preference.create({
-      body: {
-        items: [
-          {
-            id: String(params.orderId),
-            title: params.description,
-            quantity: 1,
-            unit_price: amount,
-            currency_id: 'BRL',
+    let response;
+
+    try {
+      response = await preference.create({
+        body: {
+          items: [
+            {
+              id: String(params.orderId),
+              title: params.description,
+              quantity: 1,
+              unit_price: amount,
+              currency_id: 'BRL',
+            },
+          ],
+          external_reference: String(params.orderId),
+          notification_url: notificationUrl,
+          back_urls: {
+            success: `${backBase}?payment=success&orderId=${params.orderId}`,
+            failure: `${backBase}?payment=failure&orderId=${params.orderId}`,
+            pending: `${backBase}?payment=pending&orderId=${params.orderId}`,
           },
-        ],
-        external_reference: String(params.orderId),
-        notification_url: notificationUrl,
-        back_urls: {
-          success: `${backBase}?payment=success&orderId=${params.orderId}`,
-          failure: `${backBase}?payment=failure&orderId=${params.orderId}`,
-          pending: `${backBase}?payment=pending&orderId=${params.orderId}`,
+          auto_return: 'approved',
         },
-        auto_return: 'approved',
-      },
-    });
+      });
+    } catch (error) {
+      console.error(' MercadoPago SDK ERROR:', error);
+      throw error;
+    }
 
-    const prefId = (response as any)?.id;
-    const initPoint = (response as any)?.init_point;
-    const sandboxInitPoint = (response as any)?.sandbox_init_point;
+    const prefId = (response as any)?.id ?? (response as any)?.body?.id;
+    const initPoint = (response as any)?.init_point ?? (response as any)?.body?.init_point;
+
+    const sandboxInitPoint =
+      (response as any)?.sandbox_init_point ?? (response as any)?.body?.sandbox_init_point;
 
     if (!prefId || (!initPoint && !sandboxInitPoint)) {
       throw new BadRequestException('Falha ao criar preferência no Mercado Pago');
     }
 
+    console.log('MercadoPago preference created', {
+      orderId: params.orderId,
+      amount,
+      prefId,
+      initPoint,
+      sandboxInitPoint,
+    });
     return {
       preferenceId: prefId,
       checkoutUrl: initPoint ?? sandboxInitPoint,
