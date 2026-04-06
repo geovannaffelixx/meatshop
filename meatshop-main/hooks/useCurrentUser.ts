@@ -1,13 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { apiGet } from "@/lib/api"; // 👈 IMPORTANTE
+import { useEffect, useState } from "react";
 
 export type CurrentUser = {
   id: number;
-  name: string;
+  nomeFantasia: string;
+  razaoSocial: string;
+  cnpj: string;
   email: string;
+  usuario: string;
+  telefone?: string;
+  celular?: string;
   logoUrl?: string | null;
+  cep?: string;
+  logradouro?: string;
+  numero?: string;
+  complemento?: string;
+  bairro?: string;
+  cidade?: string;
+  estado?: string;
+  pais?: string;
+  descricao?: string;
 };
 
 export function useCurrentUser() {
@@ -19,7 +33,7 @@ export function useCurrentUser() {
   // ================================
   async function fetchMe() {
     try {
-      const data = await apiGet("/users/me");  // 👈 AGORA USANDO API PADRÃO
+      const data = await apiGet("/users/me"); // 👈 AGORA USANDO API PADRÃO
 
       if (data?.ok && data?.user) {
         setUser(data.user);

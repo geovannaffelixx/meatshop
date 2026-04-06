@@ -1,7 +1,5 @@
-'use client'
+"use client";
 
-import * as React from "react"
-import Image from "next/image"
 import {
   Sidebar,
   SidebarContent,
@@ -12,12 +10,22 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-} from "@/components/ui/sidebar"
-import { User, Shield, House, ShoppingBag, Box, PiggyBank, LogOut, ChevronRight, Users } from "lucide-react"
-import { usePathname, useRouter } from "next/navigation"
-import Link from "next/link"
-import { useCurrentUser } from "@/hooks/useCurrentUser"
-import { apiPost } from "@/lib/api"
+} from "@/components/ui/sidebar";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { apiPost } from "@/lib/api";
+import {
+  Box,
+  ChevronRight,
+  House,
+  LogOut,
+  PiggyBank,
+  Shield,
+  ShoppingBag,
+  User,
+} from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import * as React from "react";
 
 const navData = [
   {
@@ -31,57 +39,67 @@ const navData = [
   {
     title: "Configurações",
     items: [
-      { title: "Perfil", url: "configuracoes/perfil", icon: User },
-      { title: "Usuários", url: "configuracoes/usuario", icon: Users },
-      { title: "Segurança", url: "configuracoes/seguranca", icon: Shield },
+      { title: "Minha conta", url: "/configuracoes/usuario", icon: User },
+      { title: "Segurança", url: "/configuracoes/seguranca", icon: Shield },
     ],
   },
-]
+];
 
 type UserData = {
-  name: string
-  email: string
-  logoUrl?: string | null
-}
+  name: string;
+  email: string;
+  logoUrl?: string | null;
+};
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
-  user?: UserData
-}
+  user?: UserData;
+};
 
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
-  const pathname = usePathname()
-  const router = useRouter()
-  const { user: currentUser } = useCurrentUser()
+  const pathname = usePathname();
+  const router = useRouter();
+  const { user: currentUser } = useCurrentUser();
 
-  const displayUser: UserData = currentUser ?? user ?? {
-    name: "Usuário",
-    email: "email@exemplo.com",
-    logoUrl: null,
-  }
-  
-  const resolvedSrc =
-    displayUser.logoUrl
-      ? (displayUser.logoUrl.startsWith("http")
-          ? displayUser.logoUrl
-          : `${process.env.NEXT_PUBLIC_API_URL}${displayUser.logoUrl}`)
-      : null
+  const mappedUser: UserData | null = currentUser
+    ? {
+        name:
+          currentUser.nomeFantasia ||
+          currentUser.razaoSocial ||
+          currentUser.usuario,
+        email: currentUser.email,
+        logoUrl: currentUser.logoUrl,
+      }
+    : null;
+
+  const displayUser: UserData = mappedUser ??
+    user ?? {
+      name: "Usuário",
+      email: "email@exemplo.com",
+      logoUrl: null,
+    };
+
+  const resolvedSrc = displayUser.logoUrl
+    ? displayUser.logoUrl.startsWith("http")
+      ? displayUser.logoUrl
+      : `${process.env.NEXT_PUBLIC_API_URL}${displayUser.logoUrl}`
+    : null;
 
   async function handleLogout() {
     try {
       // avisa o backend para limpar os cookies HttpOnly (access_token / refresh_token)
-      await apiPost("/auth/logout", {})
+      await apiPost("/auth/logout", {});
     } catch (error) {
-      console.error("Erro ao fazer logout", error)
+      console.error("Erro ao fazer logout", error);
     } finally {
       // limpa qualquer dado local que possa ter sobrado
       if (typeof window !== "undefined") {
-        localStorage.removeItem("accessToken") // legado
-        localStorage.removeItem("currentUser")
-        window.dispatchEvent(new Event("currentUserUpdated"))
+        localStorage.removeItem("accessToken"); // legado
+        localStorage.removeItem("currentUser");
+        window.dispatchEvent(new Event("currentUserUpdated"));
       }
 
       // envia o usuário para a tela de login
-      router.push("/entrar")
+      router.push("/entrar");
     }
   }
 
@@ -90,12 +108,14 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
       <SidebarContent>
         {navData.map((group, i) => (
           <SidebarGroup key={i}>
-            {group.title && <SidebarGroupLabel>{group.title}</SidebarGroupLabel>}
+            {group.title && (
+              <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
+            )}
             <SidebarGroupContent>
               <SidebarMenu>
                 {group.items.map((item, j) => {
-                  const isActive = pathname === item.url
-                  const Icon = item.icon
+                  const isActive = pathname === item.url;
+                  const Icon = item.icon;
 
                   return (
                     <SidebarMenuItem key={j}>
@@ -103,9 +123,10 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                         <Link
                           href={item.url}
                           className={`flex items-center gap-2 rounded-md px-2 py-1 transition-colors
-                            ${isActive
-                              ? "bg-gray-200 text-[#BE2C1B] font-bold"
-                              : "text-gray-700 hover:bg-gray-100"
+                            ${
+                              isActive
+                                ? "bg-gray-200 text-[#BE2C1B] font-bold"
+                                : "text-gray-700 hover:bg-gray-100"
                             }`}
                         >
                           {Icon && <Icon className="h-4 w-4" />}
@@ -113,7 +134,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
-                  )
+                  );
                 })}
               </SidebarMenu>
             </SidebarGroupContent>
@@ -153,8 +174,12 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
             )}
 
             <div className="flex flex-col text-sm min-w-0">
-              <span className="font-medium text-gray-800 truncate">{displayUser.name}</span>
-              <span className="text-gray-500 truncate">{displayUser.email}</span>
+              <span className="font-medium text-gray-800 truncate">
+                {displayUser.name}
+              </span>
+              <span className="text-gray-500 truncate">
+                {displayUser.email}
+              </span>
             </div>
             <ChevronRight className="ml-auto h-4 w-4 text-gray-400" />
           </div>
@@ -162,5 +187,5 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
       </SidebarContent>
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }

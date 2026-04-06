@@ -1,10 +1,10 @@
 "use client";
 
-import { Eye, EyeOff } from "lucide-react";
-import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function Page() {
   const [showPassword, setShowPassword] = useState(false);
@@ -18,7 +18,7 @@ export default function Page() {
     e.preventDefault();
     setMsg("");
     setAlertType("");
-    
+
     if (!usuario.trim() || !senha.trim()) {
       setMsg("Por favor, preencha usuário e senha para continuar.");
       setAlertType("error");
@@ -34,10 +34,11 @@ export default function Page() {
       });
 
       let data: any;
+      const resClone = res.clone();
       try {
         data = await res.json();
       } catch {
-        const text = await res.text();
+        const text = await resClone.text();
         console.error("Resposta bruta do servidor:", text);
         throw new Error("Erro inesperado do servidor. Veja o console.");
       }
@@ -52,7 +53,6 @@ export default function Page() {
         window.dispatchEvent(new Event("currentUserUpdated"));
       }
       localStorage.removeItem("accessToken");
-
 
       setMsg("Login realizado com sucesso! Redirecionando...");
       setAlertType("success");
