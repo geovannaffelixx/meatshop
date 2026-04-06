@@ -1,22 +1,22 @@
 import {
-  Body,
-  Controller,
-  Get,
-  HttpException,
-  HttpStatus,
-  Post,
-  Req,
-  Res,
-  UseGuards,
+    Body,
+    Controller,
+    Get,
+    HttpException,
+    HttpStatus,
+    Post,
+    Req,
+    Res,
+    UseGuards,
 } from '@nestjs/common';
-import { Response, Request } from 'express';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { Request, Response } from 'express';
+import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { AuthService } from './auth.service';
-import { JwtAuthGuard } from './jwt-auth.guard';
 import { LoginDto } from './dto/login.dto';
+import { JwtAuthGuard } from './jwt-auth.guard';
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -83,6 +83,7 @@ export class AuthController {
       email,
       usuario,
       senhaHash,
+      descricao: body.descricao,
     });
     await this.users.save(user);
     return { ok: true, id: user.id, message: 'Usuário registrado com sucesso' };

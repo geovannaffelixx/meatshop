@@ -1,8 +1,8 @@
-import { Controller, Get, UseGuards, Req } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Req, UseGuards } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from './entities/user.entity';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
+import { User } from './entities/user.entity';
 
 @Controller('users')
 export class UsersController {
@@ -25,12 +25,47 @@ export class UsersController {
 
     return {
       ok: true,
-      user: {
-        id: user.id,
-        name: user.razaoSocial || user.usuario || 'Usuário',
-        email: user.email,
-        logoUrl: user.logoUrl ?? null,
-      },
+      user,
     };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('me')
+  async patchMe(@Req() req: any, @Body() body: any) {
+    const id = req.user?.userId ?? req.user?.sub;
+    const user = await this.usersRepo.findOne({ where: { id } });
+
+    if (!user) {
+      return { ok: false, message: 'Usuário não encontrado' };
+    }
+
+    // Campos permitidos para atualização
+    const allowedFields: (keyof User)[] = [
+      'nomeFantasia',
+      'razaoSocial',
+      'cnpj',
+      'telefone',
+      'celular',
+      'cep',
+      'logradouro',
+      'numero',
+      'complemento',
+      'bairro',
+      'cidade',
+      'estado',
+      'pais',
+      'descricao',
+    ];
+
+    allowedFields.forEach((field) => {
+      if (body[field as string] !== undefined) {
+        (user as any)[field] = body[field as string];
+      }
+    });
+
+    await this.usersRepo.save(user);
+
+    delete (user as any).senhaHash;
+    return { ok: true, message: 'Perfil atualizado com sucesso', user };
   }
 }

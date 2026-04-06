@@ -1,10 +1,10 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-  Unique,
+    Column,
+    CreateDateColumn,
+    Entity,
+    PrimaryGeneratedColumn,
+    Unique,
+    UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('users')
@@ -65,6 +65,9 @@ export class User {
 
   @Column({ name: 'senha_hash', type: 'varchar' })
   senhaHash: string;
+
+  @Column({ name: 'descricao', type: 'text', nullable: true })
+  descricao?: string;
 
   // Metadados
   @CreateDateColumn({ name: 'criado_em', type: 'timestamp' })
