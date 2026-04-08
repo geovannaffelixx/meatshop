@@ -54,12 +54,13 @@ async function bootstrap() {
     }),
   );
 
-  app.enableCors({
-    origin: process.env.FRONTEND_URL
-      ? [process.env.FRONTEND_URL]
-      : [/^http:\/\/localhost:\d+$/, /^http:\/\/127\.0\.0\.1:\d+$/],
-    credentials: true,
-  });
+app.enableCors({
+  origin: [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+  ],
+  credentials: true,
+});
   appLogger.info('CORS e CookieParser configurados com sucesso');
 
   const port = Number(process.env.PORT ?? 3001);

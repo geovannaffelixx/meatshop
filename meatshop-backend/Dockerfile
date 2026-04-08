@@ -15,7 +15,7 @@ COPY nest-cli.json ./
 
 # Copiar código-fonte e migrations
 COPY src ./src
-COPY migrations ./migrations
+COPY src/migrations ./migrations
 
 # Compilar projeto
 RUN npm run build
