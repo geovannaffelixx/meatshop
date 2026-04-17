@@ -33,7 +33,7 @@
 
 ---
 
-# 🌍 Visão Geral
+# 🌍 Visão Geral 
 
 O **MeatShop** é uma plataforma completa para gestão de açougues e vendas online, integrando:
 
