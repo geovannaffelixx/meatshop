@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Order } from '@/entities/order.entity';
-import { MercadoPagoService } from '@/mercadopago/mercadopago.service';
+import { Order } from '@/orders/entities/order.entity';
+import { MercadoPagoService } from '@/payments/providers/mercadopago.service';
 import { MercadoPagoController } from '@/mercadopago/mercadopago.controller';
 import { MercadoPagoWebhookController } from '@/mercadopago/mercadopago.webhook.controller';
 

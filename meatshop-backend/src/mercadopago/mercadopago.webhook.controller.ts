@@ -10,8 +10,8 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import crypto from 'crypto';
-import { Order } from '../entities/order.entity';
-import { MercadoPagoService } from './mercadopago.service';
+import { Order } from '../orders/entities/order.entity';
+import { MercadoPagoService } from '../payments/providers/mercadopago.service';
 import { ConfigService } from '@nestjs/config';
 
 @Controller('webhooks')

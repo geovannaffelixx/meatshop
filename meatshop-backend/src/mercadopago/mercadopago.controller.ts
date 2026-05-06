@@ -1,8 +1,8 @@
 import { Controller, Post, Param, ParseIntPipe } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Order } from '../entities/order.entity';
-import { MercadoPagoService } from '@/mercadopago/mercadopago.service';
+import { Order } from '../orders/entities/order.entity';
+import { MercadoPagoService } from '@/payments/providers/mercadopago.service';
 
 @Controller('mercadopago')
 export class MercadoPagoController {

@@ -1,10 +1,10 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Like, Repository, IsNull } from 'typeorm';
-import { Expense } from '../entities/expense.entity';
-import { CreateExpenseDto } from './dto/create-expense.dto';
-import { UpdateExpenseDto } from './dto/update-expense.dto';
-import { Order } from '../entities/order.entity';
+import { Expense } from './entities/expense.entity';
+import { CreateExpenseDto } from './dtos/create-expense.dto';
+import { UpdateExpenseDto } from './dtos/update-expense.dto';
+import { Order } from '../orders/entities/order.entity';
 import { AppLogger } from '../common/logger/app.logger';
 
 @Injectable()

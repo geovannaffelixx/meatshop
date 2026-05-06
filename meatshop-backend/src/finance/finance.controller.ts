@@ -10,8 +10,8 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { FinanceService } from './finance.service';
-import { CreateExpenseDto } from './dto/create-expense.dto';
-import { UpdateExpenseDto } from './dto/update-expense.dto';
+import { CreateExpenseDto } from './dtos/create-expense.dto';
+import { UpdateExpenseDto } from './dtos/update-expense.dto';
 
 @Controller('finance')
 export class FinanceController {

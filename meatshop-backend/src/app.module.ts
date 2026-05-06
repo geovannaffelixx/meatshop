@@ -7,28 +7,28 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
 // Entidades
-import { User } from './entities/user.entity';
-import { Order } from './entities/order.entity';
-import { Expense } from './entities/expense.entity';
-import { RefreshToken } from './entities/refresh-token.entity';
-import { Sale } from './entities/sale.entity';
-import { Product } from './entities/product.entity';
+import { User } from './users/entities/user.entity';
+import { Order } from './orders/entities/order.entity';
+import { Expense } from './finance/entities/expense.entity';
+import { RefreshToken } from './auth/entities/refresh-token.entity';
+import { Sale } from './finance/entities/sale.entity';
+import { Product } from './products/entities/product.entity';
 
 // Controllers
 import { AuthController } from './auth/auth.controller';
-import { UsersController } from './users.controller';
-import { DashboardController } from './dashboard.controller';
-import { UsersUploadController } from './users-upload.controller';
-import { OrdersController } from './orders.controller';
-import { SalesController } from './sales.controller';
-import { ProductsController } from './products.controller';
+import { UsersController } from './users/users.controller';
+import { DashboardController } from './dashboard/dashboard.controller';
+import { UsersUploadController } from './users/users-upload.controller';
+import { OrdersController } from './orders/orders.controller';
+import { SalesController } from './finance/sales.controller';
+import { ProductsController } from './products/products.controller';
 
 // Módulos
 import { LoggerModule } from './common/logger/logger.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { FinanceModule } from './finance/finance.module';
 import { AuthModule } from './auth/auth.module';
-import { SeedModule } from './seed/seed.module';
+import { SeedModule } from './database/seed/seed.module';
 import { MercadoPagoModule } from '@/mercadopago/mercadopago.module';
 @Module({
   imports: [
