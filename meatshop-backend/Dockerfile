@@ -15,7 +15,7 @@ COPY nest-cli.json ./
 
 # Copiar código-fonte e migrations
 COPY src ./src
-COPY src/migrations ./migrations
+COPY src/database/migrations ./migrations
 
 # Compilar projeto
 RUN npm run build
@@ -32,7 +32,7 @@ RUN npm ci --omit=dev
 
 # Copiar dist E migrations para runtime
 COPY --from=builder /usr/src/app/dist ./dist
-COPY --from=builder /usr/src/app/migrations ./migrations
+COPY --from=builder /usr/src/app/src/database/migrations ./migrations
 
 USER node
 

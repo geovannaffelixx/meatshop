@@ -1,151 +1,99 @@
 import {
   Body,
   Controller,
-  Get,
-  HttpException,
+  HttpCode,
   HttpStatus,
   Post,
   Req,
-  Res,
   UseGuards,
 } from '@nestjs/common';
-import { Response, Request } from 'express';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import * as bcrypt from 'bcrypt';
+import { Request } from 'express';
 import { User } from '../users/entities/user.entity';
-import { AuthService } from './auth.service';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { RegisterDto } from './dto/register.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { ChangePasswordUseCase } from './use-cases/change-password.use-case';
+import { ForgotPasswordUseCase } from './use-cases/forgot-password.use-case';
+import { LoginUseCase } from './use-cases/login.use-case';
+import { LogoutUseCase } from './use-cases/logout.use-case';
+import { RefreshTokenUseCase } from './use-cases/refresh-token.use-case';
+import { RegisterUseCase } from './use-cases/register.use-case';
+import { ResetPasswordUseCase } from './use-cases/reset-password.use-case';
+
+interface AuthenticatedRequest extends Request {
+  user: User;
+}
+
 @Controller('auth')
 export class AuthController {
   constructor(
-    @InjectRepository(User) private readonly users: Repository<User>,
-    private readonly authService: AuthService,
+    private readonly registerUseCase: RegisterUseCase,
+    private readonly loginUseCase: LoginUseCase,
+    private readonly logoutUseCase: LogoutUseCase,
+    private readonly refreshTokenUseCase: RefreshTokenUseCase,
+    private readonly forgotPasswordUseCase: ForgotPasswordUseCase,
+    private readonly resetPasswordUseCase: ResetPasswordUseCase,
+    private readonly changePasswordUseCase: ChangePasswordUseCase,
   ) {}
 
   @Post('register')
-  async register(@Body() body: any) {
-    const {
-      nomeFantasia,
-      razaoSocial,
-      cnpj,
-      telefone,
-      celular,
-      logoUrl,
-      cep,
-      logradouro,
-      numero,
-      complemento,
-      bairro,
-      cidade,
-      estado,
-      pais,
-      email,
-      usuario,
-      senha,
-    } = body;
+  @HttpCode(HttpStatus.CREATED)
+  register(@Body() dto: RegisterDto) {
+      console.log('REGISTER ROUTE HIT');
 
-    if (!nomeFantasia || !razaoSocial || !cnpj || !email || !usuario || !senha) {
-      throw new HttpException('Dados obrigatórios ausentes', HttpStatus.BAD_REQUEST);
-    }
-
-    const exists = await this.users.findOne({ where: [{ email }, { usuario }, { cnpj }] });
-    if (exists)
-      throw new HttpException(
-        'Já existe um usuário com este e-mail, usuário ou CNPJ',
-        HttpStatus.CONFLICT,
-      );
-
-    if (senha.length < 8 || !/[A-Z]/.test(senha)) {
-      throw new HttpException(
-        'A senha deve ter no mínimo 8 caracteres e ao menos uma letra maiúscula',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    const senhaHash = await bcrypt.hash(senha, 10);
-    const user = this.users.create({
-      nomeFantasia,
-      razaoSocial,
-      cnpj,
-      telefone,
-      celular,
-      logoUrl,
-      cep,
-      logradouro,
-      numero,
-      complemento,
-      bairro,
-      cidade,
-      estado,
-      pais,
-      email,
-      usuario,
-      senhaHash,
-    });
-    await this.users.save(user);
-    return { ok: true, id: user.id, message: 'Usuário registrado com sucesso' };
+    return this.registerUseCase.execute(dto);
   }
 
   @Post('login')
-  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
-    const { usuario, senha } = dto;
-    if (!usuario || !senha)
-      throw new HttpException('Informe usuário/e-mail e senha', HttpStatus.BAD_REQUEST);
-
-    return this.authService.login(dto, res);
-  }
-
-  @Post('refresh')
-  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    return this.authService.refresh(req, res);
+  @HttpCode(HttpStatus.OK)
+  async login(@Body() dto: LoginDto) {
+    const user = await this.loginUseCase.validateCredentials(
+      dto.email,
+      dto.password,
+    );
+    return this.loginUseCase.execute(user!);
   }
 
   @Post('logout')
-  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    return this.authService.logout(req, res);
+  @HttpCode(HttpStatus.OK)
+  logout(@Body() dto: RefreshTokenDto) {
+    return this.logoutUseCase.execute(dto.refresh_token);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('me')
-  async me(@Req() req: any) {
-    return this.authService.me(req.user);
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  refresh(@Body() dto: RefreshTokenDto) {
+    return this.refreshTokenUseCase.execute(dto.refresh_token);
   }
 
-  @Post('verify-code')
-  verifyCode(@Body() body: { codigo?: string }) {
-    const codigo = (body?.codigo || '').trim();
-    if (codigo.length !== 4 || !/^[0-9]{4}$/.test(codigo)) {
-      throw new HttpException({ message: 'Código inválido' }, HttpStatus.BAD_REQUEST);
-    }
-    const ok = codigo === '1234';
-    if (!ok) throw new HttpException({ message: 'Código incorreto' }, HttpStatus.UNAUTHORIZED);
-    return { ok: true, message: 'Código verificado com sucesso' };
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.forgotPasswordUseCase.execute(dto.email);
   }
 
   @Post('reset-password')
-  async resetPassword(@Body() body: { usuario?: string; senha?: string }) {
-    const { usuario, senha } = body;
-    if (!usuario || !senha) {
-      throw new HttpException('Informe usuário/e-mail e nova senha', HttpStatus.BAD_REQUEST);
-    }
+  @HttpCode(HttpStatus.OK)
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.resetPasswordUseCase.execute(dto.token, dto.new_password);
+  }
 
-    if (senha.length < 8 || !/[A-Z]/.test(senha)) {
-      throw new HttpException(
-        'A senha deve ter no mínimo 8 caracteres e pelo menos uma letra maiúscula',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    const user = await this.users.findOne({ where: [{ usuario }, { email: usuario }] });
-    if (!user) {
-      throw new HttpException('Usuário não encontrado', HttpStatus.NOT_FOUND);
-    }
-
-    user.senhaHash = await bcrypt.hash(senha, 10);
-    await this.users.save(user);
-
-    return { ok: true, message: 'Senha redefinida com sucesso' };
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  changePassword(
+    @Req() req: AuthenticatedRequest,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    return this.changePasswordUseCase.execute(
+      req.user.id,
+      dto.current_password,
+      dto.new_password,
+    );
   }
 }

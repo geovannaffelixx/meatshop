@@ -1,8 +1,17 @@
-import { Controller, Get, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository } from 'typeorm';
+
 import { User } from './entities/user.entity';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('users')
 export class UsersController {
@@ -14,22 +23,38 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async me(@Req() req: any) {
-    const id = req.user?.userId ?? req.user?.sub;
-    const user = await this.usersRepo.findOne({ where: { id } });
+    const id =
+      req.user?.id;
+
+    const user =
+      await this.usersRepo.findOne({
+        where: {
+          id,
+        },
+      });
 
     if (!user) {
-      return { ok: false, message: 'Usuário não encontrado' };
+      return {
+        ok: false,
+        message: 'User not found',
+      };
     }
-
-    delete (user as any).senhaHash;
 
     return {
       ok: true,
+
       user: {
         id: user.id,
-        name: user.razaoSocial || user.usuario || 'Usuário',
+
+        name: user.name,
+
         email: user.email,
-        logoUrl: user.logoUrl ?? null,
+
+        globalRole:
+          user.global_role,
+
+        appProfile:
+          user.app_profile,
       },
     };
   }

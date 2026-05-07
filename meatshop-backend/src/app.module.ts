@@ -10,12 +10,11 @@ import { AppService } from './app.service';
 import { User } from './users/entities/user.entity';
 import { Order } from './orders/entities/order.entity';
 import { Expense } from './finance/entities/expense.entity';
-import { RefreshToken } from './auth/entities/refresh-token.entity';
+import { RefreshTokenEntity } from './auth/entities/refresh-token.entity';
 import { Sale } from './finance/entities/sale.entity';
 import { Product } from './products/entities/product.entity';
 
 // Controllers
-import { AuthController } from './auth/auth.controller';
 import { UsersController } from './users/users.controller';
 import { DashboardController } from './dashboard/dashboard.controller';
 import { UsersUploadController } from './users/users-upload.controller';
@@ -30,12 +29,15 @@ import { FinanceModule } from './finance/finance.module';
 import { AuthModule } from './auth/auth.module';
 import { SeedModule } from './database/seed/seed.module';
 import { MercadoPagoModule } from '@/mercadopago/mercadopago.module';
+import { EmailModule } from './email/email.module';
 @Module({
   imports: [
     // Configuração global
     ConfigModule.forRoot({ isGlobal: true }),
     LoggerModule,
     MetricsModule,
+
+    EmailModule,
 
     // Servir arquivos estáticos (uploads)
     ServeStaticModule.forRoot({
@@ -59,7 +61,14 @@ import { MercadoPagoModule } from '@/mercadopago/mercadopago.module';
             dbType === 'postgres'
               ? config.get<string>('DB_DATABASE')
               : config.get<string>('DB_PATH') || 'data/meatshop.db',
-          entities: [User, Order, Expense, RefreshToken, Sale, Product],
+          entities: [
+            User,
+            Order,
+            Expense,
+            RefreshTokenEntity,
+            Sale,
+            Product,
+          ],
           autoLoadEntities: true,
           synchronize: config.get<string>('DB_SYNCHRONIZE') === 'true',
           logging: config.get<string>('NODE_ENV') !== 'production',
@@ -78,7 +87,6 @@ import { MercadoPagoModule } from '@/mercadopago/mercadopago.module';
   ],
   controllers: [
     AppController,
-    AuthController,
     UsersController,
     DashboardController,
     UsersUploadController,
@@ -88,4 +96,4 @@ import { MercadoPagoModule } from '@/mercadopago/mercadopago.module';
   ],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

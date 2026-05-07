@@ -3,7 +3,7 @@ import { DataSource } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import { Order } from '../orders/entities/order.entity';
 import { Expense } from '../finance/entities/expense.entity';
-import { RefreshToken } from '../auth/entities/refresh-token.entity';
+import { RefreshTokenEntity } from '../auth/entities/refresh-token.entity';
 import { Sale } from '../finance/entities/sale.entity'; // <--- ADICIONE AQUI
 import { Product } from '../products/entities/product.entity';
 
@@ -22,7 +22,14 @@ export default new DataSource({
   database: process.env.DB_DATABASE,
   entities: isCompiled
     ? [`${__dirname}/../entities/*.js`]
-    : [User, Order, Expense, RefreshToken, Sale, Product],
+    : [
+      User,
+      Order,
+      Expense,
+      RefreshTokenEntity,
+      Sale,
+      Product,
+    ],
   migrations: [`${__dirname}/../migrations/*.{ts,js}`],
   synchronize: false,
   logging: process.env.NODE_ENV !== 'production',

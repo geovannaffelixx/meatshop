@@ -2,33 +2,31 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  Index,
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
 @Entity('refresh_tokens')
-export class RefreshToken {
+export class RefreshTokenEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Index({ unique: true })
   @Column({ type: 'text' })
-  token: string;
+  token_hash: string;
 
-  @Column({ type: 'text', nullable: true })
-  jti: string | null;
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  user: User;
 
-  @ManyToOne(() => User, { eager: true, nullable: true, onDelete: 'CASCADE' })
-  user?: User | null;
+  @Column()
+  user_id: number;
+
+  @Column({ type: 'boolean', default: false })
+  revoked: boolean;
 
   @Column({ type: 'timestamp' })
-  expiresAt: Date;
-
-  @Column({ type: 'timestamp', nullable: true })
-  revokedAt: Date | null;
+  expires_at: Date;
 
   @CreateDateColumn()
-  createdAt: Date;
+  created_at: Date;
 }

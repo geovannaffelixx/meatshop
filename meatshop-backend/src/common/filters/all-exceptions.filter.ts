@@ -1,40 +1,41 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpException } from '@nestjs/common';
-import { Request, Response } from 'express';
-import { AppLogger } from '../logger/logger.service';
+import {
+  ExceptionFilter,
+  Catch,
+  ArgumentsHost,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 
 @Catch()
-export class AllExceptionsFilter implements ExceptionFilter {
-  constructor(private readonly logger: AppLogger) {}
-
-  catch(exception: unknown, host: ArgumentsHost) {
+export class AllExceptionsFilter
+  implements ExceptionFilter
+{
+  catch(
+    exception: unknown,
+    host: ArgumentsHost,
+  ) {
     const ctx = host.switchToHttp();
-    const req = ctx.getRequest<Request>();
-    const res = ctx.getResponse<Response>();
 
-    const correlationId = (req as any)?.correlationId;
-    const child = this.logger.child({ correlationId });
+    const response = ctx.getResponse();
 
-    let status = 500;
-    let message = 'Internal server error';
+    const request = ctx.getRequest();
 
-    if (exception instanceof HttpException) {
-      status = exception.getStatus();
-      const r = exception.getResponse() as any;
-      message = typeof r === 'string' ? r : r?.message || (exception as any)?.message;
-    }
+    console.error(exception);
 
-    child.error('Unhandled Exception', {
-      status,
-      message,
-      path: (req as any).originalUrl || req.url,
-      method: req.method,
-      stack: (exception as any)?.stack,
-    });
+    const status =
+      exception instanceof HttpException
+        ? exception.getStatus()
+        : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    res.status(status).json({
+    const message =
+      exception instanceof HttpException
+        ? exception.getResponse()
+        : String(exception);
+
+    response.status(status).json({
       statusCode: status,
       message,
-      correlationId,
+      path: request.url,
       timestamp: new Date().toISOString(),
     });
   }

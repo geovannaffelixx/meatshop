@@ -43,7 +43,7 @@ async function bootstrap() {
     httpLogger.use(req, res, next);
   });
 
-  app.useGlobalFilters(new AllExceptionsFilter(appLogger));
+app.useGlobalFilters(new AllExceptionsFilter());
 
   app.useGlobalPipes(
     new ValidationPipe({
