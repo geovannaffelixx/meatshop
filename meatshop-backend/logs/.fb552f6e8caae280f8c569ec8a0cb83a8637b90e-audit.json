@@ -6,9 +6,14 @@
     "auditLog": "C:\\Users\\samue\\Desktop\\meatshop projeto\\meatshop\\meatshop-backend\\logs\\.fb552f6e8caae280f8c569ec8a0cb83a8637b90e-audit.json",
     "files": [
         {
-            "date": 1776545886736,
-            "name": "C:\\Users\\samue\\Desktop\\meatshop projeto\\meatshop\\meatshop-backend\\logs\\app-2026-04-18.log",
-            "hash": "24c1f2467143faae9a28cfaa67a901d4d29fff8c48f341ee1960301f71fb8163"
+            "date": 1779380704210,
+            "name": "C:\\Users\\samue\\Desktop\\meatshop projeto\\meatshop\\meatshop-backend\\logs\\app-2026-05-21.log",
+            "hash": "a253b4e18977b6376dd0f6d4a28db96b1c8f4e0f4939830de71bb4009131ee75"
+        },
+        {
+            "date": 1780000928920,
+            "name": "C:\\Users\\samue\\Desktop\\meatshop projeto\\meatshop\\meatshop-backend\\logs\\app-2026-05-28.log",
+            "hash": "589b6297d0c54066bd9b68ae47fb3aaed58b81dc554325b1c0eecc7c9ac0d3fc"
         }
     ],
     "hashType": "sha256"
