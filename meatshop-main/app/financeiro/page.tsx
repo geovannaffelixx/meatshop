@@ -65,6 +65,17 @@ function parseCurrencyToNumberBR(formatted: string) {
 function toDecimalStringBR(n: number) {
   return (Math.round(n * 100) / 100).toFixed(2)
 }
+function roundMoney(value: number) {
+  return Number((value || 0).toFixed(2))
+}
+
+function formatMoneyBR(value: number) {
+  return roundMoney(value).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  })
+}
+
 function formatCpfCnpj(raw: string) {
   const digits = raw.replace(/\D/g, "").slice(0, 14)
   if (digits.length <= 11) {
@@ -176,8 +187,8 @@ export default function FinanceiroPage() {
         setDespesasTotal(parseFloat(summary.expensesTotal?.toString().replace(',', '.')) || 0)
         setPagamentos(
           (summary.payments ?? []).map(p => ({
-            name: p.name,
-            value: parseFloat(p.value?.toString().replace(',', '.')) || 0
+            name: p.name === "Saldo MP" ? "Mercado Pago" : p.name,
+            value: roundMoney(parseFloat(p.value?.toString().replace(",", ".")) || 0),
           }))
         )
       } catch (err) {
@@ -293,8 +304,8 @@ export default function FinanceiroPage() {
       setDespesasTotal(Number(summary.expensesTotal ?? 0));
       setPagamentos(
         (summary.payments ?? []).map((p) => ({
-          name: p.name,
-          value: Number(p.value ?? 0),
+          name: p.name === "Saldo MP" ? "Mercado Pago" : p.name,
+          value: roundMoney(Number(p.value ?? 0)),
         }))
       );
 
@@ -535,16 +546,20 @@ export default function FinanceiroPage() {
               <CardContent>
                 <ResponsiveContainer width="100%" height={220}>
                   <PieChart>
-                    <Pie data={pagamentos} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                    <Pie
+                      data={pagamentos}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      label={({ value }) => formatMoneyBR(Number(value ?? 0))}
+                    >
                       {pagamentos.map((entry, i) => (
                         <Cell key={i} fill={pieColors[i % pieColors.length]} />
                       ))}
                     </Pie>
-                    <Tooltip 
-                      formatter={(value: number) =>
-                        value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-                      }
-                    />
+                    <Tooltip formatter={(value: number) => formatMoneyBR(Number(value ?? 0))} />
                   </PieChart>
                 </ResponsiveContainer>
               </CardContent>
