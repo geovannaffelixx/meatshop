@@ -34,7 +34,7 @@ export default new DataSource({
       Unit,
       UserUnit,
     ],
-  migrations: [`${__dirname}/../migrations/*.{ts,js}`],
+  migrations: [`${__dirname}/migrations/*.{ts,js}`],
   synchronize: false,
   logging: process.env.NODE_ENV !== 'production',
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
