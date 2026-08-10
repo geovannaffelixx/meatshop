@@ -4,13 +4,15 @@ import { PassportStrategy } from '@nestjs/passport';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Repository } from 'typeorm';
+import { AppProfile } from '../../common/enums/app-profile.enum';
+import { GlobalRole } from '../../common/enums/global-role.enum';
 import { User } from '../../users/entities/user.entity';
 
 interface JwtPayload {
   sub: number;
   email: string;
-  global_role: string;
-  app_profile: string;
+  global_role: GlobalRole;
+  app_profile: AppProfile;
 }
 
 @Injectable()

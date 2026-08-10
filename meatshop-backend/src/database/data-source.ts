@@ -4,8 +4,10 @@ import { User } from '../users/entities/user.entity';
 import { Order } from '../orders/entities/order.entity';
 import { Expense } from '../finance/entities/expense.entity';
 import { RefreshTokenEntity } from '../auth/entities/refresh-token.entity';
-import { Sale } from '../finance/entities/sale.entity'; // <--- ADICIONE AQUI
+import { Sale } from '../finance/entities/sale.entity';
 import { Product } from '../products/entities/product.entity';
+import { Unit } from '../units/entities/unit.entity';
+import { UserUnit } from '../units/entities/user-unit.entity';
 
 dotenv.config({
   path: process.env.DOTENV_CONFIG_PATH || '.env',
@@ -29,6 +31,8 @@ export default new DataSource({
       RefreshTokenEntity,
       Sale,
       Product,
+      Unit,
+      UserUnit,
     ],
   migrations: [`${__dirname}/../migrations/*.{ts,js}`],
   synchronize: false,

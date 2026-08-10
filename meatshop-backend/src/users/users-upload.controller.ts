@@ -5,9 +5,7 @@ import {
   Param,
   Post,
   UploadedFile,
-  UseGuards,
   UseInterceptors,
-  Req,
   ForbiddenException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -18,7 +16,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 import { User } from './entities/user.entity';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 const AVATARS_DIR = path.join(process.cwd(), 'uploads', 'avatars');
 
@@ -50,7 +48,6 @@ function imageFileFilter(req: any, file: Express.Multer.File, cb: any) {
 export class UsersUploadController {
   constructor(@InjectRepository(User) private readonly users: Repository<User>) {}
 
-  @UseGuards(JwtAuthGuard)
   @Post(':id/logo')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -65,11 +62,10 @@ export class UsersUploadController {
   async uploadLogo(
     @Param('id') paramId: string,
     @UploadedFile() file: Express.Multer.File,
-    @Req() req: any,
+    @CurrentUser('id') authUserId: number,
   ) {
     if (!file) throw new BadRequestException('Arquivo não enviado');
 
-    const authUserId = req.user?.userId ?? req.user?.sub;
     const isSelf = String(authUserId) === String(paramId);
     if (!isSelf) {
       throw new ForbiddenException('Sem permissão para alterar este usuário');

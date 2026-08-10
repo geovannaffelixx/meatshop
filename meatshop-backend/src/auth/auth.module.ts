@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -7,7 +8,9 @@ import { User } from '../users/entities/user.entity';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { RefreshTokenEntity } from './entities/refresh-token.entity';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { LocalAuthGuard } from '../common/guards/local-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 import { ChangePasswordUseCase } from './use-cases/change-password.use-case';
@@ -17,6 +20,7 @@ import { LogoutUseCase } from './use-cases/logout.use-case';
 import { RefreshTokenUseCase } from './use-cases/refresh-token.use-case';
 import { RegisterUseCase } from './use-cases/register.use-case';
 import { ResetPasswordUseCase } from './use-cases/reset-password.use-case';
+import { VerifyEmailUseCase } from './use-cases/verify-email.use-case';
 import { EmailModule } from '../email/email.module';
 
 @Module({
@@ -49,6 +53,10 @@ import { EmailModule } from '../email/email.module';
     LocalStrategy,
     // Guards
     JwtAuthGuard,
+    LocalAuthGuard,
+    RolesGuard,
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
     // Use Cases
     RegisterUseCase,
     LoginUseCase,
@@ -57,6 +65,7 @@ import { EmailModule } from '../email/email.module';
     ForgotPasswordUseCase,
     ResetPasswordUseCase,
     ChangePasswordUseCase,
+    VerifyEmailUseCase,
   ],
   exports: [JwtAuthGuard, JwtModule],
 })

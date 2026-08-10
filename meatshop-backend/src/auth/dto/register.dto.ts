@@ -7,12 +7,7 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
-
-export enum AppProfile {
-  CLIENT = 'CLIENT',
-  DELIVERY = 'DELIVERY',
-  BOTH = 'BOTH',
-}
+import { AppProfile } from '../../common/enums/app-profile.enum';
 
 export class RegisterDto {
   @IsNotEmpty()

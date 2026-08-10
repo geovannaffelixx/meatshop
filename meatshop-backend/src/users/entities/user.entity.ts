@@ -2,20 +2,10 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-
-export enum GlobalRole {
-  SUPER_ADMIN = 'SUPER_ADMIN',
-  USER = 'USER',
-}
-
-export enum AppProfile {
-  CLIENT = 'CLIENT',
-  DELIVERY = 'DELIVERY',
-  BOTH = 'BOTH',
-}
+import { AppProfile } from '../../common/enums/app-profile.enum';
+import { GlobalRole } from '../../common/enums/global-role.enum';
 
 @Entity('users')
 export class User {

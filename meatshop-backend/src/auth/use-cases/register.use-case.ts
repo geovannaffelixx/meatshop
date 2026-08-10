@@ -25,7 +25,6 @@ export class RegisterUseCase {
         private readonly configService: ConfigService,
     ) { }
     async execute(dto: RegisterDto): Promise<{ message: string }> {
-            console.log('EXECUTE START');
         await this.ensureEmailIsUnique(dto.email);
         await this.ensureCpfIsUnique(dto.cpf);
         const user = this.userRepository.create({
@@ -52,8 +51,6 @@ export class RegisterUseCase {
                 verificationUrl,
             );
 
-        console.log('Sending email...');
-
         await this.emailService.sendEmail({
             to: user.email,
 
@@ -63,9 +60,6 @@ export class RegisterUseCase {
 
             text: template.text,
         });
-
-        console.log('Email sent successfully');
-        // TODO: dispatch EmailVerificationEvent via EventEmitter
 
         return { message: 'Account created. Please verify your email.' };
     }

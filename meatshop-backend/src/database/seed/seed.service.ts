@@ -10,6 +10,8 @@ import { Repository } from 'typeorm';
 
 import * as bcrypt from 'bcrypt';
 
+import { AppProfile } from '../../common/enums/app-profile.enum';
+import { GlobalRole } from '../../common/enums/global-role.enum';
 import { User } from '../../users/entities/user.entity';
 
 @Injectable()
@@ -78,10 +80,10 @@ export class SeedService
       passwordHash;
 
     admin.global_role =
-      'SUPER_ADMIN' as any;
+      GlobalRole.SUPER_ADMIN;
 
     admin.app_profile =
-      'BOTH' as any;
+      AppProfile.BOTH;
 
     admin.failed_login_attempts = 0;
 

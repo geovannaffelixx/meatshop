@@ -13,11 +13,11 @@ import { Expense } from './finance/entities/expense.entity';
 import { RefreshTokenEntity } from './auth/entities/refresh-token.entity';
 import { Sale } from './finance/entities/sale.entity';
 import { Product } from './products/entities/product.entity';
+import { Unit } from './units/entities/unit.entity';
+import { UserUnit } from './units/entities/user-unit.entity';
 
 // Controllers
-import { UsersController } from './users/users.controller';
 import { DashboardController } from './dashboard/dashboard.controller';
-import { UsersUploadController } from './users/users-upload.controller';
 import { OrdersController } from './orders/orders.controller';
 import { SalesController } from './finance/sales.controller';
 import { ProductsController } from './products/products.controller';
@@ -27,6 +27,8 @@ import { LoggerModule } from './common/logger/logger.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { FinanceModule } from './finance/finance.module';
 import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
+import { UnitsModule } from './units/units.module';
 import { SeedModule } from './database/seed/seed.module';
 import { MercadoPagoModule } from '@/mercadopago/mercadopago.module';
 import { EmailModule } from './email/email.module';
@@ -68,6 +70,8 @@ import { EmailModule } from './email/email.module';
             RefreshTokenEntity,
             Sale,
             Product,
+            Unit,
+            UserUnit,
           ],
           autoLoadEntities: true,
           synchronize: config.get<string>('DB_SYNCHRONIZE') === 'true',
@@ -77,19 +81,19 @@ import { EmailModule } from './email/email.module';
     }),
 
     // Repositórios disponíveis para injeção
-    TypeOrmModule.forFeature([User, Order, Expense, Sale, Product]),
+    TypeOrmModule.forFeature([Order, Expense, Sale, Product]),
 
     // Outros módulos
     FinanceModule,
     AuthModule,
+    UsersModule,
+    UnitsModule,
     SeedModule,
     MercadoPagoModule,
   ],
   controllers: [
     AppController,
-    UsersController,
     DashboardController,
-    UsersUploadController,
     OrdersController,
     SalesController,
     ProductsController,

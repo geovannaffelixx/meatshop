@@ -9,10 +9,10 @@
     "lint": "eslint src test --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "dotenv -e .env.test -- jest --runInBand --passWithNoTests",
-    "typeorm": "typeorm-ts-node-commonjs -d src/config/data-source.ts",
-    "migration:generate": "cross-env DOTENV_CONFIG_PATH=.env.local-migrations typeorm-ts-node-commonjs migration:generate -d src/config/data-source.ts",
-    "migration:run": "cross-env DOTENV_CONFIG_PATH=.env.local-migrations typeorm-ts-node-commonjs -d src/config/data-source.ts migration:run",
-    "migration:run:prod": "typeorm -d dist/config/data-source.js migration:run",
+    "typeorm": "typeorm-ts-node-commonjs -d src/database/data-source.ts",
+    "migration:generate": "cross-env DOTENV_CONFIG_PATH=.env.local-migrations typeorm-ts-node-commonjs migration:generate -d src/database/data-source.ts",
+    "migration:run": "cross-env DOTENV_CONFIG_PATH=.env.local-migrations typeorm-ts-node-commonjs -d src/database/data-source.ts migration:run",
+    "migration:run:prod": "typeorm -d dist/database/data-source.js migration:run",
     "migration:revert": "npm run typeorm -- migration:revert"
   },
   "dependencies": {
