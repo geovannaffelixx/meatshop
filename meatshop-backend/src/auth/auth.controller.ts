@@ -1,4 +1,10 @@
 import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { LocalAuthGuard } from '../common/guards/local-auth.guard';
@@ -18,6 +24,7 @@ import { RegisterUseCase } from './use-cases/register.use-case';
 import { ResetPasswordUseCase } from './use-cases/reset-password.use-case';
 import { VerifyEmailUseCase } from './use-cases/verify-email.use-case';
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -31,6 +38,13 @@ export class AuthController {
     private readonly verifyEmailUseCase: VerifyEmailUseCase,
   ) {}
 
+  @ApiOperation({ summary: 'Registra um novo usuário' })
+  @ApiResponse({ status: 201, description: 'Usuário criado com sucesso' })
+  @ApiResponse({
+    status: 409,
+    description: 'Já existe um usuário com este e-mail ou CPF',
+  })
+  @ApiResponse({ status: 400, description: 'Dados de entrada inválidos' })
   @Public()
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
@@ -38,6 +52,9 @@ export class AuthController {
     return this.registerUseCase.execute(dto);
   }
 
+  @ApiOperation({ summary: 'Autentica um usuário e retorna os tokens de acesso' })
+  @ApiResponse({ status: 200, description: 'Login realizado com sucesso' })
+  @ApiResponse({ status: 401, description: 'Credenciais inválidas' })
   @Public()
   @UseGuards(LocalAuthGuard)
   @Post('login')
@@ -46,6 +63,9 @@ export class AuthController {
     return this.loginUseCase.execute(user);
   }
 
+  @ApiOperation({ summary: 'Encerra a sessão do usuário invalidando o refresh token' })
+  @ApiResponse({ status: 200, description: 'Logout realizado com sucesso' })
+  @ApiResponse({ status: 400, description: 'Refresh token inválido' })
   @Public()
   @Post('logout')
   @HttpCode(HttpStatus.OK)
@@ -53,6 +73,9 @@ export class AuthController {
     return this.logoutUseCase.execute(dto.refresh_token);
   }
 
+  @ApiOperation({ summary: 'Renova o token de acesso a partir de um refresh token válido' })
+  @ApiResponse({ status: 200, description: 'Tokens renovados com sucesso' })
+  @ApiResponse({ status: 401, description: 'Refresh token inválido ou expirado' })
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
@@ -60,6 +83,12 @@ export class AuthController {
     return this.refreshTokenUseCase.execute(dto.refresh_token);
   }
 
+  @ApiOperation({ summary: 'Envia um e-mail com o link de redefinição de senha' })
+  @ApiResponse({
+    status: 200,
+    description: 'Solicitação processada com sucesso',
+  })
+  @ApiResponse({ status: 400, description: 'E-mail inválido' })
   @Public()
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
@@ -67,6 +96,9 @@ export class AuthController {
     return this.forgotPasswordUseCase.execute(dto.email);
   }
 
+  @ApiOperation({ summary: 'Redefine a senha do usuário a partir de um token válido' })
+  @ApiResponse({ status: 200, description: 'Senha redefinida com sucesso' })
+  @ApiResponse({ status: 400, description: 'Token inválido ou expirado' })
   @Public()
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
@@ -74,6 +106,9 @@ export class AuthController {
     return this.resetPasswordUseCase.execute(dto.token, dto.new_password);
   }
 
+  @ApiOperation({ summary: 'Verifica o e-mail do usuário a partir de um token de verificação' })
+  @ApiResponse({ status: 200, description: 'E-mail verificado com sucesso' })
+  @ApiResponse({ status: 400, description: 'Token inválido ou expirado' })
   @Public()
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
@@ -81,6 +116,10 @@ export class AuthController {
     return this.verifyEmailUseCase.execute(dto.token);
   }
 
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Altera a senha do usuário autenticado' })
+  @ApiResponse({ status: 200, description: 'Senha alterada com sucesso' })
+  @ApiResponse({ status: 401, description: 'Senha atual incorreta ou usuário não autenticado' })
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
   changePassword(

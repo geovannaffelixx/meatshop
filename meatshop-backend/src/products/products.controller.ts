@@ -8,6 +8,12 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { User } from '../users/entities/user.entity';
@@ -20,6 +26,7 @@ import { ListProductsUseCase } from './use-cases/list-products.use-case';
 import { UpdateProductUseCase } from './use-cases/update-product.use-case';
 import { UpdateStockUseCase } from './use-cases/update-stock.use-case';
 
+@ApiTags('Products')
 @Controller('products')
 export class ProductsController {
   constructor(
@@ -31,6 +38,11 @@ export class ProductsController {
   ) {}
 
   @Public()
+  @ApiOperation({
+    summary:
+      'Lista os produtos, com filtros opcionais por unidade, categoria e status',
+  })
+  @ApiResponse({ status: 200, description: 'Lista de produtos retornada com sucesso' })
   @Get()
   list(
     @Query('unit_id') unitId?: string,
@@ -49,16 +61,31 @@ export class ProductsController {
   }
 
   @Public()
+  @ApiOperation({ summary: 'Busca um produto pelo identificador' })
+  @ApiResponse({ status: 200, description: 'Produto encontrado com sucesso' })
+  @ApiResponse({ status: 404, description: 'Produto não encontrado' })
   @Get(':id')
   getOne(@Param('id', ParseIntPipe) id: number) {
     return this.getProductUseCase.execute(id);
   }
 
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Cria um novo produto' })
+  @ApiResponse({ status: 201, description: 'Produto criado com sucesso' })
+  @ApiResponse({ status: 403, description: 'Usuário não é administrador da unit' })
+  @ApiResponse({ status: 404, description: 'Categoria informada não encontrada' })
+  @ApiResponse({ status: 409, description: 'Categoria não pertence à unit informada' })
   @Post()
   create(@Body() dto: CreateProductDto, @CurrentUser() currentUser: User) {
     return this.createProductUseCase.execute(dto, currentUser);
   }
 
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Atualiza um produto existente' })
+  @ApiResponse({ status: 200, description: 'Produto atualizado com sucesso' })
+  @ApiResponse({ status: 403, description: 'Usuário não é administrador da unit' })
+  @ApiResponse({ status: 404, description: 'Produto não encontrado' })
+  @ApiResponse({ status: 409, description: 'Categoria não pertence à unit informada' })
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -68,6 +95,11 @@ export class ProductsController {
     return this.updateProductUseCase.execute(id, dto, currentUser);
   }
 
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Atualiza a quantidade em estoque de um produto' })
+  @ApiResponse({ status: 200, description: 'Estoque atualizado com sucesso' })
+  @ApiResponse({ status: 403, description: 'Usuário não é administrador da unit' })
+  @ApiResponse({ status: 404, description: 'Produto não encontrado' })
   @Patch(':id/stock')
   updateStock(
     @Param('id', ParseIntPipe) id: number,

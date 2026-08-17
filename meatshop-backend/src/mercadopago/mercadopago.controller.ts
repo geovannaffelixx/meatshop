@@ -1,6 +1,7 @@
 import { Controller, NotFoundException, Param, ParseIntPipe, Post } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { GlobalRole } from '../common/enums/global-role.enum';
 import { Order } from '../orders/entities/order.entity';
@@ -9,6 +10,8 @@ import { OrderAuthorizationService } from '../orders/services/order-authorizatio
 import { User } from '../users/entities/user.entity';
 import { MercadoPagoService } from '@/payments/providers/mercadopago.service';
 
+@ApiTags('Payments')
+@ApiBearerAuth('access-token')
 @Controller('mercadopago')
 export class MercadoPagoController {
   constructor(
@@ -18,6 +21,13 @@ export class MercadoPagoController {
     private readonly orderAuthorizationService: OrderAuthorizationService,
   ) {}
 
+  @ApiOperation({
+    summary:
+      'Cria uma preferência de pagamento no Mercado Pago e retorna a URL de checkout do pedido',
+  })
+  @ApiResponse({ status: 201, description: 'Preferência de pagamento criada com sucesso' })
+  @ApiResponse({ status: 403, description: 'Usuário não tem permissão para pagar este pedido' })
+  @ApiResponse({ status: 404, description: 'Pedido não encontrado' })
   @Post('orders/:id/checkout')
   async createCheckout(
     @Param('id', ParseIntPipe) id: number,

@@ -11,6 +11,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from '../common/decorators/public.decorator';
 import { Order } from '../orders/entities/order.entity';
 import { Payment } from '../orders/entities/payment.entity';
@@ -19,6 +20,7 @@ import { ConfirmOrderUseCase } from '../orders/use-cases/confirm-order.use-case'
 import { OrderStatus } from '../orders/enums/order-status.enum';
 import { MercadoPagoService } from '../payments/providers/mercadopago.service';
 
+@ApiTags('Payments')
 @Controller('webhooks')
 export class MercadoPagoWebhookController {
   constructor(
@@ -29,6 +31,13 @@ export class MercadoPagoWebhookController {
     private readonly confirmOrderUseCase: ConfirmOrderUseCase,
   ) {}
 
+  @ApiOperation({
+    summary: 'Recebe notificações de pagamento do Mercado Pago',
+    description:
+      'Endpoint interno consumido exclusivamente pelo Mercado Pago para notificar eventos de pagamento (webhook). Não deve ser chamado manualmente.',
+  })
+  @ApiResponse({ status: 200, description: 'Notificação processada (ou ignorada) com sucesso' })
+  @ApiResponse({ status: 401, description: 'Assinatura do webhook inválida' })
   @Public()
   @Post('mercadopago')
   @HttpCode(200)

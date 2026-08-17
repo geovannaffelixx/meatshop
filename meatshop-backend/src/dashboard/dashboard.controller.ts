@@ -1,10 +1,13 @@
 import { Controller, Get } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, Repository } from 'typeorm';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Order } from '../orders/entities/order.entity';
 import { OrderStatus } from '../orders/enums/order-status.enum';
 import { PaymentStatus } from '../orders/enums/payment-status.enum';
 
+@ApiTags('Dashboard')
+@ApiBearerAuth('access-token')
 @Controller('dashboard')
 export class DashboardController {
   constructor(
@@ -12,6 +15,8 @@ export class DashboardController {
     private readonly ordersRepo: Repository<Order>,
   ) {}
 
+  @ApiOperation({ summary: 'Retorna os indicadores do dashboard (vendas da semana, pedidos recentes e contagem por status)' })
+  @ApiResponse({ status: 200, description: 'Dados do dashboard retornados com sucesso' })
   @Get()
   async getDashboard() {
     const recent = await this.ordersRepo.find({

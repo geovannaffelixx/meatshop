@@ -14,6 +14,14 @@ import { Repository } from 'typeorm';
 import { diskStorage } from 'multer';
 import * as path from 'path';
 import * as fs from 'fs';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import { User } from './entities/user.entity';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -44,11 +52,32 @@ function imageFileFilter(req: any, file: Express.Multer.File, cb: any) {
   cb(null, true);
 }
 
+@ApiTags('Users')
 @Controller('users')
 export class UsersUploadController {
   constructor(@InjectRepository(User) private readonly users: Repository<User>) {}
 
   @Post(':id/logo')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Envia ou atualiza a logo/avatar do usuário' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Imagem atualizada com sucesso',
+  })
+  @ApiResponse({ status: 400, description: 'Arquivo inválido ou não enviado' })
+  @ApiResponse({
+    status: 403,
+    description: 'Sem permissão para alterar este usuário',
+  })
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({

@@ -1,8 +1,11 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Public } from '../common/decorators/public.decorator';
 import { Sale } from './entities/sale.entity';
 
+@ApiTags('Sales')
 @Controller('sales')
 export class SalesController {
   constructor(
@@ -10,7 +13,10 @@ export class SalesController {
     private readonly saleRepo: Repository<Sale>,
   ) {}
 
-  // Lista as promoções ativas (sales ativas)
+  @Public()
+  @ApiOperation({ summary: 'Lista as promoções (sales) ativas no momento' })
+  @ApiQuery({ name: 'now', required: false, description: 'Data de referência ISO 8601 (default: agora)' })
+  @ApiResponse({ status: 200, description: 'Lista de sales ativas retornada com sucesso' })
   @Get()
   async listActive(@Query('now') nowISO?: string) {
     const now = nowISO ? new Date(nowISO) : new Date();
@@ -38,7 +44,9 @@ export class SalesController {
     }));
   }
 
-  // (Opcional) criar promoções rapidamente
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Cria uma nova sale (promoção de vitrine)' })
+  @ApiResponse({ status: 201, description: 'Sale criada com sucesso' })
   @Post()
   async create(
     @Body()

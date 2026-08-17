@@ -1,4 +1,4 @@
-import { OmitType, PartialType } from '@nestjs/mapped-types';
+import { OmitType, PartialType } from '@nestjs/swagger';
 import { CreatePromotionDto } from './create-promotion.dto';
 
 export class UpdatePromotionDto extends PartialType(
