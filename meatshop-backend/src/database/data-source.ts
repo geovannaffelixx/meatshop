@@ -19,6 +19,8 @@ import { OrderStatusHistory } from '../orders/entities/order-status-history.enti
 import { DeliveryPerson } from '../delivery/entities/delivery-person.entity';
 import { Vehicle } from '../delivery/entities/vehicle.entity';
 import { DeliveryTracking } from '../delivery/entities/delivery-tracking.entity';
+import { Review } from '../reviews/entities/review.entity';
+import { DeliveryReview } from '../reviews/entities/delivery-review.entity';
 import { Unit } from '../units/entities/unit.entity';
 import { UserUnit } from '../units/entities/user-unit.entity';
 
@@ -57,6 +59,8 @@ export default new DataSource({
       DeliveryPerson,
       Vehicle,
       DeliveryTracking,
+      Review,
+      DeliveryReview,
       Unit,
       UserUnit,
     ],

@@ -26,6 +26,8 @@ import { OrderStatusHistory } from './orders/entities/order-status-history.entit
 import { DeliveryPerson } from './delivery/entities/delivery-person.entity';
 import { Vehicle } from './delivery/entities/vehicle.entity';
 import { DeliveryTracking } from './delivery/entities/delivery-tracking.entity';
+import { Review } from './reviews/entities/review.entity';
+import { DeliveryReview } from './reviews/entities/delivery-review.entity';
 import { Unit } from './units/entities/unit.entity';
 import { UserUnit } from './units/entities/user-unit.entity';
 
@@ -46,6 +48,7 @@ import { CartModule } from './cart/cart.module';
 import { PromotionsModule } from './promotions/promotions.module';
 import { OrdersModule } from './orders/orders.module';
 import { DeliveryModule } from './delivery/delivery.module';
+import { ReviewsModule } from './reviews/reviews.module';
 import { SeedModule } from './database/seed/seed.module';
 import { MercadoPagoModule } from '@/mercadopago/mercadopago.module';
 import { EmailModule } from './email/email.module';
@@ -100,6 +103,8 @@ import { EmailModule } from './email/email.module';
             DeliveryPerson,
             Vehicle,
             DeliveryTracking,
+            Review,
+            DeliveryReview,
             Unit,
             UserUnit,
           ],
@@ -124,6 +129,7 @@ import { EmailModule } from './email/email.module';
     PromotionsModule,
     OrdersModule,
     DeliveryModule,
+    ReviewsModule,
     SeedModule,
     MercadoPagoModule,
   ],
