@@ -1,17 +1,16 @@
 import {
   ConflictException,
-  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { GlobalRole } from '../../common/enums/global-role.enum';
 import { User } from '../../users/entities/user.entity';
 import { CreateUserUnitDto } from '../dtos/create-user-unit.dto';
 import { Unit } from '../entities/unit.entity';
 import { UserUnit } from '../entities/user-unit.entity';
+import { UnitAuthorizationService } from '../services/unit-authorization.service';
 
 @Injectable()
 export class AddUserToUnitUseCase {
@@ -24,6 +23,7 @@ export class AddUserToUnitUseCase {
     private readonly userUnitRepository: Repository<UserUnit>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly unitAuthorizationService: UnitAuthorizationService,
   ) {}
 
   async execute(
@@ -36,7 +36,7 @@ export class AddUserToUnitUseCase {
       throw new NotFoundException('Unit not found');
     }
 
-    this.assertCanManageUnit(unit, currentUser);
+    this.unitAuthorizationService.assertCanManageUnit(unit, currentUser);
 
     const targetUser = await this.userRepository.findOne({
       where: { id: dto.user_id },
@@ -59,17 +59,6 @@ export class AddUserToUnitUseCase {
     );
 
     return userUnit;
-  }
-
-  private assertCanManageUnit(unit: Unit, currentUser: User): void {
-    const isOwner = unit.admin_id === currentUser.id;
-    const isSuperAdmin = currentUser.global_role === GlobalRole.SUPER_ADMIN;
-
-    if (!isOwner && !isSuperAdmin) {
-      throw new ForbiddenException(
-        'Only the unit admin or a super admin can perform this action',
-      );
-    }
   }
 
   private async ensureNotAlreadyMember(

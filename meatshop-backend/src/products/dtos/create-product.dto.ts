@@ -1,50 +1,52 @@
-import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength } from 'class-validator';
-import { ProductStatus } from '../entities/product.entity';
+import {
+  IsBoolean,
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUrl,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class CreateProductDto {
-  @IsString()
   @IsNotEmpty()
+  @IsString()
   @MaxLength(150)
   name: string;
 
-  @IsString()
   @IsNotEmpty()
-  @MaxLength(255)
+  @IsString()
   description: string;
 
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
-  category: string;
-
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
-  cut: string;
-
-  @IsString()
-  @IsOptional()
-  brand?: string;
-
-  @IsString()
-  @IsOptional()
-  notes?: string;
-
-  @IsString()
-  @IsNotEmpty()
-  quantity: string;
-
   @IsNumber()
+  @Min(0)
   price: number;
 
-  @IsNumber()
-  @IsOptional()
-  promotionalPrice?: number | null;
+  @IsNotEmpty()
+  @IsString()
+  @MaxLength(50)
+  unit_of_measure: string;
 
+  @IsOptional()
   @IsBoolean()
-  @IsOptional()
-  promotionActive?: boolean;
+  active?: boolean;
+
+  @IsNotEmpty()
+  @IsInt()
+  unit_id: number;
+
+  @IsNotEmpty()
+  @IsInt()
+  category_id: number;
 
   @IsOptional()
-  status?: ProductStatus;
+  @IsString()
+  @MaxLength(100)
+  brand?: string;
+
+  @IsOptional()
+  @IsUrl()
+  image_url?: string;
 }

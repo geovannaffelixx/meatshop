@@ -6,6 +6,11 @@ import { Expense } from '../finance/entities/expense.entity';
 import { RefreshTokenEntity } from '../auth/entities/refresh-token.entity';
 import { Sale } from '../finance/entities/sale.entity';
 import { Product } from '../products/entities/product.entity';
+import { Stock } from '../products/entities/stock.entity';
+import { Category } from '../categories/entities/category.entity';
+import { Address } from '../users/entities/address.entity';
+import { Cart } from '../cart/entities/cart.entity';
+import { CartItem } from '../cart/entities/cart-item.entity';
 import { Unit } from '../units/entities/unit.entity';
 import { UserUnit } from '../units/entities/user-unit.entity';
 
@@ -31,6 +36,11 @@ export default new DataSource({
       RefreshTokenEntity,
       Sale,
       Product,
+      Stock,
+      Category,
+      Address,
+      Cart,
+      CartItem,
       Unit,
       UserUnit,
     ],

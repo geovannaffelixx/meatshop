@@ -13,6 +13,11 @@ import { Expense } from './finance/entities/expense.entity';
 import { RefreshTokenEntity } from './auth/entities/refresh-token.entity';
 import { Sale } from './finance/entities/sale.entity';
 import { Product } from './products/entities/product.entity';
+import { Stock } from './products/entities/stock.entity';
+import { Category } from './categories/entities/category.entity';
+import { Address } from './users/entities/address.entity';
+import { Cart } from './cart/entities/cart.entity';
+import { CartItem } from './cart/entities/cart-item.entity';
 import { Unit } from './units/entities/unit.entity';
 import { UserUnit } from './units/entities/user-unit.entity';
 
@@ -20,7 +25,6 @@ import { UserUnit } from './units/entities/user-unit.entity';
 import { DashboardController } from './dashboard/dashboard.controller';
 import { OrdersController } from './orders/orders.controller';
 import { SalesController } from './finance/sales.controller';
-import { ProductsController } from './products/products.controller';
 
 // Módulos
 import { LoggerModule } from './common/logger/logger.module';
@@ -29,6 +33,9 @@ import { FinanceModule } from './finance/finance.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { UnitsModule } from './units/units.module';
+import { CategoriesModule } from './categories/categories.module';
+import { ProductsModule } from './products/products.module';
+import { CartModule } from './cart/cart.module';
 import { SeedModule } from './database/seed/seed.module';
 import { MercadoPagoModule } from '@/mercadopago/mercadopago.module';
 import { EmailModule } from './email/email.module';
@@ -70,6 +77,11 @@ import { EmailModule } from './email/email.module';
             RefreshTokenEntity,
             Sale,
             Product,
+            Stock,
+            Category,
+            Address,
+            Cart,
+            CartItem,
             Unit,
             UserUnit,
           ],
@@ -81,13 +93,16 @@ import { EmailModule } from './email/email.module';
     }),
 
     // Repositórios disponíveis para injeção
-    TypeOrmModule.forFeature([Order, Expense, Sale, Product]),
+    TypeOrmModule.forFeature([Order, Expense, Sale]),
 
     // Outros módulos
     FinanceModule,
     AuthModule,
     UsersModule,
     UnitsModule,
+    CategoriesModule,
+    ProductsModule,
+    CartModule,
     SeedModule,
     MercadoPagoModule,
   ],
@@ -96,7 +111,6 @@ import { EmailModule } from './email/email.module';
     DashboardController,
     OrdersController,
     SalesController,
-    ProductsController,
   ],
   providers: [AppService],
 })
