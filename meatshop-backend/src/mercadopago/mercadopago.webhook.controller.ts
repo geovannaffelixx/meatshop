@@ -10,18 +10,26 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import crypto from 'crypto';
-import { Order } from '../orders/entities/order.entity';
-import { MercadoPagoService } from '../payments/providers/mercadopago.service';
 import { ConfigService } from '@nestjs/config';
+import { Public } from '../common/decorators/public.decorator';
+import { Order } from '../orders/entities/order.entity';
+import { Payment } from '../orders/entities/payment.entity';
+import { PaymentStatus } from '../orders/enums/payment-status.enum';
+import { ConfirmOrderUseCase } from '../orders/use-cases/confirm-order.use-case';
+import { OrderStatus } from '../orders/enums/order-status.enum';
+import { MercadoPagoService } from '../payments/providers/mercadopago.service';
 
 @Controller('webhooks')
 export class MercadoPagoWebhookController {
   constructor(
     @InjectRepository(Order) private readonly ordersRepo: Repository<Order>,
+    @InjectRepository(Payment) private readonly paymentsRepo: Repository<Payment>,
     private readonly mp: MercadoPagoService,
     private readonly config: ConfigService,
+    private readonly confirmOrderUseCase: ConfirmOrderUseCase,
   ) {}
 
+  @Public()
   @Post('mercadopago')
   @HttpCode(200)
   async handle(
@@ -30,73 +38,117 @@ export class MercadoPagoWebhookController {
     @Headers('x-signature') xSignature?: string,
     @Headers('x-request-id') xRequestId?: string,
   ) {
-    const paymentIdRaw = query?.id || query?.['data.id'] || body?.data?.id;
+    const paymentId = this.extractPaymentId(query, body);
+    if (!paymentId) return { ok: true, ignored: true, reason: 'missing_payment_id' };
 
-    if (!paymentIdRaw) return { ok: true, ignored: true, reason: 'missing_payment_id' };
-
-    const paymentId = String(paymentIdRaw).trim();
-
-    if (!/^\d+$/.test(paymentId)) {
-      return { ok: true, ignored: true, reason: 'invalid_payment_id' };
+    if (!this.verifyIfConfigured(paymentId, xSignature, xRequestId)) {
+      throw new UnauthorizedException('Webhook signature inválida');
     }
 
-    const secret = (this.config.get<string>('MP_WEBHOOK_SECRET') || '').trim();
-    if (secret) {
-      const ok = this.verifySignature({
-        secret,
-        xSignature,
-        xRequestId,
-        paymentId,
-      });
+    const mpPayment = await this.safeGetPayment(paymentId);
+    if (!mpPayment) return { ok: true, ignored: true, reason: 'payment_lookup_failed' };
 
-      if (!ok) throw new UnauthorizedException('Webhook signature inválida');
-    }
-
-    let payment: any;
-    try {
-      payment = await this.mp.getPayment(paymentId);
-    } catch {
-      return { ok: true, ignored: true, reason: 'payment_lookup_failed' };
-    }
-
-    const orderId = Number(payment?.external_reference);
+    const orderId = Number(mpPayment?.external_reference);
     if (!orderId) return { ok: true, ignored: true, reason: 'missing_external_reference' };
 
     const order = await this.ordersRepo.findOne({ where: { id: orderId } });
     if (!order) return { ok: true, ignored: true, reason: 'order_not_found' };
 
-    const newStatus = payment?.status;
-    const newStatusDetail = payment?.status_detail;
+    return this.applyPaymentUpdate(order, paymentId, mpPayment);
+  }
 
-    const alreadySame =
-      order.mpPaymentId === paymentId &&
-      order.mpStatus === newStatus &&
-      order.mpStatusDetail === newStatusDetail;
+  private extractPaymentId(query: any, body: any): string | null {
+    const raw = query?.id || query?.['data.id'] || body?.data?.id;
+    if (!raw) return null;
+    const id = String(raw).trim();
+    return /^\d+$/.test(id) ? id : null;
+  }
 
-    if (alreadySame) {
-      return { ok: true, duplicated: true };
+  private verifyIfConfigured(
+    paymentId: string,
+    xSignature?: string,
+    xRequestId?: string,
+  ): boolean {
+    const secret = (this.config.get<string>('MP_WEBHOOK_SECRET') || '').trim();
+    if (!secret) return true;
+    return this.verifySignature({ secret, xSignature, xRequestId, paymentId });
+  }
+
+  private async safeGetPayment(paymentId: string): Promise<any> {
+    try {
+      return await this.mp.getPayment(paymentId);
+    } catch {
+      return null;
     }
+  }
 
-    order.mpPaymentId = paymentId;
-    order.mpStatus = newStatus;
-    order.mpStatusDetail = newStatusDetail;
-    order.mpLastEventAt = new Date();
+  private async applyPaymentUpdate(order: Order, paymentId: string, mpPayment: any) {
+    const payment = await this.getOrCreatePayment(order.id);
+    const newStatusDetail = mpPayment?.status_detail ?? null;
+    const isDuplicate =
+      payment.transaction_id === paymentId &&
+      payment.mp_status_detail === newStatusDetail;
 
-    if (newStatus === 'approved') {
-      order.valorPago = Number(payment?.transaction_amount ?? order.valorPago ?? 0);
-      order.mpPaidAt = payment?.date_approved ? new Date(payment.date_approved) : new Date();
+    if (isDuplicate) return { ok: true, duplicated: true };
 
-      const method = this.mp.mapPaymentMethod(payment?.payment_type_id);
-      if (method) order.paymentMethod = method as any;
+    payment.transaction_id = paymentId;
+    payment.mp_status_detail = newStatusDetail;
+    payment.mp_last_event_at = new Date();
+    payment.status = this.mapMpStatus(mpPayment?.status);
+
+    if (mpPayment?.status === 'approved') {
+      this.applyApprovedPayment(payment, mpPayment);
     }
 
     try {
-      await this.ordersRepo.save(order);
+      await this.paymentsRepo.save(payment);
+      await this.syncOrderPaymentStatus(order, payment.status);
     } catch {
       return { ok: true, ignored: true, reason: 'db_save_failed' };
     }
 
     return { ok: true };
+  }
+
+  private applyApprovedPayment(payment: Payment, mpPayment: any): void {
+    payment.payment_date = mpPayment?.date_approved
+      ? new Date(mpPayment.date_approved)
+      : new Date();
+    const method = this.mp.mapPaymentMethod(mpPayment?.payment_type_id);
+    if (method) payment.method = method;
+  }
+
+  private async syncOrderPaymentStatus(
+    order: Order,
+    status: PaymentStatus,
+  ): Promise<void> {
+    order.payment_status = status;
+    await this.ordersRepo.save(order);
+
+    if (status === PaymentStatus.PAID && order.status === OrderStatus.PENDING) {
+      await this.confirmOrderUseCase.execute(order.id, null);
+    }
+  }
+
+  private async getOrCreatePayment(orderId: number): Promise<Payment> {
+    const existing = await this.paymentsRepo.findOne({ where: { order_id: orderId } });
+    return existing ?? this.paymentsRepo.create({ order_id: orderId });
+  }
+
+  private mapMpStatus(status: string | undefined): PaymentStatus {
+    switch (status) {
+      case 'approved':
+        return PaymentStatus.PAID;
+      case 'rejected':
+        return PaymentStatus.REJECTED;
+      case 'refunded':
+      case 'charged_back':
+        return PaymentStatus.REFUNDED;
+      case 'cancelled':
+        return PaymentStatus.CANCELLED;
+      default:
+        return PaymentStatus.PENDING;
+    }
   }
 
   private verifySignature(params: {

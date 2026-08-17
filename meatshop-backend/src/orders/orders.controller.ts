@@ -1,141 +1,90 @@
-import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
-import { Order } from './entities/order.entity';
-
-type ListOrdersResponse = {
-  data: Array<{
-    id: number;
-    cliente: string;
-    cpfCnpj?: string;
-    status: string;
-    valor: number;
-    desconto?: number;
-    valorPago?: number;
-    formaPagamento?: string | null;
-    criadoEm: string;
-    dataAgendada?: string | null;
-    dataEntrega?: string | null;
-    observacoes?: string | null;
-  }>;
-};
-
-/** Ajusta data final para 23:59:59 */
-function endOfDay(dateStr: string) {
-  const d = new Date(dateStr);
-  d.setHours(23, 59, 59, 999);
-  return d;
-}
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { User } from '../users/entities/user.entity';
+import { CancelOrderDto } from './dtos/cancel-order.dto';
+import { CreateOrderDto } from './dtos/create-order.dto';
+import { ScheduleOrderDto } from './dtos/schedule-order.dto';
+import { UpdateOrderStatusDto } from './dtos/update-order-status.dto';
+import { CancelOrderUseCase } from './use-cases/cancel-order.use-case';
+import { ConfirmOrderUseCase } from './use-cases/confirm-order.use-case';
+import { CreateOrderUseCase } from './use-cases/create-order.use-case';
+import { GetOrderUseCase } from './use-cases/get-order.use-case';
+import { ListOrderHistoryUseCase } from './use-cases/list-order-history.use-case';
+import { RepeatOrderUseCase } from './use-cases/repeat-order.use-case';
+import { ScheduleOrderUseCase } from './use-cases/schedule-order.use-case';
+import { UpdateOrderStatusUseCase } from './use-cases/update-order-status.use-case';
 
 @Controller('orders')
 export class OrdersController {
   constructor(
-    @InjectRepository(Order)
-    private readonly ordersRepo: Repository<Order>,
+    private readonly createOrderUseCase: CreateOrderUseCase,
+    private readonly getOrderUseCase: GetOrderUseCase,
+    private readonly listOrderHistoryUseCase: ListOrderHistoryUseCase,
+    private readonly confirmOrderUseCase: ConfirmOrderUseCase,
+    private readonly updateOrderStatusUseCase: UpdateOrderStatusUseCase,
+    private readonly cancelOrderUseCase: CancelOrderUseCase,
+    private readonly scheduleOrderUseCase: ScheduleOrderUseCase,
+    private readonly repeatOrderUseCase: RepeatOrderUseCase,
   ) {}
 
-  // ================================
-  // GET /orders
-  // ================================
-  @Get()
-  async list(
-    // filtros enviados pelo frontend
-    @Query('status') status?: string,
-    @Query('clienteNome') clienteNome?: string,
-    @Query('clienteCpf') clienteCpf?: string,
-    @Query('dataPedidoDe') dataPedidoDe?: string,
-    @Query('dataPedidoAte') dataPedidoAte?: string,
-    @Query('dataAgendadaDe') dataAgendadaDe?: string,
-    @Query('dataAgendadaAte') dataAgendadaAte?: string,
-    @Query('dataEntregaDe') dataEntregaDe?: string,
-    @Query('dataEntregaAte') dataEntregaAte?: string,
-  ): Promise<ListOrdersResponse> {
-    const where: any = {};
-
-    // filtros de texto
-    if (status) where.status = status;
-    if (clienteNome) where.cliente = Like(`%${clienteNome}%`);
-    if (clienteCpf) where.cpfCnpj = Like(`%${clienteCpf}%`);
-
-    // filtros de data do pedido (criadoEm)
-    if (dataPedidoDe && dataPedidoAte) {
-      where.criadoEm = Between(new Date(dataPedidoDe), endOfDay(dataPedidoAte));
-    } else if (dataPedidoDe) {
-      where.criadoEm = MoreThanOrEqual(new Date(dataPedidoDe));
-    } else if (dataPedidoAte) {
-      where.criadoEm = LessThanOrEqual(endOfDay(dataPedidoAte));
-    }
-
-    // filtros de data agendada
-    if (dataAgendadaDe && dataAgendadaAte) {
-      where.dataAgendada = Between(new Date(dataAgendadaDe), endOfDay(dataAgendadaAte));
-    } else if (dataAgendadaDe) {
-      where.dataAgendada = MoreThanOrEqual(new Date(dataAgendadaDe));
-    } else if (dataAgendadaAte) {
-      where.dataAgendada = LessThanOrEqual(endOfDay(dataAgendadaAte));
-    }
-
-    // filtros de data entrega
-    if (dataEntregaDe && dataEntregaAte) {
-      where.dataEntrega = Between(new Date(dataEntregaDe), endOfDay(dataEntregaAte));
-    } else if (dataEntregaDe) {
-      where.dataEntrega = MoreThanOrEqual(new Date(dataEntregaDe));
-    } else if (dataEntregaAte) {
-      where.dataEntrega = LessThanOrEqual(endOfDay(dataEntregaAte));
-    }
-
-    // ⚠ Sem paginação — frontend faz sozinho
-    const rows = await this.ordersRepo.find({
-      where,
-      order: {
-        criadoEm: 'DESC',
-      },
-    });
-
-    return {
-      data: rows.map((o) => ({
-        id: o.id,
-        cliente: o.cliente,
-        cpfCnpj: o.cpfCnpj ?? '',
-        status: o.status,
-        valor: Number(o.valor),
-        desconto: o.desconto != null ? Number(o.desconto) : undefined,
-        valorPago: o.valorPago != null ? Number(o.valorPago) : undefined,
-        formaPagamento: o.paymentMethod ?? null,
-        criadoEm: o.criadoEm?.toISOString() ?? '',
-        dataAgendada: o.dataAgendada?.toISOString() ?? null,
-        dataEntrega: o.dataEntrega?.toISOString() ?? null,
-        observacoes: o.observacoes ?? null,
-      })),
-    };
+  @Post()
+  create(@Body() dto: CreateOrderDto, @CurrentUser() currentUser: User) {
+    return this.createOrderUseCase.execute(dto, currentUser);
   }
 
-  // ================================
-  // GET /orders/:id
-  // ================================
-  @Get(':id')
-  async byId(@Param('id', ParseIntPipe) id: number) {
-    const o = await this.ordersRepo.findOne({ where: { id } });
-    if (!o) {
-      return { ok: false, message: 'Pedido não encontrado' };
-    }
+  @Get()
+  list(@CurrentUser() currentUser: User) {
+    return this.listOrderHistoryUseCase.execute(currentUser);
+  }
 
-    return {
-      ok: true,
-      data: {
-        id: o.id,
-        cliente: o.cliente,
-        cpfCnpj: o.cpfCnpj ?? '',
-        status: o.status,
-        valor: Number(o.valor),
-        desconto: o.desconto ? Number(o.desconto) : undefined,
-        valorPago: o.valorPago ? Number(o.valorPago) : undefined,
-        formaPagamento: o.paymentMethod ?? null,
-        criadoEm: o.criadoEm?.toISOString() ?? '',
-        dataAgendada: o.dataAgendada?.toISOString() ?? null,
-        dataEntrega: o.dataEntrega?.toISOString() ?? null,
-        observacoes: o.observacoes ?? null,
-      },
-    };
+  @Get(':id')
+  getOne(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() currentUser: User,
+  ) {
+    return this.getOrderUseCase.execute(id, currentUser);
+  }
+
+  @Patch(':id/confirm')
+  confirm(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() currentUser: User,
+  ) {
+    return this.confirmOrderUseCase.execute(id, currentUser);
+  }
+
+  @Patch(':id/status')
+  updateStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateOrderStatusDto,
+    @CurrentUser() currentUser: User,
+  ) {
+    return this.updateOrderStatusUseCase.execute(id, dto, currentUser);
+  }
+
+  @Patch(':id/cancel')
+  cancel(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: CancelOrderDto,
+    @CurrentUser() currentUser: User,
+  ) {
+    return this.cancelOrderUseCase.execute(id, dto, currentUser);
+  }
+
+  @Patch(':id/schedule')
+  schedule(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ScheduleOrderDto,
+    @CurrentUser() currentUser: User,
+  ) {
+    return this.scheduleOrderUseCase.execute(id, dto, currentUser);
+  }
+
+  @Post(':id/repeat')
+  repeat(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() currentUser: User,
+  ) {
+    return this.repeatOrderUseCase.execute(id, currentUser);
   }
 }

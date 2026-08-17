@@ -18,12 +18,19 @@ import { Category } from './categories/entities/category.entity';
 import { Address } from './users/entities/address.entity';
 import { Cart } from './cart/entities/cart.entity';
 import { CartItem } from './cart/entities/cart-item.entity';
+import { Promotion } from './promotions/entities/promotion.entity';
+import { Coupon } from './promotions/entities/coupon.entity';
+import { OrderItem } from './orders/entities/order-item.entity';
+import { Payment } from './orders/entities/payment.entity';
+import { OrderStatusHistory } from './orders/entities/order-status-history.entity';
+import { DeliveryPerson } from './delivery/entities/delivery-person.entity';
+import { Vehicle } from './delivery/entities/vehicle.entity';
+import { DeliveryTracking } from './delivery/entities/delivery-tracking.entity';
 import { Unit } from './units/entities/unit.entity';
 import { UserUnit } from './units/entities/user-unit.entity';
 
 // Controllers
 import { DashboardController } from './dashboard/dashboard.controller';
-import { OrdersController } from './orders/orders.controller';
 import { SalesController } from './finance/sales.controller';
 
 // Módulos
@@ -36,6 +43,9 @@ import { UnitsModule } from './units/units.module';
 import { CategoriesModule } from './categories/categories.module';
 import { ProductsModule } from './products/products.module';
 import { CartModule } from './cart/cart.module';
+import { PromotionsModule } from './promotions/promotions.module';
+import { OrdersModule } from './orders/orders.module';
+import { DeliveryModule } from './delivery/delivery.module';
 import { SeedModule } from './database/seed/seed.module';
 import { MercadoPagoModule } from '@/mercadopago/mercadopago.module';
 import { EmailModule } from './email/email.module';
@@ -82,6 +92,14 @@ import { EmailModule } from './email/email.module';
             Address,
             Cart,
             CartItem,
+            Promotion,
+            Coupon,
+            OrderItem,
+            Payment,
+            OrderStatusHistory,
+            DeliveryPerson,
+            Vehicle,
+            DeliveryTracking,
             Unit,
             UserUnit,
           ],
@@ -103,13 +121,15 @@ import { EmailModule } from './email/email.module';
     CategoriesModule,
     ProductsModule,
     CartModule,
+    PromotionsModule,
+    OrdersModule,
+    DeliveryModule,
     SeedModule,
     MercadoPagoModule,
   ],
   controllers: [
     AppController,
     DashboardController,
-    OrdersController,
     SalesController,
   ],
   providers: [AppService],

@@ -5,6 +5,7 @@ import { Expense } from './entities/expense.entity';
 import { CreateExpenseDto } from './dtos/create-expense.dto';
 import { UpdateExpenseDto } from './dtos/update-expense.dto';
 import { Order } from '../orders/entities/order.entity';
+import { OrderStatus } from '../orders/enums/order-status.enum';
 import { AppLogger } from '../common/logger/app.logger';
 
 @Injectable()
@@ -118,10 +119,10 @@ export class FinanceService {
 
     const rows = await this.orders
       .createQueryBuilder('o')
-      .select(["TO_CHAR(o.criadoEm, 'DD') AS day", 'SUM(o.valor) AS total'])
-      .where('o.status = :st', { st: 'Entregue' })
-      .andWhere('o.criadoEm >= :start AND o.criadoEm < :end', { start, end })
-      .groupBy("TO_CHAR(o.criadoEm, 'DD')")
+      .select(["TO_CHAR(o.order_date, 'DD') AS day", 'SUM(o.total_amount) AS total'])
+      .where('o.status = :st', { st: OrderStatus.DELIVERED })
+      .andWhere('o.order_date >= :start AND o.order_date < :end', { start, end })
+      .groupBy("TO_CHAR(o.order_date, 'DD')")
       .getRawMany<{ day: string; total: string }>();
 
     const map = new Map<number, number>();
@@ -158,18 +159,20 @@ export class FinanceService {
     });
     const expensesTotal = expenses.reduce((s, e) => s + Number(e.paidAmount ?? 0), 0);
 
-    // ---- Resumo ----
-    const orders = await this.orders
+    // ---- Resumo (método de pagamento vem da tabela payments) ----
+    const { entities: orders, raw } = await this.orders
       .createQueryBuilder('o')
-      .where('o.status = :st', { st: 'Entregue' })
-      .andWhere('o.criadoEm >= :start AND o.criadoEm < :end', { start, end })
-      .getMany();
+      .leftJoin('payments', 'p', 'p.order_id = o.id')
+      .addSelect('p.method', 'payment_method')
+      .where('o.status = :st', { st: OrderStatus.DELIVERED })
+      .andWhere('o.order_date >= :start AND o.order_date < :end', { start, end })
+      .getRawAndEntities();
 
     const paymentsMap = new Map<string, number>();
-    for (const o of orders) {
-      const key = (o as any).paymentMethod ?? 'Outros';
-      paymentsMap.set(key, (paymentsMap.get(key) ?? 0) + Number(o.valor ?? 0));
-    }
+    orders.forEach((o, i) => {
+      const key = raw[i]?.payment_method ?? 'Outros';
+      paymentsMap.set(key, (paymentsMap.get(key) ?? 0) + Number(o.total_amount ?? 0));
+    });
 
     const payments = Array.from(paymentsMap.entries()).map(([name, value]) => ({
       name,

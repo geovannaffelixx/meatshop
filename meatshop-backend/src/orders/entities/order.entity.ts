@@ -1,87 +1,113 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-
-export enum PaymentMethod {
-  PIX = 'Pix',
-  CREDITO = 'Crédito',
-  DEBITO = 'Débito',
-  DINHEIRO = 'Dinheiro',
-  BOLETO = 'Boleto',
-  SALDO_MP = 'Saldo MP',
-}
+import { Address } from '../../users/entities/address.entity';
+import { Coupon } from '../../promotions/entities/coupon.entity';
+import { DeliveryPerson } from '../../delivery/entities/delivery-person.entity';
+import { Unit } from '../../units/entities/unit.entity';
+import { User } from '../../users/entities/user.entity';
+import { CancelledBy } from '../enums/cancelled-by.enum';
+import { DeliveryStatus } from '../enums/delivery-status.enum';
+import { DeliveryStep } from '../enums/delivery-step.enum';
+import { DeliveryType } from '../enums/delivery-type.enum';
+import { OrderStatus } from '../enums/order-status.enum';
+import { PaymentStatus } from '../enums/payment-status.enum';
 
 @Entity('orders')
 export class Order {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'varchar', length: 150 })
-  cliente: string;
+  @Column()
+  client_id: number;
 
-  @Column({ name: 'cpf_cnpj', type: 'varchar', length: 20, nullable: true })
-  cpfCnpj?: string;
+  @ManyToOne(() => User, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'client_id' })
+  client: User;
 
-  @Column({ type: 'varchar', length: 30, default: 'Pendente' })
-  status: string;
+  @Column()
+  unit_id: number;
+
+  @ManyToOne(() => Unit, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'unit_id' })
+  unit: Unit;
+
+  @Column({ nullable: true })
+  delivery_person_id: number | null;
+
+  @ManyToOne(() => DeliveryPerson, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'delivery_person_id' })
+  delivery_person: DeliveryPerson | null;
+
+  @CreateDateColumn()
+  order_date: Date;
+
+  @Column({ type: 'enum', enum: OrderStatus, default: OrderStatus.PENDING })
+  status: OrderStatus;
+
+  @Column({ type: 'enum', enum: DeliveryStatus, nullable: true })
+  delivery_status: DeliveryStatus | null;
+
+  @Column({ type: 'enum', enum: DeliveryStep, nullable: true })
+  delivery_step: DeliveryStep | null;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
-  valor: number;
+  total_amount: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  subtotal: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
-  desconto: number;
+  discount_amount: number;
 
-  @Column({
-    name: 'valor_pago',
-    type: 'decimal',
-    precision: 10,
-    scale: 2,
-    default: 0,
-  })
-  valorPago: number;
-
-  @Column({
-    name: 'paymentMethod',
-    type: 'enum',
-    enum: PaymentMethod,
-    nullable: true,
-  })
-  paymentMethod?: PaymentMethod;
-
-  @Column({ name: 'data_agendada', type: 'timestamp', nullable: true })
-  dataAgendada?: Date;
-
-  @Column({ name: 'data_entrega', type: 'timestamp', nullable: true })
-  dataEntrega?: Date;
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  delivery_fee: number;
 
   @Column({ type: 'text', nullable: true })
-  observacoes?: string;
+  cancellation_reason: string | null;
 
-  @CreateDateColumn({ name: 'criado_em' })
-  criadoEm: Date;
+  @Column({ type: 'timestamp', nullable: true })
+  cancelled_at: Date | null;
 
-  @UpdateDateColumn({ name: 'atualizado_em' })
-  atualizadoEm: Date;
+  @Column({ type: 'enum', enum: CancelledBy, nullable: true })
+  cancelled_by: CancelledBy | null;
 
-  @Column({ name: 'mp_preference_id', type: 'varchar', length: 120, nullable: true })
-  mpPreferenceId?: string;
+  @Column({ nullable: true })
+  address_id: number | null;
 
-  @Column({ name: 'mp_payment_id', type: 'varchar', length: 40, nullable: true })
-  mpPaymentId?: string;
+  @ManyToOne(() => Address, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'address_id' })
+  address: Address | null;
 
-  @Column({ name: 'mp_status', type: 'varchar', length: 30, nullable: true })
-  mpStatus?: string;
+  @Column({ nullable: true })
+  coupon_id: number | null;
 
-  @Column({ name: 'mp_status_detail', type: 'varchar', length: 60, nullable: true })
-  mpStatusDetail?: string;
+  @ManyToOne(() => Coupon, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'coupon_id' })
+  coupon: Coupon | null;
 
-  @Column({ name: 'mp_last_event_at', type: 'timestamp', nullable: true })
-  mpLastEventAt?: Date;
+  @Column({ type: 'timestamp', nullable: true })
+  scheduled_delivery_date: Date | null;
 
-  @Column({ name: 'mp_paid_at', type: 'timestamp', nullable: true })
-  mpPaidAt?: Date;
+  @Column({ type: 'boolean', default: false })
+  is_scheduled: boolean;
+
+  @Column({ type: 'enum', enum: DeliveryType, default: DeliveryType.DELIVERY })
+  delivery_type: DeliveryType;
+
+  @Column({
+    type: 'enum',
+    enum: PaymentStatus,
+    default: PaymentStatus.PENDING,
+  })
+  payment_status: PaymentStatus;
+
+  @UpdateDateColumn()
+  updated_at: Date;
 }

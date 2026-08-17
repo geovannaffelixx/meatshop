@@ -11,6 +11,14 @@ import { Category } from '../categories/entities/category.entity';
 import { Address } from '../users/entities/address.entity';
 import { Cart } from '../cart/entities/cart.entity';
 import { CartItem } from '../cart/entities/cart-item.entity';
+import { Promotion } from '../promotions/entities/promotion.entity';
+import { Coupon } from '../promotions/entities/coupon.entity';
+import { OrderItem } from '../orders/entities/order-item.entity';
+import { Payment } from '../orders/entities/payment.entity';
+import { OrderStatusHistory } from '../orders/entities/order-status-history.entity';
+import { DeliveryPerson } from '../delivery/entities/delivery-person.entity';
+import { Vehicle } from '../delivery/entities/vehicle.entity';
+import { DeliveryTracking } from '../delivery/entities/delivery-tracking.entity';
 import { Unit } from '../units/entities/unit.entity';
 import { UserUnit } from '../units/entities/user-unit.entity';
 
@@ -41,6 +49,14 @@ export default new DataSource({
       Address,
       Cart,
       CartItem,
+      Promotion,
+      Coupon,
+      OrderItem,
+      Payment,
+      OrderStatusHistory,
+      DeliveryPerson,
+      Vehicle,
+      DeliveryTracking,
       Unit,
       UserUnit,
     ],

@@ -22,5 +22,6 @@ import { UpdateCartItemUseCase } from './use-cases/update-cart-item.use-case';
     RemoveCartItemUseCase,
     ClearCartUseCase,
   ],
+  exports: [TypeOrmModule, CartAccessService],
 })
 export class CartModule {}

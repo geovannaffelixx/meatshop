@@ -1,10 +1,11 @@
-import { Injectable, BadRequestException, ServiceUnavailableException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
-import { PaymentMethod } from '../../orders/entities/order.entity';
+import { PaymentMethod } from '../../orders/enums/payment-method.enum';
 
 @Injectable()
 export class MercadoPagoService {
+  private readonly logger = new Logger(MercadoPagoService.name);
   private client: MercadoPagoConfig | null = null;
 
   constructor(private readonly config: ConfigService) {
@@ -78,7 +79,7 @@ export class MercadoPagoService {
         },
       });
     } catch (error) {
-      console.error(' MercadoPago SDK ERROR:', error);
+      this.logger.error('MercadoPago SDK error', error instanceof Error ? error.stack : undefined);
       throw error;
     }
 
@@ -92,13 +93,7 @@ export class MercadoPagoService {
       throw new BadRequestException('Falha ao criar preferência no Mercado Pago');
     }
 
-    console.log('MercadoPago preference created', {
-      orderId: params.orderId,
-      amount,
-      prefId,
-      initPoint,
-      sandboxInitPoint,
-    });
+    this.logger.log(`MercadoPago preference created for order ${params.orderId}`);
     return {
       preferenceId: prefId,
       checkoutUrl: initPoint ?? sandboxInitPoint,
