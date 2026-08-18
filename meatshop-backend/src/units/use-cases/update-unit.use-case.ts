@@ -16,11 +16,7 @@ export class UpdateUnitUseCase {
     private readonly unitAuthorizationService: UnitAuthorizationService,
   ) {}
 
-  async execute(
-    unitId: number,
-    dto: UpdateUnitDto,
-    currentUser: User,
-  ): Promise<Unit> {
+  async execute(unitId: number, dto: UpdateUnitDto, currentUser: User): Promise<Unit> {
     const unit = await this.unitRepository.findOne({ where: { id: unitId } });
 
     if (!unit) {

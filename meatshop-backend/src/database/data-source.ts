@@ -28,6 +28,7 @@ import { RecipeStep } from '../recipes/entities/recipe-step.entity';
 import { RecipeIngredient } from '../recipes/entities/recipe-ingredient.entity';
 import { RecipeProduct } from '../recipes/entities/recipe-product.entity';
 import { SavedPaymentMethod } from '../saved-payment-methods/entities/saved-payment-method.entity';
+import { BusinessHours } from '../units/entities/business-hours.entity';
 import { Unit } from '../units/entities/unit.entity';
 import { UserUnit } from '../units/entities/user-unit.entity';
 
@@ -77,6 +78,7 @@ export default new DataSource({
       SavedPaymentMethod,
       Unit,
       UserUnit,
+      BusinessHours,
     ],
   migrations: [`${__dirname}/migrations/*.{ts,js}`],
   synchronize: false,

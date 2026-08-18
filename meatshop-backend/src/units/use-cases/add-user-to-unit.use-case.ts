@@ -1,9 +1,4 @@
-import {
-  ConflictException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
@@ -26,11 +21,7 @@ export class AddUserToUnitUseCase {
     private readonly unitAuthorizationService: UnitAuthorizationService,
   ) {}
 
-  async execute(
-    unitId: number,
-    dto: CreateUserUnitDto,
-    currentUser: User,
-  ): Promise<UserUnit> {
+  async execute(unitId: number, dto: CreateUserUnitDto, currentUser: User): Promise<UserUnit> {
     const unit = await this.unitRepository.findOne({ where: { id: unitId } });
     if (!unit) {
       throw new NotFoundException('Unit not found');
@@ -54,17 +45,12 @@ export class AddUserToUnitUseCase {
     });
     await this.userUnitRepository.save(userUnit);
 
-    this.logger.log(
-      `User ${dto.user_id} added to unit ${unitId} by user ${currentUser.id}`,
-    );
+    this.logger.log(`User ${dto.user_id} added to unit ${unitId} by user ${currentUser.id}`);
 
     return userUnit;
   }
 
-  private async ensureNotAlreadyMember(
-    userId: number,
-    unitId: number,
-  ): Promise<void> {
+  private async ensureNotAlreadyMember(userId: number, unitId: number): Promise<void> {
     const existing = await this.userUnitRepository.findOne({
       where: { user_id: userId, unit_id: unitId },
     });

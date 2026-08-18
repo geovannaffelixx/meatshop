@@ -19,11 +19,7 @@ export class ScheduleOrderUseCase {
     private readonly businessHoursValidator: BusinessHoursValidator,
   ) {}
 
-  async execute(
-    orderId: number,
-    dto: ScheduleOrderDto,
-    currentUser: User,
-  ): Promise<Order> {
+  async execute(orderId: number, dto: ScheduleOrderDto, currentUser: User): Promise<Order> {
     const order = await this.orderRepository.findOne({ where: { id: orderId } });
     if (!order) {
       throw new NotFoundException('Order not found');
@@ -40,7 +36,7 @@ export class ScheduleOrderUseCase {
       throw new BadRequestException('scheduled_delivery_date must be in the future');
     }
 
-    this.businessHoursValidator.assertWithinBusinessHours(order.unit_id, scheduledDate);
+    await this.businessHoursValidator.assertWithinBusinessHours(order.unit_id, scheduledDate);
 
     order.is_scheduled = true;
     order.scheduled_delivery_date = scheduledDate;

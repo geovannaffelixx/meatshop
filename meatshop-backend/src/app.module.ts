@@ -35,6 +35,7 @@ import { RecipeStep } from './recipes/entities/recipe-step.entity';
 import { RecipeIngredient } from './recipes/entities/recipe-ingredient.entity';
 import { RecipeProduct } from './recipes/entities/recipe-product.entity';
 import { SavedPaymentMethod } from './saved-payment-methods/entities/saved-payment-method.entity';
+import { BusinessHours } from './units/entities/business-hours.entity';
 import { Unit } from './units/entities/unit.entity';
 import { UserUnit } from './units/entities/user-unit.entity';
 
@@ -122,6 +123,7 @@ import { EmailModule } from './email/email.module';
             SavedPaymentMethod,
             Unit,
             UserUnit,
+            BusinessHours,
           ],
           autoLoadEntities: true,
           synchronize: config.get<string>('DB_SYNCHRONIZE') === 'true',
