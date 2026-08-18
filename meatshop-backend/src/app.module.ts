@@ -29,6 +29,11 @@ import { DeliveryTracking } from './delivery/entities/delivery-tracking.entity';
 import { Review } from './reviews/entities/review.entity';
 import { DeliveryReview } from './reviews/entities/delivery-review.entity';
 import { SupportTicket } from './support/entities/support-ticket.entity';
+import { AuditLog } from './audit/entities/audit-log.entity';
+import { Recipe } from './recipes/entities/recipe.entity';
+import { RecipeStep } from './recipes/entities/recipe-step.entity';
+import { RecipeIngredient } from './recipes/entities/recipe-ingredient.entity';
+import { RecipeProduct } from './recipes/entities/recipe-product.entity';
 import { Unit } from './units/entities/unit.entity';
 import { UserUnit } from './units/entities/user-unit.entity';
 
@@ -51,6 +56,8 @@ import { OrdersModule } from './orders/orders.module';
 import { DeliveryModule } from './delivery/delivery.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { SupportModule } from './support/support.module';
+import { AuditModule } from './audit/audit.module';
+import { RecipesModule } from './recipes/recipes.module';
 import { SeedModule } from './database/seed/seed.module';
 import { MercadoPagoModule } from '@/mercadopago/mercadopago.module';
 import { EmailModule } from './email/email.module';
@@ -107,6 +114,12 @@ import { EmailModule } from './email/email.module';
             DeliveryTracking,
             Review,
             DeliveryReview,
+            SupportTicket,
+            AuditLog,
+            Recipe,
+            RecipeStep,
+            RecipeIngredient,
+            RecipeProduct,
             Unit,
             UserUnit,
           ],
@@ -133,6 +146,8 @@ import { EmailModule } from './email/email.module';
     DeliveryModule,
     ReviewsModule,
     SupportModule,
+    AuditModule,
+    RecipesModule,
     SeedModule,
     MercadoPagoModule,
   ],
