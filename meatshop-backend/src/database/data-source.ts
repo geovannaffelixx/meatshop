@@ -21,6 +21,7 @@ import { Vehicle } from '../delivery/entities/vehicle.entity';
 import { DeliveryTracking } from '../delivery/entities/delivery-tracking.entity';
 import { Review } from '../reviews/entities/review.entity';
 import { DeliveryReview } from '../reviews/entities/delivery-review.entity';
+import { SupportTicket } from '../support/entities/support-ticket.entity';
 import { Unit } from '../units/entities/unit.entity';
 import { UserUnit } from '../units/entities/user-unit.entity';
 
@@ -61,6 +62,7 @@ export default new DataSource({
       DeliveryTracking,
       Review,
       DeliveryReview,
+      SupportTicket,
       Unit,
       UserUnit,
     ],
