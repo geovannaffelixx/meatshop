@@ -22,11 +22,7 @@ export class UpdateStockUseCase {
     private readonly unitAuthorizationService: UnitAuthorizationService,
   ) {}
 
-  async execute(
-    productId: number,
-    dto: UpdateStockDto,
-    currentUser: User,
-  ): Promise<Stock> {
+  async execute(productId: number, dto: UpdateStockDto, currentUser: User): Promise<Stock> {
     const product = await this.productRepository.findOne({
       where: { id: productId },
     });
@@ -47,6 +43,9 @@ export class UpdateStockUseCase {
     }
 
     stock.quantity = dto.quantity;
+    if (dto.min_quantity !== undefined) {
+      stock.min_quantity = dto.min_quantity;
+    }
     await this.stockRepository.save(stock);
 
     this.logger.log(

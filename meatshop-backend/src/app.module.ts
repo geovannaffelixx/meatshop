@@ -38,13 +38,10 @@ import { SavedPaymentMethod } from './saved-payment-methods/entities/saved-payme
 import { Unit } from './units/entities/unit.entity';
 import { UserUnit } from './units/entities/user-unit.entity';
 
-// Controllers
-import { DashboardController } from './dashboard/dashboard.controller';
-import { SalesController } from './finance/sales.controller';
-
 // Módulos
 import { LoggerModule } from './common/logger/logger.module';
 import { MetricsModule } from './metrics/metrics.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import { FinanceModule } from './finance/finance.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -133,11 +130,9 @@ import { EmailModule } from './email/email.module';
       },
     }),
 
-    // Repositórios disponíveis para injeção
-    TypeOrmModule.forFeature([Order, Expense, Sale]),
-
     // Outros módulos
     FinanceModule,
+    DashboardModule,
     AuthModule,
     UsersModule,
     UnitsModule,
@@ -155,11 +150,7 @@ import { EmailModule } from './email/email.module';
     SeedModule,
     MercadoPagoModule,
   ],
-  controllers: [
-    AppController,
-    DashboardController,
-    SalesController,
-  ],
+  controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

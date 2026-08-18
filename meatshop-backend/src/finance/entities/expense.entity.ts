@@ -5,7 +5,10 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
+  JoinColumn,
+  ManyToOne,
 } from 'typeorm';
+import { Unit } from '../../units/entities/unit.entity';
 
 export type ExpenseType = 'Compras' | 'Serviços' | 'Outros';
 export type PaymentMethod = 'Pix' | 'Crédito' | 'Débito' | 'Dinheiro' | 'Boleto';
@@ -14,6 +17,13 @@ export type PaymentMethod = 'Pix' | 'Crédito' | 'Débito' | 'Dinheiro' | 'Bolet
 export class Expense {
   @PrimaryGeneratedColumn()
   id: number;
+
+  @Column()
+  unit_id: number;
+
+  @ManyToOne(() => Unit, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'unit_id' })
+  unit: Unit;
 
   @Column()
   supplierName: string;

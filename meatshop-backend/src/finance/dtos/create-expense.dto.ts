@@ -1,9 +1,14 @@
-import { IsIn, IsNotEmpty, IsOptional, IsString, IsNumber, Length } from 'class-validator';
+import { IsIn, IsInt, IsNotEmpty, IsOptional, IsString, IsNumber, Length } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PaymentMethod } from '../entities/expense.entity';
 
 export class CreateExpenseDto {
+  @ApiProperty({ description: 'Identificador da unidade à qual a despesa pertence', example: 1 })
+  @Type(() => Number)
+  @IsInt()
+  unit_id!: number;
+
   @ApiPropertyOptional({ description: 'Identificador do fornecedor', example: 'F001' })
   @IsOptional()
   @IsString()
@@ -55,7 +60,10 @@ export class CreateExpenseDto {
   @IsString()
   paidAt?: string;
 
-  @ApiPropertyOptional({ description: 'Observações sobre a despesa', example: 'Compra mensal de carnes' })
+  @ApiPropertyOptional({
+    description: 'Observações sobre a despesa',
+    example: 'Compra mensal de carnes',
+  })
   @IsOptional()
   @IsString()
   notes?: string;

@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from '../common/decorators/public.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
+import { GlobalRole } from '../common/enums/global-role.enum';
 import { Sale } from './entities/sale.entity';
 
 @ApiTags('Sales')
@@ -15,7 +17,11 @@ export class SalesController {
 
   @Public()
   @ApiOperation({ summary: 'Lista as promoções (sales) ativas no momento' })
-  @ApiQuery({ name: 'now', required: false, description: 'Data de referência ISO 8601 (default: agora)' })
+  @ApiQuery({
+    name: 'now',
+    required: false,
+    description: 'Data de referência ISO 8601 (default: agora)',
+  })
   @ApiResponse({ status: 200, description: 'Lista de sales ativas retornada com sucesso' })
   @Get()
   async listActive(@Query('now') nowISO?: string) {
@@ -45,8 +51,10 @@ export class SalesController {
   }
 
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Cria uma nova sale (promoção de vitrine)' })
+  @ApiOperation({ summary: 'Cria uma nova sale (promoção de vitrine, restrito a SUPER_ADMIN)' })
   @ApiResponse({ status: 201, description: 'Sale criada com sucesso' })
+  @ApiResponse({ status: 403, description: 'Sem permissão para criar promoções de vitrine' })
+  @Roles(GlobalRole.SUPER_ADMIN)
   @Post()
   async create(
     @Body()

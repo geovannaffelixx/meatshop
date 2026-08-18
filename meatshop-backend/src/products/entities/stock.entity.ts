@@ -23,6 +23,9 @@ export class Stock {
   @Column({ type: 'int', default: 0 })
   quantity: number;
 
+  @Column({ type: 'int', default: 0 })
+  min_quantity: number;
+
   @UpdateDateColumn()
   updated_at: Date;
 }

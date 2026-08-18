@@ -1,88 +1,89 @@
-import { Controller, Get } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Between, Repository } from 'typeorm';
+import { Controller, Get, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Order } from '../orders/entities/order.entity';
-import { OrderStatus } from '../orders/enums/order-status.enum';
-import { PaymentStatus } from '../orders/enums/payment-status.enum';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { User } from '../users/entities/user.entity';
+import { OrdersChartQueryDto } from './dtos/orders-chart-query.dto';
+import { RankedListQueryDto } from './dtos/ranked-list-query.dto';
+import { UnitScopedQueryDto } from './dtos/unit-scoped-query.dto';
+import { GetAdminDashboardUseCase } from './use-cases/get-admin-dashboard.use-case';
+import { GetCustomerInsightsUseCase } from './use-cases/get-customer-insights.use-case';
+import { GetDeliveryPerformanceUseCase } from './use-cases/get-delivery-performance.use-case';
+import { GetOrdersChartUseCase } from './use-cases/get-orders-chart.use-case';
+import { GetStockAlertsUseCase } from './use-cases/get-stock-alerts.use-case';
+import { GetTopProductsUseCase } from './use-cases/get-top-products.use-case';
 
 @ApiTags('Dashboard')
 @ApiBearerAuth('access-token')
 @Controller('dashboard')
 export class DashboardController {
   constructor(
-    @InjectRepository(Order)
-    private readonly ordersRepo: Repository<Order>,
+    private readonly getAdminDashboardUseCase: GetAdminDashboardUseCase,
+    private readonly getOrdersChartUseCase: GetOrdersChartUseCase,
+    private readonly getStockAlertsUseCase: GetStockAlertsUseCase,
+    private readonly getTopProductsUseCase: GetTopProductsUseCase,
+    private readonly getCustomerInsightsUseCase: GetCustomerInsightsUseCase,
+    private readonly getDeliveryPerformanceUseCase: GetDeliveryPerformanceUseCase,
   ) {}
 
-  @ApiOperation({ summary: 'Retorna os indicadores do dashboard (vendas da semana, pedidos recentes e contagem por status)' })
+  @ApiOperation({
+    summary:
+      'Retorna a visão geral do dashboard de uma unidade (receita do mês, gráfico semanal, pedidos recentes, alertas de estoque e produtos mais vendidos)',
+  })
   @ApiResponse({ status: 200, description: 'Dados do dashboard retornados com sucesso' })
+  @ApiResponse({ status: 403, description: 'Usuário não administra a unidade informada' })
   @Get()
-  async getDashboard() {
-    const recent = await this.ordersRepo.find({
-      relations: ['client'],
-      order: { id: 'DESC' },
-      take: 50,
-    });
-
-    const vendasSemana = await this.buildWeeklySales();
-    const porStatus = {
-      Pendente: await this.ordersRepo.count({ where: { status: OrderStatus.PENDING } }),
-      Entregue: await this.ordersRepo.count({ where: { status: OrderStatus.DELIVERED } }),
-      Cancelado: await this.ordersRepo.count({ where: { status: OrderStatus.CANCELLED } }),
-    };
-
-    return {
-      vendasSemana,
-      pedidosRecentes: recent.map((o) => ({
-        id: o.id,
-        cliente: o.client?.name,
-        status: o.status,
-        valor: this.paidAmount(o),
-        criadoEm: o.order_date,
-      })),
-      porStatus,
-    };
+  getDashboard(@Query() query: UnitScopedQueryDto, @CurrentUser() currentUser: User) {
+    return this.getAdminDashboardUseCase.execute(query, currentUser);
   }
 
-  private paidAmount(order: Order): number {
-    return order.payment_status === PaymentStatus.PAID ? Number(order.total_amount) : 0;
+  @ApiOperation({
+    summary: 'Retorna o número de pedidos e a receita por dia, além da contagem por status',
+  })
+  @ApiResponse({ status: 200, description: 'Gráfico de pedidos retornado com sucesso' })
+  @ApiResponse({ status: 403, description: 'Usuário não administra a unidade informada' })
+  @Get('orders-chart')
+  getOrdersChart(@Query() query: OrdersChartQueryDto, @CurrentUser() currentUser: User) {
+    return this.getOrdersChartUseCase.execute(query, currentUser);
   }
 
-  private async buildWeeklySales() {
-    const dias = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom'];
-    const vendasSemana = dias.map((d) => ({ day: d, vendas: 0 }));
-
-    const { inicioSemana, fimSemana } = this.currentWeekRange();
-    const pedidosSemana = await this.ordersRepo.find({
-      where: { order_date: Between(inicioSemana, fimSemana) },
-    });
-
-    pedidosSemana.forEach((p) => {
-      const idx = this.weekdayIndex(p.order_date);
-      vendasSemana[idx].vendas += this.paidAmount(p);
-    });
-
-    return vendasSemana;
+  @ApiOperation({
+    summary: 'Lista os produtos da unidade com estoque igual ou abaixo do mínimo definido',
+  })
+  @ApiResponse({ status: 200, description: 'Alertas de estoque retornados com sucesso' })
+  @ApiResponse({ status: 403, description: 'Usuário não administra a unidade informada' })
+  @Get('stock-alerts')
+  getStockAlerts(@Query() query: UnitScopedQueryDto, @CurrentUser() currentUser: User) {
+    return this.getStockAlertsUseCase.execute(query, currentUser);
   }
 
-  private currentWeekRange() {
-    const hoje = new Date();
-    const inicioSemana = new Date(hoje);
-    const diaSemana = hoje.getDay();
-    const diff = diaSemana === 0 ? -6 : 1 - diaSemana;
-    inicioSemana.setDate(hoje.getDate() + diff);
-    inicioSemana.setHours(0, 0, 0, 0);
-
-    const fimSemana = new Date(inicioSemana);
-    fimSemana.setDate(inicioSemana.getDate() + 6);
-    fimSemana.setHours(23, 59, 59, 999);
-
-    return { inicioSemana, fimSemana };
+  @ApiOperation({
+    summary: 'Ranking dos produtos mais vendidos da unidade (com base em pedidos entregues)',
+  })
+  @ApiResponse({ status: 200, description: 'Ranking de produtos retornado com sucesso' })
+  @ApiResponse({ status: 403, description: 'Usuário não administra a unidade informada' })
+  @Get('top-products')
+  getTopProducts(@Query() query: RankedListQueryDto, @CurrentUser() currentUser: User) {
+    return this.getTopProductsUseCase.execute(query, currentUser);
   }
 
-  private weekdayIndex(date: Date): number {
-    const d = new Date(date).getDay();
-    return d === 0 ? 6 : d - 1;
+  @ApiOperation({
+    summary: 'Ranking dos clientes que mais compraram na unidade (com base em pedidos entregues)',
+  })
+  @ApiResponse({ status: 200, description: 'Ranking de clientes retornado com sucesso' })
+  @ApiResponse({ status: 403, description: 'Usuário não administra a unidade informada' })
+  @Get('customer-insights')
+  getCustomerInsights(@Query() query: RankedListQueryDto, @CurrentUser() currentUser: User) {
+    return this.getCustomerInsightsUseCase.execute(query, currentUser);
+  }
+
+  @ApiOperation({
+    summary:
+      'Indicadores de performance de entrega da unidade (tempo médio, taxa de cancelamento e entregas por entregador)',
+  })
+  @ApiResponse({ status: 200, description: 'Indicadores de entrega retornados com sucesso' })
+  @ApiResponse({ status: 403, description: 'Usuário não administra a unidade informada' })
+  @Get('delivery-performance')
+  getDeliveryPerformance(@Query() query: UnitScopedQueryDto, @CurrentUser() currentUser: User) {
+    return this.getDeliveryPerformanceUseCase.execute(query, currentUser);
   }
 }
