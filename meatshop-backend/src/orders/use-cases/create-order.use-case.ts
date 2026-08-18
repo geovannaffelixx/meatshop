@@ -1,9 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CartAccessService } from '../../cart/services/cart-access.service';
 import { CartItem } from '../../cart/entities/cart-item.entity';
+import { SendOrderStatusNotificationUseCase } from '../../notifications/use-cases/send-order-status-notification.use-case';
 import { Address } from '../../users/entities/address.entity';
 import { Coupon } from '../../promotions/entities/coupon.entity';
 import { ValidateCouponUseCase } from '../../promotions/use-cases/validate-coupon.use-case';
@@ -27,6 +28,8 @@ interface OrderAmounts {
 
 @Injectable()
 export class CreateOrderUseCase {
+  private readonly logger = new Logger(CreateOrderUseCase.name);
+
   constructor(
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
@@ -46,6 +49,7 @@ export class CreateOrderUseCase {
     private readonly stockAvailabilityValidator: StockAvailabilityValidator,
     private readonly validateCouponUseCase: ValidateCouponUseCase,
     private readonly configService: ConfigService,
+    private readonly sendOrderStatusNotificationUseCase: SendOrderStatusNotificationUseCase,
   ) {}
 
   async execute(dto: CreateOrderDto, currentUser: User): Promise<Order> {
@@ -67,9 +71,7 @@ export class CreateOrderUseCase {
     const order = await this.persistOrder(dto, currentUser, unitId, address, coupon, amounts);
     await this.persistOrderItems(order.id, items);
     await this.decrementStock(items);
-    await this.paymentRepository.save(
-      this.paymentRepository.create({ order_id: order.id }),
-    );
+    await this.paymentRepository.save(this.paymentRepository.create({ order_id: order.id }));
     await this.historyRepository.save(
       this.historyRepository.create({
         order_id: order.id,
@@ -78,6 +80,12 @@ export class CreateOrderUseCase {
       }),
     );
     await this.cartItemRepository.delete({ cart_id: items[0].cart_id });
+
+    await this.sendOrderStatusNotificationUseCase
+      .notifyUnitOfNewOrder(order)
+      .catch((error) =>
+        this.logger.warn(`Failed to notify unit of new order ${order.id}: ${error.message}`),
+      );
 
     return order;
   }
@@ -99,9 +107,7 @@ export class CreateOrderUseCase {
   private assertSameUnit(items: CartItem[]): number {
     const unitIds = new Set(items.map((item) => item.product.unit_id));
     if (unitIds.size > 1) {
-      throw new BadRequestException(
-        'All cart items must belong to the same unit',
-      );
+      throw new BadRequestException('All cart items must belong to the same unit');
     }
     return unitIds.values().next().value as number;
   }
@@ -115,10 +121,7 @@ export class CreateOrderUseCase {
     }
   }
 
-  private async resolveAddress(
-    dto: CreateOrderDto,
-    currentUser: User,
-  ): Promise<Address | null> {
+  private async resolveAddress(dto: CreateOrderDto, currentUser: User): Promise<Address | null> {
     if (dto.delivery_type !== DeliveryType.DELIVERY) {
       return null;
     }
@@ -184,9 +187,7 @@ export class CreateOrderUseCase {
       unit_id: unitId,
       delivery_type: dto.delivery_type,
       delivery_status:
-        dto.delivery_type === DeliveryType.DELIVERY
-          ? DeliveryStatus.WAITING_DELIVERY_PERSON
-          : null,
+        dto.delivery_type === DeliveryType.DELIVERY ? DeliveryStatus.WAITING_DELIVERY_PERSON : null,
       address_id: address?.id ?? null,
       coupon_id: coupon?.id ?? null,
       ...amounts,

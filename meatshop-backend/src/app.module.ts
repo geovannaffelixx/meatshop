@@ -34,6 +34,8 @@ import { Recipe } from './recipes/entities/recipe.entity';
 import { RecipeStep } from './recipes/entities/recipe-step.entity';
 import { RecipeIngredient } from './recipes/entities/recipe-ingredient.entity';
 import { RecipeProduct } from './recipes/entities/recipe-product.entity';
+import { Notification } from './notifications/entities/notification.entity';
+import { UserDeviceToken } from './notifications/entities/user-device-token.entity';
 import { SavedPaymentMethod } from './saved-payment-methods/entities/saved-payment-method.entity';
 import { BusinessHours } from './units/entities/business-hours.entity';
 import { Unit } from './units/entities/unit.entity';
@@ -56,6 +58,7 @@ import { DeliveryModule } from './delivery/delivery.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { SupportModule } from './support/support.module';
 import { AuditModule } from './audit/audit.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { RecipesModule } from './recipes/recipes.module';
 import { SavedPaymentMethodsModule } from './saved-payment-methods/saved-payment-methods.module';
 import { SeedModule } from './database/seed/seed.module';
@@ -124,6 +127,8 @@ import { EmailModule } from './email/email.module';
             Unit,
             UserUnit,
             BusinessHours,
+            Notification,
+            UserDeviceToken,
           ],
           autoLoadEntities: true,
           synchronize: config.get<string>('DB_SYNCHRONIZE') === 'true',
@@ -147,6 +152,7 @@ import { EmailModule } from './email/email.module';
     ReviewsModule,
     SupportModule,
     AuditModule,
+    NotificationsModule,
     RecipesModule,
     SavedPaymentMethodsModule,
     SeedModule,

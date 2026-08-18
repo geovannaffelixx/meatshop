@@ -5,12 +5,12 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
-import { NotificationType } from '../enums/notification-type.enum';
 
-@Entity('notifications')
-export class Notification {
+@Entity('user_device_tokens')
+export class UserDeviceToken {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -21,15 +21,15 @@ export class Notification {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @Column({ type: 'text' })
-  message: string;
+  @Column({ type: 'varchar', length: 300, unique: true })
+  fcm_token: string;
 
-  @Column({ type: 'enum', enum: NotificationType })
-  type: NotificationType;
-
-  @Column({ type: 'boolean', default: false })
-  read: boolean;
+  @Column({ type: 'varchar', length: 20, default: 'WEB' })
+  platform: string;
 
   @CreateDateColumn()
   created_at: Date;
+
+  @UpdateDateColumn()
+  last_seen_at: Date;
 }

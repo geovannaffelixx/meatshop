@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CartModule } from '../cart/cart.module';
 import { DeliveryPerson } from '../delivery/entities/delivery-person.entity';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { PromotionsModule } from '../promotions/promotions.module';
 import { ProductsModule } from '../products/products.module';
 import { UnitsModule } from '../units/units.module';
@@ -33,6 +34,7 @@ import { StockAvailabilityValidator } from './validators/stock-availability.vali
     UsersModule,
     PromotionsModule,
     CartModule,
+    NotificationsModule,
   ],
   controllers: [OrdersController],
   providers: [
@@ -50,11 +52,6 @@ import { StockAvailabilityValidator } from './validators/stock-availability.vali
     ScheduleOrderUseCase,
     RepeatOrderUseCase,
   ],
-  exports: [
-    TypeOrmModule,
-    OrderAuthorizationService,
-    OrderStatusService,
-    ConfirmOrderUseCase,
-  ],
+  exports: [TypeOrmModule, OrderAuthorizationService, OrderStatusService, ConfirmOrderUseCase],
 })
 export class OrdersModule {}
