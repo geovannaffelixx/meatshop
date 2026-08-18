@@ -27,6 +27,7 @@ import { Recipe } from '../recipes/entities/recipe.entity';
 import { RecipeStep } from '../recipes/entities/recipe-step.entity';
 import { RecipeIngredient } from '../recipes/entities/recipe-ingredient.entity';
 import { RecipeProduct } from '../recipes/entities/recipe-product.entity';
+import { SavedPaymentMethod } from '../saved-payment-methods/entities/saved-payment-method.entity';
 import { Unit } from '../units/entities/unit.entity';
 import { UserUnit } from '../units/entities/user-unit.entity';
 
@@ -73,6 +74,7 @@ export default new DataSource({
       RecipeStep,
       RecipeIngredient,
       RecipeProduct,
+      SavedPaymentMethod,
       Unit,
       UserUnit,
     ],

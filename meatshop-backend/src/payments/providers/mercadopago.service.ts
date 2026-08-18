@@ -1,7 +1,21 @@
-import { Injectable, BadRequestException, Logger, ServiceUnavailableException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
+import { MercadoPagoConfig, Preference, Payment, Customer } from 'mercadopago';
 import { PaymentMethod } from '../../orders/enums/payment-method.enum';
+
+export type MercadoPagoSavedCard = {
+  cardId: string;
+  brand: string;
+  lastFourDigits: string;
+  holderName: string;
+  expirationMonth: string;
+  expirationYear: string;
+};
 
 @Injectable()
 export class MercadoPagoService {
@@ -104,6 +118,81 @@ export class MercadoPagoService {
     const client = this.ensureClient();
     const payment = new Payment(client);
     return payment.get({ id: paymentId });
+  }
+
+  async createCustomer(email: string, name: string): Promise<string> {
+    const client = this.ensureClient();
+    const customer = new Customer(client);
+
+    let response;
+    try {
+      response = await customer.create({ body: { email, first_name: name } });
+    } catch (error) {
+      this.logger.error(
+        'MercadoPago createCustomer error',
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new BadRequestException('Falha ao criar cliente no Mercado Pago');
+    }
+
+    if (!response.id) {
+      throw new BadRequestException('Falha ao criar cliente no Mercado Pago');
+    }
+
+    return response.id;
+  }
+
+  async saveCard(customerId: string, cardTokenId: string): Promise<MercadoPagoSavedCard> {
+    const client = this.ensureClient();
+    const customer = new Customer(client);
+
+    let response;
+    try {
+      response = await customer.createCard({
+        customerId,
+        body: { token: cardTokenId },
+      });
+    } catch (error) {
+      this.logger.error(
+        'MercadoPago saveCard error',
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new BadRequestException(
+        'Não foi possível salvar o cartão. Verifique os dados e tente novamente.',
+      );
+    }
+
+    if (!response.id || !response.last_four_digits) {
+      throw new BadRequestException(
+        'Não foi possível salvar o cartão. Verifique os dados e tente novamente.',
+      );
+    }
+
+    return {
+      cardId: response.id,
+      brand: response.payment_method?.id ?? 'desconhecida',
+      lastFourDigits: response.last_four_digits,
+      holderName: response.cardholder?.name ?? '',
+      expirationMonth: String(response.expiration_month ?? '').padStart(2, '0'),
+      expirationYear: String(response.expiration_year ?? ''),
+    };
+  }
+
+  async removeCard(customerId: string, cardId: string): Promise<void> {
+    const client = this.ensureClient();
+    const customer = new Customer(client);
+
+    try {
+      await customer.removeCard({ customerId, cardId });
+    } catch (error) {
+      this.logger.error(
+        'MercadoPago removeCard error',
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new ServiceUnavailableException(
+        'Não foi possível remover o cartão no Mercado Pago. Tente novamente.',
+      );
+    }
   }
 
   mapPaymentMethod(paymentTypeId: string | undefined): PaymentMethod | undefined {

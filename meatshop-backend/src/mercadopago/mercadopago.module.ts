@@ -8,5 +8,6 @@ import { MercadoPagoWebhookController } from '@/mercadopago/mercadopago.webhook.
   imports: [OrdersModule],
   controllers: [MercadoPagoController, MercadoPagoWebhookController],
   providers: [MercadoPagoService],
+  exports: [MercadoPagoService],
 })
 export class MercadoPagoModule {}

@@ -34,6 +34,7 @@ import { Recipe } from './recipes/entities/recipe.entity';
 import { RecipeStep } from './recipes/entities/recipe-step.entity';
 import { RecipeIngredient } from './recipes/entities/recipe-ingredient.entity';
 import { RecipeProduct } from './recipes/entities/recipe-product.entity';
+import { SavedPaymentMethod } from './saved-payment-methods/entities/saved-payment-method.entity';
 import { Unit } from './units/entities/unit.entity';
 import { UserUnit } from './units/entities/user-unit.entity';
 
@@ -58,6 +59,7 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { SupportModule } from './support/support.module';
 import { AuditModule } from './audit/audit.module';
 import { RecipesModule } from './recipes/recipes.module';
+import { SavedPaymentMethodsModule } from './saved-payment-methods/saved-payment-methods.module';
 import { SeedModule } from './database/seed/seed.module';
 import { MercadoPagoModule } from '@/mercadopago/mercadopago.module';
 import { EmailModule } from './email/email.module';
@@ -120,6 +122,7 @@ import { EmailModule } from './email/email.module';
             RecipeStep,
             RecipeIngredient,
             RecipeProduct,
+            SavedPaymentMethod,
             Unit,
             UserUnit,
           ],
@@ -148,6 +151,7 @@ import { EmailModule } from './email/email.module';
     SupportModule,
     AuditModule,
     RecipesModule,
+    SavedPaymentMethodsModule,
     SeedModule,
     MercadoPagoModule,
   ],
