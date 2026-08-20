@@ -34,6 +34,7 @@ import { Recipe } from './recipes/entities/recipe.entity';
 import { RecipeStep } from './recipes/entities/recipe-step.entity';
 import { RecipeIngredient } from './recipes/entities/recipe-ingredient.entity';
 import { RecipeProduct } from './recipes/entities/recipe-product.entity';
+import { Chat } from './chat/entities/chat.entity';
 import { Notification } from './notifications/entities/notification.entity';
 import { UserDeviceToken } from './notifications/entities/user-device-token.entity';
 import { SavedPaymentMethod } from './saved-payment-methods/entities/saved-payment-method.entity';
@@ -58,6 +59,7 @@ import { DeliveryModule } from './delivery/delivery.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { SupportModule } from './support/support.module';
 import { AuditModule } from './audit/audit.module';
+import { ChatModule } from './chat/chat.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { RecipesModule } from './recipes/recipes.module';
 import { SavedPaymentMethodsModule } from './saved-payment-methods/saved-payment-methods.module';
@@ -129,6 +131,7 @@ import { EmailModule } from './email/email.module';
             BusinessHours,
             Notification,
             UserDeviceToken,
+            Chat,
           ],
           autoLoadEntities: true,
           synchronize: config.get<string>('DB_SYNCHRONIZE') === 'true',
@@ -152,6 +155,7 @@ import { EmailModule } from './email/email.module';
     ReviewsModule,
     SupportModule,
     AuditModule,
+    ChatModule,
     NotificationsModule,
     RecipesModule,
     SavedPaymentMethodsModule,

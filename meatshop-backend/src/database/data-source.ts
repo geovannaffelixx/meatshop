@@ -27,6 +27,7 @@ import { Recipe } from '../recipes/entities/recipe.entity';
 import { RecipeStep } from '../recipes/entities/recipe-step.entity';
 import { RecipeIngredient } from '../recipes/entities/recipe-ingredient.entity';
 import { RecipeProduct } from '../recipes/entities/recipe-product.entity';
+import { Chat } from '../chat/entities/chat.entity';
 import { Notification } from '../notifications/entities/notification.entity';
 import { UserDeviceToken } from '../notifications/entities/user-device-token.entity';
 import { SavedPaymentMethod } from '../saved-payment-methods/entities/saved-payment-method.entity';
@@ -83,6 +84,7 @@ export default new DataSource({
       BusinessHours,
       Notification,
       UserDeviceToken,
+      Chat,
     ],
   migrations: [`${__dirname}/migrations/*.{ts,js}`],
   synchronize: false,
