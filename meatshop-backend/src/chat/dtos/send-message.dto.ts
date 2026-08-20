@@ -4,7 +4,8 @@ import { ChatParticipantType } from '../enums/chat-participant-type.enum';
 
 export class SendMessageDto {
   @ApiProperty({
-    description: 'Canal da conversa: com a unidade (UNIT) ou com o entregador (DELIVERY_PERSON)',
+    description:
+      'Canal da conversa: cliente com a unidade (UNIT), cliente com o entregador (DELIVERY_PERSON) ou unidade com o entregador (UNIT_DELIVERY_PERSON)',
     enum: ChatParticipantType,
     example: ChatParticipantType.UNIT,
   })

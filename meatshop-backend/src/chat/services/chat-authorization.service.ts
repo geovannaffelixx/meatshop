@@ -35,13 +35,13 @@ export class ChatAuthorizationService {
     participantType: ChatParticipantType,
     currentUser: User,
   ): Promise<ChatChannel> {
-    const counterpartUserId = await this.resolveCounterpartUserId(order, participantType);
+    const [partyA, partyB] = await this.resolveParticipants(order, participantType);
 
-    if (currentUser.id === order.client_id) {
-      return { senderId: currentUser.id, receiverId: counterpartUserId };
+    if (currentUser.id === partyA) {
+      return { senderId: partyA, receiverId: partyB };
     }
-    if (currentUser.id === counterpartUserId) {
-      return { senderId: currentUser.id, receiverId: order.client_id };
+    if (currentUser.id === partyB) {
+      return { senderId: partyB, receiverId: partyA };
     }
 
     throw new ForbiddenException('You are not a participant of this conversation');
@@ -59,18 +59,30 @@ export class ChatAuthorizationService {
     return this.assertCanParticipate(order, participantType, currentUser);
   }
 
-  private async resolveCounterpartUserId(
+  /** Returns the two user ids allowed in this channel, order-independent. */
+  private async resolveParticipants(
     order: Order,
     participantType: ChatParticipantType,
-  ): Promise<number> {
-    if (participantType === ChatParticipantType.UNIT) {
-      const unit = await this.unitRepository.findOne({ where: { id: order.unit_id } });
-      if (!unit) {
-        throw new NotFoundException('Unit not found');
-      }
-      return unit.admin_id;
+  ): Promise<[number, number]> {
+    switch (participantType) {
+      case ChatParticipantType.UNIT:
+        return [order.client_id, await this.getUnitAdminId(order)];
+      case ChatParticipantType.DELIVERY_PERSON:
+        return [order.client_id, await this.getDeliveryPersonUserId(order)];
+      case ChatParticipantType.UNIT_DELIVERY_PERSON:
+        return [await this.getUnitAdminId(order), await this.getDeliveryPersonUserId(order)];
     }
+  }
 
+  private async getUnitAdminId(order: Order): Promise<number> {
+    const unit = await this.unitRepository.findOne({ where: { id: order.unit_id } });
+    if (!unit) {
+      throw new NotFoundException('Unit not found');
+    }
+    return unit.admin_id;
+  }
+
+  private async getDeliveryPersonUserId(order: Order): Promise<number> {
     if (!order.delivery_person_id) {
       throw new BadRequestException('This order has no delivery person assigned yet');
     }
