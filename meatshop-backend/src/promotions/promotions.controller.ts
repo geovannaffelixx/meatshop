@@ -1,20 +1,5 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-  Query,
-} from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiParam,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { User } from '../users/entities/user.entity';
@@ -40,7 +25,9 @@ export class PromotionsController {
     private readonly getPromotionUseCase: GetPromotionUseCase,
   ) {}
 
-  @ApiOperation({ summary: 'Lista promoções, opcionalmente filtradas por unidade, produto ou status' })
+  @ApiOperation({
+    summary: 'Lista promoções, opcionalmente filtradas por unidade, produto ou status',
+  })
   @ApiResponse({ status: 200, description: 'Lista de promoções retornada com sucesso' })
   @Public()
   @Get()
@@ -91,10 +78,7 @@ export class PromotionsController {
   @ApiResponse({ status: 403, description: 'Sem permissão para ativar promoções' })
   @ApiResponse({ status: 404, description: 'Promoção não encontrada' })
   @Patch(':id/activate')
-  activate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() currentUser: User,
-  ) {
+  activate(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
     return this.activatePromotionUseCase.execute(id, currentUser);
   }
 
@@ -105,10 +89,7 @@ export class PromotionsController {
   @ApiResponse({ status: 403, description: 'Sem permissão para desativar promoções' })
   @ApiResponse({ status: 404, description: 'Promoção não encontrada' })
   @Patch(':id/deactivate')
-  deactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() currentUser: User,
-  ) {
+  deactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
     return this.deactivatePromotionUseCase.execute(id, currentUser);
   }
 }

@@ -36,6 +36,7 @@ export class CreatePromotionUseCase {
       ...dto,
       starts_at: new Date(dto.starts_at),
       ends_at: new Date(dto.ends_at),
+      created_by: currentUser.id,
     });
     await this.promotionRepository.save(promotion);
 

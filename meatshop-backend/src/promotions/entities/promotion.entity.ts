@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { Product } from '../../products/entities/product.entity';
 import { Unit } from '../../units/entities/unit.entity';
+import { User } from '../../users/entities/user.entity';
 
 @Entity('promotions')
 export class Promotion {
@@ -27,6 +28,13 @@ export class Promotion {
   @ManyToOne(() => Product, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'product_id' })
   product: Product;
+
+  @Column()
+  created_by: number;
+
+  @ManyToOne(() => User, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'created_by' })
+  created_by_user: User;
 
   @Column({ type: 'varchar', length: 150 })
   title: string;

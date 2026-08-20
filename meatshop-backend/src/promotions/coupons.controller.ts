@@ -1,19 +1,5 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-} from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiParam,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../common/decorators/roles.decorator';
 import { GlobalRole } from '../common/enums/global-role.enum';
 import { CreateCouponDto } from './dtos/create-coupon.dto';
@@ -43,7 +29,9 @@ export class CouponsController {
     return this.listCouponsUseCase.execute();
   }
 
-  @ApiOperation({ summary: 'Valida um cupom pelo código, verificando se está ativo e não expirado' })
+  @ApiOperation({
+    summary: 'Valida um cupom pelo código, verificando se está ativo e não expirado',
+  })
   @ApiParam({ name: 'code', description: 'Código do cupom a ser validado', example: 'PROMO10' })
   @ApiResponse({ status: 200, description: 'Cupom válido' })
   @ApiResponse({ status: 400, description: 'Cupom inválido ou expirado' })
@@ -72,10 +60,7 @@ export class CouponsController {
   @ApiResponse({ status: 404, description: 'Cupom não encontrado' })
   @Roles(GlobalRole.SUPER_ADMIN)
   @Patch(':id')
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateCouponDto,
-  ) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateCouponDto) {
     return this.updateCouponUseCase.execute(id, dto);
   }
 }

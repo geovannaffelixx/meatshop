@@ -18,11 +18,7 @@ import { UpdatePromotionUseCase } from './use-cases/update-promotion.use-case';
 import { ValidateCouponUseCase } from './use-cases/validate-coupon.use-case';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Promotion, Coupon]),
-    UnitsModule,
-    ProductsModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Promotion, Coupon]), UnitsModule, ProductsModule],
   controllers: [PromotionsController, CouponsController],
   providers: [
     CreatePromotionUseCase,
