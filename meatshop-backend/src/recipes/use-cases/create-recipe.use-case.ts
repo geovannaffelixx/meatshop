@@ -42,7 +42,10 @@ export class CreateRecipeUseCase {
     this.unitAuthorizationService.assertCanManageUnit(unit, currentUser);
 
     if (dto.products?.length) {
-      await this.assertProductsBelongToUnit(dto.products.map((p) => p.product_id), dto.unit_id);
+      await this.assertProductsBelongToUnit(
+        dto.products.map((p) => p.product_id),
+        dto.unit_id,
+      );
     }
 
     const recipe = await this.persistRecipe(dto);

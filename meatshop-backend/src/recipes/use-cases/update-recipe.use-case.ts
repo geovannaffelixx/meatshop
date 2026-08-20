@@ -48,7 +48,10 @@ export class UpdateRecipeUseCase {
     this.unitAuthorizationService.assertCanManageUnit(unit!, currentUser);
 
     if (dto.products?.length) {
-      await this.assertProductsBelongToUnit(dto.products.map((p) => p.product_id), recipe.unit_id);
+      await this.assertProductsBelongToUnit(
+        dto.products.map((p) => p.product_id),
+        recipe.unit_id,
+      );
     }
 
     await this.applyScalarUpdates(recipe, dto);
@@ -62,10 +65,13 @@ export class UpdateRecipeUseCase {
   }
 
   private async applyScalarUpdates(recipe: Recipe, dto: UpdateRecipeDto): Promise<void> {
-    const { steps, ingredients, products, week_start, ...scalars } = dto;
+    const { steps, ingredients, products, week_start: weekStart, ...scalars } = dto;
+    void steps;
+    void ingredients;
+    void products;
     Object.assign(recipe, scalars);
-    if (week_start !== undefined) {
-      recipe.week_start = week_start ? new Date(week_start) : null;
+    if (weekStart !== undefined) {
+      recipe.week_start = weekStart ? new Date(weekStart) : null;
     }
     await this.recipeRepository.save(recipe);
   }

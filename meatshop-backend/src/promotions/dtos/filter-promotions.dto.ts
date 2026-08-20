@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsOptional } from 'class-validator';
+import { IsIn, IsInt, IsOptional } from 'class-validator';
 
 export class FilterPromotionsDto {
   @ApiPropertyOptional({
@@ -23,10 +23,9 @@ export class FilterPromotionsDto {
 
   @ApiPropertyOptional({
     description: 'Filtra promoções pelo status de ativação',
-    example: true,
+    example: 'true',
   })
   @IsOptional()
-  @Type(() => Boolean)
-  @IsBoolean()
-  active?: boolean;
+  @IsIn(['true', 'false'])
+  active?: 'true' | 'false';
 }

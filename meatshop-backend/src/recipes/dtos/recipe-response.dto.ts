@@ -1,7 +1,7 @@
-import { Recipe } from '../entities/recipe.entity';
-import { RecipeIngredient } from '../entities/recipe-ingredient.entity';
-import { RecipeProduct } from '../entities/recipe-product.entity';
-import { RecipeStep } from '../entities/recipe-step.entity';
+import type { Recipe } from '../entities/recipe.entity';
+import type { RecipeIngredient } from '../entities/recipe-ingredient.entity';
+import type { RecipeProduct } from '../entities/recipe-product.entity';
+import type { RecipeStep } from '../entities/recipe-step.entity';
 
 export class RecipeStepResponseDto {
   id: number;

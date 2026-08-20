@@ -15,7 +15,7 @@ export class ListPromotionsUseCase {
     const where: Record<string, unknown> = {};
     if (filters.unit_id) where.unit_id = filters.unit_id;
     if (filters.product_id) where.product_id = filters.product_id;
-    if (filters.active !== undefined) where.active = filters.active;
+    if (filters.active !== undefined) where.active = filters.active === 'true';
 
     return this.promotionRepository.find({ where, order: { id: 'ASC' } });
   }

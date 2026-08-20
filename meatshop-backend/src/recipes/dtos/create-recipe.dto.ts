@@ -58,7 +58,10 @@ export class CreateRecipeDto {
   @IsBoolean()
   active?: boolean;
 
-  @ApiPropertyOptional({ description: 'Ordem de exibição entre as receitas da unidade', example: 1 })
+  @ApiPropertyOptional({
+    description: 'Ordem de exibição entre as receitas da unidade',
+    example: 1,
+  })
   @IsOptional()
   @IsInt()
   display_order?: number;

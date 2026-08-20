@@ -46,7 +46,9 @@ export class RecipesController {
   }
 
   @Public()
-  @ApiOperation({ summary: 'Busca uma receita completa (passos, ingredientes e produtos em destaque)' })
+  @ApiOperation({
+    summary: 'Busca uma receita completa (passos, ingredientes e produtos em destaque)',
+  })
   @ApiResponse({ status: 200, description: 'Receita encontrada com sucesso' })
   @ApiResponse({ status: 404, description: 'Receita não encontrada' })
   @Get(':id')
@@ -55,7 +57,9 @@ export class RecipesController {
   }
 
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Cria uma nova receita com passos, ingredientes e produtos em destaque' })
+  @ApiOperation({
+    summary: 'Cria uma nova receita com passos, ingredientes e produtos em destaque',
+  })
   @ApiResponse({ status: 201, description: 'Receita criada com sucesso' })
   @ApiResponse({ status: 400, description: 'Produto em destaque não pertence à unidade' })
   @ApiResponse({ status: 403, description: 'Usuário não é administrador da unidade' })
@@ -67,7 +71,8 @@ export class RecipesController {
 
   @ApiBearerAuth('access-token')
   @ApiOperation({
-    summary: 'Atualiza uma receita. Se steps/ingredients/products forem enviados, substituem os existentes',
+    summary:
+      'Atualiza uma receita. Se steps/ingredients/products forem enviados, substituem os existentes',
   })
   @ApiResponse({ status: 200, description: 'Receita atualizada com sucesso' })
   @ApiResponse({ status: 400, description: 'Produto em destaque não pertence à unidade' })

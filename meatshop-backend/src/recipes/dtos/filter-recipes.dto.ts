@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsOptional, IsString } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString } from 'class-validator';
 
 export class FilterRecipesDto {
   @ApiPropertyOptional({ description: 'Filtra receitas de uma unidade', example: 1 })
@@ -14,18 +14,17 @@ export class FilterRecipesDto {
   @IsString()
   tag?: string;
 
-  @ApiPropertyOptional({ description: 'Filtra por status de ativação', example: true })
+  @ApiPropertyOptional({ description: 'Filtra por status de ativação', example: 'true' })
   @IsOptional()
-  @Type(() => Boolean)
-  @IsBoolean()
-  active?: boolean;
+  @IsIn(['true', 'false'])
+  active?: 'true' | 'false';
 
   @ApiPropertyOptional({
-    description: 'Se true, ordena pela receita da semana mais recente primeiro (week_start <= agora)',
-    example: true,
+    description:
+      'Se true, ordena pela receita da semana mais recente primeiro (week_start <= agora)',
+    example: 'true',
   })
   @IsOptional()
-  @Type(() => Boolean)
-  @IsBoolean()
-  current_week?: boolean;
+  @IsIn(['true', 'false'])
+  current_week?: 'true' | 'false';
 }
