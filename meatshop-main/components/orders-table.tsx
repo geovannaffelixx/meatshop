@@ -1,14 +1,15 @@
 "use client"
 
-import React, { useMemo, useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
+import { apiGet } from "@/lib/api"
+import { ORDER_STATUS_LABELS } from "@/lib/order-status"
 
 interface Filters {
   dataPedido: { de: string; ate: string }
   dataAgendada: { de: string; ate: string }
-  dataEntrega: { de: string; ate: string }
   status: string
-  cliente: { id: string; nome: string; cpf: string }
+  cliente: { id: string; nome: string }
 }
 
 interface OrdersTableProps {
@@ -17,74 +18,62 @@ interface OrdersTableProps {
   onPageChange: (page: number) => void
 }
 
-type Pedido = {
+type Order = {
   id: number
-  cliente: string
-  cpfCnpj?: string
-  status: "Pendente" | "Entregue" | "Cancelado"
-  valor: number
-  formaPagamento?: string
-  criadoEm?: string
-  dataAgendada?: string
-  dataEntrega?: string
+  client_id: number
+  client_name: string | null
+  unit_id: number
+  order_date: string
+  status: string
+  delivery_status: string | null
+  delivery_type: string
+  payment_status: string
+  total_amount: number
+  scheduled_delivery_date: string | null
 }
 
 export function OrdersTable({ filters, currentPage, onPageChange }: OrdersTableProps) {
   const router = useRouter()
-  const [pedidos, setPedidos] = useState<Pedido[]>([])
+  const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // 🔹 Busca dados reais do backend
   useEffect(() => {
-    const params = new URLSearchParams()
-    params.set("page", String(currentPage))
-    params.set("pageSize", "10")
-    if (filters.status) params.set("status", filters.status)
-    if (filters.cliente?.nome) params.set("clienteNome", filters.cliente.nome)
-    if (filters.dataPedido?.de) params.set("dataPedidoDe", filters.dataPedido.de)
-    if (filters.dataPedido?.ate) params.set("dataPedidoAte", filters.dataPedido.ate)
-
     setLoading(true)
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders?${params.toString()}`, { cache: "no-store" })
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`Erro ${res.status}`)
-        const data = await res.json()
-        return data.data ?? []
-      })
-      .then(setPedidos)
+    setError(null)
+    apiGet("/orders")
+      .then((data) => setOrders(Array.isArray(data) ? data : []))
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
-  }, [filters, currentPage])
+  }, [])
 
-  // 🔧 util: checa intervalo de data (YYYY-MM-DD) de forma segura
-  const inRange = (valueISO: string, de: string, ate: string) => {
+  const inRange = (valueISO: string | null, de: string, ate: string) => {
     if (!de && !ate) return true
-    const v = new Date(valueISO + "T00:00:00")
+    if (!valueISO) return false
+    const v = new Date(valueISO)
     const from = de ? new Date(de + "T00:00:00") : null
     const to = ate ? new Date(ate + "T23:59:59") : null
     return (!from || v >= from) && (!to || v <= to)
   }
 
-  // 🔍 aplica filtros locais (mantém UX da tela)
   const filtered = useMemo(() => {
-    return pedidos.filter((p: Pedido) => {
-      const idOk = filters.cliente.id ? p.id.toString().includes(filters.cliente.id) : true
+    return orders.filter((o) => {
+      const idOk = filters.cliente.id ? o.id.toString().includes(filters.cliente.id) : true
       const nomeOk = filters.cliente.nome
-        ? p.cliente.toLowerCase().includes(filters.cliente.nome.toLowerCase())
+        ? (o.client_name ?? "").toLowerCase().includes(filters.cliente.nome.toLowerCase())
         : true
-      const cpfOk = filters.cliente.cpf ? (p.cpfCnpj ?? "").includes(filters.cliente.cpf) : true
-      const statusOk = filters.status ? p.status === (filters.status as Pedido["status"]) : true
+      const statusOk = filters.status ? o.status === filters.status : true
+      const dataPedidoOk = inRange(o.order_date, filters.dataPedido.de, filters.dataPedido.ate)
+      const dataAgendadaOk = inRange(
+        o.scheduled_delivery_date,
+        filters.dataAgendada.de,
+        filters.dataAgendada.ate,
+      )
 
-      const dataPedidoOk = inRange(p.criadoEm ?? "", filters.dataPedido.de, filters.dataPedido.ate)
-      const dataAgendadaOk = inRange(p.dataAgendada ?? "", filters.dataAgendada.de, filters.dataAgendada.ate)
-      const dataEntregaOk = inRange(p.dataEntrega ?? "", filters.dataEntrega.de, filters.dataEntrega.ate)
-
-      return idOk && nomeOk && cpfOk && statusOk && dataPedidoOk && dataAgendadaOk && dataEntregaOk
+      return idOk && nomeOk && statusOk && dataPedidoOk && dataAgendadaOk
     })
-  }, [filters, pedidos])
+  }, [filters, orders])
 
-  // 🔢 paginação local (mantém mesmo layout)
   const itemsPerPage = 10
   const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage))
   const safePage = Math.min(Math.max(currentPage, 1), totalPages)
@@ -95,7 +84,6 @@ export function OrdersTable({ filters, currentPage, onPageChange }: OrdersTableP
     if (page >= 1 && page <= totalPages) onPageChange(page)
   }
 
-  // 🔄 estados de carregamento e erro
   if (loading) {
     return <div className="p-4 text-gray-500 italic">Carregando pedidos...</div>
   }
@@ -103,7 +91,6 @@ export function OrdersTable({ filters, currentPage, onPageChange }: OrdersTableP
     return <div className="p-4 text-red-600 font-semibold">Erro: {error}</div>
   }
 
-  // 🧾 tabela renderizada
   return (
     <div className="overflow-x-auto bg-white rounded-xl border border-gray-300 p-4">
       <table className="w-full text-sm text-left">
@@ -115,24 +102,24 @@ export function OrdersTable({ filters, currentPage, onPageChange }: OrdersTableP
             <th className="p-2">Data Agendada</th>
             <th className="p-2">Status do pedido</th>
             <th className="p-2">Valor</th>
-            <th className="p-2">Forma de pagamento</th>
+            <th className="p-2">Entrega</th>
             <th className="p-2 text-center">Ações</th>
           </tr>
         </thead>
         <tbody>
           {pageData.length > 0 ? (
-            pageData.map((p) => (
-              <tr key={p.id} className="border-t hover:bg-gray-50 transition-colors">
-                <td className="p-2">{p.id}</td>
-                <td className="p-2">{p.cliente}</td>
-                <td className="p-2">{p.criadoEm?.substring(0, 10) ?? "-"}</td>
-                <td className="p-2">{p.dataAgendada?.substring(0, 10) ?? "-"}</td>
-                <td className="p-2">{p.status}</td>
-                <td className="p-2">R$ {p.valor?.toFixed(2)}</td>
-                <td className="p-2">{p.formaPagamento ?? "-"}</td>
+            pageData.map((o) => (
+              <tr key={o.id} className="border-t hover:bg-gray-50 transition-colors">
+                <td className="p-2">{o.id}</td>
+                <td className="p-2">{o.client_name ?? `Cliente #${o.client_id}`}</td>
+                <td className="p-2">{o.order_date?.substring(0, 10) ?? "-"}</td>
+                <td className="p-2">{o.scheduled_delivery_date?.substring(0, 10) ?? "-"}</td>
+                <td className="p-2">{ORDER_STATUS_LABELS[o.status] ?? o.status}</td>
+                <td className="p-2">R$ {Number(o.total_amount).toFixed(2)}</td>
+                <td className="p-2">{o.delivery_type === "DELIVERY" ? "Entrega" : "Retirada"}</td>
                 <td className="p-2 text-center">
                   <button
-                    onClick={() => router.push(`/pedidos/${p.id}`)}
+                    onClick={() => router.push(`/pedidos/${o.id}`)}
                     className="text-red-600 font-semibold hover:underline"
                   >
                     VER MAIS
@@ -150,7 +137,6 @@ export function OrdersTable({ filters, currentPage, onPageChange }: OrdersTableP
         </tbody>
       </table>
 
-      {/* paginação */}
       <div className="flex justify-center items-center gap-2 mt-4">
         <button
           onClick={() => changePage(safePage - 1)}

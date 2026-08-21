@@ -14,6 +14,8 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Plus } from "lucide-react"
 import Resultados from "@/components/resultados"
+import { apiGet, apiPost } from "@/lib/api"
+import { useManagedUnits } from "@/hooks/useManagedUnits"
 import {
   BarChart,
   Bar,
@@ -43,10 +45,22 @@ type Expense = {
 type Receita = { dia: number; valor: number }
 type PaymentSlice = { name: string; value: number }
 
+type ExpenseApi = {
+  id: number
+  cpfCnpj?: string
+  supplierName: string
+  type: Expense["tipo"]
+  amount: number | string
+  discount: number | string
+  paidAmount: number | string
+  postedAt?: string
+  paidAt?: string
+  notes?: string
+  paymentMethod: Expense["formaPagamento"]
+}
+
 type RevenueApi = { series: { day: number; value: number }[]; revenueTotal: number }
 type SummaryApi = { revenueTotal: number; expensesTotal: number; payments: PaymentSlice[] }
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
 
 function parseCurrencyToNumber(formatted: string) {
   if (!formatted) return 0
@@ -110,6 +124,7 @@ function getMonthParam() {
 }
 
 export default function FinanceiroPage() {
+  const { units, unitId, setUnitId, loading: unitsLoading } = useManagedUnits()
   const [open, setOpen] = useState(false)
   const [month, setMonth] = useState(getMonthParam())
 
@@ -138,14 +153,17 @@ export default function FinanceiroPage() {
   })
 
   useEffect(() => {
+    if (!unitId) return
+
     const load = async () => {
       try {
         setLoading(true)
         setError(null)
 
+        const query = `month=${month}&unit_id=${unitId}`
+
         // 1) Receitas (revenue)
-        const r1 = await fetch(`${API_URL}/finance/revenue?month=${month}`)
-        const revenue: RevenueApi = await r1.json()
+        const revenue: RevenueApi = await apiGet(`/finance/revenue?${query}`)
 
         const byDay = new Map<number, number>()
         revenue.series.forEach(s => byDay.set(s.day, s.value))
@@ -164,9 +182,8 @@ export default function FinanceiroPage() {
         setReceitasTotal(revenue.revenueTotal || 0)
 
         // 2) Despesas (expenses)
-        const r2 = await fetch(`${API_URL}/finance/expenses?month=${month}`)
-        const expensesApi = await r2.json()
-        const mapped: Expense[] = (expensesApi as any[]).map((e) => ({
+        const expensesApi = await apiGet(`/finance/expenses?${query}`)
+        const mapped: Expense[] = (expensesApi as ExpenseApi[]).map((e) => ({
           id: String(e.id),
           cpfCnpj: e.cpfCnpj ?? "",
           fornecedor: e.supplierName,
@@ -182,8 +199,7 @@ export default function FinanceiroPage() {
         setExpenses(mapped)
 
         // 3) Resumo (summary)
-        const r3 = await fetch(`${API_URL}/finance/summary?month=${month}`)
-        const summary: SummaryApi = await r3.json()
+        const summary: SummaryApi = await apiGet(`/finance/summary?${query}`)
         setDespesasTotal(parseFloat(summary.expensesTotal?.toString().replace(',', '.')) || 0)
         setPagamentos(
           (summary.payments ?? []).map(p => ({
@@ -199,7 +215,7 @@ export default function FinanceiroPage() {
       }
     }
     load()
-  }, [month])
+  }, [month, unitId])
 
   // Cálcular o valor pago
   useEffect(() => {
@@ -244,15 +260,21 @@ export default function FinanceiroPage() {
       return;
     }
 
+    if (!unitId) {
+      alert("Nenhuma unidade selecionada.");
+      return;
+    }
+
     try {
       setLoading(true)
       setError(null)
 
-      const valor = parseCurrencyToNumberBR(form.valor as any)
-      const desconto = parseCurrencyToNumberBR(form.desconto as any)
+      const valor = parseCurrencyToNumberBR(form.valor)
+      const desconto = parseCurrencyToNumberBR(form.desconto)
       const valorPago = Math.max(valor - desconto, 0)
 
       const payload = {
+        unit_id: unitId,
         supplierName: form.fornecedor,
         type: form.tipo,
         amount: Number(valor),
@@ -266,26 +288,16 @@ export default function FinanceiroPage() {
         supplierId: form.idFornecedor || null,
       };
 
-      console.log(" Payload enviado:", payload);
-
-      const res = await fetch(`${API_URL}/finance/expenses`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
-      if (!res.ok) {
-        const msg = await res.text()
-        throw new Error(msg || "Erro ao salvar despesa")
-      }
+      await apiPost("/finance/expenses", payload)
 
       // Recarrega lista e resumo
-      const [rExp, rSum] = await Promise.all([
-        fetch(`${API_URL}/finance/expenses?month=${month}`),
-        fetch(`${API_URL}/finance/summary?month=${month}`),
+      const query = `month=${month}&unit_id=${unitId}`
+      const [expensesApi, summary]: [ExpenseApi[], SummaryApi] = await Promise.all([
+        apiGet(`/finance/expenses?${query}`),
+        apiGet(`/finance/summary?${query}`),
       ]);
 
-      const expensesApi = await rExp.json()
-      const mapped: Expense[] = (expensesApi as any[]).map((e) => ({
+      const mapped: Expense[] = expensesApi.map((e) => ({
         id: String(e.id),
         cpfCnpj: e.cpfCnpj ?? "",
         fornecedor: e.supplierName,
@@ -300,7 +312,6 @@ export default function FinanceiroPage() {
       }));
       setExpenses(mapped)
 
-      const summary: SummaryApi = await rSum.json()
       setDespesasTotal(Number(summary.expensesTotal ?? 0));
       setPagamentos(
         (summary.payments ?? []).map((p) => ({
@@ -363,15 +374,34 @@ export default function FinanceiroPage() {
         <div className="max-w-6xl mx-auto px-6 py-10 space-y-10">
           <h1 className="text-3xl font-bold text-center text-red-600 mb-6">Financeiro</h1>
 
-          {/* Seletor de mês */}
-          <div className="flex justify-center">
+          {/* Seletor de mês e unidade */}
+          <div className="flex justify-center gap-3">
             <input
               type="month"
               value={month}
               onChange={(e) => setMonth(e.target.value)}
               className="border rounded px-3 py-2"
             />
+            {units.length > 1 && (
+              <select
+                value={unitId ?? ""}
+                onChange={(e) => setUnitId(Number(e.target.value))}
+                className="border rounded px-3 py-2"
+              >
+                {units.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
+
+          {!unitsLoading && units.length === 0 && (
+            <div className="text-center text-red-600">
+              Nenhuma unidade encontrada para este usuário.
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* RECEITAS */}

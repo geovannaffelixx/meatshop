@@ -1,17 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { apiGet } from "@/lib/api";
+import { useManagedUnits } from "@/hooks/useManagedUnits";
 
 type Produto = {
   id: number;
+  name: string;
+  category_name: string | null;
+  brand: string | null;
+  unit_of_measure: string;
+  price: number;
+  active: boolean;
+  stock_quantity: number;
+  stock_min_quantity: number;
+};
+
+type Filters = {
+  id: string;
   descricao: string;
   categoria: string;
-  marca: string;
-  quantidade: string;
-  valor: number;
   status: string;
 };
 
@@ -20,72 +30,56 @@ export function EstoqueTable({
   currentPage,
   onPageChange,
 }: {
-  filters: any;
+  filters: Filters;
   currentPage: number;
   onPageChange: (page: number) => void;
 }) {
   const router = useRouter();
+  const { unitId } = useManagedUnits();
 
   const [produtos, setProdutos] = useState<Produto[]>([]);
-  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // 🔄 Converte STATUS inglês → português (API -> Tela)
-  function mapStatusToPt(status: string): string {
-    if (status === "ON_SALE") return "EM PROMOÇÃO";
-    if (status === "INACTIVE") return "INATIVO";
-    return "ATIVO";
-  }
-
-  // 🔎 Buscando lista da API
   useEffect(() => {
-    async function loadProducts() {
-      try {
-        const params = new URLSearchParams();
+    if (!unitId) return;
 
-        if (filters.id) params.append("id", filters.id);
-        if (filters.descricao)
-          params.append("description", filters.descricao);
-        if (filters.categoria)
-          params.append("category", filters.categoria);
+    setLoading(true);
+    apiGet(`/products?unit_id=${unitId}&limit=200`)
+      .then((result) => setProdutos(result?.data ?? []))
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [unitId]);
 
-        if (filters.status) {
-          const map: Record<string, string> = {
-            "ATIVO": "ACTIVE",
-            "INATIVO": "INACTIVE",
-            "EM PROMOÇÃO": "ON_SALE",
-          };
-          params.append(
-            "status",
-            map[filters.status] ?? filters.status
-          );
-        }
+  const filtered = useMemo(() => {
+    return produtos.filter((p) => {
+      const idOk = filters.id ? p.id.toString().includes(filters.id) : true;
+      const descricaoOk = filters.descricao
+        ? p.name.toLowerCase().includes(filters.descricao.toLowerCase())
+        : true;
+      const categoriaOk = filters.categoria
+        ? (p.category_name ?? "").toLowerCase().includes(filters.categoria.toLowerCase())
+        : true;
+      const statusOk = filters.status
+        ? (filters.status === "ATIVO") === p.active
+        : true;
 
-        params.append("page", String(currentPage));
-        params.append("limit", "10");
+      return idOk && descricaoOk && categoriaOk && statusOk;
+    });
+  }, [filters, produtos]);
 
-        const result = await apiGet(`/products?${params.toString()}`);
+  const itemsPerPage = 10;
+  const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
+  const safePage = Math.min(Math.max(currentPage, 1), totalPages);
+  const start = (safePage - 1) * itemsPerPage;
+  const pageData = filtered.slice(start, start + itemsPerPage);
 
-        const converted = result.data.map((p: any) => ({
-          id: p.id,
-          descricao: p.name,
-          categoria: p.category,
-          marca: p.brand ?? "",
-          quantidade: p.quantity,
-          valor: p.price,
-          status: mapStatusToPt(p.status),
-        }));
-
-        setProdutos(converted);
-        setTotalPages(result.meta.totalPages || 1);
-      } catch (error) {
-        console.error("Erro ao carregar produtos:", error);
-        setProdutos([]);
-        setTotalPages(1);
-      }
-    }
-
-    loadProducts();
-  }, [filters, currentPage]);
+  if (loading) {
+    return <div className="p-4 text-gray-500 italic">Carregando produtos...</div>;
+  }
+  if (error) {
+    return <div className="p-4 text-red-600 font-semibold">Erro: {error}</div>;
+  }
 
   return (
     <div className="overflow-x-auto">
@@ -96,55 +90,63 @@ export function EstoqueTable({
             <th className="px-4 py-3">Descrição do produto</th>
             <th className="px-4 py-3">Categoria</th>
             <th className="px-4 py-3">Marca</th>
-            <th className="px-4 py-3">Qtd. Disponível (KG)</th>
+            <th className="px-4 py-3">Qtd. em estoque</th>
             <th className="px-4 py-3">Valor</th>
             <th className="px-4 py-3">Status</th>
             <th className="px-4 py-3 text-center">Ações</th>
           </tr>
         </thead>
         <tbody>
-          {produtos.map((p) => (
-            <tr
-              key={p.id}
-              className="border-b border-gray-200 hover:bg-gray-100 transition"
-            >
-              <td className="px-4 py-3">{p.id}</td>
-              <td className="px-4 py-3 font-semibold">{p.descricao}</td>
-              <td className="px-4 py-3">{p.categoria}</td>
-              <td className="px-4 py-3">{p.marca}</td>
-              <td className="px-4 py-3">{p.quantidade}</td>
-              <td className="px-4 py-3">
-                R$ {p.valor.toFixed(2).replace(".", ",")}
-              </td>
-              <td
-                className={`px-4 py-3 font-semibold ${
-                  p.status === "EM PROMOÇÃO"
-                    ? "text-green-600"
-                    : p.status === "INATIVO"
-                    ? "text-gray-500"
-                    : "text-red-700"
-                }`}
+          {pageData.length > 0 ? (
+            pageData.map((p) => (
+              <tr
+                key={p.id}
+                className="border-b border-gray-200 hover:bg-gray-100 transition"
               >
-                {p.status}
-              </td>
-              <td className="px-4 py-3 text-center">
-                <Button
-                  onClick={() => router.push(`/estoque/${p.id}`)}
-                  className="bg-transparent text-red-600 hover:text-red-800 font-bold underline-offset-2 hover:underline"
+                <td className="px-4 py-3">{p.id}</td>
+                <td className="px-4 py-3 font-semibold">{p.name}</td>
+                <td className="px-4 py-3">{p.category_name ?? "-"}</td>
+                <td className="px-4 py-3">{p.brand ?? "-"}</td>
+                <td className="px-4 py-3">
+                  {p.stock_quantity} {p.unit_of_measure}
+                  {p.stock_quantity <= p.stock_min_quantity && (
+                    <span className="ml-1 text-amber-600 font-semibold">⚠</span>
+                  )}
+                </td>
+                <td className="px-4 py-3">
+                  R$ {p.price.toFixed(2).replace(".", ",")}
+                </td>
+                <td
+                  className={`px-4 py-3 font-semibold ${
+                    p.active ? "text-red-700" : "text-gray-500"
+                  }`}
                 >
-                  VER MAIS
-                </Button>
+                  {p.active ? "ATIVO" : "INATIVO"}
+                </td>
+                <td className="px-4 py-3 text-center">
+                  <Button
+                    onClick={() => router.push(`/estoque/${p.id}`)}
+                    className="bg-transparent text-red-600 hover:text-red-800 font-bold underline-offset-2 hover:underline"
+                  >
+                    VER MAIS
+                  </Button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={8} className="text-center p-4 text-gray-500 italic">
+                Nenhum produto encontrado com os filtros aplicados.
               </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
 
-      {/* Paginação */}
       <div className="flex justify-center items-center mt-4 gap-2">
         <Button
           onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-          disabled={currentPage === 1}
+          disabled={safePage === 1}
           className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-3 py-1 rounded-md"
         >
           {"<"}
@@ -155,7 +157,7 @@ export function EstoqueTable({
             key={i}
             onClick={() => onPageChange(i + 1)}
             className={`px-3 py-1 rounded-md text-sm font-semibold ${
-              currentPage === i + 1
+              safePage === i + 1
                 ? "bg-red-700 text-white"
                 : "bg-gray-200 hover:bg-gray-300"
             }`}
@@ -166,7 +168,7 @@ export function EstoqueTable({
 
         <Button
           onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-          disabled={currentPage === totalPages}
+          disabled={safePage === totalPages}
           className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-3 py-1 rounded-md"
         >
           {">"}

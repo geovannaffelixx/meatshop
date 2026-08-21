@@ -5,10 +5,11 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { apiPost } from "@/lib/api";
 
 export default function Page() {
   const [showPassword, setShowPassword] = useState(false);
-  const [usuario, setUsuario] = useState("");
+  const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [msg, setMsg] = useState("");
   const [alertType, setAlertType] = useState<"success" | "error" | "">("");
@@ -18,49 +19,25 @@ export default function Page() {
     e.preventDefault();
     setMsg("");
     setAlertType("");
-    
-    if (!usuario.trim() || !senha.trim()) {
-      setMsg("Por favor, preencha usuário e senha para continuar.");
+
+    if (!email.trim() || !senha.trim()) {
+      setMsg("Por favor, preencha e-mail e senha para continuar.");
       setAlertType("error");
       return;
     }
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ usuario, senha }),
-        credentials: "include",
-      });
+      await apiPost("/auth/login", { email, password: senha });
 
-      let data: any;
-      try {
-        data = await res.json();
-      } catch {
-        const text = await res.text();
-        console.error("Resposta bruta do servidor:", text);
-        throw new Error("Erro inesperado do servidor. Veja o console.");
-      }
-
-      if (!res.ok) {
-        throw new Error(data?.message || `Falha no login (${res.status})`);
-      }
-
-      // Armazena token e usuário para o UserCard
-      if (data?.user) {
-        localStorage.setItem("currentUser", JSON.stringify(data.user));
-        window.dispatchEvent(new Event("currentUserUpdated"));
-      }
-      localStorage.removeItem("accessToken");
-
+      window.dispatchEvent(new Event("currentUserUpdated"));
 
       setMsg("Login realizado com sucesso! Redirecionando...");
       setAlertType("success");
 
       setTimeout(() => router.push("/home"), 800);
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      setMsg(err?.message || "Erro inesperado ao fazer login.");
+      setMsg(err instanceof Error ? err.message : "Erro inesperado ao fazer login.");
       setAlertType("error");
     }
   }
@@ -86,13 +63,14 @@ export default function Page() {
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Usuário
+                E-mail
               </label>
               <Input
-                placeholder="Informe seu usuário"
-                value={usuario}
-                onChange={(e) => setUsuario(e.target.value)}
-                autoComplete="username"
+                type="email"
+                placeholder="Informe seu e-mail"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
               />
             </div>
 

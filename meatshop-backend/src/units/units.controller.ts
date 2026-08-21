@@ -10,6 +10,7 @@ import { UpdateUnitDto } from './dtos/update-unit.dto';
 import { AddUserToUnitUseCase } from './use-cases/add-user-to-unit.use-case';
 import { CreateUnitUseCase } from './use-cases/create-unit.use-case';
 import { ListBusinessHoursUseCase } from './use-cases/list-business-hours.use-case';
+import { ListManagedUnitsUseCase } from './use-cases/list-managed-units.use-case';
 import { SetBusinessHoursUseCase } from './use-cases/set-business-hours.use-case';
 import { UpdateUnitUseCase } from './use-cases/update-unit.use-case';
 
@@ -22,8 +23,16 @@ export class UnitsController {
     private readonly updateUnitUseCase: UpdateUnitUseCase,
     private readonly addUserToUnitUseCase: AddUserToUnitUseCase,
     private readonly listBusinessHoursUseCase: ListBusinessHoursUseCase,
+    private readonly listManagedUnitsUseCase: ListManagedUnitsUseCase,
     private readonly setBusinessHoursUseCase: SetBusinessHoursUseCase,
   ) {}
+
+  @ApiOperation({ summary: 'Lista as unidades administradas ou geridas pelo usuário autenticado' })
+  @ApiResponse({ status: 200, description: 'Unidades retornadas com sucesso' })
+  @Get('mine')
+  listMine(@CurrentUser() currentUser: User) {
+    return this.listManagedUnitsUseCase.execute(currentUser);
+  }
 
   @ApiOperation({ summary: 'Cria uma nova unidade' })
   @ApiResponse({ status: 201, description: 'Unidade criada com sucesso.' })

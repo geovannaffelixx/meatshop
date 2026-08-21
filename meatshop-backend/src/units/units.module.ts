@@ -9,6 +9,7 @@ import { UnitsController } from './units.controller';
 import { AddUserToUnitUseCase } from './use-cases/add-user-to-unit.use-case';
 import { CreateUnitUseCase } from './use-cases/create-unit.use-case';
 import { ListBusinessHoursUseCase } from './use-cases/list-business-hours.use-case';
+import { ListManagedUnitsUseCase } from './use-cases/list-managed-units.use-case';
 import { SetBusinessHoursUseCase } from './use-cases/set-business-hours.use-case';
 import { UpdateUnitUseCase } from './use-cases/update-unit.use-case';
 
@@ -20,6 +21,7 @@ import { UpdateUnitUseCase } from './use-cases/update-unit.use-case';
     UpdateUnitUseCase,
     AddUserToUnitUseCase,
     ListBusinessHoursUseCase,
+    ListManagedUnitsUseCase,
     SetBusinessHoursUseCase,
     UnitAuthorizationService,
   ],

@@ -1,100 +1,77 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
-import { apiPost } from "@/lib/api"
+import { apiGet, apiPatch, apiPost } from "@/lib/api"
+import { useManagedUnits } from "@/hooks/useManagedUnits"
 
-type Produto = {
-  id: number
-  nome: string
-  categoria: string
-  corte: string
-  marca: string
-  observacoes: string
-  quantidade: string
-  valor: number
-  valorPromocional: number
-  promocaoAtiva: boolean
-  status: "ATIVO" | "INATIVO" | "EM PROMOÇÃO"
-  descricao: string
-}
-
-// cálculo automático de status
-function calcularStatus(produto: Produto): Produto["status"] {
-  if (produto.status === "INATIVO") return "INATIVO"
-  if (produto.status === "ATIVO" && produto.promocaoAtiva) return "EM PROMOÇÃO"
-  return "ATIVO"
-}
-
-function mapStatusToApi(status: Produto["status"]) {
-  if (status === "EM PROMOÇÃO") return "ON_SALE"
-  if (status === "INATIVO") return "INACTIVE"
-  return "ACTIVE"
-}
+type Category = { id: number; name: string }
 
 export default function NovoProdutoPage() {
   const router = useRouter()
+  const { unitId } = useManagedUnits()
 
-  const [produto, setProduto] = useState<Produto>({
-    id: Date.now(),
-    nome: "",
-    categoria: "",
-    corte: "",
-    marca: "",
-    observacoes: "",
-    quantidade: "",
-    valor: 0,
-    valorPromocional: 0,
-    promocaoAtiva: false,
-    status: "ATIVO",
-    descricao: "",
+  const [categories, setCategories] = useState<Category[]>([])
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    price: 0,
+    unit_of_measure: "KG",
+    brand: "",
+    category_id: 0,
+    active: true,
+    initialQuantity: 0,
   })
 
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState("")
   const [ok, setOk] = useState(false)
 
-  const handleChange = (key: keyof Produto, value: any) => {
-    let atualizado = { ...produto, [key]: value }
+  useEffect(() => {
+    if (!unitId) return
+    apiGet(`/categories?unit_id=${unitId}`)
+      .then((cats: Category[]) => {
+        setCategories(cats ?? [])
+        if (cats?.length > 0) setForm((f) => ({ ...f, category_id: cats[0].id }))
+      })
+      .catch((err) => setErro(err.message))
+  }, [unitId])
 
-    // regra: INATIVO → sem promoção
-    if (key === "status" && value === "INATIVO") {
-      atualizado.promocaoAtiva = false
-    }
-
-    atualizado.status = calcularStatus(atualizado)
-    setProduto(atualizado)
+  const handleChange = <K extends keyof typeof form>(key: K, value: typeof form[K]) => {
+    setForm((f) => ({ ...f, [key]: value }))
     setErro("")
     setOk(false)
   }
 
   const handleSave = async () => {
-    // validações
-    if (!produto.nome.trim() || !produto.categoria.trim() || produto.valor <= 0) {
+    if (!form.name.trim() || !form.category_id || form.price <= 0) {
       setErro("Preencha pelo menos o nome, categoria e valor do produto.")
+      return
+    }
+    if (!unitId) {
+      setErro("Nenhuma unidade selecionada.")
       return
     }
 
     setSalvando(true)
 
     try {
-      // Mapeia campos para o backend
-      const body = {
-        name: produto.nome,
-        description: produto.descricao,
-        category: produto.categoria,
-        cut: produto.corte,
-        brand: produto.marca,
-        notes: produto.observacoes,
-        quantity: produto.quantidade,
-        price: produto.valor,
-        promotionalPrice:
-          produto.valorPromocional === 0 ? null : produto.valorPromocional,
-        promotionActive: produto.promocaoAtiva,
-        status: mapStatusToApi(produto.status),
-      }
+      const created = await apiPost("/products", {
+        unit_id: unitId,
+        name: form.name,
+        description: form.description,
+        price: form.price,
+        unit_of_measure: form.unit_of_measure,
+        brand: form.brand || undefined,
+        category_id: form.category_id,
+        active: form.active,
+      })
 
-      await apiPost("/products", body)
+      if (form.initialQuantity > 0) {
+        await apiPatch(`/products/${created.id}/stock`, {
+          quantity: form.initialQuantity,
+        })
+      }
 
       setOk(true)
 
@@ -103,7 +80,7 @@ export default function NovoProdutoPage() {
       }, 1200)
     } catch (error) {
       console.error("Erro ao salvar produto:", error)
-      setErro("Ocorreu um erro ao salvar o produto.")
+      setErro(error instanceof Error ? error.message : "Ocorreu um erro ao salvar o produto.")
     } finally {
       setSalvando(false)
     }
@@ -112,7 +89,6 @@ export default function NovoProdutoPage() {
   return (
     <div className="min-h-screen bg-gray-100 bg-[url('/BackgroundClaro.png')] bg-repeat flex items-start justify-center py-8">
       <div className="relative w-[960px] max-w-[96vw] bg-[#D9D9D9] rounded-xl shadow-lg p-5 border border-gray-400">
-        {/* Botão voltar */}
         <button
           onClick={() => router.back()}
           className="absolute top-3 right-4 text-red-700 font-bold text-2xl hover:scale-110 transition-transform"
@@ -141,10 +117,8 @@ export default function NovoProdutoPage() {
           <fieldset className="border-2 border-[#A0332C] rounded-md px-3 py-1">
             <legend className="text-[#A0332C] font-semibold px-1 text-sm">Status</legend>
             <select
-              value={produto.status === "EM PROMOÇÃO" ? "ATIVO" : produto.status}
-              onChange={(e) =>
-                handleChange("status", e.target.value as Produto["status"])
-              }
+              value={form.active ? "ATIVO" : "INATIVO"}
+              onChange={(e) => handleChange("active", e.target.value === "ATIVO")}
               className="w-full bg-white/60 rounded-md px-3 py-2 text-[#A0332C] font-bold"
             >
               <option value="ATIVO">ATIVO</option>
@@ -156,117 +130,89 @@ export default function NovoProdutoPage() {
             <legend className="text-[#A0332C] font-semibold px-1 text-sm">Produto</legend>
             <input
               type="text"
-              value={produto.nome}
-              onChange={(e) => handleChange("nome", e.target.value)}
+              value={form.name}
+              onChange={(e) => handleChange("name", e.target.value)}
               className="w-full bg-white/60 rounded-md px-3 py-2 font-semibold text-gray-800"
             />
           </fieldset>
         </div>
 
         {/* Linha 2 */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
-          {[
-            { label: "Categoria", key: "categoria" },
-            { label: "Corte", key: "corte" },
-            { label: "Marca", key: "marca" },
-            { label: "Observações adicionais", key: "observacoes" },
-          ].map((f) => (
-            <fieldset key={f.key} className="border border-gray-400 rounded-md px-3 py-2">
-              <legend className="text-gray-600 font-medium px-1 text-sm">{f.label}</legend>
-              <input
-                type="text"
-                value={(produto as any)[f.key]}
-                onChange={(e) => handleChange(f.key as keyof Produto, e.target.value)}
-                className="w-full bg-white/60 rounded-md px-3 py-2 text-gray-800"
-              />
-            </fieldset>
-          ))}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+          <fieldset className="border border-gray-400 rounded-md px-3 py-2">
+            <legend className="text-gray-600 font-medium px-1 text-sm">Categoria</legend>
+            <select
+              value={form.category_id}
+              onChange={(e) => handleChange("category_id", Number(e.target.value))}
+              className="w-full bg-white/60 rounded-md px-3 py-2 text-gray-800"
+            >
+              {categories.length === 0 && <option value={0}>Nenhuma categoria</option>}
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </fieldset>
+
+          <fieldset className="border border-gray-400 rounded-md px-3 py-2">
+            <legend className="text-gray-600 font-medium px-1 text-sm">Marca</legend>
+            <input
+              type="text"
+              value={form.brand}
+              onChange={(e) => handleChange("brand", e.target.value)}
+              className="w-full bg-white/60 rounded-md px-3 py-2 text-gray-800"
+            />
+          </fieldset>
+
+          <fieldset className="border border-gray-400 rounded-md px-3 py-2">
+            <legend className="text-gray-600 font-medium px-1 text-sm">Unidade de medida</legend>
+            <input
+              type="text"
+              value={form.unit_of_measure}
+              onChange={(e) => handleChange("unit_of_measure", e.target.value)}
+              placeholder="Ex: KG, PCT, UN"
+              className="w-full bg-white/60 rounded-md px-3 py-2 text-gray-800"
+            />
+          </fieldset>
         </div>
 
         {/* Linha 3 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
           <fieldset className="border border-gray-400 rounded-md px-3 py-2 text-center">
             <legend className="text-gray-600 font-medium px-1 text-sm">
-              Quantidade em estoque
+              Quantidade inicial em estoque
             </legend>
             <input
-              type="text"
-              value={produto.quantidade}
-              onChange={(e) => handleChange("quantidade", e.target.value)}
-              placeholder="Ex: 50 KG"
+              type="number"
+              value={form.initialQuantity}
+              onChange={(e) => handleChange("initialQuantity", parseInt(e.target.value, 10) || 0)}
               className="bg-[#EDEDED] text-center text-sm rounded-md border border-gray-300 py-2 w-full"
             />
           </fieldset>
 
           <fieldset className="border border-gray-400 rounded-md px-3 py-2">
-            <legend className="text-gray-600 font-medium px-1 text-sm">Valores</legend>
-            <div className="grid grid-cols-3 gap-3 items-end">
-              <div className="flex flex-col">
-                <label className="text-xs text-gray-600 mb-1">VALOR DO PRODUTO</label>
-                <input
-                  type="number"
-                  value={produto.valor}
-                  onChange={(e) =>
-                    handleChange("valor", parseFloat(e.target.value) || 0)
-                  }
-                  className="bg-[#EDEDED] text-center text-sm rounded-md border border-gray-300 py-2"
-                />
-              </div>
-
-              <div className="flex flex-col">
-                <label className="text-xs text-gray-600 mb-1">VALOR PROMOCIONAL</label>
-                <input
-                  type="number"
-                  value={produto.valorPromocional}
-                  onChange={(e) =>
-                    handleChange("valorPromocional", parseFloat(e.target.value) || 0)
-                  }
-                  className="bg-[#EDEDED] text-center text-sm rounded-md border border-gray-300 py-2"
-                />
-              </div>
-
-              <div className="flex flex-col">
-                <label className="text-xs text-gray-600 mb-1">PROMOÇÃO ATIVA</label>
-                <select
-                  value={produto.promocaoAtiva ? "true" : "false"}
-                  onChange={(e) =>
-                    handleChange("promocaoAtiva", e.target.value === "true")
-                  }
-                  disabled={produto.status === "INATIVO"}
-                  className={`text-sm font-semibold text-center rounded-md border border-gray-300 py-2 ${
-                    produto.promocaoAtiva
-                      ? "bg-green-100 text-green-700"
-                      : "bg-gray-200 text-gray-600"
-                  } ${produto.status === "INATIVO" ? "opacity-60 cursor-not-allowed" : ""}`}
-                >
-                  <option value="true">✓</option>
-                  <option value="false">✗</option>
-                </select>
-              </div>
-            </div>
+            <legend className="text-gray-600 font-medium px-1 text-sm">Valor do produto</legend>
+            <input
+              type="number"
+              value={form.price}
+              onChange={(e) => handleChange("price", parseFloat(e.target.value) || 0)}
+              className="bg-[#EDEDED] text-center text-sm rounded-md border border-gray-300 py-2 w-full"
+            />
           </fieldset>
         </div>
 
         {/* Linha 4 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1">
           <fieldset className="border border-gray-400 rounded-md px-3 py-2">
             <legend className="text-gray-600 font-medium px-1 text-sm">
               Descrição do produto
             </legend>
             <textarea
-              value={produto.descricao}
-              onChange={(e) => handleChange("descricao", e.target.value)}
+              value={form.description}
+              onChange={(e) => handleChange("description", e.target.value)}
               className="resize-none bg-[#EDEDED] w-full h-[110px] p-3 text-sm border border-gray-300 rounded-md focus:outline-none"
             />
-          </fieldset>
-
-          <fieldset className="border border-gray-400 rounded-md px-3 py-2">
-            <legend className="text-gray-600 font-medium px-1 text-sm">
-              Imagem do produto
-            </legend>
-            <div className="flex items-center justify-center bg-[#EDEDED] h-[110px] border-2 border-dashed border-gray-400 rounded-md text-gray-400 text-5xl font-light">
-              +
-            </div>
           </fieldset>
         </div>
 

@@ -1,96 +1,71 @@
 "use client"
 
 import React, { useEffect, useState } from "react"
+import { apiGet } from "@/lib/api"
+import {
+  DELIVERY_TYPE_LABELS,
+  ORDER_STATUS_LABELS,
+  PAYMENT_STATUS_LABELS,
+} from "@/lib/order-status"
 
-type Product = {
+type OrderItem = {
   id: number
-  descricao: string
-  un: string
-  quantidade: number
-  valorUnitario: number
-  valorTotal: number
-  obs?: string
+  product_id: number
+  product_name: string
+  quantity: number
+  unit_price: number
 }
 
-type OrderData = {
+type Order = {
   id: number
-  cliente: string
-  cpf: string
-  contato: string
-  agenda: string
-  pagamento: string
-  valor: number
-  produtos: Product[]
-  endereco: string
-  cep: string
-  complemento: string
-  observacoesEntrega: string
-  dataPedido: string
+  client_id: number
+  client_name: string | null
+  unit_id: number
+  order_date: string
+  status: string
+  delivery_status: string | null
+  delivery_step: string | null
+  total_amount: number
   subtotal: number
-  frete: number
-  total: number
-  entregaStatus: string
+  discount_amount: number
+  delivery_fee: number
+  delivery_type: string
+  payment_status: string
+  is_scheduled: boolean
+  scheduled_delivery_date: string | null
+  cancellation_reason: string | null
+  cancelled_at: string | null
+  cancelled_by: string | null
+  items: OrderItem[]
+  payment: { method: string | null; status: string; payment_date: string | null } | null
 }
 
 interface OrderDetailsProps {
   orderId: string
 }
 
+const formatarMoeda = (valor: number) => `R$ ${Number(valor).toFixed(2)}`
+
+const formatarData = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleString("pt-BR") : "-"
+
 export default function OrderDetails({ orderId }: OrderDetailsProps) {
-  const [order, setOrder] = useState<OrderData | null>(null)
+  const [order, setOrder] = useState<Order | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // 🔹 Simulação de fetch (mock)
-    const mockOrder: OrderData = {
-      id: Number(orderId),
-      cliente: "Amanda Teresa Félix",
-      cpf: "714.335.491-07",
-      contato: "(62) 99377-5511",
-      agenda: "23/09/2025",
-      pagamento: "CARTÃO DE CRÉDITO",
-      valor: 160.85,
-      produtos: [
-        {
-          id: 16,
-          descricao: "COSTELA BOVINA MINERVA",
-          un: "KG",
-          quantidade: 1.2,
-          valorUnitario: 69.9,
-          valorTotal: 83.88,
-          obs: "CORTAR AS COSTELAS COM CERCA DE DOIS DEDOS DE LARGURA",
-        },
-        {
-          id: 54,
-          descricao: "PÃO DE ALHO SANTA MASSA PICANTE",
-          un: "PCT",
-          quantidade: 2,
-          valorUnitario: 19.99,
-          valorTotal: 39.98,
-          obs: "CORTAR AS COSTELAS COM CERCA DE DOIS DEDOS DE LARGURA",
-        },
-        {
-          id: 35,
-          descricao: "LINGUIÇA DE FRANGO SUPERFRANGO COM PEQUI",
-          un: "PCT",
-          quantidade: 1,
-          valorUnitario: 29.49,
-          valorTotal: 29.49,
-          obs: "CORTAR AS COSTELAS COM CERCA DE DOIS DEDOS DE LARGURA",
-        },
-      ],
-      endereco: "RUA DAS PAINEIRAS - ANÁPOLIS, GO",
-      cep: "75106-882",
-      complemento: "QUADRA 03, LOTE 26",
-      observacoesEntrega: "PAGAMENTO NO ATO DA ENTREGA",
-      dataPedido: "19/09/2025 18:25:36",
-      subtotal: 153.35,
-      frete: 7.5,
-      total: 160.85,
-      entregaStatus: "PENDENTE",
-    }
-
-    setTimeout(() => setOrder(mockOrder), 500)
+    apiGet(`/orders/${orderId}`)
+      .then(setOrder)
+      .catch((err) => setError(err.message))
   }, [orderId])
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-red-600 font-semibold">Erro ao carregar pedido: {error}</p>
+      </div>
+    )
+  }
 
   if (!order)
     return (
@@ -105,40 +80,31 @@ export default function OrderDetails({ orderId }: OrderDetailsProps) {
         <h1 className="text-center text-2xl font-bold text-red-700 mb-1">
           Pedido #{order.id}
         </h1>
-        <p className="text-center text-gray-600 font-medium mb-6 flex items-center justify-center gap-2">
-          <span>🕓</span> EM ANDAMENTO
+        <p className="text-center text-gray-600 font-medium mb-6">
+          {ORDER_STATUS_LABELS[order.status] ?? order.status}
         </p>
 
         {/* Dados do Cliente */}
-        <div className="grid grid-cols-1 sm:grid-cols-6 gap-3 mb-6">
-          <div className="sm:col-span-1">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-6">
+          <div className="sm:col-span-2">
             <label className="text-xs text-gray-500">Cliente</label>
             <div className="border rounded-md px-3 py-2 bg-gray-50 font-semibold">
-              {order.id}
+              {order.client_name ?? `Cliente #${order.client_id}`}
             </div>
           </div>
-          <div className="sm:col-span-2">
-            <label className="text-xs text-gray-500">&nbsp;</label>
+          <div>
+            <label className="text-xs text-gray-500">Data do pedido</label>
             <div className="border rounded-md px-3 py-2 bg-gray-50 font-semibold">
-              {order.cliente}
+              {formatarData(order.order_date)}
             </div>
           </div>
-          <div className="sm:col-span-1">
-            <label className="text-xs text-gray-500">CPF</label>
+          <div>
+            <label className="text-xs text-gray-500">Entrega</label>
             <div className="border rounded-md px-3 py-2 bg-gray-50 font-semibold">
-              {order.cpf}
-            </div>
-          </div>
-          <div className="sm:col-span-1">
-            <label className="text-xs text-gray-500">Contato</label>
-            <div className="border rounded-md px-3 py-2 bg-gray-50 font-semibold">
-              {order.contato}
-            </div>
-          </div>
-          <div className="sm:col-span-1">
-            <label className="text-xs text-gray-500">Agenda</label>
-            <div className="border rounded-md px-3 py-2 bg-gray-50 font-semibold">
-              {order.agenda}
+              {DELIVERY_TYPE_LABELS[order.delivery_type] ?? order.delivery_type}
+              {order.is_scheduled && order.scheduled_delivery_date
+                ? ` — agendado para ${formatarData(order.scheduled_delivery_date)}`
+                : ""}
             </div>
           </div>
         </div>
@@ -148,13 +114,14 @@ export default function OrderDetails({ orderId }: OrderDetailsProps) {
           <div className="sm:col-span-3">
             <label className="text-xs text-gray-500">Pagamento</label>
             <div className="border rounded-md px-3 py-2 bg-gray-50 font-semibold">
-              {order.pagamento}
+              {order.payment?.method ?? "-"} (
+              {PAYMENT_STATUS_LABELS[order.payment_status] ?? order.payment_status})
             </div>
           </div>
           <div className="sm:col-span-3">
             <label className="text-xs text-gray-500">Valor</label>
             <div className="border rounded-md px-3 py-2 bg-red-50 border-red-300 text-red-700 font-bold text-right">
-              R$ {order.valor.toFixed(2)}
+              {formatarMoeda(order.total_amount)}
             </div>
           </div>
         </div>
@@ -166,37 +133,23 @@ export default function OrderDetails({ orderId }: OrderDetailsProps) {
               <tr>
                 <th className="p-2 text-left">ID</th>
                 <th className="p-2 text-left">DESCRIÇÃO DO PRODUTO</th>
-                <th className="p-2 text-center">UN</th>
                 <th className="p-2 text-center">QTD</th>
                 <th className="p-2 text-center">V. UNITÁRIO</th>
                 <th className="p-2 text-center">V. TOTAL</th>
               </tr>
             </thead>
             <tbody>
-              {order.produtos.map((p) => (
-                <React.Fragment key={p.id}>
-                  <tr className="border-b border-gray-200">
-                    <td className="p-2">{p.id}</td>
-                    <td className="p-2">{p.descricao}</td>
-                    <td className="p-2 text-center">{p.un}</td>
-                    <td className="p-2 text-center">{p.quantidade.toFixed(3)}</td>
-                    <td className="p-2 text-center">R$ {p.valorUnitario.toFixed(2)}</td>
-                    <td className="p-2 text-center">R$ {p.valorTotal.toFixed(2)}</td>
-                  </tr>
-                  {p.obs && (
-                    <tr className="bg-gray-50 text-gray-600 italic text-xs border-b border-gray-200">
-                      <td colSpan={6} className="p-2">
-                        OBS.: {p.obs}
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
+              {order.items.map((item) => (
+                <tr key={item.id} className="border-b border-gray-200">
+                  <td className="p-2">{item.product_id}</td>
+                  <td className="p-2">{item.product_name}</td>
+                  <td className="p-2 text-center">{item.quantity}</td>
+                  <td className="p-2 text-center">{formatarMoeda(item.unit_price)}</td>
+                  <td className="p-2 text-center">
+                    {formatarMoeda(item.quantity * item.unit_price)}
+                  </td>
+                </tr>
               ))}
-              <tr>
-                <td colSpan={6} className="p-2 text-right font-semibold">
-                  R$ {order.subtotal.toFixed(2)}
-                </td>
-              </tr>
             </tbody>
           </table>
         </div>
@@ -205,31 +158,29 @@ export default function OrderDetails({ orderId }: OrderDetailsProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
           <div className="border rounded-lg p-4 bg-gray-50">
             <h3 className="font-semibold text-gray-700 mb-2 border-b pb-1">
-              Detalhes da entrega
+              Status
             </h3>
-            <p><strong>ENDEREÇO:</strong> {order.endereco}</p>
-            <p><strong>CEP:</strong> {order.cep}</p>
-            <p><strong>COMPLEMENTO:</strong> {order.complemento}</p>
-            <p><strong>OBSERVAÇÕES:</strong> {order.observacoesEntrega}</p>
+            <p><strong>PEDIDO:</strong> {ORDER_STATUS_LABELS[order.status] ?? order.status}</p>
+            {order.delivery_status && (
+              <p><strong>ENTREGA:</strong> {order.delivery_status}</p>
+            )}
+            {order.status === "CANCELLED" && (
+              <>
+                <p><strong>CANCELADO EM:</strong> {formatarData(order.cancelled_at)}</p>
+                <p><strong>MOTIVO:</strong> {order.cancellation_reason ?? "-"}</p>
+              </>
+            )}
           </div>
 
           <div className="border rounded-lg p-4 bg-gray-50">
             <h3 className="font-semibold text-gray-700 mb-2 border-b pb-1">
               Detalhes do pedido
             </h3>
-            <p><strong>DATA:</strong> {order.dataPedido}</p>
-            <p><strong>PEDIDO:</strong> R$ {order.subtotal.toFixed(2)}</p>
-            <p><strong>FRETE:</strong> R$ {order.frete.toFixed(2)}</p>
-            <p><strong>TOTAL:</strong> R$ {order.total.toFixed(2)}</p>
-            <p><strong>ENTREGA:</strong> {order.entregaStatus}</p>
+            <p><strong>SUBTOTAL:</strong> {formatarMoeda(order.subtotal)}</p>
+            <p><strong>DESCONTO:</strong> {formatarMoeda(order.discount_amount)}</p>
+            <p><strong>TAXA DE ENTREGA:</strong> {formatarMoeda(order.delivery_fee)}</p>
+            <p><strong>TOTAL:</strong> {formatarMoeda(order.total_amount)}</p>
           </div>
-        </div>
-
-        {/* Botão */}
-        <div className="mt-8 flex justify-center">
-          <button className="bg-red-700 hover:bg-red-800 text-white font-semibold px-8 py-3 rounded-lg shadow">
-            Finalizar
-          </button>
         </div>
       </div>
     </div>

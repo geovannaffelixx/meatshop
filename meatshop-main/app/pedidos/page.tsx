@@ -5,14 +5,14 @@ import PadraoPage from "@/components/layoutPadrao"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { OrdersTable } from "@/components/orders-table"
+import { ORDER_STATUS_LABELS } from "@/lib/order-status"
 
 export default function PedidosPage() {
   const [filters, setFilters] = useState({
     dataPedido: { de: "", ate: "" },
     dataAgendada: { de: "", ate: "" },
-    dataEntrega: { de: "", ate: "" },
     status: "",
-    cliente: { id: "", nome: "", cpf: "" },
+    cliente: { id: "", nome: "" },
   })
 
   const [appliedFilters, setAppliedFilters] = useState(filters)
@@ -98,38 +98,10 @@ export default function PedidosPage() {
                   </div>
                 </fieldset>
 
-                {/* Data da entrega */}
-                <fieldset className="border p-4 rounded-md">
-                  <legend className="text-gray-600 font-medium">Data da entrega</legend>
-                  <div className="flex space-x-2">
-                    <input
-                      type="date"
-                      value={filters.dataEntrega.de}
-                      onChange={(e) =>
-                        handleFilterChange({
-                          ...filters,
-                          dataEntrega: { ...filters.dataEntrega, de: e.target.value },
-                        })
-                      }
-                      className="w-full p-2 border rounded-md"
-                    />
-                    <input
-                      type="date"
-                      value={filters.dataEntrega.ate}
-                      onChange={(e) =>
-                        handleFilterChange({
-                          ...filters,
-                          dataEntrega: { ...filters.dataEntrega, ate: e.target.value },
-                        })
-                      }
-                      className="w-full p-2 border rounded-md"
-                    />
-                  </div>
-                </fieldset>
               </div>
 
               {/* 2ª linha: cliente + status */}
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <fieldset className="border p-4 rounded-md">
                   <legend className="text-gray-600 font-medium">ID</legend>
                   <input
@@ -161,21 +133,6 @@ export default function PedidosPage() {
                 </fieldset>
 
                 <fieldset className="border p-4 rounded-md">
-                  <legend className="text-gray-600 font-medium">CPF</legend>
-                  <input
-                    type="text"
-                    value={filters.cliente.cpf}
-                    onChange={(e) =>
-                      handleFilterChange({
-                        ...filters,
-                        cliente: { ...filters.cliente, cpf: e.target.value },
-                      })
-                    }
-                    className="w-full p-2 border rounded-md"
-                  />
-                </fieldset>
-
-                <fieldset className="border p-4 rounded-md">
                   <legend className="text-gray-600 font-medium">Status</legend>
                   <select
                     value={filters.status}
@@ -185,9 +142,11 @@ export default function PedidosPage() {
                     className="w-full p-2 border rounded-md"
                   >
                     <option value="">Selecione</option>
-                    <option value="Pendente">Pendente</option>
-                    <option value="Entregue">Entregue</option>
-                    <option value="Cancelado">Cancelado</option>
+                    {Object.entries(ORDER_STATUS_LABELS).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
                   </select>
                 </fieldset>
               </div>

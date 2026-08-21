@@ -37,6 +37,13 @@ export class OrderResponseDto {
   @ApiProperty({ description: 'Id do cliente que fez o pedido', example: 15 })
   client_id: number;
 
+  @ApiPropertyOptional({
+    description: 'Nome do cliente que fez o pedido',
+    example: 'João da Silva',
+    nullable: true,
+  })
+  client_name: string | null;
+
   @ApiProperty({ description: 'Id da unidade responsável pelo pedido', example: 3 })
   unit_id: number;
 
@@ -152,6 +159,7 @@ export class OrderResponseDto {
     const dto = new OrderResponseDto();
     dto.id = order.id;
     dto.client_id = order.client_id;
+    dto.client_name = order.client?.name ?? null;
     dto.unit_id = order.unit_id;
     dto.delivery_person_id = order.delivery_person_id;
     dto.order_date = order.order_date;

@@ -7,11 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { MailIcon } from "lucide-react";
 import Link from "next/link";
+import { apiPost } from "@/lib/api";
 
 export default function RecuperarSenha() {
   const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
-  const [confirmarSenha, setConfirmarSenha] = useState("");
   const [msg, setMsg] = useState("");
   const [alertType, setAlertType] = useState<"success" | "error" | "">("");
 
@@ -20,35 +19,19 @@ export default function RecuperarSenha() {
     setMsg("");
     setAlertType("");
 
-    if (!email.trim() || !senha.trim() || !confirmarSenha.trim()) {
-      setMsg("Preencha todos os campos.");
-      setAlertType("error");
-      return;
-    }
-
-    if (senha !== confirmarSenha) {
-      setMsg("As senhas não coincidem.");
+    if (!email.trim()) {
+      setMsg("Informe seu e-mail.");
       setAlertType("error");
       return;
     }
 
     try {
-      const res = await fetch("http://localhost:3001/auth/reset-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ usuario: email, senha }),
-      });
+      await apiPost("/auth/forgot-password", { email });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data?.message || "Erro ao redefinir senha");
-      }
-
-      setMsg("Senha redefinida com sucesso! Você já pode fazer login.");
+      setMsg("Se este e-mail estiver cadastrado, você receberá um link para redefinir a senha.");
       setAlertType("success");
-    } catch (err: any) {
-      setMsg(err.message);
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : "Erro ao solicitar redefinição de senha.");
       setAlertType("error");
     }
   };
@@ -64,48 +47,24 @@ export default function RecuperarSenha() {
         </CardHeader>
         <CardContent className="space-y-6">
           <p className="text-center text-gray-600 text-sm">
-            Informe seu e-mail ou usuário e defina uma nova senha.
+            Informe seu e-mail para receber o link de redefinição de senha.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                E-mail ou Usuário
+                E-mail
               </label>
               <Input
-                type="text"
-                placeholder="Digite seu e-mail ou usuário"
+                type="email"
+                placeholder="Digite seu e-mail"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nova Senha
-              </label>
-              <Input
-                type="password"
-                placeholder="Digite a nova senha"
-                value={senha}
-                onChange={(e) => setSenha(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Confirmar Senha
-              </label>
-              <Input
-                type="password"
-                placeholder="Confirme a nova senha"
-                value={confirmarSenha}
-                onChange={(e) => setConfirmarSenha(e.target.value)}
-              />
-            </div>
-
             <Button type="submit" className="w-full bg-[#BE2C1B] hover:bg-[#BE2C1B]/70">
-              Redefinir senha
+              Enviar link de redefinição
             </Button>
           </form>
 

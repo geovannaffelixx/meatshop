@@ -88,7 +88,6 @@ export default function EstoquePage() {
                     <option value="">Selecione</option>
                     <option value="ATIVO">Ativo</option>
                     <option value="INATIVO">Inativo</option>
-                    <option value="EM PROMOÇÃO">Em promoção</option>
                   </select>
                 </fieldset>
 

@@ -1,28 +1,44 @@
 'use client';
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { LockIcon } from "lucide-react";
 import Link from "next/link";
+import { apiPost } from "@/lib/api";
 
-export default function RedefinirSenha() {
+function validarSenha(senha: string) {
+  return (
+    senha.length >= 8 &&
+    /[a-z]/.test(senha) &&
+    /[A-Z]/.test(senha) &&
+    /\d/.test(senha) &&
+    /[\W_]/.test(senha)
+  );
+}
+
+function ResetPasswordForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token") ?? "";
+
   const [senha, setSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
-
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const validarSenha = (senha: string) => {
-    return senha.length >= 8 && /[A-Z]/.test(senha);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (!token) {
+      setError("Link de redefinição inválido ou expirado.");
+      return;
+    }
 
     if (senha !== confirmarSenha) {
       setError("As senhas não coincidem.");
@@ -30,33 +46,21 @@ export default function RedefinirSenha() {
     }
 
     if (!validarSenha(senha)) {
-      setError("A senha deve ter no mínimo 8 caracteres e conter pelo menos uma letra maiúscula.");
+      setError(
+        "A senha deve ter no mínimo 8 caracteres, com maiúscula, minúscula, número e caractere especial.",
+      );
       return;
     }
 
     setLoading(true);
 
     try {
-      // Envio da nova senha para o backend
-      const response = await fetch("/api/redefinir-senha", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ senha }),
-      });
+      await apiPost("/auth/reset-password", { token, new_password: senha });
 
-      // Tratamento de erro da API
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || "Erro ao redefinir a senha.");
-      }
-
-      // Sucesso: exibe alerta e redireciona
       setSuccess(true);
-      setTimeout(() => {
-        window.location.href = "/entrar";
-      }, 3000);
-    } catch (err: any) {
-      setError(err.message);
+      setTimeout(() => router.push("/entrar"), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao redefinir a senha.");
     } finally {
       setLoading(false);
     }
@@ -95,7 +99,7 @@ export default function RedefinirSenha() {
 
             <ul className="text-sm text-gray-500 list-disc pl-5">
               <li>Mínimo de 8 caracteres</li>
-              <li>Pelo menos uma letra maiúscula</li>
+              <li>Maiúscula, minúscula, número e caractere especial</li>
             </ul>
 
             {error && <p className="text-sm text-red-500 text-center">{error}</p>}
@@ -126,5 +130,13 @@ export default function RedefinirSenha() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }

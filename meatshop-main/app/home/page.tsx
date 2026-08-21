@@ -25,61 +25,80 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
+import { apiGet } from "@/lib/api"
+import { useManagedUnits } from "@/hooks/useManagedUnits"
 
 const chartConfig = {
-  vendas: { label: "Vendas", color: "#525252" },
+  vendas: { label: "Receita", color: "#525252" },
 } satisfies ChartConfig
 
+const WEEKDAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"]
+
+type DashboardData = {
+  revenueThisMonth: number
+  weeklyChart: {
+    series: { date: string; orderCount: number; revenue: number }[]
+  }
+  recentOrders: {
+    id: number
+    client_name: string | null
+    status: string
+    value: number
+    order_date: string
+  }[]
+  lowStockCount: number
+  topProducts: { product_id: number; product_name: string; quantity_sold: number; revenue: number }[]
+}
+
+type Sale = { id: number; name: string; imageUrl: string; discountValue: number }
+
 export default function Page() {
+  const { unitId } = useManagedUnits()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [dashboard, setDashboard] = useState<any>(null)
-  const [sales, setSales] = useState<any[]>([])
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null)
+  const [sales, setSales] = useState<Sale[]>([])
   const [loadingSales, setLoadingSales] = useState(true)
   const [errorSales, setErrorSales] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
 
-    // Dashboard
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard`, { cache: "no-store" })
-      .then(res => res.json())
-      .then(d => { if (active) setDashboard(d) })
-      .catch(e => { if (active) setError(e.message) })
-      .finally(() => { if (active) setLoading(false) })
-
-    // Sales
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/sales`, { cache: "no-store" })
-      .then(res => res.json())
-      .then(list => { if (active) setSales(list) })
-      .catch(e => { if (active) setErrorSales(e.message) })
+    apiGet("/sales")
+      .then((list) => { if (active) setSales(Array.isArray(list) ? list : []) })
+      .catch((e) => { if (active) setErrorSales(e.message) })
       .finally(() => { if (active) setLoadingSales(false) })
 
     return () => { active = false }
   }, [])
 
+  useEffect(() => {
+    if (!unitId) return
+    let active = true
+    setLoading(true)
+
+    apiGet(`/dashboard?unit_id=${unitId}`)
+      .then((d) => { if (active) setDashboard(d) })
+      .catch((e) => { if (active) setError(e.message) })
+      .finally(() => { if (active) setLoading(false) })
+
+    return () => { active = false }
+  }, [unitId])
+
   const chartData = useMemo(() => {
-    if (dashboard?.vendasSemana?.length) return dashboard.vendasSemana
-    return [
-      { day: "Seg", vendas: 0 },
-      { day: "Ter", vendas: 0 },
-      { day: "Qua", vendas: 0 },
-      { day: "Qui", vendas: 0 },
-      { day: "Sex", vendas: 0 },
-      { day: "Sab", vendas: 0 },
-      { day: "Dom", vendas: 0 },
-    ]
+    if (!dashboard?.weeklyChart?.series?.length) {
+      return WEEKDAY_LABELS.map((day) => ({ day, vendas: 0 }))
+    }
+    return dashboard.weeklyChart.series.map((s) => ({
+      day: WEEKDAY_LABELS[new Date(s.date).getDay()],
+      vendas: s.revenue,
+    }))
   }, [dashboard])
 
-  const pedidos = useMemo(() => {
-    return (dashboard?.pedidosRecentes ?? [])
-      .filter((p: any) => p.status?.toLowerCase() === "pendente")
+  const pedidosPendentes = useMemo(() => {
+    return (dashboard?.recentOrders ?? [])
+      .filter((o) => o.status === "PENDING")
       .slice(0, 20)
-      .map((p:any) => ({
-        id: `#${p.id}`,
-        cliente: p.cliente,
-        tempo: "—",
-      }))
   }, [dashboard])
 
   return (
@@ -96,12 +115,18 @@ export default function Page() {
             {loading && <p className="text-center text-gray-500">Carregando...</p>}
             {error && <p className="text-center text-red-600">Erro: {error}</p>}
 
+            {!loading && !error && pedidosPendentes.length === 0 && (
+              <p className="text-center text-gray-500 italic">Nenhum pedido pendente.</p>
+            )}
+
             <div className="grid grid-cols-2 gap-3">
-              {pedidos.map((pedido:any, i: number) => (
-                <div key={i} className="flex justify-between items-center bg-gray-200 rounded-lg px-3 py-2 text-sm">
-                  <span className="font-semibold">{pedido.id}</span>
-                  <span>{pedido.cliente}</span>
-                  <span className="text-gray-500">tempo de espera: {pedido.tempo}</span>
+              {pedidosPendentes.map((pedido) => (
+                <div key={pedido.id} className="flex justify-between items-center bg-gray-200 rounded-lg px-3 py-2 text-sm">
+                  <span className="font-semibold">#{pedido.id}</span>
+                  <span>{pedido.client_name ?? "-"}</span>
+                  <span className="text-gray-500">
+                    {new Date(pedido.order_date).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                  </span>
                 </div>
               ))}
             </div>
@@ -120,7 +145,9 @@ export default function Page() {
               <a href="/financeiro">
                 <CardHeader>
                   <CardTitle className="text-xl font-bold text-red-700 text-center">Financeiro</CardTitle>
-                  <CardDescription className="text-center">Total de vendas (Segunda a Domingo)</CardDescription>
+                  <CardDescription className="text-center">
+                    Receita do mês: R$ {Number(dashboard?.revenueThisMonth ?? 0).toFixed(2)}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ChartContainer config={chartConfig}>
@@ -131,6 +158,14 @@ export default function Page() {
                       <Bar dataKey="vendas" fill="var(--color-vendas)" radius={8} />
                     </BarChart>
                   </ChartContainer>
+                  {dashboard && dashboard.lowStockCount > 0 && (
+                    <Link
+                      href="/estoque"
+                      className="mt-3 block text-center text-sm text-amber-600 font-medium hover:underline"
+                    >
+                      {dashboard.lowStockCount} produto(s) com estoque baixo
+                    </Link>
+                  )}
                 </CardContent>
               </a>
             </Card>
