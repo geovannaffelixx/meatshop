@@ -1,151 +1,135 @@
+import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
 import {
-  Body,
-  Controller,
-  Get,
-  HttpException,
-  HttpStatus,
-  Post,
-  Req,
-  Res,
-  UseGuards,
-} from '@nestjs/common';
-import { Response, Request } from 'express';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import * as bcrypt from 'bcrypt';
-import { User } from '../entities/user.entity';
-import { AuthService } from './auth.service';
-import { JwtAuthGuard } from './jwt-auth.guard';
-import { LoginDto } from './dto/login.dto';
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Public } from '../common/decorators/public.decorator';
+import { LocalAuthGuard } from '../common/guards/local-auth.guard';
+import { User } from '../users/entities/user.entity';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { RegisterDto } from './dto/register.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ChangePasswordUseCase } from './use-cases/change-password.use-case';
+import { ForgotPasswordUseCase } from './use-cases/forgot-password.use-case';
+import { LoginUseCase } from './use-cases/login.use-case';
+import { LogoutUseCase } from './use-cases/logout.use-case';
+import { RefreshTokenUseCase } from './use-cases/refresh-token.use-case';
+import { RegisterUseCase } from './use-cases/register.use-case';
+import { ResetPasswordUseCase } from './use-cases/reset-password.use-case';
+import { VerifyEmailUseCase } from './use-cases/verify-email.use-case';
+
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(
-    @InjectRepository(User) private readonly users: Repository<User>,
-    private readonly authService: AuthService,
+    private readonly registerUseCase: RegisterUseCase,
+    private readonly loginUseCase: LoginUseCase,
+    private readonly logoutUseCase: LogoutUseCase,
+    private readonly refreshTokenUseCase: RefreshTokenUseCase,
+    private readonly forgotPasswordUseCase: ForgotPasswordUseCase,
+    private readonly resetPasswordUseCase: ResetPasswordUseCase,
+    private readonly changePasswordUseCase: ChangePasswordUseCase,
+    private readonly verifyEmailUseCase: VerifyEmailUseCase,
   ) {}
 
+  @ApiOperation({ summary: 'Registra um novo usuário' })
+  @ApiResponse({ status: 201, description: 'Usuário criado com sucesso' })
+  @ApiResponse({
+    status: 409,
+    description: 'Já existe um usuário com este e-mail ou CPF',
+  })
+  @ApiResponse({ status: 400, description: 'Dados de entrada inválidos' })
+  @Public()
   @Post('register')
-  async register(@Body() body: any) {
-    const {
-      nomeFantasia,
-      razaoSocial,
-      cnpj,
-      telefone,
-      celular,
-      logoUrl,
-      cep,
-      logradouro,
-      numero,
-      complemento,
-      bairro,
-      cidade,
-      estado,
-      pais,
-      email,
-      usuario,
-      senha,
-    } = body;
-
-    if (!nomeFantasia || !razaoSocial || !cnpj || !email || !usuario || !senha) {
-      throw new HttpException('Dados obrigatórios ausentes', HttpStatus.BAD_REQUEST);
-    }
-
-    const exists = await this.users.findOne({ where: [{ email }, { usuario }, { cnpj }] });
-    if (exists)
-      throw new HttpException(
-        'Já existe um usuário com este e-mail, usuário ou CNPJ',
-        HttpStatus.CONFLICT,
-      );
-
-    if (senha.length < 8 || !/[A-Z]/.test(senha)) {
-      throw new HttpException(
-        'A senha deve ter no mínimo 8 caracteres e ao menos uma letra maiúscula',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    const senhaHash = await bcrypt.hash(senha, 10);
-    const user = this.users.create({
-      nomeFantasia,
-      razaoSocial,
-      cnpj,
-      telefone,
-      celular,
-      logoUrl,
-      cep,
-      logradouro,
-      numero,
-      complemento,
-      bairro,
-      cidade,
-      estado,
-      pais,
-      email,
-      usuario,
-      senhaHash,
-    });
-    await this.users.save(user);
-    return { ok: true, id: user.id, message: 'Usuário registrado com sucesso' };
+  @HttpCode(HttpStatus.CREATED)
+  register(@Body() dto: RegisterDto) {
+    return this.registerUseCase.execute(dto);
   }
 
+  @ApiOperation({ summary: 'Autentica um usuário e retorna os tokens de acesso' })
+  @ApiResponse({ status: 200, description: 'Login realizado com sucesso' })
+  @ApiResponse({ status: 401, description: 'Credenciais inválidas' })
+  @Public()
+  @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
-    const { usuario, senha } = dto;
-    if (!usuario || !senha)
-      throw new HttpException('Informe usuário/e-mail e senha', HttpStatus.BAD_REQUEST);
-
-    return this.authService.login(dto, res);
+  @HttpCode(HttpStatus.OK)
+  login(@CurrentUser() user: User) {
+    return this.loginUseCase.execute(user);
   }
 
-  @Post('refresh')
-  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    return this.authService.refresh(req, res);
-  }
-
+  @ApiOperation({ summary: 'Encerra a sessão do usuário invalidando o refresh token' })
+  @ApiResponse({ status: 200, description: 'Logout realizado com sucesso' })
+  @ApiResponse({ status: 400, description: 'Refresh token inválido' })
+  @Public()
   @Post('logout')
-  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    return this.authService.logout(req, res);
+  @HttpCode(HttpStatus.OK)
+  logout(@Body() dto: RefreshTokenDto) {
+    return this.logoutUseCase.execute(dto.refresh_token);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('me')
-  async me(@Req() req: any) {
-    return this.authService.me(req.user);
+  @ApiOperation({ summary: 'Renova o token de acesso a partir de um refresh token válido' })
+  @ApiResponse({ status: 200, description: 'Tokens renovados com sucesso' })
+  @ApiResponse({ status: 401, description: 'Refresh token inválido ou expirado' })
+  @Public()
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  refresh(@Body() dto: RefreshTokenDto) {
+    return this.refreshTokenUseCase.execute(dto.refresh_token);
   }
 
-  @Post('verify-code')
-  verifyCode(@Body() body: { codigo?: string }) {
-    const codigo = (body?.codigo || '').trim();
-    if (codigo.length !== 4 || !/^[0-9]{4}$/.test(codigo)) {
-      throw new HttpException({ message: 'Código inválido' }, HttpStatus.BAD_REQUEST);
-    }
-    const ok = codigo === '1234';
-    if (!ok) throw new HttpException({ message: 'Código incorreto' }, HttpStatus.UNAUTHORIZED);
-    return { ok: true, message: 'Código verificado com sucesso' };
+  @ApiOperation({ summary: 'Envia um e-mail com o link de redefinição de senha' })
+  @ApiResponse({
+    status: 200,
+    description: 'Solicitação processada com sucesso',
+  })
+  @ApiResponse({ status: 400, description: 'E-mail inválido' })
+  @Public()
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.forgotPasswordUseCase.execute(dto.email);
   }
 
+  @ApiOperation({ summary: 'Redefine a senha do usuário a partir de um token válido' })
+  @ApiResponse({ status: 200, description: 'Senha redefinida com sucesso' })
+  @ApiResponse({ status: 400, description: 'Token inválido ou expirado' })
+  @Public()
   @Post('reset-password')
-  async resetPassword(@Body() body: { usuario?: string; senha?: string }) {
-    const { usuario, senha } = body;
-    if (!usuario || !senha) {
-      throw new HttpException('Informe usuário/e-mail e nova senha', HttpStatus.BAD_REQUEST);
-    }
+  @HttpCode(HttpStatus.OK)
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.resetPasswordUseCase.execute(dto.token, dto.new_password);
+  }
 
-    if (senha.length < 8 || !/[A-Z]/.test(senha)) {
-      throw new HttpException(
-        'A senha deve ter no mínimo 8 caracteres e pelo menos uma letra maiúscula',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+  @ApiOperation({ summary: 'Verifica o e-mail do usuário a partir de um token de verificação' })
+  @ApiResponse({ status: 200, description: 'E-mail verificado com sucesso' })
+  @ApiResponse({ status: 400, description: 'Token inválido ou expirado' })
+  @Public()
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  verifyEmail(@Body() dto: VerifyEmailDto) {
+    return this.verifyEmailUseCase.execute(dto.token);
+  }
 
-    const user = await this.users.findOne({ where: [{ usuario }, { email: usuario }] });
-    if (!user) {
-      throw new HttpException('Usuário não encontrado', HttpStatus.NOT_FOUND);
-    }
-
-    user.senhaHash = await bcrypt.hash(senha, 10);
-    await this.users.save(user);
-
-    return { ok: true, message: 'Senha redefinida com sucesso' };
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Altera a senha do usuário autenticado' })
+  @ApiResponse({ status: 200, description: 'Senha alterada com sucesso' })
+  @ApiResponse({ status: 401, description: 'Senha atual incorreta ou usuário não autenticado' })
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  changePassword(
+    @CurrentUser('id') userId: number,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    return this.changePasswordUseCase.execute(
+      userId,
+      dto.current_password,
+      dto.new_password,
+    );
   }
 }

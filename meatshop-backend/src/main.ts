@@ -11,6 +11,7 @@ import {
   AllExceptionsFilter,
 } from './common/logger';
 import { MetricsService } from './metrics/metrics.service';
+import { setupSwagger } from './config/swagger.config';
 import { join } from 'path';
 
 async function bootstrap() {
@@ -43,7 +44,7 @@ async function bootstrap() {
     httpLogger.use(req, res, next);
   });
 
-  app.useGlobalFilters(new AllExceptionsFilter(appLogger));
+app.useGlobalFilters(new AllExceptionsFilter());
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -62,6 +63,11 @@ app.enableCors({
   credentials: true,
 });
   appLogger.info('CORS e CookieParser configurados com sucesso');
+
+  if (process.env.NODE_ENV !== 'production') {
+    setupSwagger(app);
+    appLogger.info('Swagger disponível em /docs');
+  }
 
   const port = Number(process.env.PORT ?? 3001);
   await app.listen(port, '0.0.0.0');
