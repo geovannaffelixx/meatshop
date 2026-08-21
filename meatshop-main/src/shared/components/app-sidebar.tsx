@@ -13,7 +13,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/shared/components/ui/sidebar"
-import { User, Shield, House, ShoppingBag, Box, PiggyBank, LogOut, ChevronRight, Users } from "lucide-react"
+import { User, Shield, House, ShoppingBag, Box, PiggyBank, LogOut, ChevronRight, Users, Tags } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
 import { useCurrentUser } from "@/shared/hooks/use-current-user"
@@ -25,6 +25,7 @@ const navData = [
       { title: "Início", url: "/dashboard", icon: House },
       { title: "Pedidos", url: "/orders", icon: ShoppingBag },
       { title: "Estoque", url: "/products", icon: Box },
+      { title: "Categorias", url: "/categories", icon: Tags },
       { title: "Financeiro", url: "/finance", icon: PiggyBank },
     ],
   },

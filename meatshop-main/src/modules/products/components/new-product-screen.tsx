@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { apiGet, apiPatch, apiPost } from "@/shared/lib/api"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
 
@@ -153,6 +154,11 @@ export function NewProductScreen() {
                 </option>
               ))}
             </select>
+            {categories.length === 0 && (
+              <Link href="/categories" className="text-xs text-red-700 hover:underline mt-1 inline-block">
+                Nenhuma categoria ainda — criar uma
+              </Link>
+            )}
           </fieldset>
 
           <fieldset className="border border-gray-400 rounded-md px-3 py-2">
