@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from "react"
-import PadraoPage from "@/components/layoutPadrao"
+import PageLayout from "@/components/page-layout"
 import Link from "next/link"
 import Autoplay from "embla-carousel-autoplay"
 import {
@@ -26,7 +26,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart"
 import { apiGet } from "@/lib/api"
-import { useManagedUnits } from "@/hooks/useManagedUnits"
+import { useManagedUnits } from "@/hooks/use-managed-units"
 
 const chartConfig = {
   vendas: { label: "Receita", color: "#525252" },
@@ -102,7 +102,7 @@ export default function Page() {
   }, [dashboard])
 
   return (
-    <PadraoPage titulo="Dashboard" imagem="/logoClaraEscrita.png">
+    <PageLayout title="Dashboard" image="/logoClaraEscrita.png">
       <div className="min-h-screen w-full bg-gray-100 bg-[url('/BackgroundClaro.png')] bg-repeat">
         <div className="container mx-auto px-4 py-6 space-y-8">
 
@@ -132,7 +132,7 @@ export default function Page() {
             </div>
 
             <div className="mt-2 text-right">
-              <Link href="/pedidos" className="text-red-600 text-sm font-medium hover:underline">
+              <Link href="/orders" className="text-red-600 text-sm font-medium hover:underline">
                 Ver todos
               </Link>
             </div>
@@ -142,7 +142,7 @@ export default function Page() {
 
             {/* Financeiro */}
             <Card className="bg-gray/70 backdrop-blur-md rounded-xl shadow md:col-span-1">
-              <a href="/financeiro">
+              <a href="/finance">
                 <CardHeader>
                   <CardTitle className="text-xl font-bold text-red-700 text-center">Financeiro</CardTitle>
                   <CardDescription className="text-center">
@@ -160,7 +160,7 @@ export default function Page() {
                   </ChartContainer>
                   {dashboard && dashboard.lowStockCount > 0 && (
                     <Link
-                      href="/estoque"
+                      href="/products"
                       className="mt-3 block text-center text-sm text-amber-600 font-medium hover:underline"
                     >
                       {dashboard.lowStockCount} produto(s) com estoque baixo
@@ -205,6 +205,6 @@ export default function Page() {
           </div>
         </div>
       </div>
-    </PadraoPage>
+    </PageLayout>
   )
 }

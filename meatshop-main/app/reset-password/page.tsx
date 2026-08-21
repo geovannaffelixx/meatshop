@@ -58,7 +58,7 @@ function ResetPasswordForm() {
       await apiPost("/auth/reset-password", { token, new_password: senha });
 
       setSuccess(true);
-      setTimeout(() => router.push("/entrar"), 3000);
+      setTimeout(() => router.push("/login"), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao redefinir a senha.");
     } finally {
@@ -114,7 +114,7 @@ function ResetPasswordForm() {
           </form>
 
           <div className="text-center">
-            <Link href="/entrar" className="text-sm text-[#BE2C1B] hover:underline">
+            <Link href="/login" className="text-sm text-[#BE2C1B] hover:underline">
               ← Voltar para login
             </Link>
           </div>

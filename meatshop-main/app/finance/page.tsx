@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useEffect, ChangeEvent } from "react"
-import PadraoPage from "@/components/layoutPadrao"
+import PageLayout from "@/components/page-layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import {
@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Plus } from "lucide-react"
 import Resultados from "@/components/resultados"
 import { apiGet, apiPost } from "@/lib/api"
-import { useManagedUnits } from "@/hooks/useManagedUnits"
+import { useManagedUnits } from "@/hooks/use-managed-units"
 import {
   BarChart,
   Bar,
@@ -369,7 +369,7 @@ export default function FinanceiroPage() {
   const pieColors = ["#16a34a", "#ef4444", "#f59e0b", "#3b82f6", "#7c3aed"]
 
   return (
-    <PadraoPage titulo="Financeiro" imagem="/logoClaraEscrita.png">
+    <PageLayout title="Financeiro" image="/logoClaraEscrita.png">
       <div className="min-h-screen w-full bg-[url('/BackgroundClaro.png')] bg-cover bg-center">
         <div className="max-w-6xl mx-auto px-6 py-10 space-y-10">
           <h1 className="text-3xl font-bold text-center text-red-600 mb-6">Financeiro</h1>
@@ -597,6 +597,6 @@ export default function FinanceiroPage() {
           </div>
         </div>
       </div>
-    </PadraoPage>
+    </PageLayout>
   )
 }

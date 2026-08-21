@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { apiGet } from "@/lib/api";
-import { useManagedUnits } from "@/hooks/useManagedUnits";
+import { useManagedUnits } from "@/hooks/use-managed-units";
 
 type Produto = {
   id: number;
@@ -25,7 +25,7 @@ type Filters = {
   status: string;
 };
 
-export function EstoqueTable({
+export function ProductsTable({
   filters,
   currentPage,
   onPageChange,
@@ -125,7 +125,7 @@ export function EstoqueTable({
                 </td>
                 <td className="px-4 py-3 text-center">
                   <Button
-                    onClick={() => router.push(`/estoque/${p.id}`)}
+                    onClick={() => router.push(`/products/${p.id}`)}
                     className="bg-transparent text-red-600 hover:text-red-800 font-bold underline-offset-2 hover:underline"
                   >
                     VER MAIS

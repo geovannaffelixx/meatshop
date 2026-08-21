@@ -214,7 +214,7 @@ export default function CadastroAcougue() {
       setMsg("Cadastro realizado com sucesso! Redirecionando...");
       setAlertType("success");
 
-      setTimeout(() => router.push("/entrar"), 3000);
+      setTimeout(() => router.push("/login"), 3000);
 
     } catch (err: any) {
       setMsg(err.message);

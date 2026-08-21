@@ -119,7 +119,7 @@ export function OrdersTable({ filters, currentPage, onPageChange }: OrdersTableP
                 <td className="p-2">{o.delivery_type === "DELIVERY" ? "Entrega" : "Retirada"}</td>
                 <td className="p-2 text-center">
                   <button
-                    onClick={() => router.push(`/pedidos/${o.id}`)}
+                    onClick={() => router.push(`/orders/${o.id}`)}
                     className="text-red-600 font-semibold hover:underline"
                   >
                     VER MAIS

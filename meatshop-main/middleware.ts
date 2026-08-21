@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 // Rotas públicas — não exigem autenticação
-const PUBLIC_PATHS = ["/", "/entrar", "/cadastrar", "/recuperar"];
+const PUBLIC_PATHS = ["/", "/login", "/register", "/forgot-password", "/reset-password"];
 
 function isPublic(pathname: string) {
   return PUBLIC_PATHS.some(
@@ -28,18 +28,18 @@ export function middleware(request: NextRequest) {
 
   const onPublic = isPublic(pathname);
 
-  // 1) Se NÃO estiver logado e tentar acessar rota privada → /entrar
+  // 1) Se NÃO estiver logado e tentar acessar rota privada → /login
   if (!token && !onPublic) {
     const url = request.nextUrl.clone();
-    url.pathname = "/entrar";
+    url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
-  // 2) Se estiver logado e tentar acessar página pública → /home
+  // 2) Se estiver logado e tentar acessar página pública → /dashboard
   // (exceto a raiz "/")
   if (token && onPublic && pathname !== "/") {
     const url = request.nextUrl.clone();
-    url.pathname = "/home";
+    url.pathname = "/dashboard";
     return NextResponse.redirect(url);
   }
 

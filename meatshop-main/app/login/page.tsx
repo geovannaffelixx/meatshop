@@ -34,7 +34,7 @@ export default function Page() {
       setMsg("Login realizado com sucesso! Redirecionando...");
       setAlertType("success");
 
-      setTimeout(() => router.push("/home"), 800);
+      setTimeout(() => router.push("/dashboard"), 800);
     } catch (err) {
       console.error(err);
       setMsg(err instanceof Error ? err.message : "Erro inesperado ao fazer login.");
@@ -96,7 +96,7 @@ export default function Page() {
               </div>
               <div className="mt-1">
                 <Link
-                  href="/recuperar"
+                  href="/forgot-password"
                   className="text-sm text-red-600 hover:underline"
                 >
                   Esqueceu sua senha?
@@ -124,7 +124,7 @@ export default function Page() {
 
           <p className="text-center text-sm text-gray-600">
             Não tem uma conta?{" "}
-            <Link href="/cadastrar" className="text-red-600 hover:underline">
+            <Link href="/register" className="text-red-600 hover:underline">
               Cadastre-se
             </Link>
           </p>

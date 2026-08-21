@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import PadraoPage from "@/components/layoutPadrao"
+import PageLayout from "@/components/page-layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { OrdersTable } from "@/components/orders-table"
@@ -28,7 +28,7 @@ export default function PedidosPage() {
   }
 
   return (
-    <PadraoPage titulo="Pedidos" imagem="/logoClaraEscrita.png">
+    <PageLayout title="Pedidos" image="/logoClaraEscrita.png">
       <div className="min-h-screen w-full bg-gray-100 bg-[url('/BackgroundClaro.png')] bg-repeat">
         <div className="container mx-auto px-4 py-6 space-y-8">
           <div className="text-center">
@@ -171,6 +171,6 @@ export default function PedidosPage() {
           </div>
         </div>
       </div>
-    </PadraoPage>
+    </PageLayout>
   )
 }

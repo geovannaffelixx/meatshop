@@ -16,24 +16,24 @@ import {
 import { User, Shield, House, ShoppingBag, Box, PiggyBank, LogOut, ChevronRight, Users } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
-import { useCurrentUser } from "@/hooks/useCurrentUser"
+import { useCurrentUser } from "@/hooks/use-current-user"
 import { apiPost } from "@/lib/api"
 
 const navData = [
   {
     items: [
-      { title: "Início", url: "/home", icon: House },
-      { title: "Pedidos", url: "/pedidos", icon: ShoppingBag },
-      { title: "Estoque", url: "/estoque", icon: Box },
-      { title: "Financeiro", url: "/financeiro", icon: PiggyBank },
+      { title: "Início", url: "/dashboard", icon: House },
+      { title: "Pedidos", url: "/orders", icon: ShoppingBag },
+      { title: "Estoque", url: "/products", icon: Box },
+      { title: "Financeiro", url: "/finance", icon: PiggyBank },
     ],
   },
   {
     title: "Configurações",
     items: [
-      { title: "Perfil", url: "configuracoes/perfil", icon: User },
-      { title: "Usuários", url: "configuracoes/usuario", icon: Users },
-      { title: "Segurança", url: "configuracoes/seguranca", icon: Shield },
+      { title: "Perfil", url: "/settings/profile", icon: User },
+      { title: "Usuários", url: "/settings/users", icon: Users },
+      { title: "Segurança", url: "/settings/security", icon: Shield },
     ],
   },
 ]
@@ -81,7 +81,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
       }
 
       // envia o usuário para a tela de login
-      router.push("/entrar")
+      router.push("/login")
     }
   }
 
@@ -132,7 +132,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
         </div>
 
         <Link
-          href="/perfil"
+          href="/settings/profile"
           className="block px-4 py-3 border-t border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
         >
           <div className="flex items-center gap-3">

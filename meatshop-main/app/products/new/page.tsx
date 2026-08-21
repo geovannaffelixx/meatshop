@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { apiGet, apiPatch, apiPost } from "@/lib/api"
-import { useManagedUnits } from "@/hooks/useManagedUnits"
+import { useManagedUnits } from "@/hooks/use-managed-units"
 
 type Category = { id: number; name: string }
 
@@ -76,7 +76,7 @@ export default function NovoProdutoPage() {
       setOk(true)
 
       setTimeout(() => {
-        router.push("/estoque")
+        router.push("/products")
       }, 1200)
     } catch (error) {
       console.error("Erro ao salvar produto:", error)
