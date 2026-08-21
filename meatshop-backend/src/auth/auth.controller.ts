@@ -11,12 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
@@ -26,6 +21,7 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
+import { RegisterUnitDto } from './dto/register-unit.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ChangePasswordUseCase } from './use-cases/change-password.use-case';
@@ -34,6 +30,7 @@ import { LoginUseCase } from './use-cases/login.use-case';
 import { LogoutUseCase } from './use-cases/logout.use-case';
 import { RefreshTokenUseCase } from './use-cases/refresh-token.use-case';
 import { RegisterUseCase } from './use-cases/register.use-case';
+import { RegisterUnitUseCase } from './use-cases/register-unit.use-case';
 import { ResetPasswordUseCase } from './use-cases/reset-password.use-case';
 import { VerifyEmailUseCase } from './use-cases/verify-email.use-case';
 
@@ -42,6 +39,7 @@ import { VerifyEmailUseCase } from './use-cases/verify-email.use-case';
 export class AuthController {
   constructor(
     private readonly registerUseCase: RegisterUseCase,
+    private readonly registerUnitUseCase: RegisterUnitUseCase,
     private readonly loginUseCase: LoginUseCase,
     private readonly logoutUseCase: LogoutUseCase,
     private readonly refreshTokenUseCase: RefreshTokenUseCase,
@@ -66,6 +64,25 @@ export class AuthController {
     return this.registerUseCase.execute(dto);
   }
 
+  @ApiOperation({
+    summary:
+      'Registra o dono de uma unidade (açougue) e a própria unidade, já autenticando em seguida',
+  })
+  @ApiResponse({ status: 201, description: 'Unidade e dono criados com sucesso, já autenticado' })
+  @ApiResponse({
+    status: 409,
+    description: 'Já existe um usuário com este e-mail/CPF, ou uma unidade com este CNPJ',
+  })
+  @ApiResponse({ status: 400, description: 'Dados de entrada inválidos' })
+  @Public()
+  @Post('register-unit')
+  @HttpCode(HttpStatus.CREATED)
+  async registerUnit(@Body() dto: RegisterUnitDto, @Res({ passthrough: true }) res: Response) {
+    const { unit, ...tokens } = await this.registerUnitUseCase.execute(dto);
+    this.setAuthCookies(res, tokens);
+    return { ...tokens, unit };
+  }
+
   @ApiOperation({ summary: 'Autentica um usuário e retorna os tokens de acesso' })
   @ApiResponse({ status: 200, description: 'Login realizado com sucesso' })
   @ApiResponse({ status: 401, description: 'Credenciais inválidas' })
@@ -73,10 +90,7 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(
-    @CurrentUser() user: User,
-    @Res({ passthrough: true }) res: Response,
-  ) {
+  async login(@CurrentUser() user: User, @Res({ passthrough: true }) res: Response) {
     const tokens = await this.loginUseCase.execute(user);
     this.setAuthCookies(res, tokens);
     return tokens;
@@ -161,15 +175,8 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Senha atual incorreta ou usuário não autenticado' })
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
-  changePassword(
-    @CurrentUser('id') userId: number,
-    @Body() dto: ChangePasswordDto,
-  ) {
-    return this.changePasswordUseCase.execute(
-      userId,
-      dto.current_password,
-      dto.new_password,
-    );
+  changePassword(@CurrentUser('id') userId: number, @Body() dto: ChangePasswordDto) {
+    return this.changePasswordUseCase.execute(userId, dto.current_password, dto.new_password);
   }
 
   private setAuthCookies(
@@ -178,10 +185,7 @@ export class AuthController {
   ): void {
     const secure = this.configService.get<string>('COOKIE_SECURE') === 'true';
     const sameSite =
-      (this.configService.get<string>('COOKIE_SAMESITE') as
-        | 'strict'
-        | 'lax'
-        | 'none') || 'strict';
+      (this.configService.get<string>('COOKIE_SAMESITE') as 'strict' | 'lax' | 'none') || 'strict';
 
     res.cookie('access_token', tokens.access_token, {
       httpOnly: true,

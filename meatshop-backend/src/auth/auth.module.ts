@@ -19,14 +19,17 @@ import { LoginUseCase } from './use-cases/login.use-case';
 import { LogoutUseCase } from './use-cases/logout.use-case';
 import { RefreshTokenUseCase } from './use-cases/refresh-token.use-case';
 import { RegisterUseCase } from './use-cases/register.use-case';
+import { RegisterUnitUseCase } from './use-cases/register-unit.use-case';
 import { ResetPasswordUseCase } from './use-cases/reset-password.use-case';
 import { VerifyEmailUseCase } from './use-cases/verify-email.use-case';
 import { EmailModule } from '../email/email.module';
+import { UnitsModule } from '../units/units.module';
 
 @Module({
   imports: [
     ConfigModule,
     EmailModule,
+    UnitsModule,
     TypeOrmModule.forFeature([User, RefreshTokenEntity]),
     PassportModule,
     JwtModule.registerAsync({
@@ -35,12 +38,7 @@ import { EmailModule } from '../email/email.module';
       useFactory: (configService: ConfigService) => ({
         secret: configService.getOrThrow<string>('JWT_SECRET'),
         signOptions: {
-          expiresIn: String(
-            configService.get<string>(
-              'JWT_EXPIRES_IN',
-              '15m',
-            ),
-          ) as any,
+          expiresIn: String(configService.get<string>('JWT_EXPIRES_IN', '15m')) as any,
         },
       }),
     }),
@@ -59,6 +57,7 @@ import { EmailModule } from '../email/email.module';
     { provide: APP_GUARD, useClass: RolesGuard },
     // Use Cases
     RegisterUseCase,
+    RegisterUnitUseCase,
     LoginUseCase,
     LogoutUseCase,
     RefreshTokenUseCase,
@@ -69,4 +68,4 @@ import { EmailModule } from '../email/email.module';
   ],
   exports: [JwtAuthGuard, JwtModule],
 })
-export class AuthModule { }
+export class AuthModule {}
