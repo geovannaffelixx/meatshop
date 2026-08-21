@@ -3,12 +3,13 @@ import {
   Post,
   Body,
   Headers,
+  Logger,
   Query,
   UnauthorizedException,
   HttpCode,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, Repository } from 'typeorm';
 import crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -23,12 +24,15 @@ import { MercadoPagoService } from '../payments/providers/mercadopago.service';
 @ApiTags('Payments')
 @Controller('webhooks')
 export class MercadoPagoWebhookController {
+  private readonly logger = new Logger(MercadoPagoWebhookController.name);
+
   constructor(
     @InjectRepository(Order) private readonly ordersRepo: Repository<Order>,
     @InjectRepository(Payment) private readonly paymentsRepo: Repository<Payment>,
     private readonly mp: MercadoPagoService,
     private readonly config: ConfigService,
     private readonly confirmOrderUseCase: ConfirmOrderUseCase,
+    @InjectDataSource() private readonly dataSource: DataSource,
   ) {}
 
   @ApiOperation({
@@ -79,7 +83,12 @@ export class MercadoPagoWebhookController {
     xRequestId?: string,
   ): boolean {
     const secret = (this.config.get<string>('MP_WEBHOOK_SECRET') || '').trim();
-    if (!secret) return true;
+    if (!secret) {
+      this.logger.error(
+        'MP_WEBHOOK_SECRET não configurado — rejeitando notificação do Mercado Pago (fail-closed)',
+      );
+      return false;
+    }
     return this.verifySignature({ secret, xSignature, xRequestId, paymentId });
   }
 
@@ -109,11 +118,15 @@ export class MercadoPagoWebhookController {
       this.applyApprovedPayment(payment, mpPayment);
     }
 
-    try {
-      await this.paymentsRepo.save(payment);
-      await this.syncOrderPaymentStatus(order, payment.status);
-    } catch {
-      return { ok: true, ignored: true, reason: 'db_save_failed' };
+    order.payment_status = payment.status;
+
+    await this.dataSource.transaction(async (manager) => {
+      await manager.save(Payment, payment);
+      await manager.save(Order, order);
+    });
+
+    if (payment.status === PaymentStatus.PAID && order.status === OrderStatus.PENDING) {
+      await this.confirmOrderUseCase.execute(order.id, null);
     }
 
     return { ok: true };
@@ -125,18 +138,6 @@ export class MercadoPagoWebhookController {
       : new Date();
     const method = this.mp.mapPaymentMethod(mpPayment?.payment_type_id);
     if (method) payment.method = method;
-  }
-
-  private async syncOrderPaymentStatus(
-    order: Order,
-    status: PaymentStatus,
-  ): Promise<void> {
-    order.payment_status = status;
-    await this.ordersRepo.save(order);
-
-    if (status === PaymentStatus.PAID && order.status === OrderStatus.PENDING) {
-      await this.confirmOrderUseCase.execute(order.id, null);
-    }
   }
 
   private async getOrCreatePayment(orderId: number): Promise<Payment> {
@@ -182,8 +183,12 @@ export class MercadoPagoWebhookController {
     if (!ts || !v1) return false;
 
     const manifest = `id:${params.paymentId};request-id:${params.xRequestId};ts:${ts};`;
-    const hash = crypto.createHmac('sha256', params.secret).update(manifest).digest('hex');
+    const expected = crypto.createHmac('sha256', params.secret).update(manifest).digest('hex');
 
-    return hash === v1;
+    const expectedBuffer = Buffer.from(expected, 'hex');
+    const receivedBuffer = Buffer.from(v1, 'hex');
+    if (expectedBuffer.length !== receivedBuffer.length) return false;
+
+    return crypto.timingSafeEqual(expectedBuffer, receivedBuffer);
   }
 }

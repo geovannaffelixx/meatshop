@@ -39,6 +39,8 @@ services:
         condition: service_healthy
     ports:
       - "3001:3001"
+    # DB_SYNCHRONIZE abaixo sobrescreve o valor de .env.docker (que traz "true" para uso standalone).
+    # É a rede de segurança de produção contra o TypeORM alterar o schema automaticamente — nunca remover ou mudar para "true".
     environment:
       NODE_ENV: production
       PORT: 3001

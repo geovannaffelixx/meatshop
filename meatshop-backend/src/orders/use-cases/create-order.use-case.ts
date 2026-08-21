@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { CartAccessService } from '../../cart/services/cart-access.service';
 import { CartItem } from '../../cart/entities/cart-item.entity';
 import { SendOrderStatusNotificationUseCase } from '../../notifications/use-cases/send-order-status-notification.use-case';
@@ -50,6 +50,8 @@ export class CreateOrderUseCase {
     private readonly validateCouponUseCase: ValidateCouponUseCase,
     private readonly configService: ConfigService,
     private readonly sendOrderStatusNotificationUseCase: SendOrderStatusNotificationUseCase,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
   ) {}
 
   async execute(dto: CreateOrderDto, currentUser: User): Promise<Order> {
@@ -68,18 +70,30 @@ export class CreateOrderUseCase {
     const coupon = await this.resolveCoupon(dto.coupon_code);
     const amounts = this.calculateAmounts(items, coupon, dto.delivery_type);
 
-    const order = await this.persistOrder(dto, currentUser, unitId, address, coupon, amounts);
-    await this.persistOrderItems(order.id, items);
-    await this.decrementStock(items);
-    await this.paymentRepository.save(this.paymentRepository.create({ order_id: order.id }));
-    await this.historyRepository.save(
-      this.historyRepository.create({
-        order_id: order.id,
-        status: order.status,
-        updated_by: currentUser.id,
-      }),
-    );
-    await this.cartItemRepository.delete({ cart_id: items[0].cart_id });
+    const order = await this.dataSource.transaction(async (manager) => {
+      const order = await this.persistOrder(
+        manager,
+        dto,
+        currentUser,
+        unitId,
+        address,
+        coupon,
+        amounts,
+      );
+      await this.persistOrderItems(manager, order.id, items);
+      await this.decrementStock(manager, items);
+      await manager.save(Payment, manager.create(Payment, { order_id: order.id }));
+      await manager.save(
+        OrderStatusHistory,
+        manager.create(OrderStatusHistory, {
+          order_id: order.id,
+          status: order.status,
+          updated_by: currentUser.id,
+        }),
+      );
+      await manager.delete(CartItem, { cart_id: items[0].cart_id });
+      return order;
+    });
 
     await this.sendOrderStatusNotificationUseCase
       .notifyUnitOfNewOrder(order)
@@ -175,6 +189,7 @@ export class CreateOrderUseCase {
   }
 
   private async persistOrder(
+    manager: EntityManager,
     dto: CreateOrderDto,
     currentUser: User,
     unitId: number,
@@ -182,7 +197,7 @@ export class CreateOrderUseCase {
     coupon: Coupon | null,
     amounts: OrderAmounts,
   ): Promise<Order> {
-    const order = this.orderRepository.create({
+    const order = manager.create(Order, {
       client_id: currentUser.id,
       unit_id: unitId,
       delivery_type: dto.delivery_type,
@@ -192,28 +207,28 @@ export class CreateOrderUseCase {
       coupon_id: coupon?.id ?? null,
       ...amounts,
     });
-    return this.orderRepository.save(order);
+    return manager.save(Order, order);
   }
 
-  private async persistOrderItems(orderId: number, items: CartItem[]): Promise<void> {
+  private async persistOrderItems(
+    manager: EntityManager,
+    orderId: number,
+    items: CartItem[],
+  ): Promise<void> {
     const orderItems = items.map((item) =>
-      this.orderItemRepository.create({
+      manager.create(OrderItem, {
         order_id: orderId,
         product_id: item.product_id,
         quantity: item.quantity,
         unit_price: item.product.price,
       }),
     );
-    await this.orderItemRepository.save(orderItems);
+    await manager.save(OrderItem, orderItems);
   }
 
-  private async decrementStock(items: CartItem[]): Promise<void> {
+  private async decrementStock(manager: EntityManager, items: CartItem[]): Promise<void> {
     for (const item of items) {
-      await this.stockRepository.decrement(
-        { product_id: item.product_id },
-        'quantity',
-        item.quantity,
-      );
+      await manager.decrement(Stock, { product_id: item.product_id }, 'quantity', item.quantity);
     }
   }
 }

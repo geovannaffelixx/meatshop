@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, EntityManager, In, Repository } from 'typeorm';
 import { Product } from '../../products/entities/product.entity';
 import { Unit } from '../../units/entities/unit.entity';
 import { UnitAuthorizationService } from '../../units/services/unit-authorization.service';
@@ -32,6 +32,8 @@ export class UpdateRecipeUseCase {
     private readonly productRepository: Repository<Product>,
     private readonly unitAuthorizationService: UnitAuthorizationService,
     private readonly getRecipeUseCase: GetRecipeUseCase,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
   ) {}
 
   async execute(
@@ -54,17 +56,23 @@ export class UpdateRecipeUseCase {
       );
     }
 
-    await this.applyScalarUpdates(recipe, dto);
-    await this.replaceSteps(recipeId, dto);
-    await this.replaceIngredients(recipeId, dto);
-    await this.replaceProducts(recipeId, dto);
+    await this.dataSource.transaction(async (manager) => {
+      await this.applyScalarUpdates(manager, recipe, dto);
+      await this.replaceSteps(manager, recipeId, dto);
+      await this.replaceIngredients(manager, recipeId, dto);
+      await this.replaceProducts(manager, recipeId, dto);
+    });
 
     this.logger.log(`Recipe ${recipeId} updated by user ${currentUser.id}`);
 
     return this.getRecipeUseCase.execute(recipeId);
   }
 
-  private async applyScalarUpdates(recipe: Recipe, dto: UpdateRecipeDto): Promise<void> {
+  private async applyScalarUpdates(
+    manager: EntityManager,
+    recipe: Recipe,
+    dto: UpdateRecipeDto,
+  ): Promise<void> {
     const { steps, ingredients, products, week_start: weekStart, ...scalars } = dto;
     void steps;
     void ingredients;
@@ -73,34 +81,46 @@ export class UpdateRecipeUseCase {
     if (weekStart !== undefined) {
       recipe.week_start = weekStart ? new Date(weekStart) : null;
     }
-    await this.recipeRepository.save(recipe);
+    await manager.save(Recipe, recipe);
   }
 
-  private async replaceSteps(recipeId: number, dto: UpdateRecipeDto): Promise<void> {
+  private async replaceSteps(
+    manager: EntityManager,
+    recipeId: number,
+    dto: UpdateRecipeDto,
+  ): Promise<void> {
     if (!dto.steps) return;
-    await this.recipeStepRepository.delete({ recipe_id: recipeId });
+    await manager.delete(RecipeStep, { recipe_id: recipeId });
     const steps = dto.steps.map((step) =>
-      this.recipeStepRepository.create({ ...step, recipe_id: recipeId }),
+      manager.create(RecipeStep, { ...step, recipe_id: recipeId }),
     );
-    await this.recipeStepRepository.save(steps);
+    await manager.save(RecipeStep, steps);
   }
 
-  private async replaceIngredients(recipeId: number, dto: UpdateRecipeDto): Promise<void> {
+  private async replaceIngredients(
+    manager: EntityManager,
+    recipeId: number,
+    dto: UpdateRecipeDto,
+  ): Promise<void> {
     if (!dto.ingredients) return;
-    await this.recipeIngredientRepository.delete({ recipe_id: recipeId });
+    await manager.delete(RecipeIngredient, { recipe_id: recipeId });
     const ingredients = dto.ingredients.map((ingredient) =>
-      this.recipeIngredientRepository.create({ ...ingredient, recipe_id: recipeId }),
+      manager.create(RecipeIngredient, { ...ingredient, recipe_id: recipeId }),
     );
-    await this.recipeIngredientRepository.save(ingredients);
+    await manager.save(RecipeIngredient, ingredients);
   }
 
-  private async replaceProducts(recipeId: number, dto: UpdateRecipeDto): Promise<void> {
+  private async replaceProducts(
+    manager: EntityManager,
+    recipeId: number,
+    dto: UpdateRecipeDto,
+  ): Promise<void> {
     if (!dto.products) return;
-    await this.recipeProductRepository.delete({ recipe_id: recipeId });
+    await manager.delete(RecipeProduct, { recipe_id: recipeId });
     const products = dto.products.map((product) =>
-      this.recipeProductRepository.create({ ...product, recipe_id: recipeId }),
+      manager.create(RecipeProduct, { ...product, recipe_id: recipeId }),
     );
-    await this.recipeProductRepository.save(products);
+    await manager.save(RecipeProduct, products);
   }
 
   private async assertProductsBelongToUnit(productIds: number[], unitId: number): Promise<void> {
