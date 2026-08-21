@@ -155,12 +155,12 @@ export function RegisterScreen() {
         owner: {
           name: form.ownerName,
           email: form.email,
-          cpf: form.cpf,
+          cpf: form.cpf.replace(/\D/g, ""),
           password: form.password,
         },
         unit: {
           name: form.unitName,
-          cnpj: form.cnpj,
+          cnpj: form.cnpj.replace(/\D/g, ""),
           city: form.city,
           state: form.state.toUpperCase(),
           zip_code: form.zipCode,
@@ -219,7 +219,10 @@ export function RegisterScreen() {
                 <RequiredLabel label="CNPJ" required />
                 <Input
                   value={form.cnpj}
-                  onInput={(e) => setForm((f) => ({ ...f, cnpj: maskCNPJ(e.currentTarget.value) }))}
+                  onInput={(e) => {
+                    const value = maskCNPJ(e.currentTarget.value);
+                    setForm((f) => ({ ...f, cnpj: value }));
+                  }}
                   className={inputClass("cnpj")}
                 />
 
@@ -247,7 +250,10 @@ export function RegisterScreen() {
                 <RequiredLabel label="CEP" required />
                 <Input
                   value={form.zipCode}
-                  onInput={(e) => setForm((f) => ({ ...f, zipCode: maskCEP(e.currentTarget.value) }))}
+                  onInput={(e) => {
+                    const value = maskCEP(e.currentTarget.value);
+                    setForm((f) => ({ ...f, zipCode: value }));
+                  }}
                   className={inputClass("zipCode")}
                 />
                 <RequiredLabel label="Logradouro" required />
@@ -312,7 +318,10 @@ export function RegisterScreen() {
                 <RequiredLabel label="CPF" required />
                 <Input
                   value={form.cpf}
-                  onInput={(e) => setForm((f) => ({ ...f, cpf: maskCPF(e.currentTarget.value) }))}
+                  onInput={(e) => {
+                    const value = maskCPF(e.currentTarget.value);
+                    setForm((f) => ({ ...f, cpf: value }));
+                  }}
                   className={inputClass("cpf")}
                 />
                 <RequiredLabel label="Senha" required />
