@@ -4,6 +4,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { User } from '../users/entities/user.entity';
 import { CancelOrderDto } from './dtos/cancel-order.dto';
 import { CreateOrderDto } from './dtos/create-order.dto';
+import { OrderListItemDto } from './dtos/order-list-item.dto';
 import { OrderResponseDto } from './dtos/order-response.dto';
 import { ScheduleOrderDto } from './dtos/schedule-order.dto';
 import { UpdateOrderStatusDto } from './dtos/update-order-status.dto';
@@ -40,10 +41,11 @@ export class OrdersController {
   }
 
   @ApiOperation({ summary: 'Lista o histórico de pedidos do usuário autenticado' })
-  @ApiResponse({ status: 200, description: 'Histórico de pedidos retornado com sucesso', type: OrderResponseDto, isArray: true })
+  @ApiResponse({ status: 200, description: 'Histórico de pedidos retornado com sucesso', type: OrderListItemDto, isArray: true })
   @Get()
-  list(@CurrentUser() currentUser: User) {
-    return this.listOrderHistoryUseCase.execute(currentUser);
+  async list(@CurrentUser() currentUser: User) {
+    const orders = await this.listOrderHistoryUseCase.execute(currentUser);
+    return orders.map((order) => OrderListItemDto.fromEntity(order));
   }
 
   @ApiOperation({ summary: 'Busca os detalhes de um pedido específico' })

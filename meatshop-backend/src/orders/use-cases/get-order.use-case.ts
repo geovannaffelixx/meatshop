@@ -22,7 +22,10 @@ export class GetOrderUseCase {
   ) {}
 
   async execute(orderId: number, currentUser: User): Promise<OrderResponseDto> {
-    const order = await this.orderRepository.findOne({ where: { id: orderId } });
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+      relations: ['client'],
+    });
     if (!order) {
       throw new NotFoundException('Order not found');
     }

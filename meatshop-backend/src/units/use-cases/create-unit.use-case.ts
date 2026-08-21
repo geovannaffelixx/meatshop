@@ -1,6 +1,6 @@
 import { ConflictException, Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { LocalRole } from '../../common/enums/local-role.enum';
 import { User } from '../../users/entities/user.entity';
 import { CreateUnitDto } from '../dtos/create-unit.dto';
@@ -14,26 +14,30 @@ export class CreateUnitUseCase {
   constructor(
     @InjectRepository(Unit)
     private readonly unitRepository: Repository<Unit>,
-    @InjectRepository(UserUnit)
-    private readonly userUnitRepository: Repository<UserUnit>,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
   ) {}
 
   async execute(dto: CreateUnitDto, currentUser: User): Promise<Unit> {
     await this.ensureCnpjIsUnique(dto.cnpj);
 
-    const unit = this.unitRepository.create({
-      ...dto,
-      admin_id: currentUser.id,
-    });
-    await this.unitRepository.save(unit);
+    const unit = await this.dataSource.transaction(async (manager) => {
+      const unit = await manager.save(
+        Unit,
+        manager.create(Unit, { ...dto, admin_id: currentUser.id }),
+      );
 
-    await this.userUnitRepository.save(
-      this.userUnitRepository.create({
-        user_id: currentUser.id,
-        unit_id: unit.id,
-        local_role: LocalRole.ADMIN,
-      }),
-    );
+      await manager.save(
+        UserUnit,
+        manager.create(UserUnit, {
+          user_id: currentUser.id,
+          unit_id: unit.id,
+          local_role: LocalRole.ADMIN,
+        }),
+      );
+
+      return unit;
+    });
 
     this.logger.log(`Unit ${unit.id} created by user ${currentUser.id}`);
 

@@ -40,7 +40,7 @@ export class ProductsController {
   @Public()
   @ApiOperation({
     summary:
-      'Lista os produtos, com filtros opcionais por unidade, categoria e status',
+      'Lista os produtos, com filtros opcionais por unidade, categoria e status. Inclui nome da categoria e quantidade em estoque.',
   })
   @ApiResponse({ status: 200, description: 'Lista de produtos retornada com sucesso' })
   @Get()

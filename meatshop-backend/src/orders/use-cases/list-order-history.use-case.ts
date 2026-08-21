@@ -16,13 +16,17 @@ export class ListOrderHistoryUseCase {
 
   async execute(currentUser: User): Promise<Order[]> {
     if (currentUser.global_role === GlobalRole.SUPER_ADMIN) {
-      return this.orderRepository.find({ order: { order_date: 'DESC' } });
+      return this.orderRepository.find({
+        relations: ['client'],
+        order: { order_date: 'DESC' },
+      });
     }
 
     const managedUnitIds = await this.unitAuthorizationService.getManagedUnitIds(currentUser.id);
     if (managedUnitIds.length > 0) {
       return this.orderRepository
         .createQueryBuilder('order')
+        .leftJoinAndSelect('order.client', 'client')
         .where('order.unit_id IN (:...unitIds)', { unitIds: managedUnitIds })
         .orWhere('order.client_id = :userId', { userId: currentUser.id })
         .orderBy('order.order_date', 'DESC')
@@ -31,6 +35,7 @@ export class ListOrderHistoryUseCase {
 
     return this.orderRepository.find({
       where: { client_id: currentUser.id },
+      relations: ['client'],
       order: { order_date: 'DESC' },
     });
   }
