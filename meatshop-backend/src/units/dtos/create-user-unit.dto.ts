@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsInt, IsNotEmpty } from 'class-validator';
+import { IsIn, IsInt, IsNotEmpty } from 'class-validator';
 import { LocalRole } from '../../common/enums/local-role.enum';
 
 export class CreateUserUnitDto {
@@ -14,8 +14,8 @@ export class CreateUserUnitDto {
   @ApiProperty({
     description: 'Papel (role) do usuario dentro da unidade',
     enum: LocalRole,
-    example: LocalRole.MEMBER,
+    example: LocalRole.OPERATOR,
   })
-  @IsEnum(LocalRole)
+  @IsIn([LocalRole.MANAGER, LocalRole.OPERATOR])
   local_role: LocalRole;
 }

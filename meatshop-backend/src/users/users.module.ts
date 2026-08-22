@@ -12,12 +12,16 @@ import { GetAddressUseCase } from './use-cases/get-address.use-case';
 import { DeleteAddressUseCase } from './use-cases/delete-address.use-case';
 import { UsersController } from './users.controller';
 import { UsersUploadController } from './users-upload.controller';
+import { Unit } from '../units/entities/unit.entity';
+import { UnitsModule } from '../units/units.module';
+import { GetPanelContextUseCase } from './use-cases/get-panel-context.use-case';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Address])],
+  imports: [TypeOrmModule.forFeature([User, Address, Unit]), UnitsModule],
   controllers: [UsersController, UsersUploadController, AddressesController],
   providers: [
     GetUserProfileUseCase,
+    GetPanelContextUseCase,
     CreateAddressUseCase,
     UpdateAddressUseCase,
     SetDefaultAddressUseCase,

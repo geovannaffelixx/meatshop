@@ -1,5 +1,6 @@
 export enum LocalRole {
-  ADMIN = 'ADMIN',
-  MEMBER = 'MEMBER',
+  OWNER = 'OWNER',
+  MANAGER = 'MANAGER',
+  OPERATOR = 'OPERATOR',
   DELIVERY = 'DELIVERY',
 }

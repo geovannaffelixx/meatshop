@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { UnitPermission } from '../../common/enums/unit-permission.enum';
 import { OrderStatus } from '../../orders/enums/order-status.enum';
 import { Order } from '../../orders/entities/order.entity';
 import { UnitAuthorizationService } from '../../units/services/unit-authorization.service';
@@ -25,6 +26,7 @@ export class GetMonthlyRevenueUseCase {
     const unitId = await this.unitAuthorizationService.resolveRequiredUnitId(
       currentUser,
       query.unit_id,
+      UnitPermission.VIEW_FINANCE,
     );
     return this.forUnit(unitId, query.month);
   }

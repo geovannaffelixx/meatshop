@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { UnitPermission } from '../../common/enums/unit-permission.enum';
 import { AppLogger } from '../../common/logger/app.logger';
 import { Unit } from '../../units/entities/unit.entity';
 import { UnitAuthorizationService } from '../../units/services/unit-authorization.service';
@@ -27,7 +28,9 @@ export class UpdateExpenseUseCase {
 
     const unit = await this.unitRepository.findOne({ where: { id: expense.unit_id } });
     if (unit) {
-      this.unitAuthorizationService.assertCanManageUnit(unit, currentUser);
+      await this.unitAuthorizationService.assertHasPermission(
+        currentUser, unit.id, UnitPermission.MANAGE_FINANCE,
+      );
     }
 
     Object.assign(expense, dto);

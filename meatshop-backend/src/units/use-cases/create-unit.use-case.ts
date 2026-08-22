@@ -32,7 +32,7 @@ export class CreateUnitUseCase {
         manager.create(UserUnit, {
           user_id: currentUser.id,
           unit_id: unit.id,
-          local_role: LocalRole.ADMIN,
+          local_role: LocalRole.OWNER,
         }),
       );
 
@@ -47,7 +47,10 @@ export class CreateUnitUseCase {
   private async ensureCnpjIsUnique(cnpj: string): Promise<void> {
     const existing = await this.unitRepository.findOne({ where: { cnpj } });
     if (existing) {
-      throw new ConflictException('CNPJ already in use');
+      throw new ConflictException({
+        code: 'CNPJ_ALREADY_EXISTS',
+        message: 'Já existe um açougue cadastrado com este CNPJ.',
+      });
     }
   }
 }

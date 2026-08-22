@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { UnitPermission } from '../../common/enums/unit-permission.enum';
 import { Category } from '../../categories/entities/category.entity';
 import { Unit } from '../../units/entities/unit.entity';
 import { UnitAuthorizationService } from '../../units/services/unit-authorization.service';
@@ -37,7 +38,9 @@ export class UpdateProductUseCase {
     const unit = await this.unitRepository.findOne({
       where: { id: product.unit_id },
     });
-    this.unitAuthorizationService.assertCanManageUnit(unit!, currentUser);
+    await this.unitAuthorizationService.assertHasPermission(
+      currentUser, product.unit_id, UnitPermission.MANAGE_PRODUCTS,
+    );
 
     if (dto.category_id) {
       await this.ensureCategoryBelongsToUnit(dto.category_id, product.unit_id);

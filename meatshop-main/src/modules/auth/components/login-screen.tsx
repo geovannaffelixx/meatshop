@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Input } from "@/shared/components/ui/input";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { apiPost } from "@/shared/lib/api";
+import { apiGet, apiPost } from "@/shared/lib/api";
 import { toast } from "@/shared/lib/toast";
 
 export function LoginScreen() {
@@ -23,12 +23,14 @@ export function LoginScreen() {
 
     try {
       await apiPost("/auth/login", { email, password: senha });
+      const session = await apiGet("/users/me");
 
       window.dispatchEvent(new Event("currentUserUpdated"));
 
       toast.success("Login realizado. Redirecionando...");
 
-      setTimeout(() => router.push("/dashboard"), 800);
+      const destination = session?.panel?.can_access ? "/dashboard" : "/no-panel-access";
+      setTimeout(() => router.push(destination), 800);
     } catch {
       // O cliente da API traduz e exibe o erro no toast global.
     }

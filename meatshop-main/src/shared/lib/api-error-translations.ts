@@ -1,7 +1,16 @@
 type ApiErrorPayload = {
+  code?: unknown;
   error?: unknown;
   message?: unknown;
   statusCode?: unknown;
+};
+
+const ERROR_CODE_MESSAGES: Record<string, string> = {
+  EMAIL_ALREADY_EXISTS: "Já existe uma conta cadastrada com este e-mail.",
+  CPF_ALREADY_EXISTS: "Já existe uma conta cadastrada com este CPF.",
+  CNPJ_ALREADY_EXISTS: "Já existe um açougue cadastrado com este CNPJ.",
+  RESOURCE_ALREADY_EXISTS: "Já existe um cadastro com estas informações.",
+  INTERNAL_ERROR: "Não foi possível concluir a operação. Tente novamente em instantes.",
 };
 
 const STATUS_MESSAGES: Record<number, string> = {
@@ -19,6 +28,9 @@ const STATUS_MESSAGES: Record<number, string> = {
 };
 
 const MESSAGE_TRANSLATIONS: Array<[RegExp, string]> = [
+  [/cpf.*(in use|taken|registered|already exists)/i, "Já existe uma conta cadastrada com este CPF."],
+  [/cnpj.*(in use|taken|registered|already exists)/i, "Já existe um açougue cadastrado com este CNPJ."],
+  [/email.*(in use|taken|registered|already exists)/i, "Já existe uma conta cadastrada com este e-mail."],
   [/invalid credentials|incorrect (email|password)|wrong password/i, "E-mail ou senha inválidos."],
   [/unauthorized|not authenticated|authentication required/i, "Sua sessão expirou. Entre novamente."],
   [/forbidden|permission denied|access denied/i, "Você não tem permissão para realizar esta ação."],
@@ -89,6 +101,10 @@ export function translateApiError(
 ): string {
   const payload = parsePayload(error);
   const payloadStatus = typeof payload?.statusCode === "number" ? payload.statusCode : undefined;
+  const errorCode = typeof payload?.code === "string" ? payload.code : undefined;
+  if (errorCode && ERROR_CODE_MESSAGES[errorCode]) {
+    return ERROR_CODE_MESSAGES[errorCode];
+  }
   const messages = extractMessages(error);
 
   if (messages.length > 0) {

@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { UnitPermission } from '../../common/enums/unit-permission.enum';
 import { Unit } from '../../units/entities/unit.entity';
 import { UnitAuthorizationService } from '../../units/services/unit-authorization.service';
 import { User } from '../../users/entities/user.entity';
@@ -25,7 +26,9 @@ export class DeactivatePromotionUseCase {
     }
 
     const unit = await this.unitRepository.findOne({ where: { id: promotion.unit_id } });
-    this.unitAuthorizationService.assertCanManageUnit(unit!, currentUser);
+    await this.unitAuthorizationService.assertHasPermission(
+      currentUser, promotion.unit_id, UnitPermission.MANAGE_PRODUCTS,
+    );
 
     promotion.active = false;
     return this.promotionRepository.save(promotion);

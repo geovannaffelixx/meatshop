@@ -45,7 +45,7 @@ export class RegisterUnitUseCase {
           email: dto.owner.email.toLowerCase().trim(),
           cpf: dto.owner.cpf,
           password_hash: await bcrypt.hash(dto.owner.password, SALT_ROUNDS),
-          app_profile: AppProfile.BOTH,
+          app_profile: AppProfile.CLIENT,
           email_verification_token: crypto.randomBytes(32).toString('hex'),
         }),
       );
@@ -63,7 +63,7 @@ export class RegisterUnitUseCase {
         manager.create(UserUnit, {
           user_id: user.id,
           unit_id: unit.id,
-          local_role: LocalRole.ADMIN,
+          local_role: LocalRole.OWNER,
         }),
       );
 
@@ -84,21 +84,30 @@ export class RegisterUnitUseCase {
       where: { email: email.toLowerCase().trim() },
     });
     if (existing) {
-      throw new ConflictException('Email already in use');
+      throw new ConflictException({
+        code: 'EMAIL_ALREADY_EXISTS',
+        message: 'Já existe uma conta cadastrada com este e-mail.',
+      });
     }
   }
 
   private async ensureCpfIsUnique(cpf: string): Promise<void> {
     const existing = await this.userRepository.findOne({ where: { cpf } });
     if (existing) {
-      throw new ConflictException('CPF already in use');
+      throw new ConflictException({
+        code: 'CPF_ALREADY_EXISTS',
+        message: 'Já existe uma conta cadastrada com este CPF.',
+      });
     }
   }
 
   private async ensureCnpjIsUnique(cnpj: string): Promise<void> {
     const existing = await this.unitRepository.findOne({ where: { cnpj } });
     if (existing) {
-      throw new ConflictException('CNPJ already in use');
+      throw new ConflictException({
+        code: 'CNPJ_ALREADY_EXISTS',
+        message: 'Já existe um açougue cadastrado com este CNPJ.',
+      });
     }
   }
 

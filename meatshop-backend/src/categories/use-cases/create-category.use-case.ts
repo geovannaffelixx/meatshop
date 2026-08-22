@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { UnitPermission } from '../../common/enums/unit-permission.enum';
 import { Unit } from '../../units/entities/unit.entity';
 import { UnitAuthorizationService } from '../../units/services/unit-authorization.service';
 import { User } from '../../users/entities/user.entity';
@@ -27,7 +28,9 @@ export class CreateCategoryUseCase {
       throw new NotFoundException('Unit not found');
     }
 
-    this.unitAuthorizationService.assertCanManageUnit(unit, currentUser);
+    await this.unitAuthorizationService.assertHasPermission(
+      currentUser, unit.id, UnitPermission.MANAGE_CATEGORIES,
+    );
 
     const category = this.categoryRepository.create(dto);
     await this.categoryRepository.save(category);

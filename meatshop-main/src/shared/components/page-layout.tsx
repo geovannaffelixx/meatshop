@@ -6,6 +6,7 @@ import {
   SidebarTrigger,
 } from "@/shared/components/ui/sidebar"
 import { AppSidebar } from "@/shared/components/app-sidebar"
+import { PanelAccessGuard } from "@/shared/components/panel-access-guard"
 
 type PageLayoutProps = {
   title: string
@@ -15,6 +16,7 @@ type PageLayoutProps = {
 
 function PageLayout({ title, image, children }: PageLayoutProps) {
   return (
+    <PanelAccessGuard>
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
@@ -27,6 +29,7 @@ function PageLayout({ title, image, children }: PageLayoutProps) {
         <main className="flex-1">{children}</main>
       </SidebarInset>
     </SidebarProvider>
+    </PanelAccessGuard>
   )
 }
 

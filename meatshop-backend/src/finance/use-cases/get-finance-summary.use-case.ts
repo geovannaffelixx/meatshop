@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Like, Repository } from 'typeorm';
+import { UnitPermission } from '../../common/enums/unit-permission.enum';
 import { Order } from '../../orders/entities/order.entity';
 import { OrderStatus } from '../../orders/enums/order-status.enum';
 import { UnitAuthorizationService } from '../../units/services/unit-authorization.service';
@@ -31,6 +32,7 @@ export class GetFinanceSummaryUseCase {
     const unitId = await this.unitAuthorizationService.resolveRequiredUnitId(
       currentUser,
       query.unit_id,
+      UnitPermission.VIEW_FINANCE,
     );
     const { year, month, start, end } = normalizeMonthRange(query.month);
     const mm = String(month).padStart(2, '0');

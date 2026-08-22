@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Patch, Post, Put } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
@@ -7,12 +7,16 @@ import { CreateUnitDto } from './dtos/create-unit.dto';
 import { CreateUserUnitDto } from './dtos/create-user-unit.dto';
 import { SetBusinessHoursDto } from './dtos/set-business-hours.dto';
 import { UpdateUnitDto } from './dtos/update-unit.dto';
+import { UpdateUnitMemberDto } from './dtos/update-unit-member.dto';
 import { AddUserToUnitUseCase } from './use-cases/add-user-to-unit.use-case';
 import { CreateUnitUseCase } from './use-cases/create-unit.use-case';
 import { ListBusinessHoursUseCase } from './use-cases/list-business-hours.use-case';
 import { ListManagedUnitsUseCase } from './use-cases/list-managed-units.use-case';
 import { SetBusinessHoursUseCase } from './use-cases/set-business-hours.use-case';
 import { UpdateUnitUseCase } from './use-cases/update-unit.use-case';
+import { ListUnitMembersUseCase } from './use-cases/list-unit-members.use-case';
+import { UpdateUnitMemberUseCase } from './use-cases/update-unit-member.use-case';
+import { RemoveUnitMemberUseCase } from './use-cases/remove-unit-member.use-case';
 
 @ApiTags('Units')
 @ApiBearerAuth('access-token')
@@ -25,6 +29,9 @@ export class UnitsController {
     private readonly listBusinessHoursUseCase: ListBusinessHoursUseCase,
     private readonly listManagedUnitsUseCase: ListManagedUnitsUseCase,
     private readonly setBusinessHoursUseCase: SetBusinessHoursUseCase,
+    private readonly listUnitMembersUseCase: ListUnitMembersUseCase,
+    private readonly updateUnitMemberUseCase: UpdateUnitMemberUseCase,
+    private readonly removeUnitMemberUseCase: RemoveUnitMemberUseCase,
   ) {}
 
   @ApiOperation({ summary: 'Lista as unidades administradas ou geridas pelo usuário autenticado' })
@@ -85,6 +92,37 @@ export class UnitsController {
     @CurrentUser() currentUser: User,
   ) {
     return this.addUserToUnitUseCase.execute(unitId, dto, currentUser);
+  }
+
+  @ApiOperation({ summary: 'Lista os membros administrativos de uma unidade' })
+  @Get(':unitId/members')
+  listMembers(
+    @Param('unitId', ParseIntPipe) unitId: number,
+    @CurrentUser() currentUser: User,
+  ) {
+    return this.listUnitMembersUseCase.execute(unitId, currentUser);
+  }
+
+  @ApiOperation({ summary: 'Altera o papel ou status de um membro da unidade' })
+  @Patch(':unitId/members/:membershipId')
+  updateMember(
+    @Param('unitId', ParseIntPipe) unitId: number,
+    @Param('membershipId', ParseIntPipe) membershipId: number,
+    @Body() dto: UpdateUnitMemberDto,
+    @CurrentUser() currentUser: User,
+  ) {
+    return this.updateUnitMemberUseCase.execute(unitId, membershipId, dto, currentUser);
+  }
+
+  @ApiOperation({ summary: 'Remove o acesso de um membro à unidade' })
+  @Delete(':unitId/members/:membershipId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  removeMember(
+    @Param('unitId', ParseIntPipe) unitId: number,
+    @Param('membershipId', ParseIntPipe) membershipId: number,
+    @CurrentUser() currentUser: User,
+  ) {
+    return this.removeUnitMemberUseCase.execute(unitId, membershipId, currentUser);
   }
 
   @Public()
