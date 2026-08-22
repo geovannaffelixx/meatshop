@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Input } from "@/shared/components/ui/input";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
-import { Image as ImageIcon } from "lucide-react";
+import { Eye, EyeOff, Image as ImageIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
 import { apiPost, API_URL } from "@/shared/lib/api";
 
@@ -92,6 +92,8 @@ export function RegisterScreen() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [passwordError, setPasswordError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [msg, setMsg] = useState("");
   const [alertType, setAlertType] = useState<"success" | "error" | "">("");
   const [submitting, setSubmitting] = useState(false);
@@ -325,19 +327,43 @@ export function RegisterScreen() {
                   className={inputClass("cpf")}
                 />
                 <RequiredLabel label="Senha" required />
-                <Input
-                  type="password"
-                  value={form.password}
-                  onChange={handleChange("password")}
-                  className={inputClass("password")}
-                />
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    value={form.password}
+                    onChange={handleChange("password")}
+                    autoComplete="new-password"
+                    className={`${inputClass("password")} pr-10`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((visible) => !visible)}
+                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                    aria-pressed={showPassword}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 transition-colors hover:text-gray-700"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
                 <RequiredLabel label="Confirme sua senha" required />
-                <Input
-                  type="password"
-                  value={form.confirmPassword}
-                  onChange={handleChange("confirmPassword")}
-                  className={inputClass("confirmPassword")}
-                />
+                <div className="relative">
+                  <Input
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={form.confirmPassword}
+                    onChange={handleChange("confirmPassword")}
+                    autoComplete="new-password"
+                    className={`${inputClass("confirmPassword")} pr-10`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((visible) => !visible)}
+                    aria-label={showConfirmPassword ? "Ocultar confirmação de senha" : "Mostrar confirmação de senha"}
+                    aria-pressed={showConfirmPassword}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 transition-colors hover:text-gray-700"
+                  >
+                    {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
                 <p className="text-sm text-gray-500 mt-1">
                   Mínimo 8 caracteres, com maiúscula, minúscula, número e caractere especial.
                 </p>
