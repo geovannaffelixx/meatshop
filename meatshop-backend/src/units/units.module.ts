@@ -17,6 +17,8 @@ import { UpdateUnitUseCase } from './use-cases/update-unit.use-case';
 import { ListUnitMembersUseCase } from './use-cases/list-unit-members.use-case';
 import { UpdateUnitMemberUseCase } from './use-cases/update-unit-member.use-case';
 import { RemoveUnitMemberUseCase } from './use-cases/remove-unit-member.use-case';
+import { CreateUnitMemberUseCase } from './use-cases/create-unit-member.use-case';
+import { GetUnitSettingsUseCase } from './use-cases/get-unit-settings.use-case';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Unit, UserUnit, BusinessHours, User])],
@@ -33,6 +35,8 @@ import { RemoveUnitMemberUseCase } from './use-cases/remove-unit-member.use-case
     ListUnitMembersUseCase,
     UpdateUnitMemberUseCase,
     RemoveUnitMemberUseCase,
+    CreateUnitMemberUseCase,
+    GetUnitSettingsUseCase,
   ],
   exports: [TypeOrmModule, UnitAuthorizationService, UnitPermissionPolicy],
 })

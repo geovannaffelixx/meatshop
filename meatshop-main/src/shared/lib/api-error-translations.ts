@@ -28,6 +28,7 @@ const STATUS_MESSAGES: Record<number, string> = {
 };
 
 const MESSAGE_TRANSLATIONS: Array<[RegExp, string]> = [
+  [/current password is incorrect/i, "A senha atual está incorreta."],
   [/cpf.*(in use|taken|registered|already exists)/i, "Já existe uma conta cadastrada com este CPF."],
   [/cnpj.*(in use|taken|registered|already exists)/i, "Já existe um açougue cadastrado com este CNPJ."],
   [/email.*(in use|taken|registered|already exists)/i, "Já existe uma conta cadastrada com este e-mail."],

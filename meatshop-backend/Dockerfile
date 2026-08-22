@@ -12,6 +12,7 @@ RUN npm ci
 
 COPY tsconfig*.json ./
 COPY nest-cli.json ./
+COPY jest.config.cjs ./
 
 # Copiar código-fonte e migrations
 COPY src ./src

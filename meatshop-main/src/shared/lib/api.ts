@@ -77,6 +77,14 @@ export async function apiPatch(path: string, data: any) {
   });
 }
 
+export async function apiPut(path: string, data: unknown) {
+  return request(path, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
 export async function apiDelete(path: string) {
   return request(path, {
     method: "DELETE",

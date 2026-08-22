@@ -4,6 +4,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { User } from '../users/entities/user.entity';
 import { CreateUnitDto } from './dtos/create-unit.dto';
+import { CreateUnitMemberDto } from './dtos/create-unit-member.dto';
 import { CreateUserUnitDto } from './dtos/create-user-unit.dto';
 import { SetBusinessHoursDto } from './dtos/set-business-hours.dto';
 import { UpdateUnitDto } from './dtos/update-unit.dto';
@@ -17,6 +18,8 @@ import { UpdateUnitUseCase } from './use-cases/update-unit.use-case';
 import { ListUnitMembersUseCase } from './use-cases/list-unit-members.use-case';
 import { UpdateUnitMemberUseCase } from './use-cases/update-unit-member.use-case';
 import { RemoveUnitMemberUseCase } from './use-cases/remove-unit-member.use-case';
+import { CreateUnitMemberUseCase } from './use-cases/create-unit-member.use-case';
+import { GetUnitSettingsUseCase } from './use-cases/get-unit-settings.use-case';
 
 @ApiTags('Units')
 @ApiBearerAuth('access-token')
@@ -32,6 +35,8 @@ export class UnitsController {
     private readonly listUnitMembersUseCase: ListUnitMembersUseCase,
     private readonly updateUnitMemberUseCase: UpdateUnitMemberUseCase,
     private readonly removeUnitMemberUseCase: RemoveUnitMemberUseCase,
+    private readonly createUnitMemberUseCase: CreateUnitMemberUseCase,
+    private readonly getUnitSettingsUseCase: GetUnitSettingsUseCase,
   ) {}
 
   @ApiOperation({ summary: 'Lista as unidades administradas ou geridas pelo usuário autenticado' })
@@ -39,6 +44,15 @@ export class UnitsController {
   @Get('mine')
   listMine(@CurrentUser() currentUser: User) {
     return this.listManagedUnitsUseCase.execute(currentUser);
+  }
+
+  @ApiOperation({ summary: 'Consulta os dados administrativos de uma unidade' })
+  @Get(':id/settings')
+  getSettings(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() currentUser: User,
+  ) {
+    return this.getUnitSettingsUseCase.execute(id, currentUser);
   }
 
   @ApiOperation({ summary: 'Cria uma nova unidade' })
@@ -92,6 +106,18 @@ export class UnitsController {
     @CurrentUser() currentUser: User,
   ) {
     return this.addUserToUnitUseCase.execute(unitId, dto, currentUser);
+  }
+
+  @ApiOperation({ summary: 'Cria um usuário e concede acesso administrativo à unidade' })
+  @ApiResponse({ status: 201, description: 'Usuário criado e vinculado à unidade.' })
+  @ApiResponse({ status: 409, description: 'E-mail ou CPF já cadastrado.' })
+  @Post(':unitId/members/create')
+  createMember(
+    @Param('unitId', ParseIntPipe) unitId: number,
+    @Body() dto: CreateUnitMemberDto,
+    @CurrentUser() currentUser: User,
+  ) {
+    return this.createUnitMemberUseCase.execute(unitId, dto, currentUser);
   }
 
   @ApiOperation({ summary: 'Lista os membros administrativos de uma unidade' })

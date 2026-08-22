@@ -1,9 +1,15 @@
 # Releases do painel web
 
-## 0.2.0 — Painel por função e unidade
+## 2.1.0 — Gestão da unidade e equipe
 
-Lançada em 21 de agosto de 2026.
+Lançada em 22 de agosto de 2026.
 
-O painel agora identifica automaticamente quais unidades e recursos cada conta pode administrar. Usuários com mais de uma unidade podem alternar o contexto pelo menu lateral, e contas exclusivamente de cliente ou entrega recebem uma orientação clara em vez de entrar em uma área inadequada.
+O painel agora reúne configurações do açougue, horários, logo, equipe, cargos e segurança da conta em áreas com nomes claros. Proprietários e gerentes visualizam somente as ações autorizadas para seu papel.
 
-Também foram incluídos feedbacks padronizados em português, gestão da equipe da unidade e melhorias de usabilidade nos formulários de autenticação.
+## 2.0.0 — Refactor do painel
+
+Lançada em 21 de agosto de 2026. Versão de referência após o refactor incompatível com a linha 1.x.
+
+## 1.0.0 — Primeira versão estável
+
+Versão anterior ao refactor arquitetural.

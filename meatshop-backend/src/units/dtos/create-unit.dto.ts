@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 export class CreateUnitDto {
   @ApiProperty({
@@ -47,4 +47,28 @@ export class CreateUnitDto {
   @IsString()
   @Matches(/^[A-Z]{2}$/, { message: 'state must be a 2-letter uppercase UF' })
   state: string;
+
+  @ApiProperty({ required: false, example: 'Rua das Flores' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  street?: string;
+
+  @ApiProperty({ required: false, example: '123' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  number?: string;
+
+  @ApiProperty({ required: false, example: 'Sala 2' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  complement?: string;
+
+  @ApiProperty({ required: false, example: 'Centro' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  neighborhood?: string;
 }

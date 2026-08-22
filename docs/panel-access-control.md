@@ -11,6 +11,14 @@ O perfil global (`SUPER_ADMIN` ou `USER`) e o perfil móvel (`CLIENT`, `DELIVERY
 
 `SUPER_ADMIN` ignora a matriz, acessa todas as unidades e escolhe a unidade ativa. Vínculos `INACTIVE` nunca concedem acesso. `GET /users/me` entrega o contexto para a interface, mas cada ação é novamente autorizada no backend.
 
+## Gestão administrativa
+
+- `/settings/unit`: dados cadastrais, endereço, logo e horários da unidade; acesso de `OWNER` e `SUPER_ADMIN`.
+- `/settings/users`: criação de contas, cargos e ciclo de acesso da equipe; acesso de `OWNER`, `MANAGER` e `SUPER_ADMIN`.
+- `/settings/security`: alteração da senha da conta autenticada.
+
+`POST /units/:unitId/members/create` cria usuário e vínculo na mesma transação. `MANAGER` pode criar somente `OPERATOR`; `OWNER` e `SUPER_ADMIN` podem criar `MANAGER` ou `OPERATOR`. Remover um vínculo não exclui a conta pessoal do usuário.
+
 ## DER atualizado
 
 ```mermaid

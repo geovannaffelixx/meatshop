@@ -1,32 +1,38 @@
 # Changelog
 
-Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
-
-O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota [Versionamento Semântico](https://semver.org/lang/pt-BR/).
+Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Changelog e Semantic Versioning.
 
 ## [Não lançado]
 
-### Corrigido
-
-- Tradução específica para conflitos de e-mail, CPF e CNPJ já cadastrados.
-
-## [0.2.0] - 2026-08-21
+## [2.1.0] - 2026-08-22
 
 ### Adicionado
 
-- Contexto centralizado de acesso ao painel e unidade ativa persistida.
-- Proteção de páginas administrativas e tela explicativa para contas sem acesso.
-- Menu dinâmico conforme as permissões da função local.
-- Seletor de unidade para usuários com múltiplos vínculos e superadministradores.
-- Tela de gestão de usuários da unidade com função, status e remoção de acesso.
-- Toast global e tradução de erros retornados pela API.
-- Alternância de visibilidade de senha nas telas de login e cadastro.
+- Tela “Unidade” com dados cadastrais, endereço, logo e horários de funcionamento.
+- Tela “Equipe e acessos” para criar usuários, atribuir cargos, ativar, desativar e remover vínculos.
+- Tela “Segurança da conta” para alteração de senha.
+- Confirmação acessível antes de remover o acesso de um funcionário.
 
 ### Alterado
 
-- Login direciona contas administrativas ao painel e demais contas à tela de acesso indisponível.
-- Seleção de unidade é compartilhada por todas as telas do painel.
+- “Perfil” foi renomeado para “Unidade”, eliminando a ambiguidade entre usuário e açougue.
+- “Usuários” foi renomeado para “Equipe e acessos”.
+- O cartão pessoal do menu agora direciona para Segurança da conta.
+- A rota antiga `/settings/profile` redireciona para `/settings/unit`.
 
-### Segurança
+### Corrigido
 
-- A interface oculta funções não permitidas, mantendo a API como autoridade final.
+- Traduções específicas para conflitos de e-mail, CPF e CNPJ e senha atual incorreta.
+
+## [2.0.0] - 2026-08-21
+
+### Alterado
+
+- Refactor estrutural do frontend e adoção do contexto administrativo por unidade.
+- Menu, rotas e dados passaram a respeitar a matriz de permissões do backend.
+
+## [1.0.0] - 2026-03-03
+
+### Adicionado
+
+- Primeira versão estável do painel web.
