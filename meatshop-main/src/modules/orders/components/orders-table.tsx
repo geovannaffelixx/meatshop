@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { apiGet } from "@/shared/lib/api"
+import { apiGet, apiPatch } from "@/shared/lib/api"
 import { ORDER_STATUS_LABELS } from "@/modules/orders/utils/status-labels"
 
 interface Filters {
@@ -37,15 +37,32 @@ export function OrdersTable({ filters, currentPage, onPageChange }: OrdersTableP
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [confirmingId, setConfirmingId] = useState<number | null>(null)
 
-  useEffect(() => {
+  const loadOrders = () => {
     setLoading(true)
     setError(null)
     apiGet("/orders")
       .then((data) => setOrders(Array.isArray(data) ? data : []))
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    loadOrders()
   }, [])
+
+  const handleConfirm = async (orderId: number) => {
+    setConfirmingId(orderId)
+    try {
+      await apiPatch(`/orders/${orderId}/confirm`, {})
+      loadOrders()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao confirmar pedido.")
+    } finally {
+      setConfirmingId(null)
+    }
+  }
 
   const inRange = (valueISO: string | null, de: string, ate: string) => {
     if (!de && !ate) return true
@@ -117,7 +134,16 @@ export function OrdersTable({ filters, currentPage, onPageChange }: OrdersTableP
                 <td className="p-2">{ORDER_STATUS_LABELS[o.status] ?? o.status}</td>
                 <td className="p-2">R$ {Number(o.total_amount).toFixed(2)}</td>
                 <td className="p-2">{o.delivery_type === "DELIVERY" ? "Entrega" : "Retirada"}</td>
-                <td className="p-2 text-center">
+                <td className="p-2 text-center space-x-3">
+                  {o.status === "PENDING" && (
+                    <button
+                      onClick={() => handleConfirm(o.id)}
+                      disabled={confirmingId === o.id}
+                      className="text-green-700 font-semibold hover:underline disabled:opacity-50"
+                    >
+                      {confirmingId === o.id ? "Confirmando..." : "Confirmar"}
+                    </button>
+                  )}
                   <button
                     onClick={() => router.push(`/orders/${o.id}`)}
                     className="text-red-600 font-semibold hover:underline"

@@ -6,11 +6,6 @@
     "auditLog": "C:\\Users\\vinicius.rodrigues\\Documents\\meatshop\\meatshop\\meatshop-backend\\logs\\.f6cc9f38afc0e2a2a10ce8466f2bc40ebf83c0eb-audit.json",
     "files": [
         {
-            "date": 1786367733230,
-            "name": "C:\\Users\\vinicius.rodrigues\\Documents\\meatshop\\meatshop\\meatshop-backend\\logs\\app-2026-08-10.log",
-            "hash": "e6799bc35ce28427db96e9557a11c3da801a7464047e1c038ccf9f74e4c61b20"
-        },
-        {
             "date": 1786999592272,
             "name": "C:\\Users\\vinicius.rodrigues\\Documents\\meatshop\\meatshop\\meatshop-backend\\logs\\app-2026-08-17.log",
             "hash": "0ea139c0d43bfadd581e20cab5f6a0589d56d3b1f04f0a79e2bdc08b7e4ef347"
@@ -29,6 +24,11 @@
             "date": 1787323003292,
             "name": "C:\\Users\\vinicius.rodrigues\\Documents\\meatshop\\meatshop\\meatshop-backend\\logs\\app-2026-08-21.log",
             "hash": "b296e4c2ec324c84e3d388862af2839640c1b76211d5ee430b235c46fa310647"
+        },
+        {
+            "date": 1787662567185,
+            "name": "C:\\Users\\vinicius.rodrigues\\Documents\\meatshop\\meatshop\\meatshop-backend\\logs\\app-2026-08-25.log",
+            "hash": "d88ca11a8182d9f96e900cb6378651858898d7311032604026167676a0138f44"
         }
     ],
     "hashType": "sha256"

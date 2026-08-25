@@ -1,12 +1,22 @@
 "use client"
 
 import React, { useEffect, useState } from "react"
-import { apiGet } from "@/shared/lib/api"
+import { apiGet, apiPatch } from "@/shared/lib/api"
 import {
   DELIVERY_TYPE_LABELS,
   ORDER_STATUS_LABELS,
   PAYMENT_STATUS_LABELS,
 } from "@/modules/orders/utils/status-labels"
+import { canCancel, canReschedule, getNextAction } from "@/modules/orders/utils/status-transitions"
+import { Button } from "@/shared/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/shared/components/ui/dialog"
+import { Input } from "@/shared/components/ui/input"
+import { Textarea } from "@/shared/components/ui/textarea"
 
 type OrderItem = {
   id: number
@@ -49,15 +59,79 @@ const formatarMoeda = (valor: number) => `R$ ${Number(valor).toFixed(2)}`
 const formatarData = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString("pt-BR") : "-"
 
+function toDatetimeLocal(iso: string | null) {
+  if (!iso) return ""
+  const d = new Date(iso)
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
 export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
   const [order, setOrder] = useState<Order | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
+  const [working, setWorking] = useState(false)
+
+  const [cancelOpen, setCancelOpen] = useState(false)
+  const [cancelReason, setCancelReason] = useState("")
+
+  const [scheduleOpen, setScheduleOpen] = useState(false)
+  const [scheduleDate, setScheduleDate] = useState("")
+
+  const loadOrder = () => {
+    apiGet(`/orders/${orderId}`)
+      .then((data) => {
+        setOrder(data)
+        setError(null)
+      })
+      .catch((err) => setError(err.message))
+  }
 
   useEffect(() => {
-    apiGet(`/orders/${orderId}`)
-      .then(setOrder)
-      .catch((err) => setError(err.message))
+    loadOrder()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId])
+
+  const runAction = async (action: () => Promise<unknown>) => {
+    setWorking(true)
+    setActionError(null)
+    try {
+      await action()
+      loadOrder()
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Erro ao atualizar o pedido.")
+    } finally {
+      setWorking(false)
+    }
+  }
+
+  const handleAdvance = () => {
+    if (!order) return
+    const next = getNextAction(order.status, order.delivery_type)
+    if (!next) return
+
+    runAction(() =>
+      next.endpoint === "confirm"
+        ? apiPatch(`/orders/${order.id}/confirm`, {})
+        : apiPatch(`/orders/${order.id}/status`, { status: next.targetStatus }),
+    )
+  }
+
+  const handleCancel = () => {
+    if (!order || !cancelReason.trim()) return
+    runAction(() => apiPatch(`/orders/${order.id}/cancel`, { reason: cancelReason })).then(() => {
+      setCancelOpen(false)
+      setCancelReason("")
+    })
+  }
+
+  const handleReschedule = () => {
+    if (!order || !scheduleDate) return
+    const iso = new Date(scheduleDate).toISOString()
+    runAction(() => apiPatch(`/orders/${order.id}/schedule`, { scheduled_delivery_date: iso })).then(() => {
+      setScheduleOpen(false)
+    })
+  }
 
   if (error) {
     return (
@@ -73,6 +147,8 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
         <p className="text-gray-600">Carregando pedido...</p>
       </div>
     )
+
+  const nextAction = getNextAction(order.status, order.delivery_type)
 
   return (
     <div className="flex flex-col items-center bg-gray-100 min-h-screen p-6 font-sans">
@@ -182,7 +258,107 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
             <p><strong>TOTAL:</strong> {formatarMoeda(order.total_amount)}</p>
           </div>
         </div>
+
+        {/* Ações */}
+        <div className="mt-8 border-t pt-6">
+          {actionError && (
+            <p className="text-sm text-red-600 text-center mb-4">{actionError}</p>
+          )}
+          <div className="flex flex-wrap justify-center gap-3">
+            {nextAction && (
+              <Button
+                disabled={working}
+                onClick={handleAdvance}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {working ? "Salvando..." : nextAction.label}
+              </Button>
+            )}
+
+            {canReschedule(order.status) && (
+              <Button
+                disabled={working}
+                variant="outline"
+                onClick={() => {
+                  setScheduleDate(toDatetimeLocal(order.scheduled_delivery_date))
+                  setScheduleOpen(true)
+                }}
+              >
+                {order.is_scheduled ? "Alterar agendamento" : "Agendar entrega"}
+              </Button>
+            )}
+
+            {canCancel(order.status) && (
+              <Button
+                disabled={working}
+                variant="ghost"
+                onClick={() => setCancelOpen(true)}
+                className="text-red-700 hover:text-red-800 hover:bg-red-50"
+              >
+                Cancelar pedido
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
+
+      <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cancelar pedido #{order.id}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <label className="text-sm font-medium text-gray-700">Motivo do cancelamento</label>
+            <Textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              rows={3}
+              maxLength={255}
+              placeholder="Ex.: Cliente desistiu da compra"
+            />
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="ghost" onClick={() => setCancelOpen(false)}>
+                Voltar
+              </Button>
+              <Button
+                disabled={working || !cancelReason.trim()}
+                onClick={handleCancel}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {working ? "Cancelando..." : "Confirmar cancelamento"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Agendar entrega do pedido #{order.id}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <label className="text-sm font-medium text-gray-700">Data e horário</label>
+            <Input
+              type="datetime-local"
+              value={scheduleDate}
+              onChange={(e) => setScheduleDate(e.target.value)}
+            />
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="ghost" onClick={() => setScheduleOpen(false)}>
+                Voltar
+              </Button>
+              <Button
+                disabled={working || !scheduleDate}
+                onClick={handleReschedule}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {working ? "Salvando..." : "Confirmar agendamento"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
