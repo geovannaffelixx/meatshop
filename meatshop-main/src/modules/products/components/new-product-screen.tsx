@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { apiGet, apiPatch, apiPost } from "@/shared/lib/api"
+import { X } from "lucide-react"
+import { apiGet, apiPatch, apiPost, API_URL } from "@/shared/lib/api"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
 import { Spinner } from "@/shared/components/ui/spinner"
+import { toast } from "@/shared/lib/toast"
 
 type Category = { id: number; name: string }
 
@@ -29,6 +31,9 @@ export function NewProductScreen() {
   const [erro, setErro] = useState("")
   const [ok, setOk] = useState(false)
 
+  const [stagedImages, setStagedImages] = useState<File[]>([])
+  const [stagedPreviews, setStagedPreviews] = useState<string[]>([])
+
   useEffect(() => {
     if (!unitId) return
     apiGet(`/categories?unit_id=${unitId}`)
@@ -43,6 +48,41 @@ export function NewProductScreen() {
     setForm((f) => ({ ...f, [key]: value }))
     setErro("")
     setOk(false)
+  }
+
+  const handlePickImages = (files: FileList | null) => {
+    if (!files || files.length === 0) return
+    const list = Array.from(files)
+    setStagedImages((prev) => [...prev, ...list])
+    setStagedPreviews((prev) => [...prev, ...list.map((file) => URL.createObjectURL(file))])
+  }
+
+  const handleRemoveStagedImage = (index: number) => {
+    setStagedPreviews((prev) => {
+      URL.revokeObjectURL(prev[index])
+      return prev.filter((_, i) => i !== index)
+    })
+    setStagedImages((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const uploadStagedImages = async (productId: number) => {
+    if (stagedImages.length === 0) return
+    const body = new FormData()
+    stagedImages.forEach((file) => body.append("files", file))
+    try {
+      const response = await fetch(`${API_URL}/products/${productId}/images`, {
+        method: "POST",
+        body,
+        credentials: "include",
+      })
+      if (!response.ok) throw new Error("Não foi possível enviar as fotos do produto.")
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Produto criado, mas houve um erro ao enviar as fotos. Você pode adicioná-las na edição do produto.",
+      )
+    }
   }
 
   const handleSave = async () => {
@@ -74,6 +114,8 @@ export function NewProductScreen() {
           quantity: form.initialQuantity,
         })
       }
+
+      await uploadStagedImages(created.id)
 
       setOk(true)
 
@@ -220,6 +262,39 @@ export function NewProductScreen() {
               onChange={(e) => handleChange("description", e.target.value)}
               className="resize-none bg-[#EDEDED] w-full h-[110px] p-3 text-sm border border-gray-300 rounded-md focus:outline-none"
             />
+          </fieldset>
+        </div>
+
+        {/* Fotos */}
+        <div className="grid grid-cols-1 mt-3">
+          <fieldset className="border border-gray-400 rounded-md px-3 py-2">
+            <legend className="text-gray-600 font-medium px-1 text-sm">Fotos do produto</legend>
+            <div className="flex flex-wrap gap-3">
+              {stagedPreviews.map((src, index) => (
+                <div key={src} className="relative h-20 w-20 overflow-hidden rounded-md border border-gray-300">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={src} alt={`Foto ${index + 1}`} className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveStagedImage(index)}
+                    className="absolute right-0.5 top-0.5 rounded-full bg-black/60 p-0.5 text-white hover:bg-black/80"
+                    aria-label="Remover foto"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+              <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-dashed border-gray-400 text-xs text-gray-500 hover:bg-gray-50">
+                + Adicionar
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => handlePickImages(e.target.files)}
+                />
+              </label>
+            </div>
           </fieldset>
         </div>
 

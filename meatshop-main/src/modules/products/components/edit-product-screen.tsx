@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { apiGet, apiPatch } from "@/shared/lib/api"
+import { X } from "lucide-react"
+import { apiGet, apiPatch, apiDelete, API_URL } from "@/shared/lib/api"
 import { Spinner } from "@/shared/components/ui/spinner"
+import { toast } from "@/shared/lib/toast"
 
 type Product = {
   id: number
@@ -23,6 +25,8 @@ type Stock = {
   min_quantity: number
 }
 
+type ProductImage = { id: number; image_url: string }
+
 type Category = { id: number; name: string }
 
 export function EditProductScreen() {
@@ -34,20 +38,59 @@ export function EditProductScreen() {
   const [product, setProduct] = useState<Product | null>(null)
   const [stock, setStock] = useState<Stock>({ quantity: 0, min_quantity: 0 })
   const [categories, setCategories] = useState<Category[]>([])
+  const [images, setImages] = useState<ProductImage[]>([])
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [uploadingImages, setUploadingImages] = useState(false)
+  const [deletingImageId, setDeletingImageId] = useState<number | null>(null)
 
   useEffect(() => {
     apiGet(`/products/${produtoId}`)
-      .then((res: { product: Product; stock: Stock | null }) => {
+      .then((res: { product: Product; stock: Stock | null; images?: ProductImage[] }) => {
         setProduct(res.product)
         setStock(res.stock ?? { quantity: 0, min_quantity: 0 })
+        setImages(res.images ?? [])
         return apiGet(`/categories?unit_id=${res.product.unit_id}`)
       })
       .then((cats) => setCategories(cats ?? []))
       .catch((err) => setError(err.message))
   }, [produtoId])
+
+  const handleAddImages = async (files: FileList | null) => {
+    if (!files || files.length === 0 || !product) return
+    setUploadingImages(true)
+    const body = new FormData()
+    Array.from(files).forEach((file) => body.append("files", file))
+    try {
+      const response = await fetch(`${API_URL}/products/${product.id}/images`, {
+        method: "POST",
+        body,
+        credentials: "include",
+      })
+      if (!response.ok) throw new Error("Não foi possível enviar as fotos.")
+      const data = await response.json()
+      setImages((prev) => [...prev, ...(data.images ?? [])])
+      toast.success("Fotos adicionadas com sucesso.")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Não foi possível enviar as fotos.")
+    } finally {
+      setUploadingImages(false)
+    }
+  }
+
+  const handleRemoveImage = async (image: ProductImage) => {
+    if (!product) return
+    setDeletingImageId(image.id)
+    try {
+      await apiDelete(`/products/${product.id}/images/${image.id}`)
+      setImages((prev) => prev.filter((img) => img.id !== image.id))
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Não foi possível remover a foto.")
+    } finally {
+      setDeletingImageId(null)
+    }
+  }
 
   const handleChange = <K extends keyof Product>(key: K, value: Product[K]) => {
     if (!product) return
@@ -248,6 +291,41 @@ export function EditProductScreen() {
               onChange={(e) => handleChange("description", e.target.value)}
               className="resize-none bg-[#EDEDED] w-full h-[110px] p-3 text-sm border border-gray-300 rounded-md focus:outline-none"
             />
+          </fieldset>
+        </div>
+
+        {/* Fotos */}
+        <div className="grid grid-cols-1 mt-3">
+          <fieldset className="border border-gray-400 rounded-md px-3 py-2">
+            <legend className="text-gray-600 font-medium px-1 text-sm">Fotos do produto</legend>
+            <div className="flex flex-wrap gap-3">
+              {images.map((image) => (
+                <div key={image.id} className="relative h-20 w-20 overflow-hidden rounded-md border border-gray-300">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={`${API_URL}${image.image_url}`} alt="Foto do produto" className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveImage(image)}
+                    disabled={deletingImageId === image.id}
+                    className="absolute right-0.5 top-0.5 rounded-full bg-black/60 p-0.5 text-white hover:bg-black/80 disabled:opacity-50"
+                    aria-label="Remover foto"
+                  >
+                    {deletingImageId === image.id ? <Spinner className="text-white" /> : <X size={14} />}
+                  </button>
+                </div>
+              ))}
+              <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-dashed border-gray-400 text-xs text-gray-500 hover:bg-gray-50">
+                {uploadingImages ? <Spinner /> : "+ Adicionar"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  disabled={uploadingImages}
+                  className="hidden"
+                  onChange={(e) => handleAddImages(e.target.files)}
+                />
+              </label>
+            </div>
           </fieldset>
         </div>
 

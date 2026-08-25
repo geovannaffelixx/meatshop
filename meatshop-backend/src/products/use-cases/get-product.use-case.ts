@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Product } from '../entities/product.entity';
+import { ProductImage } from '../entities/product-image.entity';
 import { Stock } from '../entities/stock.entity';
 
 @Injectable()
@@ -11,9 +12,13 @@ export class GetProductUseCase {
     private readonly productRepository: Repository<Product>,
     @InjectRepository(Stock)
     private readonly stockRepository: Repository<Stock>,
+    @InjectRepository(ProductImage)
+    private readonly productImageRepository: Repository<ProductImage>,
   ) {}
 
-  async execute(productId: number): Promise<{ product: Product; stock: Stock | null }> {
+  async execute(
+    productId: number,
+  ): Promise<{ product: Product; stock: Stock | null; images: ProductImage[] }> {
     const product = await this.productRepository.findOne({
       where: { id: productId },
     });
@@ -26,6 +31,11 @@ export class GetProductUseCase {
       where: { product_id: productId },
     });
 
-    return { product, stock };
+    const images = await this.productImageRepository.find({
+      where: { product_id: productId },
+      order: { id: 'ASC' },
+    });
+
+    return { product, stock, images };
   }
 }

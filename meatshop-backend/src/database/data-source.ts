@@ -6,6 +6,7 @@ import { Expense } from '../finance/entities/expense.entity';
 import { RefreshTokenEntity } from '../auth/entities/refresh-token.entity';
 import { Sale } from '../finance/entities/sale.entity';
 import { Product } from '../products/entities/product.entity';
+import { ProductImage } from '../products/entities/product-image.entity';
 import { Stock } from '../products/entities/stock.entity';
 import { Category } from '../categories/entities/category.entity';
 import { Address } from '../users/entities/address.entity';
@@ -57,6 +58,7 @@ export default new DataSource({
       RefreshTokenEntity,
       Sale,
       Product,
+      ProductImage,
       Stock,
       Category,
       Address,
