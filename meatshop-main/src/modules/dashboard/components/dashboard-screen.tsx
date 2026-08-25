@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useState } from "react"
-import PageLayout from "@/shared/components/page-layout"
 import Link from "next/link"
 import Autoplay from "embla-carousel-autoplay"
 import {
@@ -102,7 +101,7 @@ export function DashboardScreen() {
   }, [dashboard])
 
   return (
-    <PageLayout title="Dashboard" image="/logoClaraEscrita.png">
+<>
       <div className="min-h-screen w-full bg-gray-100 bg-[url('/BackgroundClaro.png')] bg-repeat">
         <div className="container mx-auto px-4 py-6 space-y-8">
 
@@ -205,6 +204,6 @@ export function DashboardScreen() {
           </div>
         </div>
       </div>
-    </PageLayout>
+    </>
   )
 }

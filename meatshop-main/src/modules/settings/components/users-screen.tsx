@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import PageLayout from "@/shared/components/page-layout";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
 import { PasswordInput } from "@/shared/components/ui/password-input";
 import { Spinner } from "@/shared/components/ui/spinner";
@@ -97,4 +96,4 @@ function TeamManager() {
   </div>;
 }
 
-export function UsersScreen() { return <PageLayout title="Equipe e acessos" image="/logoClaraEscrita.png"><TeamManager /></PageLayout>; }
+export function UsersScreen() { return <TeamManager />; }

@@ -1,6 +1,5 @@
 "use client"
 import React, { useState, useEffect, ChangeEvent } from "react"
-import PageLayout from "@/shared/components/page-layout"
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent } from "@/shared/components/ui/card"
 import {
@@ -367,8 +366,7 @@ export function FinanceScreen() {
   const pieColors = ["#16a34a", "#ef4444", "#f59e0b", "#3b82f6", "#7c3aed"]
 
   return (
-    <PageLayout title="Financeiro" image="/logoClaraEscrita.png">
-      <div className="min-h-screen w-full bg-[url('/BackgroundClaro.png')] bg-cover bg-center">
+    <div className="min-h-screen w-full bg-[url('/BackgroundClaro.png')] bg-cover bg-center">
         <div className="max-w-6xl mx-auto px-6 py-10 space-y-10">
           <h1 className="text-3xl font-bold text-center text-red-600 mb-6">Financeiro</h1>
 
@@ -596,6 +594,5 @@ export function FinanceScreen() {
           </div>
         </div>
       </div>
-    </PageLayout>
   )
 }

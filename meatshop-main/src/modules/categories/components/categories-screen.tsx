@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import PageLayout from "@/shared/components/page-layout"
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent } from "@/shared/components/ui/card"
 import {
@@ -133,8 +132,7 @@ export function CategoriesScreen() {
   }
 
   return (
-    <PageLayout title="Categorias" image="/logoClaraEscrita.png">
-      <div className="min-h-screen w-full bg-gray-100 bg-[url('/BackgroundClaro.png')] bg-repeat">
+    <div className="min-h-screen w-full bg-gray-100 bg-[url('/BackgroundClaro.png')] bg-repeat">
         <div className="container mx-auto px-4 py-6 space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <h2 className="text-3xl font-bold text-red-700">Categorias</h2>
@@ -287,8 +285,7 @@ export function CategoriesScreen() {
               )}
             </CardContent>
           </Card>
-        </div>
       </div>
-    </PageLayout>
+    </div>
   )
 }

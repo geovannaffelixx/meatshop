@@ -1,0 +1,27 @@
+"use client";
+
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/shared/components/ui/sidebar";
+import { AppSidebar } from "@/shared/components/app-sidebar";
+import { PanelAccessGuard } from "@/shared/components/panel-access-guard";
+import { RouteProgress } from "@/shared/components/route-progress";
+
+export default function PanelLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <PanelAccessGuard>
+      <RouteProgress />
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset>
+          <header className="flex bg-[#2D2D2D] h-24 px-4 items-center justify-between">
+            <SidebarTrigger />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logoClaraEscrita.png" alt="MeatShop" className="h-16 mx-auto" />
+            <div className="w-6" />
+          </header>
+
+          <main className="flex-1">{children}</main>
+        </SidebarInset>
+      </SidebarProvider>
+    </PanelAccessGuard>
+  );
+}

@@ -4,9 +4,10 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { apiGet } from "@/shared/lib/api";
 import type { CurrentUser } from "@/shared/hooks/use-current-user";
 import type { PanelContext, PanelMembership, UnitPermission } from "@/shared/auth/panel-access";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 const UNIT_STORAGE_KEY = "meatshop:selected-unit-id";
+const PUBLIC_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password", "/verify-email", "/no-panel-access"];
 
 type PanelAccessValue = {
   user: CurrentUser | null;
@@ -27,6 +28,7 @@ export function PanelAccessProvider({ children }: { children: React.ReactNode })
   const [unitId, setUnitIdState] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const pathname = usePathname();
+  const router = useRouter();
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -49,13 +51,25 @@ export function PanelAccessProvider({ children }: { children: React.ReactNode })
   }, []);
 
   useEffect(() => {
-    const publicRoutes = ["/login", "/register", "/forgot-password", "/no-panel-access"];
-    if (publicRoutes.some((route) => pathname.startsWith(route))) {
+    if (PUBLIC_ROUTES.some((route) => pathname.startsWith(route))) {
       setLoading(false);
       return;
     }
     void refresh();
   }, [pathname, refresh]);
+
+  useEffect(() => {
+    function handleSessionExpired() {
+      setUser(null);
+      setPanel(null);
+      localStorage.removeItem("currentUser");
+      if (!PUBLIC_ROUTES.some((route) => pathname.startsWith(route))) {
+        router.replace("/login");
+      }
+    }
+    window.addEventListener("auth:session-expired", handleSessionExpired);
+    return () => window.removeEventListener("auth:session-expired", handleSessionExpired);
+  }, [pathname, router]);
 
   const setUnitId = useCallback((nextUnitId: number) => {
     if (!panel?.memberships.some((item) => item.unit_id === nextUnitId)) return;

@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import PageLayout from "@/shared/components/page-layout"
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent } from "@/shared/components/ui/card"
 import { OrdersTable } from "./orders-table"
@@ -28,8 +27,7 @@ export function OrdersScreen() {
   }
 
   return (
-    <PageLayout title="Pedidos" image="/logoClaraEscrita.png">
-      <div className="min-h-screen w-full bg-gray-100 bg-[url('/BackgroundClaro.png')] bg-repeat">
+    <div className="min-h-screen w-full bg-gray-100 bg-[url('/BackgroundClaro.png')] bg-repeat">
         <div className="container mx-auto px-4 py-6 space-y-8">
           <div className="text-center">
             <h2 className="text-3xl font-bold text-red-700 mb-6">Pedidos</h2>
@@ -171,6 +169,5 @@ export function OrdersScreen() {
           </div>
         </div>
       </div>
-    </PageLayout>
   )
 }

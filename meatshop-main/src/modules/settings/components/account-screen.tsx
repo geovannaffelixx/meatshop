@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import PageLayout from "@/shared/components/page-layout";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
 import { Spinner } from "@/shared/components/ui/spinner";
 import { API_URL, apiPatch } from "@/shared/lib/api";
@@ -184,9 +183,5 @@ function AccountForm() {
 }
 
 export function AccountScreen() {
-  return (
-    <PageLayout title="Minha conta" image="/logoClaraEscrita.png">
-      <AccountForm />
-    </PageLayout>
-  );
+  return <AccountForm />;
 }

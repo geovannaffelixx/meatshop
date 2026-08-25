@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import PageLayout from "@/shared/components/page-layout";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
 import { Spinner } from "@/shared/components/ui/spinner";
 import { API_URL, apiGet, apiPatch, apiPut } from "@/shared/lib/api";
@@ -95,4 +94,4 @@ function UnitSettings() {
   </div>;
 }
 
-export function ProfileScreen() { return <PageLayout title="Configurações da unidade" image="/logoClaraEscrita.png"><UnitSettings /></PageLayout>; }
+export function ProfileScreen() { return <UnitSettings />; }
