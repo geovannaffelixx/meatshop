@@ -1,5 +1,11 @@
 # Releases do backend
 
+## 2.2.0 — Perfil, catálogo visual e conteúdo
+
+Lançada em 25 de agosto de 2026.
+
+Usuários podem editar seus próprios dados e enviar uma foto de perfil de verdade. Produtos ganham galeria com várias fotos e receitas ganham foto de capa, ambos com upload real de arquivo em vez de link de texto. Avaliações de açougues e produtos passam a trazer o nome de quem avaliou. Corrigido um problema que impedia contas criadas antes de 22 de agosto de acessarem o painel.
+
 ## 2.1.0 — Gestão da unidade e equipe
 
 Lançada em 22 de agosto de 2026.

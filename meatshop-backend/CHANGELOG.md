@@ -4,6 +4,26 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ## [Não lançado]
 
+## [2.2.0] - 2026-08-25
+
+### Adicionado
+
+- Endpoint de atualização do próprio perfil (`PATCH /users/me`), com nova coluna `avatar_url`; alterar o e-mail marca a conta como não verificada e reenvia o e-mail de confirmação.
+- Upload de galeria de fotos do produto (`POST /products/:id/images`, `DELETE /products/:id/images/:imageId`), com nova tabela `product_images` e sincronização automática da foto de capa em `Product.image_url`.
+- Upload de foto de capa da receita (`POST /recipes/:id/image`), que antes só aceitava uma URL de texto.
+- Listagem de avaliações (`GET /reviews`) passa a retornar o nome do cliente e do produto avaliado, em vez de apenas os identificadores.
+
+### Alterado
+
+- Configuração de arquivos estáticos passou a servir toda a pasta `uploads` — antes servia apenas o subdiretório de avatares, o que impedia o carregamento de logos de unidade, fotos de produto e capas de receita.
+- Templates de e-mail de verificação de conta e redefinição de senha traduzidos para português.
+
+### Corrigido
+
+- Upload de logo do usuário gravava em um campo inexistente na entidade e nunca era persistido; agora grava na coluna real `avatar_url`.
+- Aplicada migração pendente que renomeia os papéis locais de `ADMIN`/`MEMBER` para `OWNER`/`MANAGER`/`OPERATOR`. O valor antigo ainda gravado em contas existentes quebrava a checagem de permissões em qualquer chamada autenticada, impedindo o acesso ao painel.
+- Editar uma promoção trocando entre desconto percentual e preço promocional deixava o valor anterior órfão no banco em vez de limpá-lo.
+
 ## [2.1.0] - 2026-08-22
 
 ### Adicionado

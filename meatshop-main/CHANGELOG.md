@@ -4,6 +4,31 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ## [Não lançado]
 
+## [2.2.0] - 2026-08-25
+
+### Adicionado
+
+- Tela "Minha conta", para editar nome, e-mail e foto de perfil — acessível pelo cartão do usuário no menu e por um novo item em Configurações.
+- Tela "Promoções", para criar, editar, ativar e desativar promoções de produtos, com desconto percentual ou preço promocional.
+- Tela "Avaliações" (somente leitura), com nota média, filtro por açougue ou produto e exibição de comentários.
+- Tela "Receitas", com listagem em cards e formulário completo de criação/edição (ingredientes, modo de preparo, produtos em destaque, foto de capa e vídeo).
+- Upload de múltiplas fotos por produto, na criação e na edição.
+- Edição e exclusão de despesas no Financeiro — antes só era possível cadastrar.
+- Olho de mostrar/ocultar senha em todos os campos de senha do sistema (login, cadastro, redefinição, segurança da conta, criação de usuário da equipe).
+- Indicador de carregamento em todos os botões de confirmação do sistema, evitando envio duplicado.
+- Barra de progresso no topo da tela durante a navegação entre páginas.
+- Sessão renovada automaticamente em segundo plano quando o token de acesso expira, mantendo o usuário autenticado por até 7 dias sem precisar entrar novamente.
+- Login e cadastro redirecionam automaticamente para o painel quando o usuário já está autenticado.
+
+### Alterado
+
+- A barra lateral deixou de ser recriada a cada troca de página, tornando a navegação entre telas do painel mais fluida.
+- A tela de detalhe do pedido, que não exibia a barra lateral, agora usa o mesmo layout do restante do painel.
+
+### Corrigido
+
+- Botões de "Entrar", "Esqueci minha senha" e "Salvar" na edição de produto não tinham proteção contra clique duplicado.
+
 ## [2.1.0] - 2026-08-22
 
 ### Adicionado
