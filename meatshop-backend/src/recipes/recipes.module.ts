@@ -7,6 +7,7 @@ import { RecipeProduct } from './entities/recipe-product.entity';
 import { RecipeStep } from './entities/recipe-step.entity';
 import { Recipe } from './entities/recipe.entity';
 import { RecipesController } from './recipes.controller';
+import { RecipesUploadController } from './recipes-upload.controller';
 import { CreateRecipeUseCase } from './use-cases/create-recipe.use-case';
 import { DeleteRecipeUseCase } from './use-cases/delete-recipe.use-case';
 import { GetRecipeUseCase } from './use-cases/get-recipe.use-case';
@@ -19,7 +20,7 @@ import { UpdateRecipeUseCase } from './use-cases/update-recipe.use-case';
     UnitsModule,
     ProductsModule,
   ],
-  controllers: [RecipesController],
+  controllers: [RecipesController, RecipesUploadController],
   providers: [
     GetRecipeUseCase,
     CreateRecipeUseCase,
