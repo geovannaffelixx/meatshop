@@ -48,6 +48,13 @@ export class UserResponseDto {
   })
   created_at: Date;
 
+  @ApiProperty({
+    description: 'URL da foto de perfil do usuário',
+    example: '/uploads/avatars/1700000000000-foto.jpg',
+    nullable: true,
+  })
+  avatar_url: string | null;
+
   static fromEntity(user: User): UserResponseDto {
     const dto = new UserResponseDto();
     dto.id = user.id;
@@ -57,6 +64,7 @@ export class UserResponseDto {
     dto.global_role = user.global_role;
     dto.app_profile = user.app_profile;
     dto.created_at = user.created_at;
+    dto.avatar_url = user.avatar_url;
     return dto;
   }
 }

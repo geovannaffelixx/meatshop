@@ -77,7 +77,7 @@ import { EmailModule } from './email/email.module';
 
     // Servir arquivos estáticos (uploads)
     ServeStaticModule.forRoot({
-      rootPath: path.join(process.cwd(), 'uploads', 'avatars'),
+      rootPath: path.join(process.cwd(), 'uploads'),
       serveRoot: '/uploads',
     }),
 

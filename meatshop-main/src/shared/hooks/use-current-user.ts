@@ -7,7 +7,9 @@ export type CurrentUser = {
   id: number;
   name: string;
   email: string;
-  logoUrl?: string | null;
+  cpf: string;
+  created_at: string;
+  avatar_url?: string | null;
 };
 
 export function useCurrentUser() {

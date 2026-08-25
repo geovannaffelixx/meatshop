@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Box, Building2, ChevronRight, House, LogOut, PiggyBank, Shield, ShoppingBag, Tags, Users } from "lucide-react";
+import { Box, Building2, ChevronRight, House, LogOut, PiggyBank, Shield, ShoppingBag, Tags, User as UserIcon, Users } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarRail } from "@/shared/components/ui/sidebar";
 import { apiPost } from "@/shared/lib/api";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
@@ -18,21 +18,22 @@ const navData = [
     { title: "Financeiro", url: "/finance", icon: PiggyBank, permission: unitPermissions.viewFinance },
   ]},
   { title: "Configurações", items: [
+    { title: "Minha conta", url: "/settings/account", icon: UserIcon, permission: unitPermissions.viewDashboard },
     { title: "Unidade", url: "/settings/unit", icon: Building2, permission: unitPermissions.manageUnit },
     { title: "Equipe e acessos", url: "/settings/users", icon: Users, permission: unitPermissions.manageMembers },
     { title: "Segurança da conta", url: "/settings/security", icon: Shield, permission: unitPermissions.viewDashboard },
   ]},
 ];
 
-type UserData = { name: string; email: string; logoUrl?: string | null };
+type UserData = { name: string; email: string; avatar_url?: string | null };
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & { user?: UserData };
 
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user: currentUser, panel, unitId, setUnitId, hasPermission } = usePanelAccess();
-  const displayUser = currentUser ?? user ?? { name: "Usuário", email: "email@exemplo.com", logoUrl: null };
-  const resolvedSrc = displayUser.logoUrl ? (displayUser.logoUrl.startsWith("http") ? displayUser.logoUrl : `${process.env.NEXT_PUBLIC_API_URL}${displayUser.logoUrl}`) : null;
+  const displayUser = currentUser ?? user ?? { name: "Usuário", email: "email@exemplo.com", avatar_url: null };
+  const resolvedSrc = displayUser.avatar_url ? (displayUser.avatar_url.startsWith("http") ? displayUser.avatar_url : `${process.env.NEXT_PUBLIC_API_URL}${displayUser.avatar_url}`) : null;
 
   async function handleLogout() {
     try { await apiPost("/auth/logout", {}); }
@@ -60,7 +61,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
       })}</SidebarMenu></SidebarGroupContent>
     </SidebarGroup>)}
     <div className="mt-auto px-4 py-2"><button type="button" onClick={handleLogout} className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-gray-700 transition-colors hover:text-red-600"><LogOut className="h-4 w-4" />Sair</button></div>
-    <Link href="/settings/security" className="block border-t border-gray-200 px-4 py-3 transition-colors hover:bg-gray-50"><div className="flex items-center gap-3">
+    <Link href="/settings/account" className="block border-t border-gray-200 px-4 py-3 transition-colors hover:bg-gray-50"><div className="flex items-center gap-3">
       {resolvedSrc ? <img src={resolvedSrc} alt={displayUser.name} width={32} height={32} className="h-8 w-8 rounded-full object-cover" /> : <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 to-red-500 font-semibold text-white">{displayUser.name.charAt(0).toUpperCase()}</div>}
       <div className="flex min-w-0 flex-col text-sm"><span className="truncate font-medium text-gray-800">{displayUser.name}</span><span className="truncate text-gray-500">{displayUser.email}</span></div><ChevronRight className="ml-auto h-4 w-4 text-gray-400" />
     </div></Link>

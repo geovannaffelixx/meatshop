@@ -103,14 +103,14 @@ export class UsersUploadController {
     const user = await this.users.findOne({ where: { id: Number(paramId) } });
     if (!user) throw new BadRequestException('Usuário não encontrado');
 
-    const publicUrl = `/uploads/${file.filename}`;
+    const publicUrl = `/uploads/avatars/${file.filename}`;
 
-    (user as any).logoUrl = publicUrl;
+    user.avatar_url = publicUrl;
     await this.users.save(user);
 
     return {
       ok: true,
-      logoUrl: publicUrl,
+      avatar_url: publicUrl,
       message: 'Imagem atualizada com sucesso',
     };
   }

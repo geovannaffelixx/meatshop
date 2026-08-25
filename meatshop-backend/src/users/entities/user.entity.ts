@@ -49,6 +49,9 @@ export class User {
   @Column({ type: 'timestamp', nullable: true })
   password_reset_expires_at: Date | null;
 
+  @Column({ type: 'varchar', nullable: true })
+  avatar_url: string | null;
+
   @CreateDateColumn()
   created_at: Date;
 }

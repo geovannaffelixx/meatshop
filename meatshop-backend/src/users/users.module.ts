@@ -14,14 +14,17 @@ import { UsersController } from './users.controller';
 import { UsersUploadController } from './users-upload.controller';
 import { Unit } from '../units/entities/unit.entity';
 import { UnitsModule } from '../units/units.module';
+import { EmailModule } from '../email/email.module';
 import { GetPanelContextUseCase } from './use-cases/get-panel-context.use-case';
+import { UpdateProfileUseCase } from './use-cases/update-profile.use-case';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Address, Unit]), UnitsModule],
+  imports: [TypeOrmModule.forFeature([User, Address, Unit]), UnitsModule, EmailModule],
   controllers: [UsersController, UsersUploadController, AddressesController],
   providers: [
     GetUserProfileUseCase,
     GetPanelContextUseCase,
+    UpdateProfileUseCase,
     CreateAddressUseCase,
     UpdateAddressUseCase,
     SetDefaultAddressUseCase,
