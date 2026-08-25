@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Box, Building2, ChevronRight, House, LogOut, PiggyBank, Shield, ShoppingBag, Tags, User as UserIcon, Users } from "lucide-react";
+import { Box, Building2, ChevronRight, House, LogOut, Percent, PiggyBank, Shield, ShoppingBag, Tags, User as UserIcon, Users } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarRail } from "@/shared/components/ui/sidebar";
 import { apiPost } from "@/shared/lib/api";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
@@ -15,6 +15,7 @@ const navData = [
     { title: "Pedidos", url: "/orders", icon: ShoppingBag, permission: unitPermissions.manageOrders },
     { title: "Estoque", url: "/products", icon: Box, permission: unitPermissions.manageProducts },
     { title: "Categorias", url: "/categories", icon: Tags, permission: unitPermissions.manageCategories },
+    { title: "Promoções", url: "/promotions", icon: Percent, permission: unitPermissions.manageProducts },
     { title: "Financeiro", url: "/finance", icon: PiggyBank, permission: unitPermissions.viewFinance },
   ]},
   { title: "Configurações", items: [

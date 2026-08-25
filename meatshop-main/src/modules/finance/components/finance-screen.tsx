@@ -14,7 +14,8 @@ import { Textarea } from "@/shared/components/ui/textarea"
 import { Spinner } from "@/shared/components/ui/spinner"
 import { Plus } from "lucide-react"
 import { FinanceSummary } from "./finance-summary"
-import { apiGet, apiPost } from "@/shared/lib/api"
+import { apiGet, apiPost, apiPut, apiDelete } from "@/shared/lib/api"
+import { toast } from "@/shared/lib/toast"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
 import {
   BarChart,
@@ -31,6 +32,7 @@ import {
 type Expense = {
   id: string
   cpfCnpj: string
+  idFornecedor: string
   fornecedor: string
   tipo: "Compras" | "Serviços" | "Outros"
   valor: number
@@ -48,6 +50,7 @@ type PaymentSlice = { name: string; value: number }
 type ExpenseApi = {
   id: number
   cpfCnpj?: string
+  supplierId?: string
   supplierName: string
   type: Expense["tipo"]
   amount: number | string
@@ -61,6 +64,21 @@ type ExpenseApi = {
 
 type RevenueApi = { series: { day: number; value: number }[]; revenueTotal: number }
 type SummaryApi = { revenueTotal: number; expensesTotal: number; payments: PaymentSlice[] }
+
+const EMPTY_FORM = {
+  id: "",
+  idFornecedor: "",
+  cpfCnpj: "",
+  fornecedor: "",
+  tipo: "Compras" as Expense["tipo"],
+  valor: "",
+  desconto: "",
+  valorPago: "",
+  dataLancamento: "",
+  dataPagamento: "",
+  observacoes: "",
+  formaPagamento: "Pix" as Expense["formaPagamento"],
+}
 
 function parseCurrencyToNumber(formatted: string) {
   if (!formatted) return 0
@@ -119,6 +137,28 @@ function getMonthParam() {
   const m = String(d.getMonth() + 1).padStart(2, "0")
   return `${y}-${m}`
 }
+function formatDateBR(iso?: string) {
+  if (!iso) return "-"
+  const [y, m, d] = iso.split("-")
+  if (!y || !m || !d) return iso
+  return `${d}/${m}/${y}`
+}
+function mapExpenses(list: ExpenseApi[]): Expense[] {
+  return list.map((e) => ({
+    id: String(e.id),
+    cpfCnpj: e.cpfCnpj ?? "",
+    idFornecedor: e.supplierId ?? "",
+    fornecedor: e.supplierName,
+    tipo: e.type,
+    valor: parseFloat(e.amount?.toString().replace(",", ".")) || 0,
+    desconto: parseFloat(e.discount?.toString().replace(",", ".")) || 0,
+    valorPago: parseFloat(e.paidAmount?.toString().replace(",", ".")) || 0,
+    dataLancamento: e.postedAt ?? "",
+    dataPagamento: e.paidAt ?? "",
+    observacoes: e.notes ?? "",
+    formaPagamento: e.paymentMethod,
+  }))
+}
 
 export function FinanceScreen() {
   const { units, unitId, setUnitId, loading: unitsLoading } = useManagedUnits()
@@ -132,22 +172,32 @@ export function FinanceScreen() {
   const [pagamentos, setPagamentos] = useState<PaymentSlice[]>([])
 
   const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const [form, setForm] = useState({
-    id: "",
-    idFornecedor: "",
-    cpfCnpj: "",
-    fornecedor: "",
-    tipo: "Compras" as Expense["tipo"],
-    valor: "",
-    desconto: "",
-    valorPago: "",
-    dataLancamento: "",
-    dataPagamento: "",
-    observacoes: "",
-    formaPagamento: "Pix" as Expense["formaPagamento"],
-  })
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [removing, setRemoving] = useState<Expense | null>(null)
+  const [confirmingRemoval, setConfirmingRemoval] = useState(false)
+
+  const [form, setForm] = useState(EMPTY_FORM)
+
+  const reloadExpensesAndSummary = async () => {
+    if (!unitId) return
+    const query = `month=${month}&unit_id=${unitId}`
+    const [expensesApi, summary]: [ExpenseApi[], SummaryApi] = await Promise.all([
+      apiGet(`/finance/expenses?${query}`),
+      apiGet(`/finance/summary?${query}`),
+    ])
+
+    setExpenses(mapExpenses(expensesApi))
+    setDespesasTotal(parseFloat(summary.expensesTotal?.toString().replace(",", ".")) || 0)
+    setPagamentos(
+      (summary.payments ?? []).map((p) => ({
+        name: p.name === "Saldo MP" ? "Mercado Pago" : p.name,
+        value: roundMoney(parseFloat(p.value?.toString().replace(",", ".")) || 0),
+      })),
+    )
+  }
 
   useEffect(() => {
     if (!unitId) return
@@ -178,32 +228,8 @@ export function FinanceScreen() {
         setReceitas(receitasArr)
         setReceitasTotal(revenue.revenueTotal || 0)
 
-        // 2) Despesas (expenses)
-        const expensesApi = await apiGet(`/finance/expenses?${query}`)
-        const mapped: Expense[] = (expensesApi as ExpenseApi[]).map((e) => ({
-          id: String(e.id),
-          cpfCnpj: e.cpfCnpj ?? "",
-          fornecedor: e.supplierName,
-          tipo: e.type,
-          valor: parseFloat(e.amount?.toString().replace(',', '.')) || 0,
-          desconto: parseFloat(e.discount?.toString().replace(',', '.')) || 0,
-          valorPago: parseFloat(e.paidAmount?.toString().replace(',', '.')) || 0,
-          dataLancamento: e.postedAt ?? "",
-          dataPagamento: e.paidAt ?? "",
-          observacoes: e.notes ?? "",
-          formaPagamento: e.paymentMethod,
-        }))
-        setExpenses(mapped)
-
-        // 3) Resumo (summary)
-        const summary: SummaryApi = await apiGet(`/finance/summary?${query}`)
-        setDespesasTotal(parseFloat(summary.expensesTotal?.toString().replace(',', '.')) || 0)
-        setPagamentos(
-          (summary.payments ?? []).map(p => ({
-            name: p.name === "Saldo MP" ? "Mercado Pago" : p.name,
-            value: roundMoney(parseFloat(p.value?.toString().replace(",", ".")) || 0),
-          }))
-        )
+        // 2) Despesas + resumo
+        await reloadExpensesAndSummary()
       } catch (err) {
         console.error(err)
         setError("Falha ao carregar dados do Financeiro.")
@@ -212,6 +238,7 @@ export function FinanceScreen() {
       }
     }
     load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [month, unitId])
 
   // Cálcular o valor pago
@@ -240,10 +267,6 @@ export function FinanceScreen() {
         : ""
       return setForm((p) => ({ ...p, [name]: formatted }))
     }
-    if (name === "id") {
-      const digits = value.replace(/\D/g, "").slice(0, 10)
-      return setForm((p) => ({ ...p, id: digits }))
-    }
     if (name === "idFornecedor") {
       const digits = value.replace(/\D/g, "").slice(0, 10)
       return setForm((p) => ({ ...p, idFornecedor: digits }))
@@ -251,21 +274,44 @@ export function FinanceScreen() {
     setForm((p) => ({ ...p, [name]: value }))
   }
 
-  const handleAddExpense = async () => {
+  const openCreateDialog = () => {
+    setEditingId(null)
+    setForm(EMPTY_FORM)
+    setOpen(true)
+  }
+
+  const openEditDialog = (expense: Expense) => {
+    setEditingId(expense.id)
+    setForm({
+      id: expense.id,
+      idFornecedor: expense.idFornecedor,
+      cpfCnpj: expense.cpfCnpj,
+      fornecedor: expense.fornecedor,
+      tipo: expense.tipo,
+      valor: expense.valor ? formatMoneyBR(expense.valor) : "",
+      desconto: expense.desconto ? formatMoneyBR(expense.desconto) : "",
+      valorPago: expense.valorPago ? formatMoneyBR(expense.valorPago) : "",
+      dataLancamento: expense.dataLancamento ?? "",
+      dataPagamento: expense.dataPagamento ?? "",
+      observacoes: expense.observacoes ?? "",
+      formaPagamento: expense.formaPagamento,
+    })
+    setOpen(true)
+  }
+
+  const handleSaveExpense = async () => {
     if (!form.fornecedor || !form.valor) {
-      alert("Preencha fornecedor e valor.");
-      return;
+      toast.warning("Preencha fornecedor e valor.")
+      return
+    }
+    if (!unitId) {
+      toast.warning("Nenhuma unidade selecionada.")
+      return
     }
 
-    if (!unitId) {
-      alert("Nenhuma unidade selecionada.");
-      return;
-    }
+    setSaving(true)
 
     try {
-      setLoading(true)
-      setError(null)
-
       const valor = parseCurrencyToNumberBR(form.valor)
       const desconto = parseCurrencyToNumberBR(form.desconto)
       const valorPago = Math.max(valor - desconto, 0)
@@ -280,66 +326,44 @@ export function FinanceScreen() {
         postedAt: form.dataLancamento || null,
         paidAt: form.dataPagamento || null,
         paymentMethod: form.formaPagamento || "Pix",
-        notes: (form.observacoes || "") + (form.idFornecedor ? ` | SupplierID: ${form.idFornecedor}` : ""),
+        notes: form.observacoes || null,
         cpfCnpj: form.cpfCnpj || null,
         supplierId: form.idFornecedor || null,
-      };
+      }
 
-      await apiPost("/finance/expenses", payload)
+      if (editingId) {
+        await apiPut(`/finance/expenses/${editingId}`, payload)
+      } else {
+        await apiPost("/finance/expenses", payload)
+      }
 
-      // Recarrega lista e resumo
-      const query = `month=${month}&unit_id=${unitId}`
-      const [expensesApi, summary]: [ExpenseApi[], SummaryApi] = await Promise.all([
-        apiGet(`/finance/expenses?${query}`),
-        apiGet(`/finance/summary?${query}`),
-      ]);
+      await reloadExpensesAndSummary()
 
-      const mapped: Expense[] = expensesApi.map((e) => ({
-        id: String(e.id),
-        cpfCnpj: e.cpfCnpj ?? "",
-        fornecedor: e.supplierName,
-        tipo: e.type,
-        valor: parseFloat(e.amount?.toString().replace(',', '.')) || 0,
-        desconto: parseFloat(e.discount?.toString().replace(',', '.')) || 0,
-        valorPago: parseFloat(e.paidAmount?.toString().replace(',', '.')) || 0,
-        dataLancamento: e.postedAt ?? "",
-        dataPagamento: e.paidAt ?? "",
-        observacoes: e.notes ?? "",
-        formaPagamento: e.paymentMethod,
-      }));
-      setExpenses(mapped)
-
-      setDespesasTotal(Number(summary.expensesTotal ?? 0));
-      setPagamentos(
-        (summary.payments ?? []).map((p) => ({
-          name: p.name === "Saldo MP" ? "Mercado Pago" : p.name,
-          value: roundMoney(Number(p.value ?? 0)),
-        }))
-      );
-
-      // Limpa form e fecha modal
-      setForm({
-        id: "",
-        idFornecedor: "",
-        cpfCnpj: "",
-        fornecedor: "",
-        tipo: "Compras",
-        valor: "",
-        desconto: "",
-        valorPago: "",
-        dataLancamento: "",
-        dataPagamento: "",
-        observacoes: "",
-        formaPagamento: "Pix",
-      })
+      toast.success(editingId ? "Despesa atualizada com sucesso." : "Despesa registrada com sucesso.")
+      setForm(EMPTY_FORM)
+      setEditingId(null)
       setOpen(false)
     } catch (err) {
-      console.error("Erro ao salvar despesa:", err);
-      alert("Erro ao salvar despesa. Verifique os campos e tente novamente.")
+      console.error("Erro ao salvar despesa:", err)
     } finally {
-      setLoading(false);
+      setSaving(false)
     }
-  };
+  }
+
+  const confirmRemoveExpense = async () => {
+    if (!removing) return
+    setConfirmingRemoval(true)
+    try {
+      await apiDelete(`/finance/expenses/${removing.id}`)
+      await reloadExpensesAndSummary()
+      toast.success("Despesa removida com sucesso.")
+      setRemoving(null)
+    } catch (err) {
+      console.error("Erro ao remover despesa:", err)
+    } finally {
+      setConfirmingRemoval(false)
+    }
+  }
 
   // Gráfico de despesas por dia
   const despesasPorDiaMap = new Map<number, number>()
@@ -433,21 +457,21 @@ export function FinanceScreen() {
                   <CardTitle className="text-red-600">Despesas</CardTitle>
                   <Dialog open={open} onOpenChange={setOpen}>
                     <DialogTrigger asChild>
-                      <Button disabled={loading} className="bg-red-600 hover:bg-red-700 rounded-full w-8 h-8 flex items-center justify-center text-white shadow-md">
+                      <Button onClick={openCreateDialog} className="bg-red-600 hover:bg-red-700 rounded-full w-8 h-8 flex items-center justify-center text-white shadow-md">
                         <Plus size={18} />
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="bg-gray-50 border border-gray-300 rounded-2xl shadow-2xl max-w-5xl">
                       <DialogHeader className="flex items-center justify-between">
                         <DialogTitle className="text-2xl font-bold text-red-700">
-                          Adicionar Despesa
+                          {editingId ? "Editar Despesa" : "Adicionar Despesa"}
                         </DialogTitle>
                       </DialogHeader>
 
                       <div className="p-6 grid grid-cols-12 gap-4">
                         <div className="col-span-2">
                           <label className="text-sm font-medium text-gray-700">ID</label>
-                          <Input name="id" value={form.id} onChange={handleFormChange} inputMode="numeric" />
+                          <Input value={form.id} disabled placeholder="Gerado automaticamente" />
                         </div>
 
                         <div className="col-span-2">
@@ -529,9 +553,9 @@ export function FinanceScreen() {
 
                         <div className="col-span-12 mt-6 flex justify-end gap-3">
                           <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-                          <Button disabled={loading} className="bg-red-600 hover:bg-red-700 text-white" onClick={handleAddExpense}>
-                            {loading && <Spinner />}
-                            {loading ? "Salvando..." : "Salvar"}
+                          <Button disabled={saving} className="bg-red-600 hover:bg-red-700 text-white" onClick={handleSaveExpense}>
+                            {saving && <Spinner />}
+                            {saving ? "Salvando..." : editingId ? "Salvar alterações" : "Salvar"}
                           </Button>
                         </div>
                       </div>
@@ -558,6 +582,58 @@ export function FinanceScreen() {
               </CardContent>
             </Card>
           </div>
+
+          {/* LISTA DE DESPESAS */}
+          <Card className="bg-white/70 backdrop-blur-md shadow-lg">
+            <CardHeader className="px-4 pt-4">
+              <CardTitle className="text-gray-700">Despesas do mês</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-gray-100 text-gray-700">
+                    <tr>
+                      <th className="p-3">Fornecedor</th>
+                      <th className="p-3">Tipo</th>
+                      <th className="p-3">Valor pago</th>
+                      <th className="p-3">Pagamento</th>
+                      <th className="p-3">Data</th>
+                      <th className="p-3 text-right">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loading ? (
+                      <tr>
+                        <td colSpan={6} className="p-6 text-center italic text-gray-500">Carregando despesas...</td>
+                      </tr>
+                    ) : expenses.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="p-6 text-center italic text-gray-500">Nenhuma despesa registrada neste mês.</td>
+                      </tr>
+                    ) : (
+                      expenses.map((expense) => (
+                        <tr key={expense.id} className="border-t hover:bg-gray-50">
+                          <td className="p-3 font-medium">{expense.fornecedor}</td>
+                          <td className="p-3">{expense.tipo}</td>
+                          <td className="p-3">{formatMoneyBR(expense.valorPago)}</td>
+                          <td className="p-3">{expense.formaPagamento}</td>
+                          <td className="p-3">{formatDateBR(expense.dataPagamento || expense.dataLancamento)}</td>
+                          <td className="p-3 text-right space-x-3">
+                            <button onClick={() => openEditDialog(expense)} className="font-semibold text-red-600 hover:underline">
+                              Editar
+                            </button>
+                            <button onClick={() => setRemoving(expense)} className="font-semibold text-gray-600 hover:underline">
+                              Excluir
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FinanceSummary
@@ -593,6 +669,30 @@ export function FinanceScreen() {
             </Card>
           </div>
         </div>
+
+        {removing && (
+          <div role="dialog" aria-modal="true" aria-labelledby="remove-expense-title" className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
+            <section className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+              <h2 id="remove-expense-title" className="text-lg font-bold">Remover despesa?</h2>
+              <p className="mt-2 text-gray-600">
+                A despesa de <strong>{removing.fornecedor}</strong> no valor de {formatMoneyBR(removing.valorPago)} será removida permanentemente.
+              </p>
+              <div className="mt-6 flex justify-end gap-3">
+                <button disabled={confirmingRemoval} onClick={() => setRemoving(null)} className="rounded-md border px-4 py-2 disabled:opacity-50">
+                  Cancelar
+                </button>
+                <button
+                  disabled={confirmingRemoval}
+                  onClick={() => void confirmRemoveExpense()}
+                  className="flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 font-semibold text-white disabled:opacity-50"
+                >
+                  {confirmingRemoval && <Spinner />}
+                  {confirmingRemoval ? "Removendo..." : "Remover despesa"}
+                </button>
+              </div>
+            </section>
+          </div>
+        )}
       </div>
   )
 }
