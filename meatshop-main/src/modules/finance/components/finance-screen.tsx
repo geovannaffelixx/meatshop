@@ -12,6 +12,7 @@ import {
 } from "@/shared/components/ui/dialog"
 import { Input } from "@/shared/components/ui/input"
 import { Textarea } from "@/shared/components/ui/textarea"
+import { Spinner } from "@/shared/components/ui/spinner"
 import { Plus } from "lucide-react"
 import { FinanceSummary } from "./finance-summary"
 import { apiGet, apiPost } from "@/shared/lib/api"
@@ -531,6 +532,7 @@ export function FinanceScreen() {
                         <div className="col-span-12 mt-6 flex justify-end gap-3">
                           <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
                           <Button disabled={loading} className="bg-red-600 hover:bg-red-700 text-white" onClick={handleAddExpense}>
+                            {loading && <Spinner />}
                             {loading ? "Salvando..." : "Salvar"}
                           </Button>
                         </div>

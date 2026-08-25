@@ -5,6 +5,7 @@ import { Input } from "@/shared/components/ui/input";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
+import { Spinner } from "@/shared/components/ui/spinner";
 import { MailIcon } from "lucide-react";
 import Link from "next/link";
 import { apiPost } from "@/shared/lib/api";
@@ -13,6 +14,7 @@ export function ForgotPasswordScreen() {
   const [email, setEmail] = useState("");
   const [msg, setMsg] = useState("");
   const [alertType, setAlertType] = useState<"success" | "error" | "">("");
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,6 +27,7 @@ export function ForgotPasswordScreen() {
       return;
     }
 
+    setSubmitting(true);
     try {
       await apiPost("/auth/forgot-password", { email });
 
@@ -33,6 +36,8 @@ export function ForgotPasswordScreen() {
     } catch (err) {
       setMsg(err instanceof Error ? err.message : "Erro ao solicitar redefinição de senha.");
       setAlertType("error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -63,8 +68,9 @@ export function ForgotPasswordScreen() {
               />
             </div>
 
-            <Button type="submit" className="w-full bg-[#BE2C1B] hover:bg-[#BE2C1B]/70">
-              Enviar link de redefinição
+            <Button type="submit" disabled={submitting} className="w-full bg-[#BE2C1B] hover:bg-[#BE2C1B]/70">
+              {submitting && <Spinner />}
+              {submitting ? "Enviando..." : "Enviar link de redefinição"}
             </Button>
           </form>
 

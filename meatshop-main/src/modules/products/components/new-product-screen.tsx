@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { apiGet, apiPatch, apiPost } from "@/shared/lib/api"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
+import { Spinner } from "@/shared/components/ui/spinner"
 
 type Category = { id: number; name: string }
 
@@ -227,8 +228,9 @@ export function NewProductScreen() {
           <button
             onClick={handleSave}
             disabled={salvando}
-            className="bg-[#A0332C] hover:bg-[#7F2721] text-white px-12 py-2 rounded-md font-semibold text-lg shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+            className="flex items-center justify-center gap-2 bg-[#A0332C] hover:bg-[#7F2721] text-white px-12 py-2 rounded-md font-semibold text-lg shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
           >
+            {salvando && <Spinner />}
             {salvando ? "Salvando..." : "Salvar"}
           </button>
         </div>

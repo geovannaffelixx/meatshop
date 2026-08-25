@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { apiGet, apiPatch } from "@/shared/lib/api"
 import { ORDER_STATUS_LABELS } from "@/modules/orders/utils/status-labels"
+import { Spinner } from "@/shared/components/ui/spinner"
 
 interface Filters {
   dataPedido: { de: string; ate: string }
@@ -139,8 +140,9 @@ export function OrdersTable({ filters, currentPage, onPageChange }: OrdersTableP
                     <button
                       onClick={() => handleConfirm(o.id)}
                       disabled={confirmingId === o.id}
-                      className="text-green-700 font-semibold hover:underline disabled:opacity-50"
+                      className="inline-flex items-center gap-1 text-green-700 font-semibold hover:underline disabled:opacity-50"
                     >
+                      {confirmingId === o.id && <Spinner />}
                       {confirmingId === o.id ? "Confirmando..." : "Confirmar"}
                     </button>
                   )}

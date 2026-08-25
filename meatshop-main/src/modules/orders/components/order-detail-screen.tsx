@@ -17,6 +17,7 @@ import {
 } from "@/shared/components/ui/dialog"
 import { Input } from "@/shared/components/ui/input"
 import { Textarea } from "@/shared/components/ui/textarea"
+import { Spinner } from "@/shared/components/ui/spinner"
 
 type OrderItem = {
   id: number
@@ -271,6 +272,7 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
                 onClick={handleAdvance}
                 className="bg-red-600 hover:bg-red-700 text-white"
               >
+                {working && <Spinner />}
                 {working ? "Salvando..." : nextAction.label}
               </Button>
             )}
@@ -325,6 +327,7 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
                 onClick={handleCancel}
                 className="bg-red-600 hover:bg-red-700 text-white"
               >
+                {working && <Spinner />}
                 {working ? "Cancelando..." : "Confirmar cancelamento"}
               </Button>
             </div>
@@ -353,6 +356,7 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
                 onClick={handleReschedule}
                 className="bg-red-600 hover:bg-red-700 text-white"
               >
+                {working && <Spinner />}
                 {working ? "Salvando..." : "Confirmar agendamento"}
               </Button>
             </div>

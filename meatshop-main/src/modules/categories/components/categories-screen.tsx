@@ -13,6 +13,7 @@ import {
 } from "@/shared/components/ui/dialog"
 import { Input } from "@/shared/components/ui/input"
 import { Textarea } from "@/shared/components/ui/textarea"
+import { Spinner } from "@/shared/components/ui/spinner"
 import { Plus } from "lucide-react"
 import { apiGet, apiPatch, apiPost } from "@/shared/lib/api"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
@@ -45,6 +46,7 @@ export function CategoriesScreen() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const [togglingId, setTogglingId] = useState<number | null>(null)
 
   const loadCategories = async (unit: number) => {
     setLoading(true)
@@ -118,12 +120,15 @@ export function CategoriesScreen() {
   }
 
   const toggleActive = async (category: Category) => {
-    if (!unitId) return
+    if (!unitId || togglingId) return
+    setTogglingId(category.id)
     try {
       await apiPatch(`/categories/${category.id}`, { active: !category.active })
       await loadCategories(unitId)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao atualizar categoria.")
+    } finally {
+      setTogglingId(null)
     }
   }
 
@@ -204,6 +209,7 @@ export function CategoriesScreen() {
                         onClick={handleSave}
                         className="bg-red-600 hover:bg-red-700 text-white"
                       >
+                        {saving && <Spinner />}
                         {saving ? "Salvando..." : "Salvar"}
                       </Button>
                     </div>
@@ -261,9 +267,10 @@ export function CategoriesScreen() {
                             </button>
                             <button
                               onClick={() => toggleActive(category)}
-                              className="text-gray-600 font-semibold hover:underline"
+                              disabled={togglingId === category.id}
+                              className="text-gray-600 font-semibold hover:underline disabled:opacity-50"
                             >
-                              {category.active ? "Desativar" : "Ativar"}
+                              {togglingId === category.id ? "Atualizando..." : category.active ? "Desativar" : "Ativar"}
                             </button>
                           </td>
                         </tr>

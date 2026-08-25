@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { apiGet, apiPatch } from "@/shared/lib/api"
+import { Spinner } from "@/shared/components/ui/spinner"
 
 type Product = {
   id: number
@@ -35,6 +36,7 @@ export function EditProductScreen() {
   const [categories, setCategories] = useState<Category[]>([])
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     apiGet(`/products/${produtoId}`)
@@ -54,8 +56,9 @@ export function EditProductScreen() {
   }
 
   async function handleSave() {
-    if (!product) return
+    if (!product || saving) return
 
+    setSaving(true)
     try {
       await apiPatch(`/products/${product.id}`, {
         name: product.name,
@@ -76,6 +79,8 @@ export function EditProductScreen() {
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao salvar produto.")
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -250,9 +255,11 @@ export function EditProductScreen() {
         <div className="flex justify-center mt-5">
           <button
             onClick={handleSave}
-            className="bg-[#A0332C] hover:bg-[#7F2721] text-white px-12 py-2 rounded-md font-semibold text-lg shadow-md"
+            disabled={saving}
+            className="flex items-center justify-center gap-2 bg-[#A0332C] hover:bg-[#7F2721] text-white px-12 py-2 rounded-md font-semibold text-lg shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Salvar
+            {saving && <Spinner />}
+            {saving ? "Salvando..." : "Salvar"}
           </button>
         </div>
       </div>

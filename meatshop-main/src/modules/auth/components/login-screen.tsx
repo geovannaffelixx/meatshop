@@ -1,17 +1,18 @@
 "use client";
 
-import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/shared/components/ui/input";
+import { PasswordInput } from "@/shared/components/ui/password-input";
+import { Spinner } from "@/shared/components/ui/spinner";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiGet, apiPost } from "@/shared/lib/api";
 import { toast } from "@/shared/lib/toast";
 
 export function LoginScreen() {
-  const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -20,7 +21,9 @@ export function LoginScreen() {
       toast.warning("Preencha o e-mail e a senha para continuar.");
       return;
     }
+    if (submitting) return;
 
+    setSubmitting(true);
     try {
       await apiPost("/auth/login", { email, password: senha });
       const session = await apiGet("/users/me");
@@ -33,6 +36,7 @@ export function LoginScreen() {
       setTimeout(() => router.push(destination), 800);
     } catch {
       // O cliente da API traduz e exibe o erro no toast global.
+      setSubmitting(false);
     }
   }
 
@@ -72,22 +76,12 @@ export function LoginScreen() {
               <label className="block text-sm font-medium text-gray-700">
                 Senha
               </label>
-              <div className="relative">
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Informe sua senha"
-                  value={senha}
-                  onChange={(e) => setSenha(e.target.value)}
-                  autoComplete="current-password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
-                >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-              </div>
+              <PasswordInput
+                placeholder="Informe sua senha"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                autoComplete="current-password"
+              />
               <div className="mt-1">
                 <Link
                   href="/forgot-password"
@@ -100,9 +94,11 @@ export function LoginScreen() {
 
             <button
               type="submit"
-              className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-md font-semibold mt-4"
+              disabled={submitting}
+              className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-md font-semibold mt-4 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              ENTRAR
+              {submitting && <Spinner />}
+              {submitting ? "Entrando..." : "ENTRAR"}
             </button>
           </form>
 

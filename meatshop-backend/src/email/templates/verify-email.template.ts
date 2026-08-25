@@ -5,12 +5,12 @@ export function verifyEmailTemplate(
   verificationUrl: string,
 ): EmailTemplate {
   return {
-    subject: 'Verify your MeatShop account',
+    subject: 'Confirme sua conta MeatShop',
 
     text: `
-Hello ${userName},
+Olá ${userName},
 
-Please verify your account using the link below:
+Confirme sua conta usando o link abaixo:
 
 ${verificationUrl}
     `,
@@ -26,16 +26,16 @@ ${verificationUrl}
     border-radius: 12px;
   "
 >
-  <h2>Welcome to MeatShop 🥩</h2>
+  <h2>Bem-vindo ao MeatShop 🥩</h2>
 
-  <p>Hello <strong>${userName}</strong>,</p>
+  <p>Olá <strong>${userName}</strong>,</p>
 
   <p>
-    Thank you for creating your account.
+    Obrigado por criar sua conta.
   </p>
 
   <p>
-    Please confirm your email address by clicking the button below.
+    Confirme seu e-mail clicando no botão abaixo.
   </p>
 
   <a
@@ -50,12 +50,12 @@ ${verificationUrl}
       margin-top: 16px;
     "
   >
-    Verify Email
+    Confirmar e-mail
   </a>
 
   <p style="margin-top: 24px;">
-    If you did not create this account,
-    please ignore this email.
+    Se você não criou esta conta,
+    basta ignorar este e-mail.
   </p>
 </div>
     `,

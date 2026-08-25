@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import PageLayout from "@/shared/components/page-layout";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
+import { Spinner } from "@/shared/components/ui/spinner";
 import { API_URL, apiGet, apiPatch, apiPut } from "@/shared/lib/api";
 import { toast } from "@/shared/lib/toast";
 
@@ -81,7 +82,7 @@ function UnitSettings() {
       <div className="mt-5 flex items-center gap-4"><div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg bg-gray-100">{unit.image_url ? <img src={`${API_URL}${unit.image_url}`} alt="Logo da unidade" className="h-full w-full object-cover" /> : <span className="text-2xl font-bold text-gray-400">{unit.name.charAt(0)}</span>}</div><label className="cursor-pointer rounded-md border px-4 py-2 text-sm font-semibold hover:bg-gray-50">Alterar logo<input type="file" accept="image/*" className="hidden" onChange={(event) => void uploadLogo(event.target.files?.[0])} /></label></div>
       <form onSubmit={saveUnit} className="mt-6 grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2">{field("name", "Nome do açougue")}</div>{field("cnpj", "CNPJ", true)}{field("zip_code", "CEP")}{field("street", "Logradouro")}{field("number", "Número")}{field("complement", "Complemento")}{field("neighborhood", "Bairro")}{field("city", "Cidade")}{field("state", "Estado (UF)")}
-        <div className="md:col-span-2"><button disabled={saving} className="rounded-md bg-red-600 px-5 py-2 font-semibold text-white disabled:opacity-50">{saving ? "Salvando..." : "Salvar dados"}</button></div>
+        <div className="md:col-span-2"><button disabled={saving} className="flex items-center gap-2 rounded-md bg-red-600 px-5 py-2 font-semibold text-white disabled:opacity-50">{saving && <Spinner />}{saving ? "Salvando..." : "Salvar dados"}</button></div>
       </form>
     </section>
     <section className="rounded-xl border bg-white p-6">
@@ -89,7 +90,7 @@ function UnitSettings() {
       <div className="mt-4 space-y-3">{days.map((day, index) => <div key={day.weekday} className="grid items-center gap-3 rounded-md border p-3 sm:grid-cols-[180px_90px_1fr_1fr]">
         <span className="font-medium">{weekdays.find(([value]) => value === day.weekday)?.[1]}</span><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={day.is_open} onChange={(event) => setDays((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, is_open: event.target.checked } : item))} />Aberto</label><input aria-label="Abertura" type="time" disabled={!day.is_open} value={day.opening_time ?? "08:00"} onChange={(event) => setDays((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, opening_time: event.target.value } : item))} className="rounded border px-3 py-2 disabled:bg-gray-100" /><input aria-label="Fechamento" type="time" disabled={!day.is_open} value={day.closing_time ?? "18:00"} onChange={(event) => setDays((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, closing_time: event.target.value } : item))} className="rounded border px-3 py-2 disabled:bg-gray-100" />
       </div>)}</div>
-      <button type="button" onClick={() => void saveHours()} disabled={saving} className="mt-5 rounded-md bg-red-600 px-5 py-2 font-semibold text-white disabled:opacity-50">Salvar horários</button>
+      <button type="button" onClick={() => void saveHours()} disabled={saving} className="mt-5 flex items-center gap-2 rounded-md bg-red-600 px-5 py-2 font-semibold text-white disabled:opacity-50">{saving && <Spinner />}{saving ? "Salvando..." : "Salvar horários"}</button>
     </section>
   </div>;
 }

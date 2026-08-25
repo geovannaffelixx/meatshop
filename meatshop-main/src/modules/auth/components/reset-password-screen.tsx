@@ -2,8 +2,9 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Input } from "@/shared/components/ui/input";
+import { PasswordInput } from "@/shared/components/ui/password-input";
 import { Button } from "@/shared/components/ui/button";
+import { Spinner } from "@/shared/components/ui/spinner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
 import { LockIcon } from "lucide-react";
@@ -81,19 +82,19 @@ function ResetPasswordFormContent() {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <Input
-              type="password"
+            <PasswordInput
               placeholder="Nova senha"
               value={senha}
               onChange={(e) => setSenha(e.target.value)}
+              autoComplete="new-password"
               className="border border-gray-300 focus:ring-[#BE2C1B] focus:border-[#BE2C1B]"
             />
 
-            <Input
-              type="password"
+            <PasswordInput
               placeholder="Confirmar nova senha"
               value={confirmarSenha}
               onChange={(e) => setConfirmarSenha(e.target.value)}
+              autoComplete="new-password"
               className="border border-gray-300 focus:ring-[#BE2C1B] focus:border-[#BE2C1B]"
             />
 
@@ -109,6 +110,7 @@ function ResetPasswordFormContent() {
               disabled={loading}
               className="w-full bg-[#BE2C1B] hover:bg-[#BE2C1B]/70"
             >
+              {loading && <Spinner />}
               {loading ? "Redefinindo..." : "Redefinir senha"}
             </Button>
           </form>
