@@ -1,10 +1,21 @@
+import { ApiError, translateApiError } from "@/shared/lib/api-error-translations";
+import { toast } from "@/shared/lib/toast";
+
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 async function handleResponse(res: Response) {
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(text || `Request failed with status ${res.status}`);
+    let payload: unknown = text;
+
+    try {
+      payload = text ? JSON.parse(text) : null;
+    } catch {
+      // Mantém o texto original quando a API não retorna JSON.
+    }
+
+    throw new ApiError(translateApiError(payload, res.status), res.status, payload);
   }
 
   // Alguns endpoints podem retornar 204 (sem conteúdo)
@@ -18,47 +29,64 @@ async function handleResponse(res: Response) {
   }
 }
 
+async function request(path: string, init: RequestInit) {
+  try {
+    const res = await fetch(`${API_URL}${path}`, {
+      cache: "no-store",
+      credentials: "include",
+      redirect: "follow",
+      ...init,
+    });
+    return await handleResponse(res);
+  } catch (error) {
+    const message =
+      error instanceof ApiError
+        ? error.message
+        : translateApiError(error instanceof Error ? error.message : error);
+
+    toast.error(message);
+
+    if (error instanceof ApiError) throw error;
+    throw new ApiError(message, 0, error);
+  }
+}
+
 export async function apiGet(path: string) {
-  const res = await fetch(`${API_URL}${path}`, {
+  return request(path, {
     method: "GET",
-    cache: "no-store",
-    credentials: "include", // envia cookies HttpOnly
-    redirect: "follow",
   });
-  return handleResponse(res);
 }
 
 export async function apiPost(path: string, data: any) {
-  const res = await fetch(`${API_URL}${path}`, {
+  return request(path, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(data),
-    credentials: "include",
-    redirect: "follow",
   });
-  return handleResponse(res);
 }
 
 export async function apiPatch(path: string, data: any) {
-  const res = await fetch(`${API_URL}${path}`, {
+  return request(path, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(data),
-    credentials: "include",
-    redirect: "follow",
   });
-  return handleResponse(res);
+}
+
+export async function apiPut(path: string, data: unknown) {
+  return request(path, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
 }
 
 export async function apiDelete(path: string) {
-  const res = await fetch(`${API_URL}${path}`, {
+  return request(path, {
     method: "DELETE",
-    credentials: "include",
-    redirect: "follow",
   });
-  return handleResponse(res);
 }

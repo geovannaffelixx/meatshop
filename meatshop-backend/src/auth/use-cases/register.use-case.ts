@@ -68,7 +68,10 @@ export class RegisterUseCase {
     });
 
     if (existingUser) {
-      throw new ConflictException('Email already in use');
+      throw new ConflictException({
+        code: 'EMAIL_ALREADY_EXISTS',
+        message: 'Já existe uma conta cadastrada com este e-mail.',
+      });
     }
   }
 
@@ -80,7 +83,10 @@ export class RegisterUseCase {
     });
 
     if (existingUser) {
-      throw new ConflictException('CPF already in use');
+      throw new ConflictException({
+        code: 'CPF_ALREADY_EXISTS',
+        message: 'Já existe uma conta cadastrada com este CPF.',
+      });
     }
   }
 }

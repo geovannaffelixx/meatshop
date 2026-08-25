@@ -1,5 +1,5 @@
-import { ProfileScreen } from "@/modules/settings";
+import { redirect } from "next/navigation";
 
-export default function Page() {
-  return <ProfileScreen />;
+export default function LegacyProfilePage() {
+  redirect("/settings/unit");
 }

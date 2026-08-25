@@ -1,6 +1,9 @@
-import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { UnitPermission } from '../../common/enums/unit-permission.enum';
+import { LocalRole } from '../../common/enums/local-role.enum';
+import { GlobalRole } from '../../common/enums/global-role.enum';
 import { User } from '../../users/entities/user.entity';
 import { CreateUserUnitDto } from '../dtos/create-user-unit.dto';
 import { Unit } from '../entities/unit.entity';
@@ -27,7 +30,19 @@ export class AddUserToUnitUseCase {
       throw new NotFoundException('Unit not found');
     }
 
-    this.unitAuthorizationService.assertCanManageUnit(unit, currentUser);
+    await this.unitAuthorizationService.assertHasPermission(
+      currentUser,
+      unit.id,
+      UnitPermission.MANAGE_MEMBERS,
+    );
+
+    if (
+      dto.local_role === LocalRole.MANAGER &&
+      currentUser.global_role !== GlobalRole.SUPER_ADMIN &&
+      unit.admin_id !== currentUser.id
+    ) {
+      throw new ForbiddenException('Only the unit owner can add managers');
+    }
 
     const targetUser = await this.userRepository.findOne({
       where: { id: dto.user_id },

@@ -5,40 +5,34 @@ import { useState } from "react";
 import { Input } from "@/shared/components/ui/input";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { apiPost } from "@/shared/lib/api";
+import { apiGet, apiPost } from "@/shared/lib/api";
+import { toast } from "@/shared/lib/toast";
 
 export function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
-  const [msg, setMsg] = useState("");
-  const [alertType, setAlertType] = useState<"success" | "error" | "">("");
   const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setMsg("");
-    setAlertType("");
-
     if (!email.trim() || !senha.trim()) {
-      setMsg("Por favor, preencha e-mail e senha para continuar.");
-      setAlertType("error");
+      toast.warning("Preencha o e-mail e a senha para continuar.");
       return;
     }
 
     try {
       await apiPost("/auth/login", { email, password: senha });
+      const session = await apiGet("/users/me");
 
       window.dispatchEvent(new Event("currentUserUpdated"));
 
-      setMsg("Login realizado com sucesso! Redirecionando...");
-      setAlertType("success");
+      toast.success("Login realizado. Redirecionando...");
 
-      setTimeout(() => router.push("/dashboard"), 800);
-    } catch (err) {
-      console.error(err);
-      setMsg(err instanceof Error ? err.message : "Erro inesperado ao fazer login.");
-      setAlertType("error");
+      const destination = session?.panel?.can_access ? "/dashboard" : "/no-panel-access";
+      setTimeout(() => router.push(destination), 800);
+    } catch {
+      // O cliente da API traduz e exibe o erro no toast global.
     }
   }
 
@@ -111,16 +105,6 @@ export function LoginScreen() {
               ENTRAR
             </button>
           </form>
-
-          {msg && (
-            <p
-              className={`text-center text-sm mt-2 ${
-                alertType === "success" ? "text-green-600" : "text-red-600"
-              }`}
-            >
-              {msg}
-            </p>
-          )}
 
           <p className="text-center text-sm text-gray-600">
             Não tem uma conta?{" "}

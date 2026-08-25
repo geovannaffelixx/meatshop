@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { UnitPermission } from '../../common/enums/unit-permission.enum';
 import { Unit } from '../../units/entities/unit.entity';
 import { UnitAuthorizationService } from '../../units/services/unit-authorization.service';
 import { User } from '../../users/entities/user.entity';
@@ -25,7 +26,9 @@ export class DeleteRecipeUseCase {
     }
 
     const unit = await this.unitRepository.findOne({ where: { id: recipe.unit_id } });
-    this.unitAuthorizationService.assertCanManageUnit(unit!, currentUser);
+    await this.unitAuthorizationService.assertHasPermission(
+      currentUser, recipe.unit_id, UnitPermission.MANAGE_PRODUCTS,
+    );
 
     await this.recipeRepository.remove(recipe);
 

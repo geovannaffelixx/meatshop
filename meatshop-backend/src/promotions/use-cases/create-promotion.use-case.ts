@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { UnitPermission } from '../../common/enums/unit-permission.enum';
 import { Product } from '../../products/entities/product.entity';
 import { Unit } from '../../units/entities/unit.entity';
 import { UnitAuthorizationService } from '../../units/services/unit-authorization.service';
@@ -28,7 +29,9 @@ export class CreatePromotionUseCase {
       throw new NotFoundException('Unit not found');
     }
 
-    this.unitAuthorizationService.assertCanManageUnit(unit, currentUser);
+    await this.unitAuthorizationService.assertHasPermission(
+      currentUser, unit.id, UnitPermission.MANAGE_PRODUCTS,
+    );
     await this.ensureProductBelongsToUnit(dto.product_id, dto.unit_id);
     this.assertValidPeriod(dto.starts_at, dto.ends_at);
 

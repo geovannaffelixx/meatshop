@@ -2,10 +2,12 @@ import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/com
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { GlobalRole } from '../../common/enums/global-role.enum';
+import { UnitPermission } from '../../common/enums/unit-permission.enum';
 import { UserUnitStatus } from '../../common/enums/user-unit-status.enum';
 import { User } from '../../users/entities/user.entity';
 import { Unit } from '../entities/unit.entity';
 import { UserUnit } from '../entities/user-unit.entity';
+import { UnitPermissionPolicy } from './unit-permission.policy';
 
 @Injectable()
 export class UnitAuthorizationService {
@@ -14,6 +16,7 @@ export class UnitAuthorizationService {
     private readonly unitRepository: Repository<Unit>,
     @InjectRepository(UserUnit)
     private readonly userUnitRepository: Repository<UserUnit>,
+    private readonly permissionPolicy: UnitPermissionPolicy,
   ) {}
 
   assertCanManageUnit(unit: Unit, currentUser: User): void {
@@ -25,7 +28,10 @@ export class UnitAuthorizationService {
     }
   }
 
-  async getManagedUnitIds(userId: number): Promise<number[]> {
+  async getManagedUnitIds(
+    userId: number,
+    permission: UnitPermission = UnitPermission.VIEW_DASHBOARD,
+  ): Promise<number[]> {
     const ownedUnits = await this.unitRepository.find({ where: { admin_id: userId } });
     const memberships = await this.userUnitRepository.find({
       where: { user_id: userId, status: UserUnitStatus.ACTIVE },
@@ -33,9 +39,43 @@ export class UnitAuthorizationService {
 
     const ids = new Set<number>([
       ...ownedUnits.map((u) => u.id),
-      ...memberships.map((m) => m.unit_id),
+      ...memberships
+        .filter(({ local_role }) => this.permissionPolicy.has(local_role, permission))
+        .map((membership) => membership.unit_id),
     ]);
     return Array.from(ids);
+  }
+
+  async assertHasPermission(
+    currentUser: User,
+    unitId: number,
+    permission: UnitPermission,
+  ): Promise<void> {
+    if (currentUser.global_role === GlobalRole.SUPER_ADMIN) return;
+
+    const membership = await this.userUnitRepository.findOne({
+      where: {
+        user_id: currentUser.id,
+        unit_id: unitId,
+        status: UserUnitStatus.ACTIVE,
+      },
+    });
+
+    if (!membership || !this.permissionPolicy.has(membership.local_role, permission)) {
+      throw new ForbiddenException('Insufficient unit permissions');
+    }
+  }
+
+  async getActivePanelMemberships(userId: number): Promise<UserUnit[]> {
+    const memberships = await this.userUnitRepository.find({
+      where: { user_id: userId, status: UserUnitStatus.ACTIVE },
+      relations: { unit: true },
+      order: { created_at: 'ASC' },
+    });
+
+    return memberships.filter(({ local_role }) =>
+      this.permissionPolicy.canAccessPanel(local_role),
+    );
   }
 
   /**
@@ -45,7 +85,11 @@ export class UnitAuthorizationService {
    * A unit admin/staff member with exactly one managed unit gets it as a default;
    * with more than one, they must specify which one.
    */
-  async resolveRequiredUnitId(currentUser: User, requestedUnitId?: number): Promise<number> {
+  async resolveRequiredUnitId(
+    currentUser: User,
+    requestedUnitId?: number,
+    permission: UnitPermission = UnitPermission.VIEW_DASHBOARD,
+  ): Promise<number> {
     const isSuperAdmin = currentUser.global_role === GlobalRole.SUPER_ADMIN;
 
     if (isSuperAdmin) {
@@ -55,7 +99,7 @@ export class UnitAuthorizationService {
       return requestedUnitId;
     }
 
-    const managedUnitIds = await this.getManagedUnitIds(currentUser.id);
+    const managedUnitIds = await this.getManagedUnitIds(currentUser.id, permission);
 
     if (requestedUnitId) {
       if (!managedUnitIds.includes(requestedUnitId)) {
