@@ -6,7 +6,7 @@ import { cn } from "@/shared/lib/utils";
 import { TOAST_EVENT, type ToastInput, type ToastVariant } from "@/shared/lib/toast";
 
 type ToastItem = Required<Pick<ToastInput, "description" | "duration" | "variant">> &
-  Pick<ToastInput, "title"> & { id: number };
+  Pick<ToastInput, "title" | "action"> & { id: number };
 
 const styles: Record<ToastVariant, string> = {
   success: "border-emerald-200 bg-emerald-50 text-emerald-950",
@@ -36,6 +36,7 @@ export function Toaster() {
         duration: detail.duration ?? 5000,
         title: detail.title,
         variant: detail.variant ?? "info",
+        action: detail.action,
       };
 
       setItems((current) => [...current.slice(-3), item]);
@@ -69,6 +70,11 @@ export function Toaster() {
             <div className="min-w-0 flex-1">
               {item.title && <p className="font-semibold leading-5">{item.title}</p>}
               <p className="text-sm leading-5 opacity-90">{item.description}</p>
+              {item.action && (
+                <a className="mt-2 inline-block text-sm font-semibold underline" href={item.action.href}>
+                  {item.action.label}
+                </a>
+              )}
             </div>
             <button
               type="button"

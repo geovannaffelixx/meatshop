@@ -58,8 +58,11 @@ export class NotificationsController {
   @ApiResponse({ status: 204, description: 'Notificações marcadas como lidas' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Patch('read-all')
-  markAllAsRead(@CurrentUser() currentUser: User) {
-    return this.markAllAsReadUseCase.execute(currentUser);
+  markAllAsRead(
+    @CurrentUser() currentUser: User,
+    @Query('unit_id', new ParseIntPipe({ optional: true })) unitId?: number,
+  ) {
+    return this.markAllAsReadUseCase.execute(currentUser, unitId);
   }
 
   @ApiOperation({

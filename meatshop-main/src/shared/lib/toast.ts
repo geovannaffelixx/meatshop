@@ -5,6 +5,7 @@ export type ToastInput = {
   description: string;
   duration?: number;
   variant?: ToastVariant;
+  action?: { label: string; href: string };
 };
 
 export const TOAST_EVENT = "meatshop:toast";

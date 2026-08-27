@@ -4,6 +4,18 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ## [Não lançado]
 
+## [2.3.0] - 2026-08-26
+
+### Adicionado
+
+- Central de notificações da unidade com sino no cabeçalho, contador de não lidas e página de histórico.
+- Pop-ups em tempo real com título, mensagem e ação para abrir o pedido ou recurso relacionado.
+- Ações para marcar uma notificação ou todas as notificações da unidade como lidas.
+
+### Alterado
+
+- O utilitário global de toast agora aceita uma ação navegável opcional e pode ser reutilizado por novos eventos.
+
 ## [2.2.0] - 2026-08-25
 
 ### Adicionado

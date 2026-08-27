@@ -5,6 +5,7 @@ import { CreateNotificationDto } from '../dtos/create-notification.dto';
 import { Notification } from '../entities/notification.entity';
 import { UserDeviceToken } from '../entities/user-device-token.entity';
 import { FcmService, FcmTokenInvalidError } from '../providers/fcm.service';
+import { NotificationsGateway } from '../notifications.gateway';
 
 @Injectable()
 export class SendNotificationUseCase {
@@ -16,25 +17,27 @@ export class SendNotificationUseCase {
     @InjectRepository(UserDeviceToken)
     private readonly deviceTokenRepository: Repository<UserDeviceToken>,
     private readonly fcmService: FcmService,
+    private readonly notificationsGateway: NotificationsGateway,
   ) {}
 
   async execute(dto: CreateNotificationDto): Promise<Notification> {
     const notification = await this.notificationRepository.save(
-      this.notificationRepository.create(dto),
+      this.notificationRepository.create({ title: 'MeatShop', ...dto }),
     );
 
-    await this.pushToDevices(dto.user_id, dto.message);
+    this.notificationsGateway.emitToUser(notification);
+    await this.pushToDevices(dto.user_id, notification.title, dto.message);
 
     return notification;
   }
 
-  private async pushToDevices(userId: number, message: string): Promise<void> {
+  private async pushToDevices(userId: number, title: string, message: string): Promise<void> {
     const tokens = await this.deviceTokenRepository.find({ where: { user_id: userId } });
 
     await Promise.all(
       tokens.map((token) =>
         this.fcmService
-          .send(token.fcm_token, { title: 'MeatShop', body: message })
+          .send(token.fcm_token, { title, body: message })
           .catch(async (error) => {
             if (error instanceof FcmTokenInvalidError) {
               await this.deviceTokenRepository.remove(token);

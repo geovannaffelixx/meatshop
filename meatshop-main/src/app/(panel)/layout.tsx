@@ -4,10 +4,11 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/shared/componen
 import { AppSidebar } from "@/shared/components/app-sidebar";
 import { PanelAccessGuard } from "@/shared/components/panel-access-guard";
 import { RouteProgress } from "@/shared/components/route-progress";
+import { NotificationBell, NotificationsProvider } from "@/modules/notifications";
 
 export default function PanelLayout({ children }: { children: React.ReactNode }) {
   return (
-    <PanelAccessGuard>
+    <PanelAccessGuard><NotificationsProvider>
       <RouteProgress />
       <SidebarProvider>
         <AppSidebar />
@@ -16,12 +17,12 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
             <SidebarTrigger />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logoClaraEscrita.png" alt="MeatShop" className="h-16 mx-auto" />
-            <div className="w-6" />
+            <NotificationBell />
           </header>
 
           <main className="flex-1">{children}</main>
         </SidebarInset>
       </SidebarProvider>
-    </PanelAccessGuard>
+    </NotificationsProvider></PanelAccessGuard>
   );
 }

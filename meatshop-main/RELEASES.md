@@ -1,5 +1,11 @@
 # Releases do painel web
 
+## 2.3.0 — Central de notificações
+
+Lançada em 26 de agosto de 2026.
+
+O painel agora avisa a equipe em tempo real sobre acontecimentos da unidade. O cabeçalho ganhou um sino com contador, visualização rápida, marcação de leitura e acesso ao histórico completo; eventos relacionados a pedidos também exibem um pop-up que leva diretamente aos detalhes.
+
 ## 2.2.0 — Catálogo, conteúdo e experiência de uso
 
 Lançada em 25 de agosto de 2026.

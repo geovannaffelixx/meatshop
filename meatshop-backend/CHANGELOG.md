@@ -4,6 +4,18 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ## [Não lançado]
 
+## [2.3.0] - 2026-08-26
+
+### Adicionado
+
+- Canal Socket.IO autenticado por cookie para entregar notificações ao painel em tempo real.
+- Contexto de unidade, título e rota de ação nas notificações, com migração reversível e índice de consulta.
+
+### Alterado
+
+- Novos pedidos notificam todos os membros ativos com acesso ao painel da unidade, não apenas o proprietário.
+- Listagem e leitura em lote aceitam o filtro da unidade ativa, preservando também alertas globais.
+
 ## [2.2.0] - 2026-08-25
 
 ### Adicionado

@@ -1,5 +1,11 @@
 # Releases do backend
 
+## 2.3.0 — Notificações em tempo real para a unidade
+
+Lançada em 26 de agosto de 2026.
+
+O módulo de notificações passa a atender o painel web em tempo real, com autenticação segura por cookie, contexto da unidade e links para o recurso relacionado. Quando um novo pedido chega, todos os membros ativos com acesso ao painel daquela unidade são avisados.
+
 ## 2.2.0 — Perfil, catálogo visual e conteúdo
 
 Lançada em 25 de agosto de 2026.

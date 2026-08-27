@@ -3,6 +3,13 @@ import { Type } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
 
 export class ListNotificationsQueryDto {
+  @ApiPropertyOptional({ description: 'Filtra pela unidade ativa e notificações globais', example: 3 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  unit_id?: number;
+
   @ApiPropertyOptional({
     description: 'Filtra por lidas (true) ou não lidas (false)',
     example: 'false',

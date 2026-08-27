@@ -1,6 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Unit } from '../units/entities/unit.entity';
+import { UserUnit } from '../units/entities/user-unit.entity';
+import { User } from '../users/entities/user.entity';
+import { AuthModule } from '../auth/auth.module';
+import { UnitsModule } from '../units/units.module';
+import { NotificationsGateway } from './notifications.gateway';
 import { Notification } from './entities/notification.entity';
 import { UserDeviceToken } from './entities/user-device-token.entity';
 import { NotificationsController } from './notifications.controller';
@@ -14,10 +19,15 @@ import { SendOrderStatusNotificationUseCase } from './use-cases/send-order-statu
 import { UnregisterDeviceTokenUseCase } from './use-cases/unregister-device-token.use-case';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Notification, UserDeviceToken, Unit])],
+  imports: [
+    AuthModule,
+    UnitsModule,
+    TypeOrmModule.forFeature([Notification, UserDeviceToken, Unit, UserUnit, User]),
+  ],
   controllers: [NotificationsController],
   providers: [
     FcmService,
+    NotificationsGateway,
     SendNotificationUseCase,
     SendOrderStatusNotificationUseCase,
     ListNotificationsUseCase,
