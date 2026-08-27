@@ -88,9 +88,9 @@ Fecha o resto do RF-010 ("gerenciar promoções").
 ## Bloco 5 — Suporte e observabilidade
 
 ### 5.1 Chamados de suporte
-- **Status:** não iniciado
-- **Backend:** pronto pra abrir/ver (`POST`/`GET /support-tickets`); responder é restrito a `SUPER_ADMIN`
-- **Frontend:** nenhuma tela — unidade abre e acompanha chamado, não responde
+- **Status:** concluído, ainda não lançado
+- **Backend:** chamados com conversa persistente, imagens, contexto opcional, fila filtrada, auditoria e notificações; atendimento restrito a `SUPER_ADMIN`
+- **Frontend:** área “Ajuda e suporte” para solicitantes e console global de atendimento para `SUPER_ADMIN`
 
 ### 5.2 Notificações
 - **Status:** não iniciado

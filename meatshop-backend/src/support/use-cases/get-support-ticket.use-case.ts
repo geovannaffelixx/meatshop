@@ -14,7 +14,11 @@ export class GetSupportTicketUseCase {
   ) {}
 
   async execute(ticketId: number, currentUser: User): Promise<SupportTicket> {
-    const ticket = await this.supportTicketRepository.findOne({ where: { id: ticketId } });
+    const ticket = await this.supportTicketRepository.findOne({
+      where: { id: ticketId },
+      relations: ['user', 'unit', 'order', 'assignee', 'messages', 'messages.sender', 'messages.attachments'],
+      order: { messages: { created_at: 'ASC' } },
+    });
     if (!ticket) {
       throw new NotFoundException('Support ticket not found');
     }

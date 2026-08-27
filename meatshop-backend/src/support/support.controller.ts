@@ -6,6 +6,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -15,12 +16,15 @@ import { User } from '../users/entities/user.entity';
 import { AnswerSupportTicketDto } from './dtos/answer-support-ticket.dto';
 import { CreateSupportTicketDto } from './dtos/create-support-ticket.dto';
 import { UpdateSupportTicketDto } from './dtos/update-support-ticket.dto';
+import { ListSupportTicketsQueryDto } from './dtos/list-support-tickets-query.dto';
 import { AnswerSupportTicketUseCase } from './use-cases/answer-support-ticket.use-case';
 import { CloseSupportTicketUseCase } from './use-cases/close-support-ticket.use-case';
 import { CreateSupportTicketUseCase } from './use-cases/create-support-ticket.use-case';
 import { GetSupportTicketUseCase } from './use-cases/get-support-ticket.use-case';
 import { ListSupportTicketsUseCase } from './use-cases/list-support-tickets.use-case';
 import { UpdateSupportTicketUseCase } from './use-cases/update-support-ticket.use-case';
+import { SearchSupportTicketsUseCase } from './use-cases/search-support-tickets.use-case';
+import { ReopenSupportTicketUseCase } from './use-cases/reopen-support-ticket.use-case';
 
 @ApiTags('Support')
 @ApiBearerAuth('access-token')
@@ -33,6 +37,8 @@ export class SupportController {
     private readonly closeSupportTicketUseCase: CloseSupportTicketUseCase,
     private readonly listSupportTicketsUseCase: ListSupportTicketsUseCase,
     private readonly getSupportTicketUseCase: GetSupportTicketUseCase,
+    private readonly searchSupportTicketsUseCase: SearchSupportTicketsUseCase,
+    private readonly reopenSupportTicketUseCase: ReopenSupportTicketUseCase,
   ) {}
 
   @ApiOperation({ summary: 'Abre um novo chamado de suporte' })
@@ -47,6 +53,12 @@ export class SupportController {
   @Get()
   list(@CurrentUser() currentUser: User) {
     return this.listSupportTicketsUseCase.execute(currentUser);
+  }
+
+  @ApiOperation({ summary: 'Consulta paginada e filtrada de chamados' })
+  @Get('search')
+  search(@Query() query: ListSupportTicketsQueryDto, @CurrentUser() currentUser: User) {
+    return this.searchSupportTicketsUseCase.execute(query, currentUser);
   }
 
   @ApiOperation({ summary: 'Busca um chamado de suporte pelo identificador' })
@@ -93,5 +105,11 @@ export class SupportController {
   @Patch(':id/close')
   close(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
     return this.closeSupportTicketUseCase.execute(id, currentUser);
+  }
+
+  @ApiOperation({ summary: 'Reabre um chamado encerrado' })
+  @Patch(':id/reopen')
+  reopen(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
+    return this.reopenSupportTicketUseCase.execute(id, currentUser);
   }
 }

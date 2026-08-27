@@ -147,3 +147,7 @@ export async function apiPut(path: string, data: unknown, options?: RequestOptio
 export async function apiDelete(path: string, options?: RequestOptions) {
   return request(path, { method: "DELETE" }, options);
 }
+
+export async function apiUpload(path: string, data: FormData, options?: RequestOptions) {
+  return request(path, { method: "POST", body: data }, options);
+}

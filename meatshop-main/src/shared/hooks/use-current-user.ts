@@ -10,6 +10,7 @@ export type CurrentUser = {
   cpf: string;
   created_at: string;
   avatar_url?: string | null;
+  global_role: "SUPER_ADMIN" | "USER";
 };
 
 export function useCurrentUser() {

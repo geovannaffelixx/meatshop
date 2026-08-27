@@ -23,6 +23,8 @@ import { DeliveryTracking } from '../delivery/entities/delivery-tracking.entity'
 import { Review } from '../reviews/entities/review.entity';
 import { DeliveryReview } from '../reviews/entities/delivery-review.entity';
 import { SupportTicket } from '../support/entities/support-ticket.entity';
+import { SupportMessage } from '../support/entities/support-message.entity';
+import { SupportAttachment } from '../support/entities/support-attachment.entity';
 import { AuditLog } from '../audit/entities/audit-log.entity';
 import { Recipe } from '../recipes/entities/recipe.entity';
 import { RecipeStep } from '../recipes/entities/recipe-step.entity';
@@ -75,6 +77,8 @@ export default new DataSource({
       Review,
       DeliveryReview,
       SupportTicket,
+      SupportMessage,
+      SupportAttachment,
       AuditLog,
       Recipe,
       RecipeStep,

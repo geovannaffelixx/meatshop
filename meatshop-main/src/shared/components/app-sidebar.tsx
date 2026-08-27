@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Box, Building2, ChevronRight, House, LogOut, Percent, PiggyBank, Shield, ShoppingBag, Star, Tags, User as UserIcon, Users, UtensilsCrossed } from "lucide-react";
+import { Box, Building2, ChevronRight, CircleHelp, House, LogOut, Percent, PiggyBank, Shield, ShoppingBag, Star, Tags, User as UserIcon, Users, UtensilsCrossed } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarRail } from "@/shared/components/ui/sidebar";
 import { apiPost } from "@/shared/lib/api";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
@@ -19,6 +19,7 @@ const navData = [
     { title: "Receitas", url: "/recipes", icon: UtensilsCrossed, permission: unitPermissions.manageProducts },
     { title: "Avaliações", url: "/reviews", icon: Star, permission: unitPermissions.viewDashboard },
     { title: "Financeiro", url: "/finance", icon: PiggyBank, permission: unitPermissions.viewFinance },
+    { title: "Ajuda e suporte", url: "/support", icon: CircleHelp, permission: null },
   ]},
   { title: "Configurações", items: [
     { title: "Minha conta", url: "/settings/account", icon: UserIcon, permission: unitPermissions.viewDashboard },
@@ -57,7 +58,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
     </div>}
     {navData.map((group, index) => <SidebarGroup key={index}>
       {group.title && <SidebarGroupLabel>{group.title}</SidebarGroupLabel>}
-      <SidebarGroupContent><SidebarMenu>{group.items.filter((item) => hasPermission(item.permission as UnitPermission)).map((item) => {
+      <SidebarGroupContent><SidebarMenu>{group.items.filter((item) => !item.permission || hasPermission(item.permission as UnitPermission)).map((item) => {
         const Icon = item.icon;
         const isActive = pathname === item.url;
         return <SidebarMenuItem key={item.url}><SidebarMenuButton asChild><Link href={item.url} className={`flex items-center gap-2 rounded-md px-2 py-1 transition-colors ${isActive ? "bg-gray-200 font-bold text-[#BE2C1B]" : "text-gray-700 hover:bg-gray-100"}`}><Icon className="h-4 w-4" />{item.title}</Link></SidebarMenuButton></SidebarMenuItem>;

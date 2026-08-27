@@ -4,6 +4,13 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ## [Não lançado]
 
+### Adicionado
+
+- Área “Ajuda e suporte” para usuários abrirem chamados destinados à plataforma MeatShop.
+- Console global de suporte para `SUPER_ADMIN`, com solicitante, unidade, prioridade, status e filtros.
+- Conversa completa por chamado, envio e visualização de imagens, encerramento e reabertura.
+- Feedback visual de carregamento, sucesso e falha em todas as ações do módulo.
+
 ## [2.3.0] - 2026-08-26
 
 ### Adicionado

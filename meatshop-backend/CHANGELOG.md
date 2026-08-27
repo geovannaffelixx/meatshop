@@ -4,6 +4,19 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ## [Não lançado]
 
+### Adicionado
+
+- Conversas persistentes nos chamados de suporte, com histórico completo de mensagens e remetentes.
+- Upload protegido de até quatro imagens por mensagem, limitado a 5 MB por arquivo e validado por MIME e assinatura binária.
+- Categorias, prioridades, contexto opcional de unidade/pedido, responsável, datas operacionais e filtros paginados.
+- Notificações em tempo real para novos chamados e respostas, além de registros de auditoria do ciclo de atendimento.
+- Reabertura de chamados encerrados e estados de espera separados entre usuário e equipe MeatShop.
+
+### Alterado
+
+- Respostas legadas de `SUPER_ADMIN` agora também utilizam o histórico imutável de mensagens.
+- Dados antigos de descrição e resposta são migrados para a nova conversa sem perda de conteúdo.
+
 ## [2.3.0] - 2026-08-26
 
 ### Adicionado
