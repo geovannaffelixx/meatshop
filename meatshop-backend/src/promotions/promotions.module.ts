@@ -4,6 +4,8 @@ import { ProductsModule } from '../products/products.module';
 import { UnitsModule } from '../units/units.module';
 import { CouponsController } from './coupons.controller';
 import { Coupon } from './entities/coupon.entity';
+import { CouponUnit } from './entities/coupon-unit.entity';
+import { CouponRedemption } from './entities/coupon-redemption.entity';
 import { Promotion } from './entities/promotion.entity';
 import { PromotionsController } from './promotions.controller';
 import { ActivatePromotionUseCase } from './use-cases/activate-promotion.use-case';
@@ -16,9 +18,19 @@ import { ListPromotionsUseCase } from './use-cases/list-promotions.use-case';
 import { UpdateCouponUseCase } from './use-cases/update-coupon.use-case';
 import { UpdatePromotionUseCase } from './use-cases/update-promotion.use-case';
 import { ValidateCouponUseCase } from './use-cases/validate-coupon.use-case';
+import { CouponAccessService } from './services/coupon-access.service';
+import { CouponPolicyService } from './services/coupon-policy.service';
+import { CouponRedemptionService } from './services/coupon-redemption.service';
+import { CouponWriteValidatorService } from './services/coupon-write-validator.service';
+import { GetCouponUseCase } from './use-cases/get-coupon.use-case';
+import { ListCouponRedemptionsUseCase } from './use-cases/list-coupon-redemptions.use-case';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Promotion, Coupon]), UnitsModule, ProductsModule],
+  imports: [
+    TypeOrmModule.forFeature([Promotion, Coupon, CouponUnit, CouponRedemption]),
+    UnitsModule,
+    ProductsModule,
+  ],
   controllers: [PromotionsController, CouponsController],
   providers: [
     CreatePromotionUseCase,
@@ -31,7 +43,13 @@ import { ValidateCouponUseCase } from './use-cases/validate-coupon.use-case';
     UpdateCouponUseCase,
     ListCouponsUseCase,
     ValidateCouponUseCase,
+    CouponAccessService,
+    CouponPolicyService,
+    CouponRedemptionService,
+    CouponWriteValidatorService,
+    GetCouponUseCase,
+    ListCouponRedemptionsUseCase,
   ],
-  exports: [TypeOrmModule, ValidateCouponUseCase],
+  exports: [TypeOrmModule, ValidateCouponUseCase, CouponRedemptionService],
 })
 export class PromotionsModule {}

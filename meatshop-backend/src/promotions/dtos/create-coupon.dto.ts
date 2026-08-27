@@ -1,61 +1,89 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
+  ArrayUnique,
+  IsArray,
+  IsBoolean,
   IsDateString,
+  IsEnum,
+  IsInt,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
-  Max,
+  Matches,
   MaxLength,
   Min,
+  MinLength,
   ValidateIf,
 } from 'class-validator';
+import { CouponDiscountType } from '../enums/coupon-discount-type.enum';
+import { CouponType } from '../enums/coupon-type.enum';
 
 export class CreateCouponDto {
-  @ApiProperty({
-    description: 'Código do cupom de desconto (único)',
-    example: 'PROMO10',
-  })
-  @IsNotEmpty()
+  @ApiProperty({ example: 'MEATSHOP10' })
   @IsString()
+  @Matches(/^[A-Za-z0-9_-]+$/)
   @MaxLength(50)
   code: string;
 
-  @ApiPropertyOptional({
-    description:
-      'Percentual de desconto do cupom (obrigatório caso discount_value não seja informado)',
-    example: 10,
-  })
-  @ValidateIf((dto) => dto.discount_value === undefined)
-  @IsNotEmpty({ message: 'Either discount_percentage or discount_value is required' })
-  @IsNumber()
-  @Min(0)
-  @Max(100)
-  discount_percentage?: number;
-
-  @ApiPropertyOptional({
-    description:
-      'Valor fixo de desconto do cupom (obrigatório caso discount_percentage não seja informado)',
-    example: 15.5,
-  })
-  @ValidateIf((dto) => dto.discount_percentage === undefined)
-  @IsNotEmpty({ message: 'Either discount_percentage or discount_value is required' })
-  @IsNumber()
-  @Min(0)
-  discount_value?: number;
-
-  @ApiProperty({
-    description: 'Data e hora de expiração do cupom (ISO 8601)',
-    example: '2026-12-31T23:59:59.000Z',
-  })
+  @ApiProperty({ example: 'Boas-vindas' })
+  @IsString()
   @IsNotEmpty()
-  @IsDateString()
-  expires_at: string;
+  @MinLength(3)
+  @MaxLength(120)
+  name: string;
 
-  @ApiPropertyOptional({
-    description: 'Indica se o cupom está ativo',
-    example: true,
-  })
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(1000) description?: string;
+  @ApiProperty({ enum: CouponType }) @IsEnum(CouponType) type: CouponType;
+  @ApiPropertyOptional()
+  @ValidateIf((dto) => dto.type === CouponType.UNIT)
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  unit_id?: number;
+
+  @ApiPropertyOptional({ type: [Number] })
   @IsOptional()
-  active?: boolean;
+  @IsArray()
+  @ArrayUnique()
+  @IsInt({ each: true })
+  allowed_unit_ids?: number[];
+
+  @ApiProperty({ enum: CouponDiscountType })
+  @IsEnum(CouponDiscountType)
+  discount_type: CouponDiscountType;
+
+  @ApiProperty({ example: 10 }) @Type(() => Number) @IsNumber() @Min(0.01) discount_amount: number;
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0.01)
+  maximum_discount?: number;
+
+  @ApiPropertyOptional({ default: 0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  minimum_order_value?: number;
+
+  @ApiProperty() @IsDateString() starts_at: string;
+  @ApiProperty() @IsDateString() expires_at: string;
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  total_usage_limit?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  usage_limit_per_user?: number;
+
+  @ApiPropertyOptional({ default: true }) @IsOptional() @IsBoolean() active?: boolean;
 }

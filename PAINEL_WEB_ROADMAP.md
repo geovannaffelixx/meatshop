@@ -65,9 +65,9 @@ Fecha o resto do RF-010 ("gerenciar promoções").
 - **Frontend:** nenhuma tela — provavelmente cabe dentro de "Configurações" ou como aba da própria unidade
 
 ### 3.3 Cupons
-- **Status:** não iniciado
-- **Backend:** pronto, mas **restrito a `SUPER_ADMIN`** hoje (`POST/PATCH /coupons` exigem role de super admin, não de dono de unidade)
-- **Decisão pendente:** isso faz sentido ficar restrito a super admin (cupom de plataforma, não por açougue) ou deveria abrir pra unidade criar cupom próprio? Preciso saber antes de decidir se entra no painel da unidade ou fica de fora.
+- **Status:** concluído, ainda não lançado
+- **Backend:** cupons `PLATFORM` e `UNIT`, regras de elegibilidade, limites, resgate transacional e histórico por pedido
+- **Frontend:** gestão global para `SUPER_ADMIN` e gestão local para `OWNER`/`MANAGER`, com formulário completo e histórico de usos
 
 ---
 

@@ -6,6 +6,9 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ### Adicionado
 
+- Gestão completa de cupons no painel: campanhas globais para `SUPER_ADMIN` e cupons locais para gestores da unidade.
+- Formulário de escopo, desconto, período, pedido mínimo e limites, além de listagem, ativação e histórico de utilizações.
+- Traduções dos códigos de erro de elegibilidade e limites dos cupons.
 - Painel global de auditoria exclusivo para `SUPER_ADMIN`, com indicadores, busca, período, resultado, paginação e inspeção antes/depois.
 - Exportação CSV filtrada e item “Auditoria” na navegação administrativa.
 - Área “Ajuda e suporte” para usuários abrirem chamados destinados à plataforma MeatShop.

@@ -11,6 +11,16 @@ const ERROR_CODE_MESSAGES: Record<string, string> = {
   CNPJ_ALREADY_EXISTS: "Já existe um açougue cadastrado com este CNPJ.",
   RESOURCE_ALREADY_EXISTS: "Já existe um cadastro com estas informações.",
   INTERNAL_ERROR: "Não foi possível concluir a operação. Tente novamente em instantes.",
+  COUPON_ALREADY_EXISTS: "Já existe um cupom com este código.",
+  COUPON_NOT_FOUND: "Cupom não encontrado.",
+  COUPON_INACTIVE: "Este cupom está inativo.",
+  COUPON_NOT_STARTED: "Este cupom ainda não está válido.",
+  COUPON_EXPIRED: "Este cupom expirou.",
+  COUPON_NOT_APPLICABLE: "Este cupom não é válido para esta unidade.",
+  COUPON_USAGE_LIMIT_REACHED: "O limite de utilizações deste cupom foi atingido.",
+  COUPON_USER_LIMIT_REACHED: "Você já atingiu o limite de uso deste cupom.",
+  COUPON_MINIMUM_NOT_REACHED: "O valor mínimo exigido por este cupom não foi atingido.",
+  COUPON_INVALID_PERIOD: "O período de validade do cupom é inválido.",
 };
 
 const STATUS_MESSAGES: Record<number, string> = {

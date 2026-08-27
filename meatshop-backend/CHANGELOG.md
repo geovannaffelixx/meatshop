@@ -6,6 +6,10 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ### Adicionado
 
+- Domínio de cupons `PLATFORM` e `UNIT`, com escopo por unidades, período, pedido mínimo, teto de desconto e limites total/por cliente.
+- Histórico de resgates por pedido e consumo transacional com bloqueio contra concorrência; cancelamentos liberam o uso.
+- Endpoints paginados de gestão, simulação contextual, detalhe e histórico, autorizados por papel global ou permissão da unidade.
+- Testes das regras de cálculo, pedido mínimo, escopo e limite total.
 - Trilha global de auditoria com sucesso e falha, contexto de unidade, identificação anônima por hash, correlação HTTP e eventos do chat WebSocket.
 - Consultas administrativas de resumo, detalhe, filtros avançados e exportação CSV protegida.
 - Migration que preserva eventos após exclusão do usuário/unidade e torna `audit_logs` append-only.
@@ -18,6 +22,8 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ### Alterado
 
+- Cupons legados são migrados para campanhas globais preservando código, desconto e validade.
+- Criação de pedidos passa a validar e consumir cupons atomicamente, com códigos de erro estáveis em português.
 - Snapshots removem credenciais, mascaram dados pessoais e truncam conteúdo excessivo.
 - Logger HTTP deixa de registrar query strings e associa o usuário autenticado quando disponível.
 - Respostas legadas de `SUPER_ADMIN` agora também utilizam o histórico imutável de mensagens.

@@ -7,7 +7,7 @@ import { CartItem } from '../../cart/entities/cart-item.entity';
 import { SendOrderStatusNotificationUseCase } from '../../notifications/use-cases/send-order-status-notification.use-case';
 import { Address } from '../../users/entities/address.entity';
 import { Coupon } from '../../promotions/entities/coupon.entity';
-import { ValidateCouponUseCase } from '../../promotions/use-cases/validate-coupon.use-case';
+import { CouponRedemptionService } from '../../promotions/services/coupon-redemption.service';
 import { Stock } from '../../products/entities/stock.entity';
 import { User } from '../../users/entities/user.entity';
 import { CreateOrderDto } from '../dtos/create-order.dto';
@@ -19,7 +19,7 @@ import { OrderStatusHistory } from '../entities/order-status-history.entity';
 import { Payment } from '../entities/payment.entity';
 import { StockAvailabilityValidator } from '../validators/stock-availability.validator';
 
-interface OrderAmounts {
+interface IOrderAmounts {
   subtotal: number;
   discount_amount: number;
   delivery_fee: number;
@@ -47,7 +47,7 @@ export class CreateOrderUseCase {
     private readonly addressRepository: Repository<Address>,
     private readonly cartAccessService: CartAccessService,
     private readonly stockAvailabilityValidator: StockAvailabilityValidator,
-    private readonly validateCouponUseCase: ValidateCouponUseCase,
+    private readonly couponRedemption: CouponRedemptionService,
     private readonly configService: ConfigService,
     private readonly sendOrderStatusNotificationUseCase: SendOrderStatusNotificationUseCase,
     @InjectDataSource()
@@ -67,17 +67,30 @@ export class CreateOrderUseCase {
     );
 
     const address = await this.resolveAddress(dto, currentUser);
-    const coupon = await this.resolveCoupon(dto.coupon_code);
-    const amounts = this.calculateAmounts(items, coupon, dto.delivery_type);
+    const subtotal = this.calculateSubtotal(items);
 
     const order = await this.dataSource.transaction(async (manager) => {
+      const prepared = await this.couponRedemption.prepare(
+        dto.coupon_code,
+        {
+          userId: currentUser.id,
+          unitId,
+          subtotal,
+        },
+        manager,
+      );
+      const amounts = this.calculateAmounts(
+        subtotal,
+        prepared?.discountAmount ?? 0,
+        dto.delivery_type,
+      );
       const order = await this.persistOrder(
         manager,
         dto,
         currentUser,
         unitId,
         address,
-        coupon,
+        prepared?.coupon ?? null,
         amounts,
       );
       await this.persistOrderItems(manager, order.id, items);
@@ -92,6 +105,12 @@ export class CreateOrderUseCase {
         }),
       );
       await manager.delete(CartItem, { cart_id: items[0].cart_id });
+      await this.couponRedemption.consume(
+        prepared,
+        order.id,
+        { userId: currentUser.id, unitId, subtotal },
+        manager,
+      );
       return order;
     });
 
@@ -151,41 +170,22 @@ export class CreateOrderUseCase {
     return address;
   }
 
-  private async resolveCoupon(code: string | undefined): Promise<Coupon | null> {
-    if (!code) {
-      return null;
-    }
-    return this.validateCouponUseCase.execute(code);
+  private calculateSubtotal(items: CartItem[]): number {
+    return items.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0);
   }
 
   private calculateAmounts(
-    items: CartItem[],
-    coupon: Coupon | null,
+    subtotal: number,
+    discount_amount: number,
     deliveryType: DeliveryType,
-  ): OrderAmounts {
-    const subtotal = items.reduce(
-      (sum, item) => sum + Number(item.product.price) * item.quantity,
-      0,
-    );
-    const discount_amount = this.calculateDiscount(subtotal, coupon);
-    const delivery_fee =
+  ): IOrderAmounts {
+    const deliveryFee =
       deliveryType === DeliveryType.DELIVERY
         ? Number(this.configService.get<string>('DEFAULT_DELIVERY_FEE', '0'))
         : 0;
-    const total_amount = Math.max(0, subtotal - discount_amount + delivery_fee);
+    const totalAmount = Math.max(0, subtotal - discount_amount + deliveryFee);
 
-    return { subtotal, discount_amount, delivery_fee, total_amount };
-  }
-
-  private calculateDiscount(subtotal: number, coupon: Coupon | null): number {
-    if (!coupon) return 0;
-    if (coupon.discount_percentage) {
-      return subtotal * (Number(coupon.discount_percentage) / 100);
-    }
-    if (coupon.discount_value) {
-      return Math.min(Number(coupon.discount_value), subtotal);
-    }
-    return 0;
+    return { subtotal, discount_amount, delivery_fee: deliveryFee, total_amount: totalAmount };
   }
 
   private async persistOrder(
@@ -195,7 +195,7 @@ export class CreateOrderUseCase {
     unitId: number,
     address: Address | null,
     coupon: Coupon | null,
-    amounts: OrderAmounts,
+    amounts: IOrderAmounts,
   ): Promise<Order> {
     const order = manager.create(Order, {
       client_id: currentUser.id,

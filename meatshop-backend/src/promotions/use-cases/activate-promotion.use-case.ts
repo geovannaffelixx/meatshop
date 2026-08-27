@@ -27,7 +27,9 @@ export class ActivatePromotionUseCase {
 
     const unit = await this.unitRepository.findOne({ where: { id: promotion.unit_id } });
     await this.unitAuthorizationService.assertHasPermission(
-      currentUser, promotion.unit_id, UnitPermission.MANAGE_PRODUCTS,
+      currentUser,
+      promotion.unit_id,
+      UnitPermission.MANAGE_PRODUCTS,
     );
 
     promotion.active = true;

@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
+import { CouponRedemptionService } from '../../promotions/services/coupon-redemption.service';
 import { Stock } from '../../products/entities/stock.entity';
 import { User } from '../../users/entities/user.entity';
 import { CancelOrderDto } from '../dtos/cancel-order.dto';
@@ -24,13 +25,11 @@ export class CancelOrderUseCase {
     private readonly stockRepository: Repository<Stock>,
     private readonly orderAuthorizationService: OrderAuthorizationService,
     private readonly orderStatusService: OrderStatusService,
+    private readonly dataSource: DataSource,
+    private readonly couponRedemption: CouponRedemptionService,
   ) {}
 
-  async execute(
-    orderId: number,
-    dto: CancelOrderDto,
-    currentUser: User,
-  ): Promise<Order> {
+  async execute(orderId: number, dto: CancelOrderDto, currentUser: User): Promise<Order> {
     const order = await this.orderRepository.findOne({ where: { id: orderId } });
     if (!order) {
       throw new NotFoundException('Order not found');
@@ -47,17 +46,18 @@ export class CancelOrderUseCase {
     order.cancelled_at = new Date();
     order.cancelled_by = cancelledBy;
 
-    return this.orderStatusService.transition(
+    const cancelled = await this.orderStatusService.transition(
       order,
       OrderStatus.CANCELLED,
       currentUser.id,
     );
+    await this.dataSource.transaction((manager) =>
+      this.couponRedemption.releaseOrder(orderId, manager),
+    );
+    return cancelled;
   }
 
-  private async resolveCancelledBy(
-    order: Order,
-    currentUser: User,
-  ): Promise<CancelledBy> {
+  private async resolveCancelledBy(order: Order, currentUser: User): Promise<CancelledBy> {
     if (order.client_id === currentUser.id) {
       return CancelledBy.CLIENT;
     }

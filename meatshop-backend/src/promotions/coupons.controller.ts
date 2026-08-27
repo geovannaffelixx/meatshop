@@ -1,10 +1,14 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Roles } from '../common/decorators/roles.decorator';
-import { GlobalRole } from '../common/enums/global-role.enum';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { User } from '../users/entities/user.entity';
 import { CreateCouponDto } from './dtos/create-coupon.dto';
+import { FilterCouponsDto } from './dtos/filter-coupons.dto';
 import { UpdateCouponDto } from './dtos/update-coupon.dto';
+import { ValidateCouponDto } from './dtos/validate-coupon.dto';
 import { CreateCouponUseCase } from './use-cases/create-coupon.use-case';
+import { GetCouponUseCase } from './use-cases/get-coupon.use-case';
+import { ListCouponRedemptionsUseCase } from './use-cases/list-coupon-redemptions.use-case';
 import { ListCouponsUseCase } from './use-cases/list-coupons.use-case';
 import { UpdateCouponUseCase } from './use-cases/update-coupon.use-case';
 import { ValidateCouponUseCase } from './use-cases/validate-coupon.use-case';
@@ -14,53 +18,46 @@ import { ValidateCouponUseCase } from './use-cases/validate-coupon.use-case';
 @Controller('coupons')
 export class CouponsController {
   constructor(
-    private readonly createCouponUseCase: CreateCouponUseCase,
-    private readonly updateCouponUseCase: UpdateCouponUseCase,
-    private readonly listCouponsUseCase: ListCouponsUseCase,
-    private readonly validateCouponUseCase: ValidateCouponUseCase,
+    private readonly createCoupon: CreateCouponUseCase,
+    private readonly updateCoupon: UpdateCouponUseCase,
+    private readonly listCoupons: ListCouponsUseCase,
+    private readonly validateCoupon: ValidateCouponUseCase,
+    private readonly getCoupon: GetCouponUseCase,
+    private readonly listRedemptions: ListCouponRedemptionsUseCase,
   ) {}
 
-  @ApiOperation({ summary: 'Lista todos os cupons cadastrados (restrito a SUPER_ADMIN)' })
-  @ApiResponse({ status: 200, description: 'Lista de cupons retornada com sucesso' })
-  @ApiResponse({ status: 403, description: 'Sem permissão para listar cupons' })
-  @Roles(GlobalRole.SUPER_ADMIN)
-  @Get()
-  list() {
-    return this.listCouponsUseCase.execute();
+  @Get() list(@Query() filters: FilterCouponsDto, @CurrentUser() user: User) {
+    return this.listCoupons.execute(filters, user);
   }
 
-  @ApiOperation({
-    summary: 'Valida um cupom pelo código, verificando se está ativo e não expirado',
-  })
-  @ApiParam({ name: 'code', description: 'Código do cupom a ser validado', example: 'PROMO10' })
-  @ApiResponse({ status: 200, description: 'Cupom válido' })
-  @ApiResponse({ status: 400, description: 'Cupom inválido ou expirado' })
-  @ApiResponse({ status: 404, description: 'Cupom não encontrado' })
-  @Get('validate/:code')
-  validate(@Param('code') code: string) {
-    return this.validateCouponUseCase.execute(code);
+  @Get('validate/:code') validate(
+    @Param('code') code: string,
+    @Query() query: ValidateCouponDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.validateCoupon.execute(code, user, query.unit_id, query.subtotal);
   }
 
-  @ApiOperation({ summary: 'Cria um novo cupom de desconto (restrito a SUPER_ADMIN)' })
-  @ApiResponse({ status: 201, description: 'Cupom criado com sucesso' })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  @ApiResponse({ status: 403, description: 'Sem permissão para criar cupons' })
-  @ApiResponse({ status: 409, description: 'Código de cupom já cadastrado' })
-  @Roles(GlobalRole.SUPER_ADMIN)
-  @Post()
-  create(@Body() dto: CreateCouponDto) {
-    return this.createCouponUseCase.execute(dto);
+  @Post() create(@Body() dto: CreateCouponDto, @CurrentUser() user: User) {
+    return this.createCoupon.execute(dto, user);
   }
 
-  @ApiOperation({ summary: 'Atualiza um cupom existente (restrito a SUPER_ADMIN)' })
-  @ApiParam({ name: 'id', description: 'Identificador do cupom', example: 1 })
-  @ApiResponse({ status: 200, description: 'Cupom atualizado com sucesso' })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  @ApiResponse({ status: 403, description: 'Sem permissão para atualizar cupons' })
-  @ApiResponse({ status: 404, description: 'Cupom não encontrado' })
-  @Roles(GlobalRole.SUPER_ADMIN)
-  @Patch(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateCouponDto) {
-    return this.updateCouponUseCase.execute(id, dto);
+  @Get(':id') detail(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: User) {
+    return this.getCoupon.execute(id, user);
+  }
+
+  @Get(':id/redemptions') redemptions(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: User,
+  ) {
+    return this.listRedemptions.execute(id, user);
+  }
+
+  @Patch(':id') update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateCouponDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.updateCoupon.execute(id, dto, user);
   }
 }

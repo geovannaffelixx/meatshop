@@ -30,7 +30,9 @@ export class CreatePromotionUseCase {
     }
 
     await this.unitAuthorizationService.assertHasPermission(
-      currentUser, unit.id, UnitPermission.MANAGE_PRODUCTS,
+      currentUser,
+      unit.id,
+      UnitPermission.MANAGE_PRODUCTS,
     );
     await this.ensureProductBelongsToUnit(dto.product_id, dto.unit_id);
     this.assertValidPeriod(dto.starts_at, dto.ends_at);
