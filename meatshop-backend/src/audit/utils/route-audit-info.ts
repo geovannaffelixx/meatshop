@@ -1,5 +1,5 @@
 const MUTATING_METHODS = ['POST', 'PATCH', 'PUT', 'DELETE'];
-const EXCLUDED_PREFIXES = ['/auth', '/webhooks', '/docs', '/metrics', '/health'];
+const EXCLUDED_PREFIXES = ['/docs', '/metrics', '/health'];
 const SAFE_IDENTIFIER = /^[a-z_]+$/;
 
 const METHOD_TO_ACTION: Record<string, string> = {
@@ -9,11 +9,24 @@ const METHOD_TO_ACTION: Record<string, string> = {
   DELETE: 'DELETE',
 };
 
-export interface RouteAuditInfo {
+export interface IRouteAuditInfo {
   action: string;
   entity: string;
   entityId: string | null;
+  description: string;
 }
+
+const ROUTE_ACTIONS: Array<[RegExp, string]> = [
+  [/\/login$/, 'LOGIN'],
+  [/\/logout$/, 'LOGOUT'],
+  [/password/, 'PASSWORD_CHANGE'],
+  [/\/cancel$/, 'ORDER_CANCELLED'],
+  [/\/status$/, 'STATUS_CHANGED'],
+  [/\/approve$/, 'APPROVED'],
+  [/\/close$/, 'SUPPORT_TICKET_CLOSED'],
+  [/\/reopen$/, 'SUPPORT_TICKET_REOPENED'],
+  [/\/messages$/, 'SUPPORT_MESSAGE_SENT'],
+];
 
 export function isMutatingMethod(method: string): boolean {
   return MUTATING_METHODS.includes(method.toUpperCase());
@@ -35,15 +48,20 @@ export function resolveRouteAuditInfo(
   method: string,
   routePath: string,
   params: Record<string, string>,
-): RouteAuditInfo {
+): IRouteAuditInfo {
   const segments = routePath.split('/').filter(Boolean);
   const entity = deriveEntity(segments);
   const entityId = deriveEntityId(params);
 
+  const action =
+    ROUTE_ACTIONS.find(([pattern]) => pattern.test(routePath))?.[1] ??
+    METHOD_TO_ACTION[method.toUpperCase()] ??
+    method.toUpperCase();
   return {
-    action: METHOD_TO_ACTION[method.toUpperCase()] ?? method.toUpperCase(),
+    action,
     entity,
     entityId,
+    description: `${action} em ${entity}`,
   };
 }
 
@@ -54,7 +72,7 @@ function deriveEntity(segments: string[]): string {
   const candidate =
     firstParamIndex > 0
       ? segments[firstParamIndex - 1]
-      : staticSegments[staticSegments.length - 1] ?? 'unknown';
+      : (staticSegments[staticSegments.length - 1] ?? 'unknown');
 
   return candidate.replace(/-/g, '_');
 }
@@ -67,5 +85,19 @@ function deriveEntityId(params: Record<string, string>): string | null {
 }
 
 export function tableNameFor(entity: string): string | null {
-  return SAFE_IDENTIFIER.test(entity) ? entity : null;
+  const allowed = [
+    'users',
+    'units',
+    'products',
+    'categories',
+    'orders',
+    'promotions',
+    'coupons',
+    'expenses',
+    'recipes',
+    'reviews',
+    'support_tickets',
+    'notifications',
+  ];
+  return SAFE_IDENTIFIER.test(entity) && allowed.includes(entity) ? entity : null;
 }

@@ -5,14 +5,13 @@ import { User } from '../../users/entities/user.entity';
 import { SupportTicket } from '../entities/support-ticket.entity';
 import { SupportTicketStatus } from '../enums/support-ticket-status.enum';
 import { SupportTicketAccessService } from '../services/support-ticket-access.service';
-import { SupportAuditService } from '../services/support-audit.service';
 
 @Injectable()
 export class ReopenSupportTicketUseCase {
   constructor(
-    @InjectRepository(SupportTicket) private readonly tickets: Repository<SupportTicket>,
+    @InjectRepository(SupportTicket)
+    private readonly tickets: Repository<SupportTicket>,
     private readonly access: SupportTicketAccessService,
-    private readonly audit: SupportAuditService,
   ) {}
 
   async execute(id: number, actor: User): Promise<SupportTicket> {
@@ -26,7 +25,6 @@ export class ReopenSupportTicketUseCase {
     ticket.closed_at = null;
     ticket.last_message_at = new Date();
     const saved = await this.tickets.save(ticket);
-    await this.audit.record(actor.id, 'SUPPORT_TICKET_REOPENED', ticket.id);
     return saved;
   }
 }

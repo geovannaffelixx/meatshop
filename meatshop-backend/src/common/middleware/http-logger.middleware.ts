@@ -21,11 +21,12 @@ export class HttpLoggerMiddleware implements NestMiddleware {
 
       logger.info('HTTP Request', {
         method: req.method,
-        path: (req as any).originalUrl || req.url,
+        path: req.path,
         statusCode,
         durationMs,
         userAgent: req.headers['user-agent'],
         ip: req.ip,
+        userId: (req as Request & { user?: { id?: number } }).user?.id,
       });
 
       try {

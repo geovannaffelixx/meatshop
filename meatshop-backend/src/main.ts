@@ -44,7 +44,7 @@ async function bootstrap() {
     httpLogger.use(req, res, next);
   });
 
-app.useGlobalFilters(new AllExceptionsFilter());
+  app.useGlobalFilters(app.get(AllExceptionsFilter));
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -55,13 +55,10 @@ app.useGlobalFilters(new AllExceptionsFilter());
     }),
   );
 
-app.enableCors({
-  origin: [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-  ],
-  credentials: true,
-});
+  app.enableCors({
+    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    credentials: true,
+  });
   appLogger.info('CORS e CookieParser configurados com sucesso');
 
   if (process.env.NODE_ENV !== 'production') {

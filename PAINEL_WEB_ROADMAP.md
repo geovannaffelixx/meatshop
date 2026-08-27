@@ -93,14 +93,14 @@ Fecha o resto do RF-010 ("gerenciar promoções").
 - **Frontend:** área “Ajuda e suporte” para solicitantes e console global de atendimento para `SUPER_ADMIN`
 
 ### 5.2 Notificações
-- **Status:** não iniciado
-- **Backend:** pronto (`GET /notifications`, `PATCH .../read-all`)
-- **Frontend:** nenhuma tela nem sininho na sidebar — precisa decidir o formato (dropdown no topo? página própria?)
+- **Status:** concluído na versão 2.3.0
+- **Backend:** contexto de unidade, leitura individual/em lote e entrega por Socket.IO
+- **Frontend:** sino, pop-ups em tempo real e central de notificações
 
 ### 5.3 Log de auditoria
-- **Status:** não iniciado
-- **Backend:** pronto, restrito a `SUPER_ADMIN`
-- **Frontend:** nenhuma tela — prioridade baixa pro dono comum de unidade, só faz sentido se houver um perfil de super admin usando o painel
+- **Status:** concluído, ainda não lançado
+- **Backend:** trilha append-only de sucessos/falhas, sanitização LGPD, filtros, resumo, detalhe, CSV e cobertura HTTP/WebSocket; consulta restrita a `SUPER_ADMIN`
+- **Frontend:** painel global com indicadores, filtros, paginação, detalhe antes/depois e exportação
 
 ---
 

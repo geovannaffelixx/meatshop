@@ -6,6 +6,8 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ### Adicionado
 
+- Painel global de auditoria exclusivo para `SUPER_ADMIN`, com indicadores, busca, período, resultado, paginação e inspeção antes/depois.
+- Exportação CSV filtrada e item “Auditoria” na navegação administrativa.
 - Área “Ajuda e suporte” para usuários abrirem chamados destinados à plataforma MeatShop.
 - Console global de suporte para `SUPER_ADMIN`, com solicitante, unidade, prioridade, status e filtros.
 - Conversa completa por chamado, envio e visualização de imagens, encerramento e reabertura.

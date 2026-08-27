@@ -12,8 +12,6 @@ import { SupportContextService } from './services/support-context.service';
 import { SendSupportMessageUseCase } from './use-cases/send-support-message.use-case';
 import { SearchSupportTicketsUseCase } from './use-cases/search-support-tickets.use-case';
 import { ReopenSupportTicketUseCase } from './use-cases/reopen-support-ticket.use-case';
-import { AuditLog } from '../audit/entities/audit-log.entity';
-import { SupportAuditService } from './services/support-audit.service';
 import { SupportTicketAccessService } from './services/support-ticket-access.service';
 import { SupportController } from './support.controller';
 import { AnswerSupportTicketUseCase } from './use-cases/answer-support-ticket.use-case';
@@ -26,7 +24,14 @@ import { UpdateSupportTicketUseCase } from './use-cases/update-support-ticket.us
 @Module({
   imports: [
     NotificationsModule,
-    TypeOrmModule.forFeature([SupportTicket, SupportMessage, SupportAttachment, User, Order, UserUnit, AuditLog]),
+    TypeOrmModule.forFeature([
+      SupportTicket,
+      SupportMessage,
+      SupportAttachment,
+      User,
+      Order,
+      UserUnit,
+    ]),
   ],
   controllers: [SupportController, SupportUploadController],
   providers: [
@@ -41,7 +46,6 @@ import { UpdateSupportTicketUseCase } from './use-cases/update-support-ticket.us
     SendSupportMessageUseCase,
     SearchSupportTicketsUseCase,
     ReopenSupportTicketUseCase,
-    SupportAuditService,
   ],
 })
 export class SupportModule {}

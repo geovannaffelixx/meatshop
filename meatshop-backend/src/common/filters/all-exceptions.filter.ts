@@ -5,11 +5,23 @@ import {
   HttpException,
   HttpStatus,
   Logger,
+  Injectable,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { QueryFailedError } from 'typeorm';
+import { AuditTrailService } from '../../audit/audit-trail.service';
+import { AuditOutcome } from '../../audit/entities/audit-log.entity';
+import {
+  isExcludedPath,
+  isMutatingMethod,
+  resolveRouteAuditInfo,
+} from '../../audit/utils/route-audit-info';
 
-type ErrorDetails = { code?: string; message: string | string[]; error?: string };
+type ErrorDetails = {
+  code?: string;
+  message: string | string[];
+  error?: string;
+};
 type PostgresDriverError = { code?: string; constraint?: string };
 
 const UNIQUE_CONSTRAINT_ERRORS: Record<string, ErrorDetails> = {
@@ -28,14 +40,18 @@ const UNIQUE_CONSTRAINT_ERRORS: Record<string, ErrorDetails> = {
 };
 
 @Catch()
+@Injectable()
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
+
+  constructor(private readonly auditTrail: AuditTrailService) {}
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const context = host.switchToHttp();
     const response = context.getResponse<Response>();
     const request = context.getRequest<Request>();
     const { status, details } = this.resolveError(exception);
+    this.recordFailure(request, status, details);
 
     if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
       this.logger.error(
@@ -52,7 +68,29 @@ export class AllExceptionsFilter implements ExceptionFilter {
     });
   }
 
-  private resolveError(exception: unknown): { status: number; details: ErrorDetails } {
+  private recordFailure(request: Request, status: number, details: ErrorDetails): void {
+    if (!isMutatingMethod(request.method) || isExcludedPath(request.path)) return;
+    const info = resolveRouteAuditInfo(
+      request.method,
+      request.route?.path ?? request.path,
+      request.params ?? {},
+    );
+    void this.auditTrail.safeRecord({
+      ...this.auditTrail.contextFromRequest(request),
+      action: info.action,
+      entity: info.entity,
+      entityId: info.entityId,
+      description: `${info.description} falhou: ${details.code ?? status}`,
+      outcome: AuditOutcome.FAILURE,
+      statusCode: status,
+      newData: { error_code: details.code, validation: details.message },
+    });
+  }
+
+  private resolveError(exception: unknown): {
+    status: number;
+    details: ErrorDetails;
+  } {
     if (exception instanceof QueryFailedError) {
       const driverError = exception.driverError as PostgresDriverError;
       if (driverError.code === '23505') {

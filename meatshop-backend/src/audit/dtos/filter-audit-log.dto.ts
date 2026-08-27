@@ -1,33 +1,44 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString } from 'class-validator';
+import { IsDateString, IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { AuditOutcome } from '../entities/audit-log.entity';
 
 export class FilterAuditLogDto {
-  @ApiPropertyOptional({ description: 'Filtra pelo usuário que executou a ação', example: 1 })
+  @ApiPropertyOptional()
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   user_id?: number;
 
-  @ApiPropertyOptional({ description: 'Filtra pela entidade afetada', example: 'products' })
-  @IsOptional()
-  @IsString()
-  entity?: string;
-
-  @ApiPropertyOptional({ description: 'Filtra pela ação executada', example: 'UPDATE' })
-  @IsOptional()
-  @IsString()
-  action?: string;
-
-  @ApiPropertyOptional({ description: 'Página (default 1)', example: 1 })
+  @ApiPropertyOptional()
   @IsOptional()
   @Type(() => Number)
   @IsInt()
+  unit_id?: number;
+
+  @ApiPropertyOptional() @IsOptional() @IsString() entity?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() entity_id?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() action?: string;
+  @ApiPropertyOptional({ enum: AuditOutcome })
+  @IsOptional()
+  @IsEnum(AuditOutcome)
+  outcome?: AuditOutcome;
+
+  @ApiPropertyOptional() @IsOptional() @IsString() search?: string;
+  @ApiPropertyOptional() @IsOptional() @IsDateString() date_from?: string;
+  @ApiPropertyOptional() @IsOptional() @IsDateString() date_to?: string;
+  @ApiPropertyOptional({ default: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
   page?: number;
 
-  @ApiPropertyOptional({ description: 'Itens por página (default 20, máx 100)', example: 20 })
+  @ApiPropertyOptional({ default: 20 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
+  @Min(1)
+  @Max(100)
   limit?: number;
 }

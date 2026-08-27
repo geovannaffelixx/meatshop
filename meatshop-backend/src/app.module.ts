@@ -68,6 +68,7 @@ import { SavedPaymentMethodsModule } from './saved-payment-methods/saved-payment
 import { SeedModule } from './database/seed/seed.module';
 import { MercadoPagoModule } from '@/mercadopago/mercadopago.module';
 import { EmailModule } from './email/email.module';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 @Module({
   imports: [
     // Configuração global
@@ -167,6 +168,6 @@ import { EmailModule } from './email/email.module';
     MercadoPagoModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, AllExceptionsFilter],
 })
 export class AppModule {}

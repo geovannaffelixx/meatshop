@@ -18,12 +18,17 @@ import { SendChatSocketMessageDto } from './dtos/send-chat-socket-message.dto';
 import { ChatParticipantType } from './enums/chat-participant-type.enum';
 import { ChatAuthorizationService } from './services/chat-authorization.service';
 import { SendMessageUseCase } from './use-cases/send-message.use-case';
+import { AuditTrailService } from '../audit/audit-trail.service';
+import { AuditOutcome } from '../audit/entities/audit-log.entity';
 
 function roomName(orderId: number, participantType: ChatParticipantType): string {
   return `order:${orderId}:${participantType}`;
 }
 
-@WebSocketGateway({ namespace: '/chat', cors: { origin: '*', credentials: true } })
+@WebSocketGateway({
+  namespace: '/chat',
+  cors: { origin: '*', credentials: true },
+})
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
 export class ChatGateway implements OnGatewayConnection {
   private readonly logger = new Logger(ChatGateway.name);
@@ -39,13 +44,16 @@ export class ChatGateway implements OnGatewayConnection {
     private readonly orderRepository: Repository<Order>,
     private readonly chatAuthorizationService: ChatAuthorizationService,
     private readonly sendMessageUseCase: SendMessageUseCase,
+    private readonly auditTrail: AuditTrailService,
   ) {}
 
   async handleConnection(client: Socket): Promise<void> {
     try {
       const token = this.extractToken(client);
       const payload = await this.jwtService.verifyAsync<{ sub: number }>(token);
-      const user = await this.userRepository.findOne({ where: { id: payload.sub } });
+      const user = await this.userRepository.findOne({
+        where: { id: payload.sub },
+      });
       if (!user) {
         throw new Error('User not found');
       }
@@ -92,13 +100,38 @@ export class ChatGateway implements OnGatewayConnection {
 
       const room = roomName(dto.order_id, dto.participant_type);
       this.server.to(room).emit('chat:message', message);
+      await this.recordSocketEvent(client, dto.order_id, AuditOutcome.SUCCESS);
     } catch (error) {
+      await this.recordSocketEvent(client, dto.order_id, AuditOutcome.FAILURE);
       client.emit('chat:error', { message: (error as Error).message });
     }
   }
 
+  private async recordSocketEvent(
+    client: Socket,
+    orderId: number,
+    outcome: AuditOutcome,
+  ): Promise<void> {
+    const user = client.data.user as User | undefined;
+    await this.auditTrail.safeRecord({
+      action: 'CHAT_MESSAGE_SENT',
+      entity: 'chats',
+      entityId: String(orderId),
+      description: `Envio de mensagem no chat do pedido ${outcome === AuditOutcome.SUCCESS ? 'realizado' : 'falhou'}`,
+      outcome,
+      userId: user?.id ?? null,
+      actorType: user ? 'USER' : 'ANONYMOUS',
+      path: '/chat:send',
+      method: 'WS',
+      ipAddress: client.handshake.address,
+      userAgent: client.handshake.headers['user-agent'] ?? null,
+    });
+  }
+
   private async loadOrder(orderId: number): Promise<Order> {
-    const order = await this.orderRepository.findOne({ where: { id: orderId } });
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+    });
     if (!order) {
       throw new Error('Order not found');
     }

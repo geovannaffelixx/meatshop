@@ -6,6 +6,10 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ### Adicionado
 
+- Trilha global de auditoria com sucesso e falha, contexto de unidade, identificação anônima por hash, correlação HTTP e eventos do chat WebSocket.
+- Consultas administrativas de resumo, detalhe, filtros avançados e exportação CSV protegida.
+- Migration que preserva eventos após exclusão do usuário/unidade e torna `audit_logs` append-only.
+- Testes da sanitização de dados e classificação semântica de rotas críticas.
 - Conversas persistentes nos chamados de suporte, com histórico completo de mensagens e remetentes.
 - Upload protegido de até quatro imagens por mensagem, limitado a 5 MB por arquivo e validado por MIME e assinatura binária.
 - Categorias, prioridades, contexto opcional de unidade/pedido, responsável, datas operacionais e filtros paginados.
@@ -14,6 +18,8 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ### Alterado
 
+- Snapshots removem credenciais, mascaram dados pessoais e truncam conteúdo excessivo.
+- Logger HTTP deixa de registrar query strings e associa o usuário autenticado quando disponível.
 - Respostas legadas de `SUPER_ADMIN` agora também utilizam o histórico imutável de mensagens.
 - Dados antigos de descrição e resposta são migrados para a nova conversa sem perda de conteúdo.
 
