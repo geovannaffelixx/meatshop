@@ -61,7 +61,11 @@ async function bootstrap() {
   });
   appLogger.info('CORS e CookieParser configurados com sucesso');
 
-  if (process.env.NODE_ENV !== 'production') {
+  const swaggerEnabled =
+    process.env.SWAGGER_ENABLED === 'true' ||
+    process.env.NODE_ENV !== 'production';
+
+  if (swaggerEnabled) {
     setupSwagger(app);
     appLogger.info('Swagger disponível em /docs');
   }

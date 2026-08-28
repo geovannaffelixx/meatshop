@@ -43,6 +43,7 @@ services:
     # É a rede de segurança de produção contra o TypeORM alterar o schema automaticamente — nunca remover ou mudar para "true".
     environment:
       NODE_ENV: production
+      SWAGGER_ENABLED: "true"
       PORT: 3001
 
       DB_TYPE: postgres
