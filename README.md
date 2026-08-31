@@ -1,5 +1,14 @@
 # 🥩 MeatShop — Plataforma para Açougues & Clientes
 
+> [!IMPORTANT]
+> Para subir banco, migrations, backend e frontend após um clone novo, use o guia oficial [SETUP.md](./SETUP.md). O ambiente Docker é autocontido e não exige criar arquivos `.env`.
+
+```powershell
+git clone --branch develop --single-branch https://github.com/geovannaffelixx/meatshop.git
+cd meatshop
+docker compose up -d --build
+```
+
 ![Build Status](https://img.shields.io/github/actions/workflow/status/geovannaffelixx/meatshop/ci.yml?label=CI%2FCD&logo=github)
 ![Último Commit](https://img.shields.io/github/last-commit/geovannaffelixx/meatshop)
 ![Linguagens](https://img.shields.io/github/languages/top/geovannaffelixx/meatshop)
@@ -261,4 +270,3 @@ Em `/docs` → documentação formal em PDF.
 Uso acadêmico - MIT
 
 ---
-

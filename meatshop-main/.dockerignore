@@ -13,7 +13,7 @@ package-lock.json.old
 # ======================================
 # 🏗️ BUILDS E TESTES
 # ======================================
-.next/cache       # mantém .next para build, mas ignora cache pesado
+.next
 out
 coverage
 build
@@ -31,7 +31,6 @@ logs
 # ======================================
 .env
 .env.*
-!.env.docker
 *.local
 *.development
 *.production

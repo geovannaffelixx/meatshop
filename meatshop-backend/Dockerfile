@@ -1,7 +1,4 @@
-# ============================================
-# STAGE 1 — BUILD
-# ============================================
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS deps
 
 RUN apk add --no-cache python3 make g++
 
@@ -10,30 +7,29 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 RUN npm ci
 
+FROM deps AS builder
+
 COPY tsconfig*.json ./
 COPY nest-cli.json ./
 COPY jest.config.cjs ./
-
-# Copiar código-fonte e migrations
 COPY src ./src
-COPY src/database/migrations ./migrations
 
-# Compilar projeto
 RUN npm run build
 
-# ============================================
-# STAGE 2 — RUNTIME
-# ============================================
-FROM node:20-alpine AS runtime
+FROM deps AS production-deps
+
+RUN npm prune --omit=dev && npm cache clean --force
+
+FROM node:22-alpine AS runtime
 
 WORKDIR /usr/src/app
 
-COPY package*.json ./
-RUN npm ci --omit=dev
+RUN mkdir -p /usr/src/app/uploads /usr/src/app/logs /usr/src/app/data \
+    && chown -R node:node /usr/src/app/uploads /usr/src/app/logs /usr/src/app/data
 
-# Copiar dist E migrations para runtime
-COPY --from=builder /usr/src/app/dist ./dist
-COPY --from=builder /usr/src/app/src/database/migrations ./migrations
+COPY --from=production-deps --chown=node:node /usr/src/app/node_modules ./node_modules
+COPY --from=builder --chown=node:node /usr/src/app/dist ./dist
+COPY --chown=node:node package*.json ./
 
 USER node
 
@@ -42,7 +38,5 @@ ENV NODE_ENV=production \
     TZ=America/Sao_Paulo
 
 EXPOSE 3001
-
-VOLUME ["/usr/src/app/data", "/usr/src/app/logs"]
 
 CMD ["node", "dist/main.js"]

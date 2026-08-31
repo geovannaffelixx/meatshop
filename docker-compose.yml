@@ -1,7 +1,55 @@
+name: meatshop
+
+# Valores exclusivamente locais para o ambiente Docker de demonstração.
+# Em produção, substitua credenciais e segredos por um gerenciador de secrets.
+x-backend-environment: &backend-environment
+  NODE_ENV: production
+  PORT: "3001"
+  SWAGGER_ENABLED: "true"
+  TZ: America/Sao_Paulo
+
+  DB_TYPE: postgres
+  DB_HOST: db
+  DB_PORT: "5432"
+  DB_USERNAME: meatshop_user
+  DB_PASSWORD: meatshop_pass
+  DB_DATABASE: meatshop
+  DB_SYNCHRONIZE: "false"
+  DB_SSL: "false"
+
+  JWT_SECRET: local-demo-access-secret-meatshop-2026-do-not-use-in-production
+  JWT_REFRESH_SECRET: local-demo-refresh-secret-meatshop-2026-do-not-use-in-production
+  JWT_EXPIRES_IN: 15m
+  DELIVERY_CODE_SECRET: local-demo-delivery-code-secret-meatshop-2026
+  PICKUP_CODE_TTL_MINUTES: "240"
+  DELIVERY_CODE_TTL_HOURS: "72"
+
+  FRONTEND_URL: http://localhost:3000
+  BACKEND_PUBLIC_URL: http://localhost:3001
+  COOKIE_SECURE: "false"
+  COOKIE_SAMESITE: strict
+  BRASIL_API_BASE_URL: https://brasilapi.com.br/api
+
+  SEED_ENABLED: "false"
+  SEED_ADMIN_EMAIL: admin@meatshop.local
+  SEED_ADMIN_PASSWORD: Admin123@
+
+  LOG_LEVEL: info
+  LOG_DIR: logs
+  LOG_MAX_DAYS: 14d
+  TYPEORM_LOGGING: "false"
+
+  MAIL_HOST: ""
+  MAIL_PORT: "2525"
+  MAIL_USER: ""
+  MAIL_PASSWORD: ""
+  MAIL_FROM: ""
+  MP_ACCESS_TOKEN: ""
+  MP_WEBHOOK_SECRET: ""
+  MP_ENV: sandbox
+  FIREBASE_SERVICE_ACCOUNT: ""
+
 services:
-  # ==========================================
-  # Banco de Dados - PostgreSQL 17
-  # ==========================================
   db:
     image: postgres:17-alpine
     container_name: meatshop-postgres
@@ -16,168 +64,126 @@ services:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U meatshop_user -d meatshop"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 12
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
 
-  # ==========================================
-  # Backend - NestJS
-  # ==========================================
+  migrator:
+    image: meatshop-backend:dev
+    container_name: meatshop-migrator
+    command: ["npm", "run", "migration:run:prod"]
+    environment: *backend-environment
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+
   backend:
     build:
       context: ./meatshop-backend
       dockerfile: Dockerfile
-    image: meatshop-backend:latest
+    image: meatshop-backend:dev
     container_name: meatshop-backend
-    env_file:
-      - ./meatshop-backend/.env.docker
+    environment: *backend-environment
     depends_on:
       migrator:
         condition: service_completed_successfully
     ports:
       - "3001:3001"
-    # DB_SYNCHRONIZE abaixo sobrescreve o valor de .env.docker (que traz "true" para uso standalone).
-    # É a rede de segurança de produção contra o TypeORM alterar o schema automaticamente — nunca remover ou mudar para "true".
-    environment:
-      NODE_ENV: production
-      SWAGGER_ENABLED: "true"
-      PORT: 3001
-
-      DB_TYPE: postgres
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_USERNAME: meatshop_user
-      DB_PASSWORD: meatshop_pass
-      DB_DATABASE: meatshop
-      DB_SYNCHRONIZE: "false"
-      DB_SSL: "false"
-
-      LOG_LEVEL: info
-      LOG_DIR: logs
-      LOG_MAX_DAYS: 14d
-      TYPEORM_LOGGING: "true"
-      TZ: America/Sao_Paulo
-
-    # ⚠️ Não sobrescreve o /usr/src/app (mantém dist intacto)
     volumes:
-      - ./meatshop-backend/logs:/usr/src/app/logs
-      - ./meatshop-backend/migrations:/usr/src/app/migrations
-      - ./meatshop-backend/data:/usr/src/app/data
-      - ./uploads:/usr/src/app/uploads
+      - backend_logs:/usr/src/app/logs
+      - uploads:/usr/src/app/uploads
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: "0.75"
 
-  # ==========================================
-  # Migrator - executa migrations automaticamente
-  # ==========================================
-  migrator:
-    image: meatshop-backend:latest  # usa o mesmo build do backend
-    container_name: meatshop-migrator
-    command: >
-      sh -c "npm run migration:run:prod &&
-             echo '✅ Migrations aplicadas com sucesso!'"
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      NODE_ENV: production
-      DB_TYPE: postgres
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_USERNAME: meatshop_user
-      DB_PASSWORD: meatshop_pass
-      DB_DATABASE: meatshop
-    volumes:
-      - ./meatshop-backend/migrations:/usr/src/app/migrations
-    restart: "no"
-
-  # ==========================================
-  # Frontend - Next.js
-  # ==========================================
   frontend:
     build:
       context: ./meatshop-main
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_API_URL: http://localhost:3001
+    image: meatshop-frontend:dev
     container_name: meatshop-frontend
-    ports:
-      - "3000:3000"
-    env_file:
-      - ./meatshop-main/.env.docker
     environment:
       NODE_ENV: production
+      PORT: "3000"
+      NEXT_TELEMETRY_DISABLED: "1"
       TZ: America/Sao_Paulo
     depends_on:
       backend:
-        condition: service_started
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: "0.75"
 
-  # ==========================================
-  # Prometheus
-  # ==========================================
   prometheus:
     image: prom/prometheus:latest
-    container_name: prometheus
+    container_name: meatshop-prometheus
+    profiles: ["observability"]
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
       - "9090:9090"
     depends_on:
       backend:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: "0.50"
 
-  # ==========================================
-  # Grafana
-  # ==========================================
   grafana:
     image: grafana/grafana:latest
-    container_name: grafana
+    container_name: meatshop-grafana
+    profiles: ["observability"]
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
       TZ: America/Sao_Paulo
     ports:
       - "3002:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
     depends_on:
       prometheus:
         condition: service_started
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: "0.50"
 
-# ==========================================
-# Volumes persistentes
-# ==========================================
 volumes:
   pgdata:
-    driver: local
+  backend_logs:
+  uploads:
+  grafana_data:
