@@ -2,7 +2,6 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { DeliveryStatus } from '../../orders/enums/delivery-status.enum';
-import { DeliveryStep } from '../../orders/enums/delivery-step.enum';
 import { Order } from '../../orders/entities/order.entity';
 import { OrderAuthorizationService } from '../../orders/services/order-authorization.service';
 import { User } from '../../users/entities/user.entity';
@@ -16,11 +15,7 @@ export class UpdateDeliveryStatusUseCase {
     private readonly orderAuthorizationService: OrderAuthorizationService,
   ) {}
 
-  async execute(
-    orderId: number,
-    dto: UpdateDeliveryStatusDto,
-    currentUser: User,
-  ): Promise<Order> {
+  async execute(orderId: number, dto: UpdateDeliveryStatusDto, currentUser: User): Promise<Order> {
     const deliveryPerson =
       await this.orderAuthorizationService.getActiveDeliveryPerson(currentUser);
 
@@ -34,8 +29,9 @@ export class UpdateDeliveryStatusUseCase {
       throw new BadRequestException('Order is not waiting for pickup');
     }
 
-    order.delivery_status = dto.delivery_status;
-    order.delivery_step = DeliveryStep.DELIVERING;
-    return this.orderRepository.save(order);
+    void dto;
+    throw new BadRequestException(
+      'A retirada deve ser liberada pela unidade após a validação do código.',
+    );
   }
 }

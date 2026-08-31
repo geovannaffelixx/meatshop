@@ -7,6 +7,7 @@ import { OrderAuthorizationService } from '../../orders/services/order-authoriza
 import { User } from '../../users/entities/user.entity';
 import { UpdateLocationDto } from '../dtos/update-location.dto';
 import { DeliveryTracking } from '../entities/delivery-tracking.entity';
+import { DeliveryGateway } from '../delivery.gateway';
 
 const TRACKABLE_STATUSES = [DeliveryStatus.PICKUP, DeliveryStatus.ON_THE_WAY];
 
@@ -18,6 +19,7 @@ export class UpdateDeliveryLocationUseCase {
     @InjectRepository(DeliveryTracking)
     private readonly trackingRepository: Repository<DeliveryTracking>,
     private readonly orderAuthorizationService: OrderAuthorizationService,
+    private readonly deliveryGateway: DeliveryGateway,
   ) {}
 
   async execute(
@@ -43,6 +45,8 @@ export class UpdateDeliveryLocationUseCase {
       latitude: dto.latitude,
       longitude: dto.longitude,
     });
-    return this.trackingRepository.save(tracking);
+    const savedTracking = await this.trackingRepository.save(tracking);
+    this.deliveryGateway.emitLocation(order, savedTracking);
+    return savedTracking;
   }
 }

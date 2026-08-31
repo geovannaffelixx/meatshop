@@ -14,6 +14,7 @@ import { Payment } from './entities/payment.entity';
 import { OrdersController } from './orders.controller';
 import { OrderAuthorizationService } from './services/order-authorization.service';
 import { OrderStatusService } from './services/order-status.service';
+import { DeliveryCodeService } from './services/delivery-code.service';
 import { CancelOrderUseCase } from './use-cases/cancel-order.use-case';
 import { ConfirmOrderUseCase } from './use-cases/confirm-order.use-case';
 import { CreateOrderUseCase } from './use-cases/create-order.use-case';
@@ -40,6 +41,7 @@ import { StockAvailabilityValidator } from './validators/stock-availability.vali
   providers: [
     OrderAuthorizationService,
     OrderStatusService,
+    DeliveryCodeService,
     OrderStatusTransitionValidator,
     StockAvailabilityValidator,
     BusinessHoursValidator,
@@ -52,6 +54,12 @@ import { StockAvailabilityValidator } from './validators/stock-availability.vali
     ScheduleOrderUseCase,
     RepeatOrderUseCase,
   ],
-  exports: [TypeOrmModule, OrderAuthorizationService, OrderStatusService, ConfirmOrderUseCase],
+  exports: [
+    TypeOrmModule,
+    OrderAuthorizationService,
+    OrderStatusService,
+    DeliveryCodeService,
+    ConfirmOrderUseCase,
+  ],
 })
 export class OrdersModule {}

@@ -1,6 +1,17 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsIn, IsNotEmpty, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsEmail,
+  IsEnum,
+  IsIn,
+  IsNotEmpty,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+  ValidateIf,
+} from 'class-validator';
 import { LocalRole } from '../../common/enums/local-role.enum';
+import { DeliveryMode } from '../../delivery/enums/delivery-mode.enum';
 
 export class CreateUnitMemberDto {
   @ApiProperty({ example: 'Maria Silva' })
@@ -26,7 +37,14 @@ export class CreateUnitMemberDto {
   })
   password: string;
 
-  @ApiProperty({ enum: [LocalRole.MANAGER, LocalRole.OPERATOR] })
-  @IsIn([LocalRole.MANAGER, LocalRole.OPERATOR])
-  local_role: LocalRole.MANAGER | LocalRole.OPERATOR;
+  @ApiProperty({
+    enum: [LocalRole.MANAGER, LocalRole.OPERATOR, LocalRole.DELIVERY],
+  })
+  @IsIn([LocalRole.MANAGER, LocalRole.OPERATOR, LocalRole.DELIVERY])
+  local_role: LocalRole.MANAGER | LocalRole.OPERATOR | LocalRole.DELIVERY;
+
+  @ApiPropertyOptional({ enum: DeliveryMode })
+  @ValidateIf((dto: CreateUnitMemberDto) => dto.local_role === LocalRole.DELIVERY)
+  @IsEnum(DeliveryMode)
+  vehicle?: DeliveryMode;
 }

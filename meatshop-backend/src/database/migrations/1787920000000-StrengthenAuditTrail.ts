@@ -4,7 +4,14 @@ export class StrengthenAuditTrail1787920000000 implements MigrationInterface {
   name = 'StrengthenAuditTrail1787920000000';
 
   async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`ALTER TABLE "audit_logs" DROP CONSTRAINT "FK_audit_logs_user_id"`);
+    const auditLogsTable = await queryRunner.getTable('audit_logs');
+    const userForeignKey = auditLogsTable?.foreignKeys.find((foreignKey) =>
+      foreignKey.columnNames.includes('user_id'),
+    );
+
+    if (userForeignKey) {
+      await queryRunner.dropForeignKey('audit_logs', userForeignKey);
+    }
     await queryRunner.query(`ALTER TABLE "audit_logs" ALTER COLUMN "user_id" DROP NOT NULL`);
     await queryRunner.query(
       `ALTER TABLE "audit_logs" ADD CONSTRAINT "FK_audit_logs_user_id" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL`,

@@ -18,6 +18,7 @@ import { OrderItem } from '../entities/order-item.entity';
 import { OrderStatusHistory } from '../entities/order-status-history.entity';
 import { Payment } from '../entities/payment.entity';
 import { StockAvailabilityValidator } from '../validators/stock-availability.validator';
+import { DeliveryCodeService } from '../services/delivery-code.service';
 
 interface IOrderAmounts {
   subtotal: number;
@@ -50,6 +51,7 @@ export class CreateOrderUseCase {
     private readonly couponRedemption: CouponRedemptionService,
     private readonly configService: ConfigService,
     private readonly sendOrderStatusNotificationUseCase: SendOrderStatusNotificationUseCase,
+    private readonly deliveryCodeService: DeliveryCodeService,
     @InjectDataSource()
     private readonly dataSource: DataSource,
   ) {}
@@ -69,6 +71,7 @@ export class CreateOrderUseCase {
     const address = await this.resolveAddress(dto, currentUser);
     const subtotal = this.calculateSubtotal(items);
 
+    let deliveryCode: string | null = null;
     const order = await this.dataSource.transaction(async (manager) => {
       const prepared = await this.couponRedemption.prepare(
         dto.coupon_code,
@@ -93,6 +96,10 @@ export class CreateOrderUseCase {
         prepared?.coupon ?? null,
         amounts,
       );
+      if (order.delivery_type === DeliveryType.DELIVERY) {
+        deliveryCode = this.deliveryCodeService.issue(order, 'DELIVERY');
+        await manager.save(Order, order);
+      }
       await this.persistOrderItems(manager, order.id, items);
       await this.decrementStock(manager, items);
       await manager.save(Payment, manager.create(Payment, { order_id: order.id }));
@@ -119,6 +126,16 @@ export class CreateOrderUseCase {
       .catch((error) =>
         this.logger.warn(`Failed to notify unit of new order ${order.id}: ${error.message}`),
       );
+
+    if (deliveryCode) {
+      await this.sendOrderStatusNotificationUseCase
+        .notifyCustomerOfDeliveryCode(order, deliveryCode)
+        .catch((error) =>
+          this.logger.warn(
+            `Failed to notify customer of delivery code for order ${order.id}: ${error.message}`,
+          ),
+        );
+    }
 
     return order;
   }
@@ -185,7 +202,12 @@ export class CreateOrderUseCase {
         : 0;
     const totalAmount = Math.max(0, subtotal - discount_amount + deliveryFee);
 
-    return { subtotal, discount_amount, delivery_fee: deliveryFee, total_amount: totalAmount };
+    return {
+      subtotal,
+      discount_amount,
+      delivery_fee: deliveryFee,
+      total_amount: totalAmount,
+    };
   }
 
   private async persistOrder(

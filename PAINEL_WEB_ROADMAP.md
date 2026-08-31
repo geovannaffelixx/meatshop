@@ -104,11 +104,15 @@ Fecha o resto do RF-010 ("gerenciar promoções").
 
 ---
 
-## Bloco 6 — Avaliar se cabe no painel web (decisão de escopo antes de implementar)
+## Bloco 6 — Logística e comunicação
 
 ### 6.1 Entregadores
-- **Backend:** pronto (aprovar cadastro, veículos, aceite/status/tracking de entrega)
-- **Dúvida:** isso é do painel da unidade (aprovar quem entrega pra ela) ou é 100% do app do entregador (mobile)? Precisa decidir antes de tirar da lista ou implementar.
+- **Status:** etapa operacional e segurança concluídas, ainda não lançado
+- **Decisão de escopo:** o app mobile do entregador envia a localização; o painel da unidade acompanha e gerencia a operação.
+- **Backend:** consulta agregada, autorização por unidade, localização/status via Socket.IO, atribuição atômica e códigos de retirada/entrega com hash, expiração, limite de tentativas e bloqueio temporário.
+- **Frontend:** `/deliveries` com indicadores, lista operacional, mapa ao vivo, gestão/aprovação de entregadores, atribuição manual e validação do código antes de liberar a retirada; cadastro de entregador disponível em “Equipe e acessos”.
+- **Segurança:** o cliente recebe o código de entrega ao criar o pedido; o entregador recebe um código exclusivo ao ser atribuído; a unidade apenas valida o código informado e nunca vê o valor esperado.
+- **Próximos passos:** geocodificação do destino e cálculo de rota/ETA com provedor de mapas; construir/ligar as telas equivalentes no app mobile do cliente e do entregador aos endpoints já disponíveis.
 
 ### 6.2 Chat do pedido
 - **Backend:** pronto, mas mensagens novas chegam por WebSocket (não é só REST) — implementação mais complexa que o resto da lista

@@ -45,6 +45,36 @@ export class Order {
   @JoinColumn({ name: 'delivery_person_id' })
   delivery_person: DeliveryPerson | null;
 
+  @Column({ type: 'varchar', length: 64, nullable: true, select: false })
+  pickup_code_hash: string | null;
+
+  @Column({ type: 'varchar', length: 64, nullable: true, select: false })
+  delivery_code_hash: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  pickup_code_expires_at: Date | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  delivery_code_expires_at: Date | null;
+
+  @Column({ type: 'int', default: 0 })
+  pickup_code_attempts: number;
+
+  @Column({ type: 'int', default: 0 })
+  delivery_code_attempts: number;
+
+  @Column({ type: 'timestamp', nullable: true })
+  pickup_code_locked_until: Date | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  delivery_code_locked_until: Date | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  pickup_verified_at: Date | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  delivery_verified_at: Date | null;
+
   @CreateDateColumn()
   order_date: Date;
 

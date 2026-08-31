@@ -7,6 +7,8 @@ export const unitPermissions = {
   manageFinance: "MANAGE_FINANCE",
   manageMembers: "MANAGE_MEMBERS",
   manageUnit: "MANAGE_UNIT",
+  viewDeliveries: "VIEW_DELIVERIES",
+  manageDeliveries: "MANAGE_DELIVERIES",
 } as const;
 
 export type UnitPermission =

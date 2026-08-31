@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../users/entities/user.entity';
+import { DeliveryPerson } from '../delivery/entities/delivery-person.entity';
 import { BusinessHours } from './entities/business-hours.entity';
 import { Unit } from './entities/unit.entity';
 import { UserUnit } from './entities/user-unit.entity';
@@ -21,7 +22,7 @@ import { CreateUnitMemberUseCase } from './use-cases/create-unit-member.use-case
 import { GetUnitSettingsUseCase } from './use-cases/get-unit-settings.use-case';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Unit, UserUnit, BusinessHours, User])],
+  imports: [TypeOrmModule.forFeature([Unit, UserUnit, BusinessHours, User, DeliveryPerson])],
   controllers: [UnitsController, UnitsUploadController],
   providers: [
     CreateUnitUseCase,

@@ -1,7 +1,14 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { OrdersModule } from '../orders/orders.module';
+import { AuthModule } from '../auth/auth.module';
+import { UnitsModule } from '../units/units.module';
+import { Unit } from '../units/entities/unit.entity';
+import { User } from '../users/entities/user.entity';
+import { UserUnit } from '../units/entities/user-unit.entity';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { DeliveryController } from './delivery.controller';
+import { DeliveryGateway } from './delivery.gateway';
 import { DeliveryPerson } from './entities/delivery-person.entity';
 import { DeliveryTracking } from './entities/delivery-tracking.entity';
 import { Vehicle } from './entities/vehicle.entity';
@@ -15,11 +22,21 @@ import { RegisterDeliveryPersonUseCase } from './use-cases/register-delivery-per
 import { SetActiveVehicleUseCase } from './use-cases/set-active-vehicle.use-case';
 import { UpdateDeliveryLocationUseCase } from './use-cases/update-delivery-location.use-case';
 import { UpdateDeliveryStatusUseCase } from './use-cases/update-delivery-status.use-case';
+import { ListLiveDeliveriesUseCase } from './use-cases/list-live-deliveries.use-case';
+import { AssignDeliveryPersonUseCase } from './use-cases/assign-delivery-person.use-case';
+import { UnassignDeliveryPersonUseCase } from './use-cases/unassign-delivery-person.use-case';
+import { VerifyPickupCodeUseCase } from './use-cases/verify-pickup-code.use-case';
+import { ListUnitDeliveryPeopleUseCase } from './use-cases/list-unit-delivery-people.use-case';
+import { ApproveUnitDeliveryPersonUseCase } from './use-cases/approve-unit-delivery-person.use-case';
+import { RegenerateDeliveryCodeUseCase } from './use-cases/regenerate-delivery-code.use-case';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([DeliveryPerson, Vehicle, DeliveryTracking]),
+    TypeOrmModule.forFeature([DeliveryPerson, Vehicle, DeliveryTracking, Unit, User, UserUnit]),
+    AuthModule,
+    NotificationsModule,
     OrdersModule,
+    UnitsModule,
   ],
   controllers: [DeliveryController],
   providers: [
@@ -33,6 +50,14 @@ import { UpdateDeliveryStatusUseCase } from './use-cases/update-delivery-status.
     FinishDeliveryUseCase,
     UpdateDeliveryLocationUseCase,
     GetDeliveryTrackingUseCase,
+    ListLiveDeliveriesUseCase,
+    DeliveryGateway,
+    AssignDeliveryPersonUseCase,
+    UnassignDeliveryPersonUseCase,
+    VerifyPickupCodeUseCase,
+    ListUnitDeliveryPeopleUseCase,
+    ApproveUnitDeliveryPersonUseCase,
+    RegenerateDeliveryCodeUseCase,
   ],
   exports: [TypeOrmModule],
 })

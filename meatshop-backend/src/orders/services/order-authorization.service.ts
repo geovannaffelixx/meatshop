@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { DeliveryPerson } from '../../delivery/entities/delivery-person.entity';
 import { DeliveryPersonStatus } from '../../delivery/enums/delivery-person-status.enum';
 import { GlobalRole } from '../../common/enums/global-role.enum';
+import { LocalRole } from '../../common/enums/local-role.enum';
 import { UserUnitStatus } from '../../common/enums/user-unit-status.enum';
 import { Unit } from '../../units/entities/unit.entity';
 import { UserUnit } from '../../units/entities/user-unit.entity';
@@ -48,9 +49,7 @@ export class OrderAuthorizationService {
     });
 
     if (!membership) {
-      throw new ForbiddenException(
-        'Only unit staff or a super admin can perform this action',
-      );
+      throw new ForbiddenException('Only unit staff or a super admin can perform this action');
     }
   }
 
@@ -85,6 +84,24 @@ export class OrderAuthorizationService {
   assertIsAssignedDeliveryPerson(order: Order, deliveryPerson: DeliveryPerson): void {
     if (order.delivery_person_id !== deliveryPerson.id) {
       throw new ForbiddenException('This order is not assigned to you');
+    }
+  }
+
+  async assertDeliveryPersonCanServeUnit(
+    deliveryPerson: DeliveryPerson,
+    unitId: number,
+  ): Promise<void> {
+    const membership = await this.userUnitRepository.findOne({
+      where: {
+        user_id: deliveryPerson.user_id,
+        unit_id: unitId,
+        local_role: LocalRole.DELIVERY,
+        status: UserUnitStatus.ACTIVE,
+      },
+    });
+
+    if (!membership) {
+      throw new ForbiddenException('Delivery person is not active in this unit');
     }
   }
 }

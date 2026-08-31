@@ -14,12 +14,15 @@ const ROLE_PERMISSIONS: Record<LocalRole, readonly UnitPermission[]> = {
     UnitPermission.VIEW_FINANCE,
     UnitPermission.MANAGE_FINANCE,
     UnitPermission.MANAGE_MEMBERS,
+    UnitPermission.VIEW_DELIVERIES,
+    UnitPermission.MANAGE_DELIVERIES,
   ],
   [LocalRole.OPERATOR]: [
     UnitPermission.VIEW_DASHBOARD,
     UnitPermission.MANAGE_ORDERS,
     UnitPermission.MANAGE_PRODUCTS,
     UnitPermission.MANAGE_CATEGORIES,
+    UnitPermission.VIEW_DELIVERIES,
   ],
   [LocalRole.DELIVERY]: [],
 };

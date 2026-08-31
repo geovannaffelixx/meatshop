@@ -1,4 +1,10 @@
-import { ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { DataSource, Repository } from 'typeorm';
@@ -6,6 +12,8 @@ import { AppProfile } from '../../common/enums/app-profile.enum';
 import { GlobalRole } from '../../common/enums/global-role.enum';
 import { LocalRole } from '../../common/enums/local-role.enum';
 import { UnitPermission } from '../../common/enums/unit-permission.enum';
+import { DeliveryPerson } from '../../delivery/entities/delivery-person.entity';
+import { DeliveryPersonStatus } from '../../delivery/enums/delivery-person-status.enum';
 import { User } from '../../users/entities/user.entity';
 import { CreateUnitMemberDto } from '../dtos/create-unit-member.dto';
 import { Unit } from '../entities/unit.entity';
@@ -32,19 +40,37 @@ export class CreateUnitMemberUseCase {
     await this.assertUserDoesNotExist(dto.email, dto.cpf);
 
     const membership = await this.dataSource.transaction(async (manager) => {
-      const user = await manager.save(User, manager.create(User, {
-        name: dto.name.trim(),
-        email: dto.email.toLowerCase().trim(),
-        cpf: dto.cpf,
-        password_hash: await bcrypt.hash(dto.password, 12),
-        app_profile: AppProfile.CLIENT,
-        email_verified: false,
-      }));
-      return manager.save(UserUnit, manager.create(UserUnit, {
-        user_id: user.id,
-        unit_id: unitId,
-        local_role: dto.local_role,
-      }));
+      const user = await manager.save(
+        User,
+        manager.create(User, {
+          name: dto.name.trim(),
+          email: dto.email.toLowerCase().trim(),
+          cpf: dto.cpf,
+          password_hash: await bcrypt.hash(dto.password, 12),
+          app_profile:
+            dto.local_role === LocalRole.DELIVERY ? AppProfile.DELIVERY : AppProfile.CLIENT,
+          email_verified: false,
+        }),
+      );
+      const savedMembership = await manager.save(
+        UserUnit,
+        manager.create(UserUnit, {
+          user_id: user.id,
+          unit_id: unitId,
+          local_role: dto.local_role,
+        }),
+      );
+      if (dto.local_role === LocalRole.DELIVERY && dto.vehicle) {
+        await manager.save(
+          DeliveryPerson,
+          manager.create(DeliveryPerson, {
+            user_id: user.id,
+            vehicle: dto.vehicle,
+            status: DeliveryPersonStatus.PENDING,
+          }),
+        );
+      }
+      return savedMembership;
     });
 
     this.logger.log(`User ${membership.user_id} created in unit ${unitId} by user ${actor.id}`);
@@ -65,8 +91,14 @@ export class CreateUnitMemberUseCase {
     });
     if (!existing) return;
     if (existing.email === email.toLowerCase().trim()) {
-      throw new ConflictException({ code: 'EMAIL_ALREADY_EXISTS', message: 'Já existe uma conta cadastrada com este e-mail.' });
+      throw new ConflictException({
+        code: 'EMAIL_ALREADY_EXISTS',
+        message: 'Já existe uma conta cadastrada com este e-mail.',
+      });
     }
-    throw new ConflictException({ code: 'CPF_ALREADY_EXISTS', message: 'Já existe uma conta cadastrada com este CPF.' });
+    throw new ConflictException({
+      code: 'CPF_ALREADY_EXISTS',
+      message: 'Já existe uma conta cadastrada com este CPF.',
+    });
   }
 }
