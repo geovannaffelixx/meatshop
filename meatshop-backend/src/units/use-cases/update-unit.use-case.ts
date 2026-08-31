@@ -5,6 +5,7 @@ import { User } from '../../users/entities/user.entity';
 import { UpdateUnitDto } from '../dtos/update-unit.dto';
 import { Unit } from '../entities/unit.entity';
 import { UnitAuthorizationService } from '../services/unit-authorization.service';
+import { UnitAddressService } from '../services/unit-address.service';
 
 @Injectable()
 export class UpdateUnitUseCase {
@@ -14,6 +15,7 @@ export class UpdateUnitUseCase {
     @InjectRepository(Unit)
     private readonly unitRepository: Repository<Unit>,
     private readonly unitAuthorizationService: UnitAuthorizationService,
+    private readonly unitAddressService: UnitAddressService,
   ) {}
 
   async execute(unitId: number, dto: UpdateUnitDto, currentUser: User): Promise<Unit> {
@@ -26,6 +28,16 @@ export class UpdateUnitUseCase {
     this.unitAuthorizationService.assertCanManageUnit(unit, currentUser);
 
     Object.assign(unit, dto);
+    const nextCep = unit.zip_code;
+    const shouldRefreshCoordinates =
+      dto.zip_code !== undefined || unit.latitude === null || unit.longitude === null;
+    if (shouldRefreshCoordinates) {
+      const address = await this.unitAddressService.lookupByCep(nextCep);
+      unit.zip_code = address.zip_code;
+      unit.latitude = address.latitude;
+      unit.longitude = address.longitude;
+    }
+
     await this.unitRepository.save(unit);
 
     this.logger.log(`Unit ${unit.id} updated by user ${currentUser.id}`);

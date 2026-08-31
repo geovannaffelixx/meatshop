@@ -110,9 +110,10 @@ Fecha o resto do RF-010 ("gerenciar promoções").
 - **Status:** etapa operacional e segurança concluídas, ainda não lançado
 - **Decisão de escopo:** o app mobile do entregador envia a localização; o painel da unidade acompanha e gerencia a operação.
 - **Backend:** consulta agregada, autorização por unidade, localização/status via Socket.IO, atribuição atômica e códigos de retirada/entrega com hash, expiração, limite de tentativas e bloqueio temporário.
-- **Frontend:** `/deliveries` com indicadores, lista operacional, mapa ao vivo, gestão/aprovação de entregadores, atribuição manual e validação do código antes de liberar a retirada; cadastro de entregador disponível em “Equipe e acessos”.
+- **Frontend:** `/deliveries` com indicadores, lista operacional, mapa ao vivo centralizado na unidade, gestão/aprovação de entregadores, atribuição manual e validação do código antes de liberar a retirada; cadastro de entregador disponível em “Equipe e acessos”.
+- **Localização da unidade:** busca de CEP pela BrasilAPI V2, preenchimento de logradouro/bairro/cidade/UF e persistência automática das coordenadas, sem entrada manual de latitude/longitude.
 - **Segurança:** o cliente recebe o código de entrega ao criar o pedido; o entregador recebe um código exclusivo ao ser atribuído; a unidade apenas valida o código informado e nunca vê o valor esperado.
-- **Próximos passos:** geocodificação do destino e cálculo de rota/ETA com provedor de mapas; construir/ligar as telas equivalentes no app mobile do cliente e do entregador aos endpoints já disponíveis.
+- **Próximos passos:** geocodificação do destino do cliente e cálculo de rota/ETA; construir/ligar as telas equivalentes no app mobile do cliente e do entregador aos endpoints já disponíveis.
 
 ### 6.2 Chat do pedido
 - **Backend:** pronto, mas mensagens novas chegam por WebSocket (não é só REST) — implementação mais complexa que o resto da lista

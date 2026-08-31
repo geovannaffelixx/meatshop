@@ -6,6 +6,7 @@ import { User } from '../../users/entities/user.entity';
 import { CreateUnitDto } from '../dtos/create-unit.dto';
 import { Unit } from '../entities/unit.entity';
 import { UserUnit } from '../entities/user-unit.entity';
+import { UnitAddressService } from '../services/unit-address.service';
 
 @Injectable()
 export class CreateUnitUseCase {
@@ -16,15 +17,27 @@ export class CreateUnitUseCase {
     private readonly unitRepository: Repository<Unit>,
     @InjectDataSource()
     private readonly dataSource: DataSource,
+    private readonly unitAddressService: UnitAddressService,
   ) {}
 
   async execute(dto: CreateUnitDto, currentUser: User): Promise<Unit> {
     await this.ensureCnpjIsUnique(dto.cnpj);
+    const address = await this.unitAddressService.lookupByCep(dto.zip_code);
 
     const unit = await this.dataSource.transaction(async (manager) => {
       const unit = await manager.save(
         Unit,
-        manager.create(Unit, { ...dto, admin_id: currentUser.id }),
+        manager.create(Unit, {
+          ...dto,
+          zip_code: address.zip_code,
+          street: dto.street || address.street || null,
+          neighborhood: dto.neighborhood || address.neighborhood || null,
+          city: dto.city || address.city,
+          state: dto.state || address.state,
+          latitude: address.latitude,
+          longitude: address.longitude,
+          admin_id: currentUser.id,
+        }),
       );
 
       await manager.save(

@@ -1,8 +1,32 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { Map as MapLibreMap, Marker as MapLibreMarker } from "maplibre-gl";
+import type {
+  Map as MapLibreMap,
+  Marker as MapLibreMarker,
+  StyleSpecification,
+} from "maplibre-gl";
 import type { LiveDelivery, LiveDeliveriesSnapshot } from "../types";
+
+const DEFAULT_MAP_STYLE: StyleSpecification = {
+  version: 8,
+  sources: {
+    openStreetMap: {
+      type: "raster",
+      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+      tileSize: 256,
+      maxzoom: 19,
+      attribution: "© OpenStreetMap contributors",
+    },
+  },
+  layers: [
+    {
+      id: "openStreetMap",
+      type: "raster",
+      source: "openStreetMap",
+    },
+  ],
+};
 
 type DeliveriesMapProps = {
   unit: LiveDeliveriesSnapshot["unit"];
@@ -23,43 +47,83 @@ export function DeliveriesMap({
   const libraryRef = useRef<typeof import("maplibre-gl") | null>(null);
   const hasFittedRef = useRef(false);
   const [ready, setReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+    let initialized = false;
+    let timeoutId: number | undefined;
 
     async function createMap() {
       if (!containerRef.current || mapRef.current) return;
-      const maplibre = await import("maplibre-gl");
-      if (cancelled || !containerRef.current) return;
+      setReady(false);
+      setError(null);
 
-      libraryRef.current = maplibre;
-      const center: [number, number] =
-        unit.latitude !== null && unit.longitude !== null
-          ? [unit.longitude, unit.latitude]
-          : [-46.6333, -23.5505];
-      const map = new maplibre.Map({
-        container: containerRef.current,
-        style:
-          process.env.NEXT_PUBLIC_MAP_STYLE_URL ||
-          "https://demotiles.maplibre.org/style.json",
-        center,
-        zoom: unit.latitude !== null ? 13 : 10,
-        attributionControl: {},
-      });
-      map.addControl(new maplibre.NavigationControl(), "top-right");
-      map.on("load", () => setReady(true));
-      mapRef.current = map;
+      try {
+        const maplibre = await import("maplibre-gl");
+        if (cancelled || !containerRef.current) return;
+
+        libraryRef.current = maplibre;
+        const center: [number, number] =
+          unit.latitude !== null && unit.longitude !== null
+            ? [unit.longitude, unit.latitude]
+            : [-46.6333, -23.5505];
+        const initialZoom = unit.latitude !== null ? 13 : 11;
+        const map = new maplibre.Map({
+          container: containerRef.current,
+          style:
+            process.env.NEXT_PUBLIC_MAP_STYLE_URL ||
+            DEFAULT_MAP_STYLE,
+          center,
+          zoom: initialZoom,
+          attributionControl: {},
+        });
+        const markReady = () => {
+          if (cancelled) return;
+          if (!initialized) {
+            // Alguns estilos públicos incluem uma câmera mundial própria.
+            // Reaplica a câmera da operação depois que o estilo é carregado.
+            map.jumpTo({ center, zoom: initialZoom });
+          }
+          initialized = true;
+          setReady(true);
+          setError(null);
+        };
+
+        map.addControl(new maplibre.NavigationControl(), "top-right");
+        // O estilo fica utilizável antes de tiles e fontes terminarem de baixar.
+        map.once("styledata", markReady);
+        map.once("load", markReady);
+        mapRef.current = map;
+
+        timeoutId = window.setTimeout(() => {
+          if (!cancelled && !initialized) {
+            setError(
+              "Não foi possível carregar o provedor do mapa. Verifique sua conexão e tente novamente.",
+            );
+          }
+        }, 12_000);
+      } catch (cause) {
+        console.error("Falha ao inicializar o mapa de entregas", cause);
+        if (!cancelled) {
+          setError(
+            "O mapa não pôde ser iniciado neste navegador. Verifique se o WebGL está habilitado.",
+          );
+        }
+      }
     }
 
     void createMap();
     return () => {
       cancelled = true;
+      if (timeoutId) window.clearTimeout(timeoutId);
       markersRef.current.forEach((marker) => marker.remove());
       markersRef.current = [];
       mapRef.current?.remove();
       mapRef.current = null;
     };
-  }, [unit.latitude, unit.longitude]);
+  }, [retry, unit.latitude, unit.longitude]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -136,9 +200,27 @@ export function DeliveriesMap({
         className="h-full w-full"
         aria-label="Mapa de entregas em tempo real"
       />
-      {!ready && (
+      {!ready && !error && (
         <div className="absolute inset-0 flex items-center justify-center bg-slate-100 text-sm text-slate-500">
           Carregando mapa...
+        </div>
+      )}
+      {error && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-100 p-8 text-center">
+          <p className="max-w-md text-sm text-slate-600">{error}</p>
+          <button
+            type="button"
+            onClick={() => setRetry((current) => current + 1)}
+            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      )}
+      {ready && (unit.latitude === null || unit.longitude === null) && (
+        <div className="absolute bottom-8 left-3 max-w-xs rounded-lg bg-white/95 px-3 py-2 text-xs text-slate-600 shadow-md">
+          Exibindo São Paulo como referência. Cadastre as coordenadas da unidade
+          para centralizar o mapa no açougue.
         </div>
       )}
     </div>

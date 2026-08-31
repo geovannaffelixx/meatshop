@@ -1,4 +1,16 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Patch, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Put,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
@@ -20,6 +32,9 @@ import { UpdateUnitMemberUseCase } from './use-cases/update-unit-member.use-case
 import { RemoveUnitMemberUseCase } from './use-cases/remove-unit-member.use-case';
 import { CreateUnitMemberUseCase } from './use-cases/create-unit-member.use-case';
 import { GetUnitSettingsUseCase } from './use-cases/get-unit-settings.use-case';
+import { UnitAddressService } from './services/unit-address.service';
+import { UnitAuthorizationService } from './services/unit-authorization.service';
+import { UnitPermission } from '../common/enums/unit-permission.enum';
 
 @ApiTags('Units')
 @ApiBearerAuth('access-token')
@@ -37,7 +52,24 @@ export class UnitsController {
     private readonly removeUnitMemberUseCase: RemoveUnitMemberUseCase,
     private readonly createUnitMemberUseCase: CreateUnitMemberUseCase,
     private readonly getUnitSettingsUseCase: GetUnitSettingsUseCase,
+    private readonly unitAddressService: UnitAddressService,
+    private readonly unitAuthorizationService: UnitAuthorizationService,
   ) {}
+
+  @ApiOperation({ summary: 'Consulta endereço e coordenadas pelo CEP da unidade' })
+  @Get(':unitId/address/cep/:cep')
+  async lookupAddressByCep(
+    @Param('unitId', ParseIntPipe) unitId: number,
+    @Param('cep') cep: string,
+    @CurrentUser() currentUser: User,
+  ) {
+    await this.unitAuthorizationService.resolveRequiredUnitId(
+      currentUser,
+      unitId,
+      UnitPermission.MANAGE_UNIT,
+    );
+    return this.unitAddressService.lookupByCep(cep);
+  }
 
   @ApiOperation({ summary: 'Lista as unidades administradas ou geridas pelo usuário autenticado' })
   @ApiResponse({ status: 200, description: 'Unidades retornadas com sucesso' })
@@ -48,10 +80,7 @@ export class UnitsController {
 
   @ApiOperation({ summary: 'Consulta os dados administrativos de uma unidade' })
   @Get(':id/settings')
-  getSettings(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() currentUser: User,
-  ) {
+  getSettings(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
     return this.getUnitSettingsUseCase.execute(id, currentUser);
   }
 
@@ -122,10 +151,7 @@ export class UnitsController {
 
   @ApiOperation({ summary: 'Lista os membros administrativos de uma unidade' })
   @Get(':unitId/members')
-  listMembers(
-    @Param('unitId', ParseIntPipe) unitId: number,
-    @CurrentUser() currentUser: User,
-  ) {
+  listMembers(@Param('unitId', ParseIntPipe) unitId: number, @CurrentUser() currentUser: User) {
     return this.listUnitMembersUseCase.execute(unitId, currentUser);
   }
 
