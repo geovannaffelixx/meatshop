@@ -101,7 +101,7 @@ function UnitSettings() {
       const response = await fetch(`${API_URL}/units/${unitId}/logo`, { method: "POST", body, credentials: "include" });
       if (!response.ok) throw new Error("Não foi possível enviar a imagem.");
       toast.success("Logo da unidade atualizada.");
-      await load();
+      await Promise.all([load(), refresh()]);
     } catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível enviar a imagem."); }
   }
 

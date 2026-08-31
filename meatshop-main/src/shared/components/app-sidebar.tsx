@@ -7,7 +7,6 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   BadgePercent,
   BarChart3,
-  Beef,
   Boxes,
   Building2,
   ChevronDown,
@@ -57,7 +56,7 @@ import {
   unitPermissions,
   type UnitPermission,
 } from "@/shared/auth/panel-access";
-import { apiPost } from "@/shared/lib/api";
+import { API_URL, apiPost } from "@/shared/lib/api";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
 
 type NavItem = {
@@ -241,6 +240,11 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
       ? displayUser.avatar_url
       : `${process.env.NEXT_PUBLIC_API_URL}${displayUser.avatar_url}`
     : null;
+  const unitLogoSrc = selectedMembership?.unit_image_url
+    ? selectedMembership.unit_image_url.startsWith("http")
+      ? selectedMembership.unit_image_url
+      : `${API_URL}${selectedMembership.unit_image_url}`
+    : null;
 
   const visibleGroups = React.useMemo(
     () =>
@@ -320,8 +324,21 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
     <Sidebar {...props}>
       <SidebarHeader className="border-b border-slate-200 p-3">
         <div className="flex items-center gap-3 px-1 py-1">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-700 text-white shadow-sm">
-            <Beef className="h-5 w-5" />
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-red-700 text-white shadow-sm ring-1 ring-red-800/10">
+            {unitLogoSrc ? (
+              <Image
+                unoptimized
+                src={unitLogoSrc}
+                alt={`Logo de ${selectedMembership?.unit_name ?? "unidade"}`}
+                width={36}
+                height={36}
+                className="h-full w-full object-contain p-0.5"
+              />
+            ) : (
+              <span className="text-sm font-bold" aria-hidden="true">
+                {selectedMembership?.unit_name?.charAt(0).toUpperCase() ?? "M"}
+              </span>
+            )}
           </div>
           <div className="min-w-0 group-data-[collapsible=icon]:hidden">
             <p className="text-sm font-bold text-slate-950">MeatShop</p>

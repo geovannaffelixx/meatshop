@@ -27,6 +27,7 @@ export class GetPanelContextUseCase {
         memberships: units.map((unit) => ({
           unit_id: unit.id,
           unit_name: unit.name,
+          unit_image_url: unit.image_url,
           role: null,
           permissions: Object.values(UnitPermission),
         })),
@@ -40,6 +41,7 @@ export class GetPanelContextUseCase {
       memberships: memberships.map((membership) => ({
         unit_id: membership.unit_id,
         unit_name: membership.unit.name,
+        unit_image_url: membership.unit.image_url,
         role: membership.local_role,
         permissions: this.permissionPolicy.permissionsFor(membership.local_role),
       })),

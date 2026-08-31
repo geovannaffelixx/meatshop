@@ -9,6 +9,12 @@ export class PanelMembershipDto {
   @ApiProperty({ example: 'Master Carnes' })
   unit_name: string;
 
+  @ApiProperty({
+    example: '/uploads/units/unit-logo.png',
+    nullable: true,
+  })
+  unit_image_url: string | null;
+
   @ApiProperty({ enum: LocalRole, nullable: true })
   role: LocalRole | null;
 

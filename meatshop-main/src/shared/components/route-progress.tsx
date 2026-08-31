@@ -2,31 +2,46 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { LoadingOverlay } from "@/shared/components/loading-overlay";
 
-function isInternalNavigationClick(event: MouseEvent): string | null {
-  if (event.defaultPrevented || event.button !== 0) return null;
-  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return null;
+const MINIMUM_VISIBLE_MS = 1000;
+const NAVIGATION_TIMEOUT_MS = 15000;
+
+function isInternalNavigationClick(event: MouseEvent): boolean {
+  if (event.defaultPrevented || event.button !== 0) return false;
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+    return false;
+  }
 
   const anchor = (event.target as HTMLElement | null)?.closest("a");
-  if (!anchor) return null;
+  if (!anchor) return false;
 
   const href = anchor.getAttribute("href");
-  if (!href || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:")) return null;
-  if (anchor.target && anchor.target !== "_self") return null;
-  if (anchor.hasAttribute("download")) return null;
+  if (
+    !href ||
+    href.startsWith("#") ||
+    href.startsWith("mailto:") ||
+    href.startsWith("tel:")
+  ) {
+    return false;
+  }
+  if (anchor.target && anchor.target !== "_self") return false;
+  if (anchor.hasAttribute("download")) return false;
 
   const url = new URL(href, window.location.href);
-  if (url.origin !== window.location.origin) return null;
-  if (url.pathname === window.location.pathname && url.search === window.location.search) return null;
+  if (url.origin !== window.location.origin) return false;
 
-  return url.pathname;
+  // Mudanças apenas na query não trocam a página observada por usePathname.
+  return url.pathname !== window.location.pathname;
 }
 
-/** Barra de progresso no topo da tela durante a troca de rota, para dar feedback imediato de navegação. */
+/** Feedback visual durante trocas de página dentro do painel. */
 export function RouteProgress() {
   const pathname = usePathname();
   const [visible, setVisible] = useState(false);
   const [width, setWidth] = useState(0);
+  const startedAt = useRef<number | null>(null);
+  const previousPathname = useRef(pathname);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   function clearTimers() {
@@ -34,39 +49,56 @@ export function RouteProgress() {
     timers.current = [];
   }
 
+  function finishNavigation() {
+    setVisible(false);
+    setWidth(0);
+    startedAt.current = null;
+  }
+
   useEffect(() => {
     function handleClick(event: MouseEvent) {
       if (!isInternalNavigationClick(event)) return;
+
       clearTimers();
+      startedAt.current = performance.now();
       setVisible(true);
       setWidth(25);
+
       timers.current.push(setTimeout(() => setWidth(65), 150));
       timers.current.push(setTimeout(() => setWidth(85), 600));
+      timers.current.push(
+        setTimeout(finishNavigation, NAVIGATION_TIMEOUT_MS),
+      );
     }
 
     document.addEventListener("click", handleClick);
-    return () => document.removeEventListener("click", handleClick);
+    return () => {
+      document.removeEventListener("click", handleClick);
+      clearTimers();
+    };
   }, []);
 
   useEffect(() => {
-    if (!visible) return;
+    const routeChanged = previousPathname.current !== pathname;
+    previousPathname.current = pathname;
+    if (!routeChanged || startedAt.current === null) return;
+
     clearTimers();
     setWidth(100);
-    timers.current.push(
-      setTimeout(() => {
-        setVisible(false);
-        setWidth(0);
-      }, 200),
-    );
-    return clearTimers;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    const elapsed = performance.now() - startedAt.current;
+    const remaining = Math.max(MINIMUM_VISIBLE_MS - elapsed, 150);
+    timers.current.push(setTimeout(finishNavigation, remaining));
   }, [pathname]);
 
   return (
-    <div
-      aria-hidden="true"
-      className="pointer-events-none fixed left-0 top-0 z-[100] h-[3px] bg-[#BE2C1B] transition-[width,opacity] duration-200 ease-out"
-      style={{ width: `${width}%`, opacity: visible ? 1 : 0 }}
-    />
+    <>
+      {visible && <LoadingOverlay title="Carregando página..." />}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed left-0 top-0 z-[101] h-[3px] bg-[#BE2C1B] transition-[width,opacity] duration-200 ease-out"
+        style={{ width: `${width}%`, opacity: visible ? 1 : 0 }}
+      />
+    </>
   );
 }

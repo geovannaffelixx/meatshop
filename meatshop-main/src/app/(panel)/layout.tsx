@@ -2,13 +2,12 @@
 
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/shared/components/ui/sidebar";
 import { AppSidebar } from "@/shared/components/app-sidebar";
-import { PanelAccessGuard } from "@/shared/components/panel-access-guard";
 import { RouteProgress } from "@/shared/components/route-progress";
 import { NotificationBell, NotificationsProvider } from "@/modules/notifications";
 
 export default function PanelLayout({ children }: { children: React.ReactNode }) {
   return (
-    <PanelAccessGuard><NotificationsProvider>
+    <NotificationsProvider>
       <RouteProgress />
       <SidebarProvider>
         <AppSidebar />
@@ -23,6 +22,6 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
           <main className="flex-1">{children}</main>
         </SidebarInset>
       </SidebarProvider>
-    </NotificationsProvider></PanelAccessGuard>
+    </NotificationsProvider>
   );
 }

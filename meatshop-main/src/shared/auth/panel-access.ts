@@ -18,6 +18,7 @@ export type UnitRole = "OWNER" | "MANAGER" | "OPERATOR" | "DELIVERY";
 export type PanelMembership = {
   unit_id: number;
   unit_name: string;
+  unit_image_url: string | null;
   role: UnitRole | null;
   permissions: UnitPermission[];
 };

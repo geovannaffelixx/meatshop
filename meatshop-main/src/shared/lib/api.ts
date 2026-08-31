@@ -67,7 +67,11 @@ async function handleResponse(res: Response) {
   }
 }
 
-type RequestOptions = { silent?: boolean; retried?: boolean };
+type RequestOptions = {
+  silent?: boolean;
+  retried?: boolean;
+  signal?: AbortSignal;
+};
 
 async function request(path: string, init: RequestInit, options: RequestOptions = {}) {
   try {
@@ -76,6 +80,7 @@ async function request(path: string, init: RequestInit, options: RequestOptions 
       credentials: "include",
       redirect: "follow",
       ...init,
+      signal: options.signal ?? init.signal,
     });
 
     if (res.status === 401 && !options.retried && !isAuthExempt(path)) {
@@ -88,6 +93,8 @@ async function request(path: string, init: RequestInit, options: RequestOptions 
 
     return await handleResponse(res);
   } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") throw error;
+
     const message =
       error instanceof ApiError
         ? error.message
@@ -101,10 +108,10 @@ async function request(path: string, init: RequestInit, options: RequestOptions 
 }
 
 export async function apiGet(path: string, options?: RequestOptions) {
-  return request(path, { method: "GET" }, options);
+  return request(path, { method: "GET", signal: options?.signal }, options);
 }
 
-export async function apiPost(path: string, data: any, options?: RequestOptions) {
+export async function apiPost(path: string, data: unknown, options?: RequestOptions) {
   return request(
     path,
     {
@@ -118,7 +125,7 @@ export async function apiPost(path: string, data: any, options?: RequestOptions)
   );
 }
 
-export async function apiPatch(path: string, data: any, options?: RequestOptions) {
+export async function apiPatch(path: string, data: unknown, options?: RequestOptions) {
   return request(
     path,
     {

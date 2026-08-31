@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Input } from "@/shared/components/ui/input";
 import { PasswordInput } from "@/shared/components/ui/password-input";
 import { Spinner } from "@/shared/components/ui/spinner";
@@ -14,17 +14,6 @@ export function LoginScreen() {
   const [senha, setSenha] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    apiGet("/users/me", { silent: true })
-      .then((data) => {
-        if (data?.panel?.can_access) router.replace("/dashboard");
-      })
-      .catch(() => {
-        // Não autenticado — permanece na tela de login normalmente.
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

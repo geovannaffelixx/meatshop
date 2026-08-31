@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Input } from "@/shared/components/ui/input";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
@@ -9,7 +9,7 @@ import { Image as ImageIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
 import { PasswordInput } from "@/shared/components/ui/password-input";
 import { Spinner } from "@/shared/components/ui/spinner";
-import { apiGet, apiPost, API_URL } from "@/shared/lib/api";
+import { apiPost, API_URL } from "@/shared/lib/api";
 
 function RequiredLabel({ label, required = false }: { label: string; required?: boolean }) {
   return (
@@ -98,17 +98,6 @@ export function RegisterScreen() {
   const [alertType, setAlertType] = useState<"success" | "error" | "">("");
   const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    apiGet("/users/me", { silent: true })
-      .then((data) => {
-        if (data?.panel?.can_access) router.replace("/dashboard");
-      })
-      .catch(() => {
-        // Não autenticado — permanece na tela de cadastro normalmente.
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const handleChange = (field: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((f) => ({ ...f, [field]: e.target.value }));
