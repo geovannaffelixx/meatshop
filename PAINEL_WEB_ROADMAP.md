@@ -1,126 +1,202 @@
-# Roadmap de finalização — Painel Web (MeatShop)
+# Roadmap consolidado — Painel Web da Unidade MeatShop
 
-Ordem sugerida pra fechar o painel web, do que falta hoje. Cada bloco parte do anterior — não pula fase sem motivo. Pra cada item: o que já existe pronto no backend, o que falta (backend e/ou frontend), e por que está nessa posição.
+**Atualizado em:** 1º de setembro de 2026
 
-Como usar: quando for atacar um item, me chama e a gente detalha tela por tela (campos, fluxo, layout) antes de eu escrever código. Isso aqui é só a ordem e o escopo de cada parte, não o detalhamento.
+**Escopo deste documento:** backend e painel web usados pela unidade/açougue.
 
-Referência: RF-010 da especificação do projeto marca "painel para administrador gerenciar produtos, pedidos e promoções, além de visualizar relatórios" como **prioridade Alta** — os blocos 1 e 3 fecham exatamente isso.
+**Fora deste repositório:** aplicativo Flutter único, com perfis e fluxos distintos para cliente e entregador, integrado ao Firebase.
 
----
+## Critério de conclusão
 
-## Bloco 1 — Fechar o operacional (maior impacto, é o core do painel)
+Neste roadmap, **concluído funcionalmente** significa que:
 
-Sem isso, o açougueiro consegue **ver** pedido e despesa, mas não consegue **operar** — o painel fica de vitrine.
+- a tela real existe e não é placeholder;
+- a tela consome o endpoint correspondente do backend;
+- autenticação e autorização da unidade são aplicadas;
+- estados de carregamento, erro e sucesso foram tratados;
+- banco, migrations, backend e frontend compilam e sobem pelo Docker.
 
-### 1.1 Ações de pedido
-- **Status:** não iniciado
-- **Backend:** pronto (`PATCH /orders/:id/confirm`, `/status`, `/cancel`, `/schedule`, `POST /orders/:id/repeat`)
-- **Frontend:** `/orders` e `/orders/[id]` são só leitura hoje — precisa de botões de ação no detalhe (confirmar → preparando → pronto → saiu pra entrega → entregue; cancelar com motivo; reagendar)
-- **Por que primeiro:** é o maior gap prático — o painel existe pra isso e hoje não faz.
+Isso não equivale a uma certificação de produção. Testes integrais, hardening, LGPD, performance, integrações externas reais e deploy estão registrados separadamente como evolução transversal.
 
-### 1.2 Editar/excluir despesa (Financeiro)
-- **Status:** não iniciado
-- **Backend:** pronto (`PUT /finance/expenses/:id`, `DELETE /finance/expenses/:id`)
-- **Frontend:** modal de despesa só cria hoje — falta ação de editar/excluir na listagem
-- **Por que aqui:** pequeno, mesma tela que já existe, fecha um CRUD que já está pela metade.
+## Resumo executivo
 
----
+O **escopo funcional atual do painel web da unidade está concluído e integrado ao backend**. Todos os módulos expostos na navegação possuem implementação real. O componente legado `UnderConstruction` não é usado por nenhuma rota do painel.
 
-## Bloco 2 — Configurações (3 placeholders, visíveis na sidebar o tempo todo)
+O painel e a API podem ser considerados encerrados como baseline funcional da unidade para apresentação e para início da próxima frente. As pendências globais descritas ao final não reabrem os CRUDs e fluxos operacionais já concluídos; elas elevam o produto a um nível completo de produção.
 
-Toda tela hoje é "em construção" — chama atenção por estar sempre visível no menu.
+## 1. Fundação e acesso — concluído
 
-### 2.1 Segurança (troca de senha)
-- **Status:** não iniciado
-- **Backend:** pronto (`POST /auth/change-password`)
-- **Frontend:** placeholder puro
-- **Por que primeiro do bloco:** zero trabalho de backend, mais simples dos três.
+- Cadastro e login da unidade.
+- Cookies HttpOnly, access token e refresh token.
+- Recuperação e redefinição de senha.
+- Route guard global com estados de carregamento e redirecionamento.
+- Mapa declarativo de acesso por rota.
+- Contexto da unidade ativa e permissões locais.
+- Sidebar organizada por áreas e filtrada pelas permissões do usuário.
+- Identidade visual, logo da unidade, favicon e metadados do sistema.
 
-### 2.2 Perfil
-- **Status:** não iniciado
-- **Backend:** **incompleto** — só existe `GET /users/me`. Não existe `PATCH /users/me` (atualizar nome/e-mail) nem uma coluna real de foto de perfil (o upload de logo de usuário existente grava num campo que não existe na entity — bug antigo, não é pra reaproveitar).
-- **Frontend:** placeholder; a sidebar já busca e mostra nome/e-mail/foto, só a tela de editar que falta.
-- **Por que aqui:** precisa de endpoint novo antes do frontend — combinar o que é editável (nome? e-mail? foto?) antes de mexer no backend.
+## 2. Operação da unidade — concluído
 
-### 2.3 Usuários (membros da unidade)
-- **Status:** não iniciado
-- **Backend:** **incompleto** — existe `POST /units/:unitId/members` (adicionar), mas não existe endpoint de **listar** membros de uma unidade nem de remover/alterar role. Precisa decidir e completar o CRUD no backend antes da tela.
-- **Frontend:** placeholder
-- **Por que por último do bloco:** é o que tem mais buraco de backend dos três.
+### Dashboard
 
----
+- Indicadores operacionais e financeiros.
+- Gráficos de pedidos e vendas.
+- Alertas de estoque, produtos mais vendidos e informações de clientes/entregas.
 
-## Bloco 3 — Catálogo e vendas (backend já pronto, só falta tela)
+### Pedidos
 
-Fecha o resto do RF-010 ("gerenciar promoções").
+- Listagem, busca e filtros.
+- Detalhe completo do pedido e seus itens.
+- Confirmação e avanço de status.
+- Cancelamento com motivo.
+- Agendamento e reagendamento.
+- Informações de pagamento e entrega.
+- Acesso direto ao chat relacionado ao pedido.
 
-### 3.1 Promoções
-- **Status:** não iniciado
-- **Backend:** pronto (`POST /promotions`, `PATCH /promotions/:id`, `/activate`, `/deactivate`)
-- **Frontend:** nenhuma tela — hoje só existe o campo solto `promotionActive` (legado, não é o modelo novo de `Promotion`)
+### Entregas
 
-### 3.2 Horário de funcionamento
-- **Status:** não iniciado
-- **Backend:** pronto (`GET`/`PUT /units/:unitId/business-hours`)
-- **Frontend:** nenhuma tela — provavelmente cabe dentro de "Configurações" ou como aba da própria unidade
+- Painel operacional e indicadores ao vivo.
+- Mapa centralizado na localização geocodificada da unidade.
+- Posição em tempo real enviada pelo entregador.
+- Listagem, aprovação e gestão de entregadores vinculados.
+- Atribuição e remoção de entregador por pedido.
+- Fluxo de aceite e atualização de status da entrega.
+- Código seguro de retirada validado pela unidade.
+- Código seguro de entrega validado no destino.
+- Hash, expiração, limite de tentativas e bloqueio temporário dos códigos.
 
-### 3.3 Cupons
-- **Status:** concluído, ainda não lançado
-- **Backend:** cupons `PLATFORM` e `UNIT`, regras de elegibilidade, limites, resgate transacional e histórico por pedido
-- **Frontend:** gestão global para `SUPER_ADMIN` e gestão local para `OWNER`/`MANAGER`, com formulário completo e histórico de usos
+### Chat do pedido
 
----
+- Central de mensagens no painel.
+- Histórico persistente por pedido.
+- Canais privados separados:
+  - unidade ↔ cliente;
+  - unidade ↔ entregador;
+  - cliente ↔ entregador, disponível para os clientes Flutter da API.
+- WebSocket autenticado por cookie HttpOnly.
+- Envio REST com publicação em tempo real.
+- Indicador de conexão e digitação.
+- Confirmação de leitura.
+- Notificação ao destinatário.
+- Acesso para funcionários ativos autorizados da unidade.
+- Bloqueio de novas mensagens após entrega ou cancelamento, preservando o histórico.
 
-## Bloco 4 — Conteúdo e engajamento
+## 3. Catálogo e estoque — concluído
 
-### 4.1 Receitas
-- **Status:** não iniciado
-- **Backend:** pronto (`POST/PATCH/DELETE /recipes`)
-- **Frontend:** nenhuma tela — unidade cadastra receita da semana com passos, ingredientes e produtos em destaque
+- CRUD de produtos.
+- Fotos de produtos.
+- Atualização de preço, descrição, marca, categoria e disponibilidade.
+- Controle e atualização de estoque.
+- Alertas de estoque mínimo.
+- Criação, edição e ativação/desativação de categorias.
 
-### 4.2 Avaliações
-- **Status:** não iniciado
-- **Backend:** pronto, só leitura (`GET /reviews`)
-- **Frontend:** nenhuma tela — ver notas/comentários recebidos pela unidade e pelos produtos
+## 4. Marketing e relacionamento — concluído
 
----
+- Promoções: criação, edição, ativação e desativação.
+- Cupons de plataforma e de unidade, regras de elegibilidade e histórico de resgates.
+- Receitas: CRUD, imagem, passos, ingredientes e produtos relacionados.
+- Avaliações recebidas pela unidade, produtos e entregadores.
 
-## Bloco 5 — Suporte e observabilidade
+## 5. Gestão — concluído
 
-### 5.1 Chamados de suporte
-- **Status:** concluído, ainda não lançado
-- **Backend:** chamados com conversa persistente, imagens, contexto opcional, fila filtrada, auditoria e notificações; atendimento restrito a `SUPER_ADMIN`
-- **Frontend:** área “Ajuda e suporte” para solicitantes e console global de atendimento para `SUPER_ADMIN`
+### Financeiro
 
-### 5.2 Notificações
-- **Status:** concluído na versão 2.3.0
-- **Backend:** contexto de unidade, leitura individual/em lote e entrega por Socket.IO
-- **Frontend:** sino, pop-ups em tempo real e central de notificações
+- Resumo de receitas e despesas.
+- Relatórios e gráficos.
+- Criação, edição e exclusão de despesas.
+- Filtros por período e informações consolidadas.
 
-### 5.3 Log de auditoria
-- **Status:** concluído, ainda não lançado
-- **Backend:** trilha append-only de sucessos/falhas, sanitização LGPD, filtros, resumo, detalhe, CSV e cobertura HTTP/WebSocket; consulta restrita a `SUPER_ADMIN`
-- **Frontend:** painel global com indicadores, filtros, paginação, detalhe antes/depois e exportação
+### Notificações
 
----
+- Sino global, central de notificações e pop-ups em tempo real.
+- Contexto da unidade.
+- Leitura individual e em lote.
 
-## Bloco 6 — Logística e comunicação
+### Suporte
 
-### 6.1 Entregadores
-- **Status:** etapa operacional e segurança concluídas, ainda não lançado
-- **Decisão de escopo:** o app mobile do entregador envia a localização; o painel da unidade acompanha e gerencia a operação.
-- **Backend:** consulta agregada, autorização por unidade, localização/status via Socket.IO, atribuição atômica e códigos de retirada/entrega com hash, expiração, limite de tentativas e bloqueio temporário.
-- **Frontend:** `/deliveries` com indicadores, lista operacional, mapa ao vivo centralizado na unidade, gestão/aprovação de entregadores, atribuição manual e validação do código antes de liberar a retirada; cadastro de entregador disponível em “Equipe e acessos”.
-- **Localização da unidade:** busca de CEP pela BrasilAPI V2, preenchimento de logradouro/bairro/cidade/UF e persistência automática das coordenadas, sem entrada manual de latitude/longitude.
-- **Segurança:** o cliente recebe o código de entrega ao criar o pedido; o entregador recebe um código exclusivo ao ser atribuído; a unidade apenas valida o código informado e nunca vê o valor esperado.
-- **Próximos passos:** geocodificação do destino do cliente e cálculo de rota/ETA; construir/ligar as telas equivalentes no app mobile do cliente e do entregador aos endpoints já disponíveis.
+- Abertura e acompanhamento de chamados.
+- Conversa persistente e envio de imagens.
+- Encerramento e reabertura.
+- Console administrativo para atendimento global.
 
-### 6.2 Chat do pedido
-- **Backend:** pronto, mas mensagens novas chegam por WebSocket (não é só REST) — implementação mais complexa que o resto da lista
-- **Dúvida:** unidade responde cliente/entregador pelo painel web, ou isso também é só mobile?
+### Auditoria
 
----
+- Trilha append-only de ações e falhas.
+- Sanitização de informações sensíveis.
+- Filtros, resumo, detalhes e exportação CSV.
+- Consulta restrita ao perfil global autorizado.
 
-## Fora do painel (não é gap, é escopo diferente)
+## 6. Configurações — concluído
 
-Carrinho, cartões salvos, checkout Mercado Pago — são fluxo de compra do **cliente final**, que usa o app mobile, não o painel da unidade. Não entram nesta lista.
+- Dados públicos e operacionais da unidade.
+- Upload da logo.
+- Busca do CEP pela BrasilAPI.
+- Preenchimento de logradouro, bairro, cidade e UF.
+- Geocodificação automática da unidade sem latitude/longitude manual.
+- Horários de funcionamento.
+- Conta pessoal: nome, e-mail e avatar.
+- Troca de senha.
+- Equipe e acessos: listar, criar, alterar papel/status e remover membros.
+
+## 7. Infraestrutura local — concluído
+
+- Docker Compose autocontido.
+- PostgreSQL 17 persistente.
+- Execução automática de migrations antes da API.
+- Backend e frontend com health checks.
+- Build de produção de NestJS e Next.js.
+- Swagger disponível no ambiente local.
+- Prometheus e Grafana como perfil opcional.
+- Guia de setup para clone novo na branch `develop`.
+
+## 8. Próximas frentes globais
+
+Estas frentes pertencem ao produto completo e aos próximos meses, não a módulos ausentes da sidebar do açougue.
+
+### 8.1 Geolocalização avançada
+
+- Geocodificar o endereço de destino do cliente.
+- Desenhar a rota entre unidade, entregador e destino.
+- Calcular distância e ETA.
+- Tratar atualização/recalculo de rota e falhas do provedor cartográfico.
+
+### 8.2 Pagamentos 100%
+
+- Configurar credenciais reais/sandbox controlado do Mercado Pago.
+- Validar cartão e PIX ponta a ponta.
+- Validar webhook, idempotência, conciliação, falha, expiração e estorno.
+- Integrar e testar os estados equivalentes no aplicativo Flutter.
+
+### 8.3 Testes automatizados
+
+- Aumentar cobertura unitária e de integração do backend.
+- Criar testes de componentes e fluxos no painel Next.js.
+- Criar testes unitários, widget e integration tests no Flutter.
+- Criar suíte E2E envolvendo unidade, cliente e entregador.
+- Incluir chat, pagamento, códigos de entrega e rastreamento nos testes críticos.
+
+### 8.4 Qualidade e padronização
+
+- Zerar o passivo global de ESLint do backend.
+- Padronizar Prettier e finais de linha entre os projetos.
+- Garantir lint, typecheck, testes e builds obrigatórios no CI.
+- Remover código legado e atualizar documentação técnica e funcional.
+
+### 8.5 Produção e segurança
+
+- Preparar ambientes de staging e produção.
+- Secrets externos, rotação de chaves e configuração segura de cookies/CORS.
+- Rate limiting, proteção contra abuso e políticas por endpoint.
+- Revisão LGPD: base legal, consentimento, retenção, exportação e exclusão de dados.
+- Hardening de containers, banco, uploads, logs e WebSockets.
+- Testes de carga, metas de latência e capacidade.
+- Alertas, backups, restauração, observabilidade e resposta a incidentes.
+- Deploy em nuvem e validação pós-deploy.
+
+## Decisão de encerramento do painel
+
+**Status:** baseline funcional do backend + painel web da unidade encerrado.
+
+**Decisão:** o time pode iniciar a próxima frente sem manter nenhum módulo visível do painel marcado como “em construção”.
+
+**Ressalva:** qualquer falha encontrada em homologação deve ser tratada como correção do baseline; as cinco frentes globais acima continuam planejadas como evolução do produto.
