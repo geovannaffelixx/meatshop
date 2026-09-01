@@ -6,20 +6,28 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { Order } from '../orders/entities/order.entity';
 import { Unit } from '../units/entities/unit.entity';
 import { User } from '../users/entities/user.entity';
+import { UserUnit } from '../units/entities/user-unit.entity';
 import { ChatController } from './chat.controller';
 import { ChatGateway } from './chat.gateway';
 import { Chat } from './entities/chat.entity';
 import { ChatAuthorizationService } from './services/chat-authorization.service';
 import { ListOrderChatUseCase } from './use-cases/list-order-chat.use-case';
 import { SendMessageUseCase } from './use-cases/send-message.use-case';
+import { MarkChatReadUseCase } from './use-cases/mark-chat-read.use-case';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Chat, Order, Unit, DeliveryPerson, User]),
+    TypeOrmModule.forFeature([Chat, Order, Unit, UserUnit, DeliveryPerson, User]),
     AuthModule,
     NotificationsModule,
   ],
   controllers: [ChatController],
-  providers: [ChatGateway, ChatAuthorizationService, SendMessageUseCase, ListOrderChatUseCase],
+  providers: [
+    ChatGateway,
+    ChatAuthorizationService,
+    SendMessageUseCase,
+    ListOrderChatUseCase,
+    MarkChatReadUseCase,
+  ],
 })
 export class ChatModule {}

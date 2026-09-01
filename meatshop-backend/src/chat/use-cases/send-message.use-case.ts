@@ -28,7 +28,9 @@ export class SendMessageUseCase {
     dto: SendMessageDto,
     currentUser: User,
   ): Promise<ChatMessageResponseDto> {
-    const order = await this.orderRepository.findOne({ where: { id: orderId } });
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+    });
     if (!order) {
       throw new NotFoundException('Order not found');
     }
@@ -39,7 +41,7 @@ export class SendMessageUseCase {
       currentUser,
     );
 
-    const chat = await this.chatRepository.save(
+    const savedChat = await this.chatRepository.save(
       this.chatRepository.create({
         order_id: orderId,
         sender_id: channel.senderId,
@@ -48,6 +50,14 @@ export class SendMessageUseCase {
         message: dto.message,
       }),
     );
+
+    const chat = await this.chatRepository.findOne({
+      where: { id: savedChat.id },
+      relations: ['sender', 'receiver'],
+    });
+    if (!chat) {
+      throw new NotFoundException('Message not found after creation');
+    }
 
     await this.sendNotificationUseCase
       .execute({

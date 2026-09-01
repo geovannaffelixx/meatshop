@@ -42,6 +42,9 @@ export class Chat {
   @Column({ type: 'text' })
   message: string;
 
+  @Column({ type: 'timestamp', nullable: true })
+  read_at: Date | null;
+
   @CreateDateColumn()
   sent_at: Date;
 }

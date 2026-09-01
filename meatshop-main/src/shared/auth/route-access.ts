@@ -25,6 +25,7 @@ export type RoutePermission =
 export const routePermissions = {
   "/dashboard": [unitPermissions.viewDashboard],
   "/orders": [unitPermissions.manageOrders],
+  "/chat": [unitPermissions.manageOrders],
   "/deliveries": [unitPermissions.viewDeliveries],
   "/products": [unitPermissions.manageProducts],
   "/categories": [unitPermissions.manageCategories],

@@ -26,7 +26,9 @@ export class ListOrderChatUseCase {
     query: ListChatMessagesDto,
     currentUser: User,
   ): Promise<ChatMessageResponseDto[]> {
-    const order = await this.orderRepository.findOne({ where: { id: orderId } });
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+    });
     if (!order) {
       throw new NotFoundException('Order not found');
     }
@@ -42,6 +44,7 @@ export class ListOrderChatUseCase {
 
     const messages = await this.chatRepository.find({
       where: { order_id: orderId, participant_type: query.participant_type },
+      relations: ['sender', 'receiver'],
       order: { sent_at: 'ASC' },
       skip: (page - 1) * limit,
       take: limit,

@@ -7,9 +7,12 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { DeliveryPerson } from '../../delivery/entities/delivery-person.entity';
+import { LocalRole } from '../../common/enums/local-role.enum';
+import { UserUnitStatus } from '../../common/enums/user-unit-status.enum';
 import { Order } from '../../orders/entities/order.entity';
 import { OrderStatus } from '../../orders/enums/order-status.enum';
 import { Unit } from '../../units/entities/unit.entity';
+import { UserUnit } from '../../units/entities/user-unit.entity';
 import { User } from '../../users/entities/user.entity';
 import { ChatParticipantType } from '../enums/chat-participant-type.enum';
 
@@ -27,6 +30,8 @@ export class ChatAuthorizationService {
     private readonly unitRepository: Repository<Unit>,
     @InjectRepository(DeliveryPerson)
     private readonly deliveryPersonRepository: Repository<DeliveryPerson>,
+    @InjectRepository(UserUnit)
+    private readonly userUnitRepository: Repository<UserUnit>,
   ) {}
 
   /** Read access: identity check only. Closed orders can still have their history read. */
@@ -35,13 +40,35 @@ export class ChatAuthorizationService {
     participantType: ChatParticipantType,
     currentUser: User,
   ): Promise<ChatChannel> {
-    const [partyA, partyB] = await this.resolveParticipants(order, participantType);
+    const unitAdminId = await this.getUnitAdminId(order);
 
-    if (currentUser.id === partyA) {
-      return { senderId: partyA, receiverId: partyB };
-    }
-    if (currentUser.id === partyB) {
-      return { senderId: partyB, receiverId: partyA };
+    switch (participantType) {
+      case ChatParticipantType.UNIT:
+        if (currentUser.id === order.client_id) {
+          return { senderId: currentUser.id, receiverId: unitAdminId };
+        }
+        await this.assertUnitRepresentative(order.unit_id, currentUser.id, unitAdminId);
+        return { senderId: currentUser.id, receiverId: order.client_id };
+
+      case ChatParticipantType.DELIVERY_PERSON: {
+        const deliveryUserId = await this.getDeliveryPersonUserId(order);
+        if (currentUser.id === order.client_id) {
+          return { senderId: currentUser.id, receiverId: deliveryUserId };
+        }
+        if (currentUser.id === deliveryUserId) {
+          return { senderId: currentUser.id, receiverId: order.client_id };
+        }
+        break;
+      }
+
+      case ChatParticipantType.UNIT_DELIVERY_PERSON: {
+        const deliveryUserId = await this.getDeliveryPersonUserId(order);
+        if (currentUser.id === deliveryUserId) {
+          return { senderId: currentUser.id, receiverId: unitAdminId };
+        }
+        await this.assertUnitRepresentative(order.unit_id, currentUser.id, unitAdminId);
+        return { senderId: currentUser.id, receiverId: deliveryUserId };
+      }
     }
 
     throw new ForbiddenException('You are not a participant of this conversation');
@@ -59,23 +86,10 @@ export class ChatAuthorizationService {
     return this.assertCanParticipate(order, participantType, currentUser);
   }
 
-  /** Returns the two user ids allowed in this channel, order-independent. */
-  private async resolveParticipants(
-    order: Order,
-    participantType: ChatParticipantType,
-  ): Promise<[number, number]> {
-    switch (participantType) {
-      case ChatParticipantType.UNIT:
-        return [order.client_id, await this.getUnitAdminId(order)];
-      case ChatParticipantType.DELIVERY_PERSON:
-        return [order.client_id, await this.getDeliveryPersonUserId(order)];
-      case ChatParticipantType.UNIT_DELIVERY_PERSON:
-        return [await this.getUnitAdminId(order), await this.getDeliveryPersonUserId(order)];
-    }
-  }
-
   private async getUnitAdminId(order: Order): Promise<number> {
-    const unit = await this.unitRepository.findOne({ where: { id: order.unit_id } });
+    const unit = await this.unitRepository.findOne({
+      where: { id: order.unit_id },
+    });
     if (!unit) {
       throw new NotFoundException('Unit not found');
     }
@@ -93,5 +107,24 @@ export class ChatAuthorizationService {
       throw new NotFoundException('Delivery person not found');
     }
     return deliveryPerson.user_id;
+  }
+
+  private async assertUnitRepresentative(
+    unitId: number,
+    userId: number,
+    unitAdminId: number,
+  ): Promise<void> {
+    if (userId === unitAdminId) return;
+
+    const membership = await this.userUnitRepository.findOne({
+      where: {
+        unit_id: unitId,
+        user_id: userId,
+        status: UserUnitStatus.ACTIVE,
+      },
+    });
+    if (!membership || membership.local_role === LocalRole.DELIVERY) {
+      throw new ForbiddenException('You are not a participant of this conversation');
+    }
   }
 }

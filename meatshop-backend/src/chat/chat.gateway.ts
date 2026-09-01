@@ -16,6 +16,9 @@ import { User } from '../users/entities/user.entity';
 import { JoinChatRoomDto } from './dtos/join-chat-room.dto';
 import { SendChatSocketMessageDto } from './dtos/send-chat-socket-message.dto';
 import { ChatParticipantType } from './enums/chat-participant-type.enum';
+import { ChatMessageResponseDto } from './dtos/chat-message-response.dto';
+import { ChatReadResponseDto } from './dtos/chat-read-response.dto';
+import { ChatTypingDto } from './dtos/chat-typing.dto';
 import { ChatAuthorizationService } from './services/chat-authorization.service';
 import { SendMessageUseCase } from './use-cases/send-message.use-case';
 import { AuditTrailService } from '../audit/audit-trail.service';
@@ -27,7 +30,10 @@ function roomName(orderId: number, participantType: ChatParticipantType): string
 
 @WebSocketGateway({
   namespace: '/chat',
-  cors: { origin: '*', credentials: true },
+  cors: {
+    origin: (process.env.FRONTEND_URL ?? 'http://localhost:3000').split(','),
+    credentials: true,
+  },
 })
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
 export class ChatGateway implements OnGatewayConnection {
@@ -58,10 +64,42 @@ export class ChatGateway implements OnGatewayConnection {
         throw new Error('User not found');
       }
       client.data.user = user;
+      client.emit('chat:ready', { user_id: user.id });
     } catch (error) {
       this.logger.warn(`Chat connection rejected: ${(error as Error).message}`);
       client.emit('chat:error', { message: 'Unauthorized' });
       client.disconnect(true);
+    }
+  }
+
+  @SubscribeMessage('chat:leave')
+  async handleLeave(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() dto: JoinChatRoomDto,
+  ): Promise<void> {
+    await client.leave(roomName(dto.order_id, dto.participant_type));
+  }
+
+  @SubscribeMessage('chat:typing')
+  async handleTyping(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() dto: ChatTypingDto,
+  ): Promise<void> {
+    try {
+      const order = await this.loadOrder(dto.order_id);
+      await this.chatAuthorizationService.assertCanParticipate(
+        order,
+        dto.participant_type,
+        client.data.user,
+      );
+      client.to(roomName(dto.order_id, dto.participant_type)).emit('chat:typing', {
+        order_id: dto.order_id,
+        participant_type: dto.participant_type,
+        user_id: (client.data.user as User).id,
+        typing: Boolean(dto.typing),
+      });
+    } catch (error) {
+      client.emit('chat:error', { message: (error as Error).message });
     }
   }
 
@@ -84,6 +122,16 @@ export class ChatGateway implements OnGatewayConnection {
     } catch (error) {
       client.emit('chat:error', { message: (error as Error).message });
     }
+  }
+
+  emitMessage(message: ChatMessageResponseDto): void {
+    this.server
+      .to(roomName(message.order_id, message.participant_type))
+      .emit('chat:message', message);
+  }
+
+  emitReadReceipt(receipt: ChatReadResponseDto): void {
+    this.server.to(roomName(receipt.order_id, receipt.participant_type)).emit('chat:read', receipt);
   }
 
   @SubscribeMessage('chat:send')
@@ -139,13 +187,18 @@ export class ChatGateway implements OnGatewayConnection {
   }
 
   private extractToken(client: Socket): string {
-    const token =
+    const authToken =
       (client.handshake.auth?.token as string | undefined) ??
       (client.handshake.query?.token as string | undefined);
+    if (authToken) return authToken;
 
-    if (!token) {
-      throw new Error('Missing authentication token');
-    }
-    return token;
+    const cookieHeader = client.handshake.headers.cookie ?? '';
+    const accessCookie = cookieHeader
+      .split(';')
+      .map((cookie: string): string[] => cookie.trim().split('='))
+      .find((parts: string[]) => parts[0] === 'access_token');
+
+    if (!accessCookie?.[1]) throw new Error('Missing authentication token');
+    return decodeURIComponent(accessCookie.slice(1).join('='));
   }
 }

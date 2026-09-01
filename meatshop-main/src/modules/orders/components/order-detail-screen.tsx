@@ -1,6 +1,8 @@
 "use client"
 
 import React, { useEffect, useState } from "react"
+import Link from "next/link"
+import { MessageSquare } from "lucide-react"
 import { apiGet, apiPatch } from "@/shared/lib/api"
 import {
   DELIVERY_TYPE_LABELS,
@@ -266,6 +268,12 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
             <p className="text-sm text-red-600 text-center mb-4">{actionError}</p>
           )}
           <div className="flex flex-wrap justify-center gap-3">
+            <Button asChild variant="outline" className="text-slate-700">
+              <Link href={`/chat?order=${order.id}&channel=UNIT`}>
+                <MessageSquare className="size-4" />
+                Conversar sobre o pedido
+              </Link>
+            </Button>
             {nextAction && (
               <Button
                 disabled={working}

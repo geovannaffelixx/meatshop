@@ -15,6 +15,7 @@ import {
   ClipboardList,
   House,
   LogOut,
+  MessageSquare,
   PackageSearch,
   Percent,
   PiggyBank,
@@ -100,6 +101,12 @@ const navGroups: NavGroup[] = [
         title: "Pedidos",
         url: "/orders",
         icon: ShoppingBag,
+        permission: unitPermissions.manageOrders,
+      },
+      {
+        title: "Mensagens",
+        url: "/chat",
+        icon: MessageSquare,
         permission: unitPermissions.manageOrders,
       },
       {
