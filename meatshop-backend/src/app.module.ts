@@ -72,6 +72,7 @@ import { MercadoPagoModule } from '@/mercadopago/mercadopago.module';
 import { EmailModule } from './email/email.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { FirebaseModule } from './integrations/firebase/firebase.module';
+import { SearchModule } from './search/search.module';
 @Module({
   imports: [
     // Configuração global
@@ -172,6 +173,7 @@ import { FirebaseModule } from './integrations/firebase/firebase.module';
     SavedPaymentMethodsModule,
     SeedModule,
     MercadoPagoModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [AppService, AllExceptionsFilter],

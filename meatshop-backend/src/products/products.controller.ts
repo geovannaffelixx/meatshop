@@ -1,19 +1,5 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-  Query,
-} from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { User } from '../users/entities/user.entity';
@@ -48,6 +34,7 @@ export class ProductsController {
     @Query('unit_id') unitId?: string,
     @Query('category_id') categoryId?: string,
     @Query('active') active?: string,
+    @Query('available') available?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
@@ -55,6 +42,7 @@ export class ProductsController {
       unitId: unitId ? Number(unitId) : undefined,
       categoryId: categoryId ? Number(categoryId) : undefined,
       active: active !== undefined ? active === 'true' : undefined,
+      available: available === 'true',
       page: Math.max(Number(page) || 1, 1),
       limit: Math.min(Math.max(Number(limit) || 10, 1), 50),
     });

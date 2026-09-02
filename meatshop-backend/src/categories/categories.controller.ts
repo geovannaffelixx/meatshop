@@ -1,19 +1,5 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-  Query,
-} from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { User } from '../users/entities/user.entity';
@@ -38,9 +24,10 @@ export class CategoriesController {
   @ApiOperation({ summary: 'Lista as categorias, opcionalmente filtradas por unidade' })
   @ApiResponse({ status: 200, description: 'Lista de categorias retornada com sucesso' })
   @Get()
-  list(@Query('unit_id') unitId?: string) {
+  list(@Query('unit_id') unitId?: string, @Query('active') active?: string) {
     return this.listCategoriesUseCase.execute(
       unitId ? Number(unitId) : undefined,
+      active === undefined ? undefined : active === 'true',
     );
   }
 

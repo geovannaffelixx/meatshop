@@ -10,9 +10,12 @@ export class ListCategoriesUseCase {
     private readonly categoryRepository: Repository<Category>,
   ) {}
 
-  async execute(unitId?: number): Promise<Category[]> {
+  async execute(unitId?: number, active?: boolean): Promise<Category[]> {
+    const where: Record<string, unknown> = {};
+    if (unitId) where.unit_id = unitId;
+    if (active !== undefined) where.active = active;
     return this.categoryRepository.find({
-      where: unitId ? { unit_id: unitId } : {},
+      where,
       order: { id: 'ASC' },
     });
   }
