@@ -10,12 +10,14 @@ import { ClearCartUseCase } from './use-cases/clear-cart.use-case';
 import { GetCartUseCase } from './use-cases/get-cart.use-case';
 import { RemoveCartItemUseCase } from './use-cases/remove-cart-item.use-case';
 import { UpdateCartItemUseCase } from './use-cases/update-cart-item.use-case';
+import { CartProductPolicyService } from './services/cart-product-policy.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Cart, CartItem]), ProductsModule],
   controllers: [CartController],
   providers: [
     CartAccessService,
+    CartProductPolicyService,
     GetCartUseCase,
     AddItemToCartUseCase,
     UpdateCartItemUseCase,

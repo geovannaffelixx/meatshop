@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty, Min } from 'class-validator';
+import { IsInt, IsNotEmpty, IsNumber, Min } from 'class-validator';
 
 export class AddCartItemDto {
   @ApiProperty({
@@ -14,7 +14,7 @@ export class AddCartItemDto {
     description: 'Quantidade do produto a ser adicionada ao carrinho',
     example: 2,
   })
-  @IsInt()
-  @Min(1)
+  @IsNumber({ maxDecimalPlaces: 3 })
+  @Min(0.001)
   quantity: number;
 }

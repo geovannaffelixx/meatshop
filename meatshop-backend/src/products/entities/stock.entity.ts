@@ -20,10 +20,10 @@ export class Stock {
   @JoinColumn({ name: 'product_id' })
   product: Product;
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ type: 'decimal', precision: 12, scale: 3, default: 0 })
   quantity: number;
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ type: 'decimal', precision: 12, scale: 3, default: 0 })
   min_quantity: number;
 
   @UpdateDateColumn()
