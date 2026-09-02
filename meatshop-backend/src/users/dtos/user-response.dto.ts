@@ -14,7 +14,7 @@ export class UserResponseDto {
     description: 'Nome completo do usuário',
     example: 'João da Silva',
   })
-  name: string;
+  name: string | null;
 
   @ApiProperty({
     description: 'Endereço de e-mail do usuário',
@@ -26,7 +26,7 @@ export class UserResponseDto {
     description: 'CPF do usuário',
     example: '123.456.789-00',
   })
-  cpf: string;
+  cpf: string | null;
 
   @ApiProperty({
     description: 'Papel global do usuário no sistema',
@@ -40,7 +40,13 @@ export class UserResponseDto {
     example: AppProfile.CLIENT,
     enum: AppProfile,
   })
-  app_profile: AppProfile;
+  app_profile: AppProfile | null;
+
+  @ApiProperty({ nullable: true })
+  phone: string | null;
+
+  @ApiProperty()
+  profile_complete: boolean;
 
   @ApiProperty({
     description: 'Data de criação do usuário',
@@ -63,6 +69,8 @@ export class UserResponseDto {
     dto.cpf = user.cpf;
     dto.global_role = user.global_role;
     dto.app_profile = user.app_profile;
+    dto.phone = user.phone;
+    dto.profile_complete = user.profile_complete;
     dto.created_at = user.created_at;
     dto.avatar_url = user.avatar_url;
     return dto;

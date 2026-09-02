@@ -41,9 +41,45 @@ export class UpdateProfileUseCase {
       }
     }
 
+    if (dto.cpf && dto.cpf !== user.cpf) {
+      await this.ensureCpfIsUnique(dto.cpf);
+      user.cpf = dto.cpf;
+    }
+    if (dto.phone && dto.phone !== user.phone) {
+      await this.ensurePhoneIsUnique(dto.phone);
+      user.phone = dto.phone;
+    }
+    if (dto.app_profile) {
+      user.app_profile = dto.app_profile;
+    }
+
+    user.profile_complete = Boolean(
+      user.name?.trim() && user.cpf?.trim() && user.phone?.trim() && user.app_profile,
+    );
+
     await this.userRepository.save(user);
 
     return UserResponseDto.fromEntity(user);
+  }
+
+  private async ensureCpfIsUnique(cpf: string): Promise<void> {
+    const existing = await this.userRepository.findOne({ where: { cpf } });
+    if (existing) {
+      throw new ConflictException({
+        code: 'CPF_ALREADY_EXISTS',
+        message: 'CPF already in use.',
+      });
+    }
+  }
+
+  private async ensurePhoneIsUnique(phone: string): Promise<void> {
+    const existing = await this.userRepository.findOne({ where: { phone } });
+    if (existing) {
+      throw new ConflictException({
+        code: 'PHONE_ALREADY_EXISTS',
+        message: 'Phone already in use.',
+      });
+    }
   }
 
   private async ensureEmailIsUnique(email: string): Promise<void> {
@@ -60,7 +96,7 @@ export class UpdateProfileUseCase {
     try {
       const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
       const verificationUrl = `${frontendUrl}/verify-email?token=${user.email_verification_token}`;
-      const template = verifyEmailTemplate(user.name, verificationUrl);
+      const template = verifyEmailTemplate(user.name ?? '', verificationUrl);
 
       await this.emailService.sendEmail({
         to: user.email,

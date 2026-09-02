@@ -21,9 +21,14 @@ import { RemoveUnitMemberUseCase } from './use-cases/remove-unit-member.use-case
 import { CreateUnitMemberUseCase } from './use-cases/create-unit-member.use-case';
 import { GetUnitSettingsUseCase } from './use-cases/get-unit-settings.use-case';
 import { UnitAddressService } from './services/unit-address.service';
+import { Review } from '../reviews/entities/review.entity';
+import { GetPublicUnitUseCase } from './use-cases/get-public-unit.use-case';
+import { ListPublicUnitsUseCase } from './use-cases/list-public-units.use-case';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Unit, UserUnit, BusinessHours, User, DeliveryPerson])],
+  imports: [
+    TypeOrmModule.forFeature([Unit, UserUnit, BusinessHours, User, DeliveryPerson, Review]),
+  ],
   controllers: [UnitsController, UnitsUploadController],
   providers: [
     CreateUnitUseCase,
@@ -40,6 +45,8 @@ import { UnitAddressService } from './services/unit-address.service';
     CreateUnitMemberUseCase,
     GetUnitSettingsUseCase,
     UnitAddressService,
+    GetPublicUnitUseCase,
+    ListPublicUnitsUseCase,
   ],
   exports: [TypeOrmModule, UnitAuthorizationService, UnitPermissionPolicy, UnitAddressService],
 })

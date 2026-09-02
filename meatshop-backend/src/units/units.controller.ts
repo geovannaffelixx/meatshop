@@ -10,6 +10,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -35,6 +36,9 @@ import { GetUnitSettingsUseCase } from './use-cases/get-unit-settings.use-case';
 import { UnitAddressService } from './services/unit-address.service';
 import { UnitAuthorizationService } from './services/unit-authorization.service';
 import { UnitPermission } from '../common/enums/unit-permission.enum';
+import { FilterPublicUnitsDto } from './dtos/filter-public-units.dto';
+import { GetPublicUnitUseCase } from './use-cases/get-public-unit.use-case';
+import { ListPublicUnitsUseCase } from './use-cases/list-public-units.use-case';
 
 @ApiTags('Units')
 @ApiBearerAuth('access-token')
@@ -54,7 +58,16 @@ export class UnitsController {
     private readonly getUnitSettingsUseCase: GetUnitSettingsUseCase,
     private readonly unitAddressService: UnitAddressService,
     private readonly unitAuthorizationService: UnitAuthorizationService,
+    private readonly listPublicUnitsUseCase: ListPublicUnitsUseCase,
+    private readonly getPublicUnitUseCase: GetPublicUnitUseCase,
   ) {}
+
+  @Public()
+  @ApiOperation({ summary: 'Lista todas as unidades públicas do marketplace' })
+  @Get()
+  listPublic(@Query() filters: FilterPublicUnitsDto) {
+    return this.listPublicUnitsUseCase.execute(filters);
+  }
 
   @ApiOperation({ summary: 'Consulta endereço e coordenadas pelo CEP da unidade' })
   @Get(':unitId/address/cep/:cep')
@@ -184,6 +197,13 @@ export class UnitsController {
   @Get(':unitId/business-hours')
   listBusinessHours(@Param('unitId', ParseIntPipe) unitId: number) {
     return this.listBusinessHoursUseCase.execute(unitId);
+  }
+
+  @Public()
+  @ApiOperation({ summary: 'Obtém os detalhes públicos de uma unidade' })
+  @Get(':id')
+  getPublic(@Param('id', ParseIntPipe) id: number) {
+    return this.getPublicUnitUseCase.execute(id);
   }
 
   @ApiOperation({

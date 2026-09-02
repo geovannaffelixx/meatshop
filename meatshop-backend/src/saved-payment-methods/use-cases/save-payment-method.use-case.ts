@@ -54,7 +54,7 @@ export class SavePaymentMethodUseCase {
     if (existingMethods.length > 0) {
       return existingMethods[0].mp_customer_id;
     }
-    return this.mercadoPagoService.createCustomer(currentUser.email, currentUser.name);
+    return this.mercadoPagoService.createCustomer(currentUser.email, currentUser.name ?? 'Cliente');
   }
 
   private async unsetCurrentDefault(userId: number): Promise<void> {

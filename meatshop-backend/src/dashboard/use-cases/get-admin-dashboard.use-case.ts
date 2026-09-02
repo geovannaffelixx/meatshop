@@ -76,7 +76,7 @@ export class GetAdminDashboardUseCase {
 
     return orders.map((o) => ({
       id: o.id,
-      client_name: o.client?.name,
+      client_name: o.client?.name ?? 'Cliente',
       status: o.status,
       value: o.payment_status === PaymentStatus.PAID ? Number(o.total_amount) : 0,
       order_date: o.order_date,

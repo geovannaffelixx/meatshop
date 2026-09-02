@@ -46,6 +46,7 @@ export class RegisterUnitUseCase {
           cpf: dto.owner.cpf,
           password_hash: await bcrypt.hash(dto.owner.password, SALT_ROUNDS),
           app_profile: AppProfile.CLIENT,
+          profile_complete: true,
           email_verification_token: crypto.randomBytes(32).toString('hex'),
         }),
       );
@@ -115,7 +116,7 @@ export class RegisterUnitUseCase {
     try {
       const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
       const verificationUrl = `${frontendUrl}/verify-email?token=${user.email_verification_token}`;
-      const template = verifyEmailTemplate(user.name, verificationUrl);
+      const template = verifyEmailTemplate(user.name ?? '', verificationUrl);
 
       await this.emailService.sendEmail({
         to: user.email,

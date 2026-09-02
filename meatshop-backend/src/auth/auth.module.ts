@@ -24,12 +24,15 @@ import { ResetPasswordUseCase } from './use-cases/reset-password.use-case';
 import { VerifyEmailUseCase } from './use-cases/verify-email.use-case';
 import { EmailModule } from '../email/email.module';
 import { UnitsModule } from '../units/units.module';
+import { FirebaseModule } from '../integrations/firebase/firebase.module';
+import { FirebaseExchangeUseCase } from './use-cases/firebase-exchange.use-case';
 
 @Module({
   imports: [
     ConfigModule,
     EmailModule,
     UnitsModule,
+    FirebaseModule,
     TypeOrmModule.forFeature([User, RefreshTokenEntity]),
     PassportModule,
     JwtModule.registerAsync({
@@ -65,6 +68,7 @@ import { UnitsModule } from '../units/units.module';
     ResetPasswordUseCase,
     ChangePasswordUseCase,
     VerifyEmailUseCase,
+    FirebaseExchangeUseCase,
   ],
   exports: [JwtAuthGuard, JwtModule],
 })

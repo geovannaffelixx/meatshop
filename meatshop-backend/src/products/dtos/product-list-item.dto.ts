@@ -9,14 +9,26 @@ export class ProductListItemDto {
   @ApiProperty({ description: 'Nome do produto', example: 'Picanha' })
   name: string;
 
+  @ApiProperty() description: string;
+
+  @ApiProperty() unit_id: number;
+
+  @ApiPropertyOptional({ nullable: true }) unit_name: string | null;
+
   @ApiProperty({ description: 'Id da categoria do produto', example: 3 })
   category_id: number;
 
-  @ApiPropertyOptional({ description: 'Nome da categoria do produto', example: 'Bovinos', nullable: true })
+  @ApiPropertyOptional({
+    description: 'Nome da categoria do produto',
+    example: 'Bovinos',
+    nullable: true,
+  })
   category_name: string | null;
 
   @ApiPropertyOptional({ description: 'Marca do produto', example: 'Friboi', nullable: true })
   brand: string | null;
+
+  @ApiPropertyOptional({ nullable: true }) image_url: string | null;
 
   @ApiProperty({ description: 'Unidade de medida do produto', example: 'KG' })
   unit_of_measure: string;
@@ -37,9 +49,13 @@ export class ProductListItemDto {
     const dto = new ProductListItemDto();
     dto.id = product.id;
     dto.name = product.name;
+    dto.description = product.description;
+    dto.unit_id = product.unit_id;
+    dto.unit_name = product.unit?.name ?? null;
     dto.category_id = product.category_id;
     dto.category_name = product.category?.name ?? null;
     dto.brand = product.brand;
+    dto.image_url = product.image_url;
     dto.unit_of_measure = product.unit_of_measure;
     dto.price = Number(product.price);
     dto.active = product.active;

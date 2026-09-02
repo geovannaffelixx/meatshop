@@ -44,11 +44,9 @@ export class ForgotPasswordUseCase {
   }
 
   private async sendResetEmail(user: User, token: string): Promise<void> {
-    const frontendUrl =
-      this.configService.get<string>('FRONTEND_URL') ||
-      'http://localhost:3000';
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
-    const template = resetPasswordTemplate(user.name, resetUrl);
+    const template = resetPasswordTemplate(user.name ?? '', resetUrl);
 
     try {
       await this.emailService.sendEmail({

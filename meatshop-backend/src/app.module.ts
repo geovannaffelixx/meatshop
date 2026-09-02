@@ -71,12 +71,15 @@ import { SeedModule } from './database/seed/seed.module';
 import { MercadoPagoModule } from '@/mercadopago/mercadopago.module';
 import { EmailModule } from './email/email.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { FirebaseModule } from './integrations/firebase/firebase.module';
+import { SearchModule } from './search/search.module';
 @Module({
   imports: [
     // Configuração global
     ConfigModule.forRoot({ isGlobal: true }),
     LoggerModule,
     MetricsModule,
+    FirebaseModule,
 
     EmailModule,
 
@@ -170,6 +173,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     SavedPaymentMethodsModule,
     SeedModule,
     MercadoPagoModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [AppService, AllExceptionsFilter],

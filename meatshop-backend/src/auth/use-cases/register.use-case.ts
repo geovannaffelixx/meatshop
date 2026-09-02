@@ -33,6 +33,7 @@ export class RegisterUseCase {
       cpf: dto.cpf,
       password_hash: await bcrypt.hash(dto.password, SALT_ROUNDS),
       app_profile: dto.app_profile,
+      profile_complete: true,
       email_verification_token: crypto.randomBytes(32).toString('hex'),
     });
 
@@ -41,7 +42,7 @@ export class RegisterUseCase {
 
     const verificationUrl = `${frontendUrl}/verify-email?token=${user.email_verification_token}`;
 
-    const template = verifyEmailTemplate(user.name, verificationUrl);
+    const template = verifyEmailTemplate(user.name ?? dto.name, verificationUrl);
 
     try {
       await this.emailService.sendEmail({
