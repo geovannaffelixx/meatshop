@@ -6,7 +6,15 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { createHmac, randomInt, timingSafeEqual } from 'crypto';
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHash,
+  createHmac,
+  randomBytes,
+  randomInt,
+  timingSafeEqual,
+} from 'crypto';
 import { Buffer } from 'buffer';
 import { Repository } from 'typeorm';
 import { Order } from '../entities/order.entity';
@@ -39,6 +47,7 @@ export class DeliveryCodeService {
       );
     } else {
       order.delivery_code_hash = hash;
+      order.delivery_code_ciphertext = this.encrypt(code);
       order.delivery_code_attempts = 0;
       order.delivery_code_locked_until = null;
       order.delivery_verified_at = null;
@@ -113,6 +122,15 @@ export class DeliveryCodeService {
     order.pickup_verified_at = null;
   }
 
+  revealDeliveryCode(order: Order): string | null {
+    if (!order.delivery_code_ciphertext || order.delivery_verified_at) return null;
+    try {
+      return this.decrypt(order.delivery_code_ciphertext);
+    } catch {
+      return null;
+    }
+  }
+
   private fields(order: Order, purpose: DeliveryCodePurpose) {
     return purpose === 'PICKUP'
       ? {
@@ -150,6 +168,36 @@ export class DeliveryCodeService {
       this.configService.get<string>('DELIVERY_CODE_SECRET') ||
       this.configService.getOrThrow<string>('JWT_REFRESH_SECRET');
     return createHmac('sha256', secret).update(`${orderId}:${purpose}:${code}`).digest('hex');
+  }
+
+  private encrypt(code: string): string {
+    const iv = randomBytes(12);
+    const cipher = createCipheriv('aes-256-gcm', this.encryptionKey(), iv);
+    const encrypted = Buffer.concat([cipher.update(code, 'utf8'), cipher.final()]);
+    return [iv, cipher.getAuthTag(), encrypted].map((part) => part.toString('base64url')).join('.');
+  }
+
+  private decrypt(value: string): string {
+    const [ivValue, tagValue, encryptedValue] = value.split('.');
+    if (!ivValue || !tagValue || !encryptedValue) throw new Error('Invalid ciphertext');
+    const decipher = createDecipheriv(
+      'aes-256-gcm',
+      this.encryptionKey(),
+      Buffer.from(ivValue, 'base64url'),
+    );
+    decipher.setAuthTag(Buffer.from(tagValue, 'base64url'));
+    return Buffer.concat([
+      decipher.update(Buffer.from(encryptedValue, 'base64url')),
+      decipher.final(),
+    ]).toString('utf8');
+  }
+
+  private encryptionKey(): Buffer {
+    const secret =
+      this.configService.get<string>('DELIVERY_CODE_ENCRYPTION_KEY') ||
+      this.configService.get<string>('DELIVERY_CODE_SECRET') ||
+      this.configService.getOrThrow<string>('JWT_REFRESH_SECRET');
+    return createHash('sha256').update(secret).digest();
   }
 
   private configNumber(name: string, fallback: number): number {

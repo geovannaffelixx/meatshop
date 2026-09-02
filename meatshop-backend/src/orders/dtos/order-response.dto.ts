@@ -13,10 +13,19 @@ export class OrderItemResponseDto {
   @ApiProperty({ description: 'Nome do produto', example: 'Picanha Bovina' })
   product_name: string;
 
+  @ApiProperty({ description: 'Unidade de medida', example: 'kg' })
+  unit_of_measure: string;
+
+  @ApiPropertyOptional({ description: 'Imagem do produto', nullable: true })
+  product_image_url: string | null;
+
   @ApiProperty({ description: 'Quantidade do produto no pedido', example: 2 })
   quantity: number;
 
-  @ApiProperty({ description: 'Preço unitário do produto no momento do pedido', example: 59.9 })
+  @ApiProperty({
+    description: 'Preço unitário do produto no momento do pedido',
+    example: 59.9,
+  })
   unit_price: number;
 
   static fromEntity(item: OrderItem): OrderItemResponseDto {
@@ -24,6 +33,8 @@ export class OrderItemResponseDto {
     dto.id = item.id;
     dto.product_id = item.product_id;
     dto.product_name = item.product?.name;
+    dto.unit_of_measure = item.product?.unit_of_measure ?? 'un';
+    dto.product_image_url = item.product?.image_url ?? null;
     dto.quantity = item.quantity;
     dto.unit_price = Number(item.unit_price);
     return dto;
@@ -44,8 +55,17 @@ export class OrderResponseDto {
   })
   client_name: string | null;
 
-  @ApiProperty({ description: 'Id da unidade responsável pelo pedido', example: 3 })
+  @ApiProperty({
+    description: 'Id da unidade responsável pelo pedido',
+    example: 3,
+  })
   unit_id: number;
+
+  @ApiPropertyOptional({ description: 'Nome da unidade', nullable: true })
+  unit_name: string | null;
+
+  @ApiPropertyOptional({ description: 'Logo da unidade', nullable: true })
+  unit_logo_url: string | null;
 
   @ApiPropertyOptional({
     description: 'Id do entregador responsável pelo pedido, quando já atribuído',
@@ -54,7 +74,10 @@ export class OrderResponseDto {
   })
   delivery_person_id: number | null;
 
-  @ApiProperty({ description: 'Data e hora em que o pedido foi criado', example: '2026-08-17T12:00:00.000Z' })
+  @ApiProperty({
+    description: 'Data e hora em que o pedido foi criado',
+    example: '2026-08-17T12:00:00.000Z',
+  })
   order_date: Date;
 
   @ApiProperty({ description: 'Status atual do pedido', example: 'PENDING' })
@@ -74,16 +97,28 @@ export class OrderResponseDto {
   })
   delivery_step: string | null;
 
-  @ApiProperty({ description: 'Valor total do pedido, incluindo taxas e descontos', example: 129.9 })
+  @ApiProperty({
+    description: 'Valor total do pedido, incluindo taxas e descontos',
+    example: 129.9,
+  })
   total_amount: number;
 
-  @ApiProperty({ description: 'Subtotal do pedido, somando os itens sem taxas ou descontos', example: 119.9 })
+  @ApiProperty({
+    description: 'Subtotal do pedido, somando os itens sem taxas ou descontos',
+    example: 119.9,
+  })
   subtotal: number;
 
-  @ApiProperty({ description: 'Valor de desconto aplicado ao pedido', example: 10 })
+  @ApiProperty({
+    description: 'Valor de desconto aplicado ao pedido',
+    example: 10,
+  })
   discount_amount: number;
 
-  @ApiProperty({ description: 'Valor da taxa de entrega do pedido', example: 8 })
+  @ApiProperty({
+    description: 'Valor da taxa de entrega do pedido',
+    example: 8,
+  })
   delivery_fee: number;
 
   @ApiPropertyOptional({
@@ -100,13 +135,22 @@ export class OrderResponseDto {
   })
   coupon_id: number | null;
 
-  @ApiProperty({ description: 'Tipo de entrega do pedido', example: 'DELIVERY' })
+  @ApiProperty({
+    description: 'Tipo de entrega do pedido',
+    example: 'DELIVERY',
+  })
   delivery_type: string;
 
-  @ApiProperty({ description: 'Status atual do pagamento do pedido', example: 'PAID' })
+  @ApiProperty({
+    description: 'Status atual do pagamento do pedido',
+    example: 'PAID',
+  })
   payment_status: string;
 
-  @ApiProperty({ description: 'Indica se o pedido possui data de entrega agendada', example: false })
+  @ApiProperty({
+    description: 'Indica se o pedido possui data de entrega agendada',
+    example: false,
+  })
   is_scheduled: boolean;
 
   @ApiPropertyOptional({
@@ -131,7 +175,8 @@ export class OrderResponseDto {
   cancelled_at: Date | null;
 
   @ApiPropertyOptional({
-    description: 'Quem realizou o cancelamento do pedido (cliente, unidade ou sistema), quando aplicável',
+    description:
+      'Quem realizou o cancelamento do pedido (cliente, unidade ou sistema), quando aplicável',
     example: 'CLIENT',
     nullable: true,
   })
@@ -146,21 +191,38 @@ export class OrderResponseDto {
 
   @ApiPropertyOptional({
     description: 'Informações de pagamento associadas ao pedido, quando existentes',
-    example: { method: 'Pix', status: 'PAID', payment_date: '2026-08-17T12:05:00.000Z' },
+    example: {
+      method: 'Pix',
+      status: 'PAID',
+      payment_date: '2026-08-17T12:05:00.000Z',
+    },
     nullable: true,
   })
-  payment: { method: string | null; status: string; payment_date: Date | null } | null;
+  payment: {
+    method: string | null;
+    status: string;
+    payment_date: Date | null;
+  } | null;
+
+  @ApiPropertyOptional({
+    description: 'Código visível somente ao cliente dono do pedido enquanto válido',
+    nullable: true,
+  })
+  delivery_code: string | null;
 
   static fromEntity(
     order: Order,
     items: OrderItem[],
     payment: Payment | null,
+    deliveryCode: string | null = null,
   ): OrderResponseDto {
     const dto = new OrderResponseDto();
     dto.id = order.id;
     dto.client_id = order.client_id;
     dto.client_name = order.client?.name ?? null;
     dto.unit_id = order.unit_id;
+    dto.unit_name = order.unit?.name ?? null;
+    dto.unit_logo_url = order.unit?.image_url ?? null;
     dto.delivery_person_id = order.delivery_person_id;
     dto.order_date = order.order_date;
     dto.status = order.status;
@@ -187,6 +249,7 @@ export class OrderResponseDto {
           payment_date: payment.payment_date,
         }
       : null;
+    dto.delivery_code = deliveryCode;
     return dto;
   }
 }

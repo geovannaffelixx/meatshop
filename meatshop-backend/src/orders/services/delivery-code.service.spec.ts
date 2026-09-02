@@ -50,6 +50,17 @@ describe('DeliveryCodeService', () => {
     expect(order.delivery_code_attempts).toBe(1);
   });
 
+  it('keeps the delivery code encrypted at rest and reveals it for the owner context', () => {
+    const order = createOrder();
+    const code = service.issue(order, 'DELIVERY');
+
+    expect(order.delivery_code_ciphertext).toBeTruthy();
+    expect(order.delivery_code_ciphertext).not.toContain(code);
+    expect(service.revealDeliveryCode(order)).toBe(code);
+    order.delivery_verified_at = new Date();
+    expect(service.revealDeliveryCode(order)).toBeNull();
+  });
+
   it('binds a code hash to its order', async () => {
     const first = createOrder(10);
     const second = createOrder(11);

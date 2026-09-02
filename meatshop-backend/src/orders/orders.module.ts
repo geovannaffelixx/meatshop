@@ -12,6 +12,7 @@ import { OrderItem } from './entities/order-item.entity';
 import { OrderStatusHistory } from './entities/order-status-history.entity';
 import { Payment } from './entities/payment.entity';
 import { OrdersController } from './orders.controller';
+import { CheckoutController } from './checkout.controller';
 import { OrderAuthorizationService } from './services/order-authorization.service';
 import { OrderStatusService } from './services/order-status.service';
 import { DeliveryCodeService } from './services/delivery-code.service';
@@ -26,6 +27,8 @@ import { UpdateOrderStatusUseCase } from './use-cases/update-order-status.use-ca
 import { BusinessHoursValidator } from './validators/business-hours.validator';
 import { OrderStatusTransitionValidator } from './validators/order-status-transition.validator';
 import { StockAvailabilityValidator } from './validators/stock-availability.validator';
+import { CheckoutPricingService } from './services/checkout-pricing.service';
+import { QuoteCartUseCase } from './use-cases/quote-cart.use-case';
 
 @Module({
   imports: [
@@ -37,7 +40,7 @@ import { StockAvailabilityValidator } from './validators/stock-availability.vali
     CartModule,
     NotificationsModule,
   ],
-  controllers: [OrdersController],
+  controllers: [OrdersController, CheckoutController],
   providers: [
     OrderAuthorizationService,
     OrderStatusService,
@@ -45,6 +48,8 @@ import { StockAvailabilityValidator } from './validators/stock-availability.vali
     OrderStatusTransitionValidator,
     StockAvailabilityValidator,
     BusinessHoursValidator,
+    CheckoutPricingService,
+    QuoteCartUseCase,
     CreateOrderUseCase,
     GetOrderUseCase,
     ListOrderHistoryUseCase,

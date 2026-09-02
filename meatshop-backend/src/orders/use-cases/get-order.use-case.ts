@@ -8,6 +8,7 @@ import { Order } from '../entities/order.entity';
 import { OrderItem } from '../entities/order-item.entity';
 import { Payment } from '../entities/payment.entity';
 import { OrderAuthorizationService } from '../services/order-authorization.service';
+import { DeliveryCodeService } from '../services/delivery-code.service';
 
 @Injectable()
 export class GetOrderUseCase {
@@ -19,21 +20,22 @@ export class GetOrderUseCase {
     @InjectRepository(Payment)
     private readonly paymentRepository: Repository<Payment>,
     private readonly orderAuthorizationService: OrderAuthorizationService,
+    private readonly deliveryCodeService: DeliveryCodeService,
   ) {}
 
   async execute(orderId: number, currentUser: User): Promise<OrderResponseDto> {
-    const order = await this.orderRepository.findOne({
-      where: { id: orderId },
-      relations: ['client'],
-    });
+    const order = await this.orderRepository
+      .createQueryBuilder('order')
+      .addSelect('order.delivery_code_ciphertext')
+      .leftJoinAndSelect('order.client', 'client')
+      .leftJoinAndSelect('order.unit', 'unit')
+      .where('order.id = :orderId', { orderId })
+      .getOne();
     if (!order) {
       throw new NotFoundException('Order not found');
     }
 
-    if (
-      order.client_id !== currentUser.id &&
-      currentUser.global_role !== GlobalRole.SUPER_ADMIN
-    ) {
+    if (order.client_id !== currentUser.id && currentUser.global_role !== GlobalRole.SUPER_ADMIN) {
       await this.orderAuthorizationService.assertCanManageOrder(order, currentUser);
     }
 
@@ -45,6 +47,10 @@ export class GetOrderUseCase {
       where: { order_id: orderId },
     });
 
-    return OrderResponseDto.fromEntity(order, items, payment);
+    const deliveryCode =
+      order.client_id === currentUser.id
+        ? this.deliveryCodeService.revealDeliveryCode(order)
+        : null;
+    return OrderResponseDto.fromEntity(order, items, payment, deliveryCode);
   }
 }

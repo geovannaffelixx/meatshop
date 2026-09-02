@@ -42,6 +42,9 @@ export class Payment {
   @Column({ type: 'varchar', length: 120, nullable: true })
   mp_preference_id: string | null;
 
+  @Column({ type: 'varchar', length: 500, nullable: true, select: false })
+  mp_checkout_url: string | null;
+
   @Column({ type: 'varchar', length: 60, nullable: true })
   mp_status_detail: string | null;
 

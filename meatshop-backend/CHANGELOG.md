@@ -6,6 +6,11 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ### Adicionado
 
+- Cotação autoritativa em `POST /cart/quote` e checkout multiunidade em `POST /orders`, com um pedido por unidade ligado por `checkout_id`.
+- Checkout agregado em `POST /mercadopago/checkouts/:checkoutId/checkout` e campos seguros para rastrear a preferência do provedor.
+- Migration reversível para checkout UUID, quantidade fracionada de itens, URL interna do Mercado Pago e código de entrega criptografado.
+- Testes de agrupamento, cupons, arredondamento, frete por distância/fallback e proteção do código de entrega.
+
 - Endpoints autenticados `POST/DELETE /users/me/avatar` para o aplicativo mobile, preservando a rota legada do painel.
 - Endpoint `POST /geocoding/resolve` e coordenadas persistidas nos endereços a partir do CEP.
 - Resposta de carrinho com snapshots de apresentação, estoque atual, total geral e agrupamento por unidade.
@@ -28,6 +33,12 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 - Reabertura de chamados encerrados e estados de espera separados entre usuário e equipe MeatShop.
 
 ### Alterado
+
+- Criação de pedidos exige `Idempotency-Key` UUID v4, bloqueia carrinho/estoque e confirma todos os pedidos ou nenhum na mesma transação PostgreSQL.
+- Preço, desconto, cupom por unidade, frete e total são sempre recalculados no servidor; cancelamento restaura estoque e cupom atomicamente.
+- Webhook Mercado Pago valida assinatura, janela temporal, consulta oficial, moeda e valor e impede regressão de pagamentos aprovados.
+- Código de entrega passa a ser revelado somente ao cliente proprietário e permanece protegido por AES-256-GCM e hash de verificação.
+- Métodos de pagamento expõem apenas identificadores tokenizados e metadados seguros.
 
 - Inclusão e alteração do carrinho revalidam produto, categoria, preço e estoque e devolvem o estado completo atualizado.
 - Quantidades de produtos vendidos por peso aceitam até três casas decimais.

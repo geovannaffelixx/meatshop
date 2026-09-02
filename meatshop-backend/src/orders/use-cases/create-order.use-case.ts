@@ -1,31 +1,32 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, Repository } from 'typeorm';
-import { CartAccessService } from '../../cart/services/cart-access.service';
 import { CartItem } from '../../cart/entities/cart-item.entity';
+import { Cart } from '../../cart/entities/cart.entity';
+import { CartAccessService } from '../../cart/services/cart-access.service';
 import { SendOrderStatusNotificationUseCase } from '../../notifications/use-cases/send-order-status-notification.use-case';
-import { Address } from '../../users/entities/address.entity';
-import { Coupon } from '../../promotions/entities/coupon.entity';
 import { CouponRedemptionService } from '../../promotions/services/coupon-redemption.service';
 import { Stock } from '../../products/entities/stock.entity';
+import { Address } from '../../users/entities/address.entity';
 import { User } from '../../users/entities/user.entity';
+import { Unit } from '../../units/entities/unit.entity';
+import { CheckoutResponseDto } from '../dtos/checkout-response.dto';
 import { CreateOrderDto } from '../dtos/create-order.dto';
-import { DeliveryStatus } from '../enums/delivery-status.enum';
-import { DeliveryType } from '../enums/delivery-type.enum';
+import { OrderResponseDto } from '../dtos/order-response.dto';
 import { Order } from '../entities/order.entity';
 import { OrderItem } from '../entities/order-item.entity';
 import { OrderStatusHistory } from '../entities/order-status-history.entity';
 import { Payment } from '../entities/payment.entity';
-import { StockAvailabilityValidator } from '../validators/stock-availability.validator';
+import { DeliveryStatus } from '../enums/delivery-status.enum';
+import { DeliveryType } from '../enums/delivery-type.enum';
+import { CheckoutPricingService, ICheckoutGroup } from '../services/checkout-pricing.service';
 import { DeliveryCodeService } from '../services/delivery-code.service';
+import { BusinessHoursValidator } from '../validators/business-hours.validator';
 
-interface IOrderAmounts {
-  subtotal: number;
-  discount_amount: number;
-  delivery_fee: number;
-  total_amount: number;
-}
+type CreatedOrder = {
+  order: Order;
+  deliveryCode: string | null;
+};
 
 @Injectable()
 export class CreateOrderUseCase {
@@ -38,219 +39,302 @@ export class CreateOrderUseCase {
     private readonly orderItemRepository: Repository<OrderItem>,
     @InjectRepository(Payment)
     private readonly paymentRepository: Repository<Payment>,
-    @InjectRepository(OrderStatusHistory)
-    private readonly historyRepository: Repository<OrderStatusHistory>,
-    @InjectRepository(CartItem)
-    private readonly cartItemRepository: Repository<CartItem>,
-    @InjectRepository(Stock)
-    private readonly stockRepository: Repository<Stock>,
-    @InjectRepository(Address)
-    private readonly addressRepository: Repository<Address>,
     private readonly cartAccessService: CartAccessService,
-    private readonly stockAvailabilityValidator: StockAvailabilityValidator,
     private readonly couponRedemption: CouponRedemptionService,
-    private readonly configService: ConfigService,
+    private readonly pricing: CheckoutPricingService,
+    private readonly businessHours: BusinessHoursValidator,
     private readonly sendOrderStatusNotificationUseCase: SendOrderStatusNotificationUseCase,
     private readonly deliveryCodeService: DeliveryCodeService,
     @InjectDataSource()
     private readonly dataSource: DataSource,
   ) {}
 
-  async execute(dto: CreateOrderDto, currentUser: User): Promise<Order> {
-    const items = await this.loadCartItems(currentUser.id);
-    const unitId = this.assertSameUnit(items);
-    this.assertProductsActive(items);
-    await this.stockAvailabilityValidator.assertAvailable(
-      items.map((item) => ({
-        product_id: item.product_id,
-        product_name: item.product.name,
-        quantity: item.quantity,
-      })),
+  async execute(
+    dto: CreateOrderDto,
+    currentUser: User,
+    checkoutId: string,
+  ): Promise<CheckoutResponseDto> {
+    this.assertCheckoutId(checkoutId);
+    const existing = await this.findCheckout(currentUser.id, checkoutId);
+    if (existing.length > 0) {
+      return this.toResponse(checkoutId, existing);
+    }
+
+    const cart = await this.cartAccessService.getOrCreateCart(currentUser.id);
+    const previewItems = await this.loadItems(this.dataSource.manager, cart.id);
+    this.assertCart(previewItems);
+    const previewGroups = this.pricing.group(previewItems, dto);
+    await this.validateSchedule(dto, previewGroups);
+
+    const transaction = await this.dataSource.transaction(async (manager) => {
+      await manager
+        .getRepository(Cart)
+        .createQueryBuilder('cart')
+        .setLock('pessimistic_write')
+        .where('cart.id = :cartId', { cartId: cart.id })
+        .getOne();
+
+      const retry = await manager.find(Order, {
+        where: { client_id: currentUser.id, checkout_id: checkoutId },
+        order: { unit_id: 'ASC' },
+      });
+      if (retry.length > 0) {
+        return {
+          results: retry.map((order) => ({ order, deliveryCode: null })),
+          replay: true,
+        };
+      }
+
+      const items = await this.loadItems(manager, cart.id);
+      this.assertCart(items);
+      const groups = this.pricing.group(items, dto);
+      await this.lockAndValidateStock(manager, items);
+      const address = await this.resolveAddress(manager, dto, currentUser.id);
+
+      const results: CreatedOrder[] = [];
+      for (const group of groups) {
+        results.push(
+          await this.createUnitOrder(manager, dto, currentUser, checkoutId, group, address),
+        );
+      }
+      await manager.delete(CartItem, { cart_id: cart.id });
+      return { results, replay: false };
+    });
+
+    if (!transaction.replay) {
+      await Promise.all(transaction.results.map((result) => this.notify(result)));
+    }
+    return this.toResponse(
+      checkoutId,
+      transaction.results.map((result) => result.order),
+    );
+  }
+
+  private async createUnitOrder(
+    manager: EntityManager,
+    dto: CreateOrderDto,
+    user: User,
+    checkoutId: string,
+    group: ICheckoutGroup,
+    address: Address | null,
+  ): Promise<CreatedOrder> {
+    const prepared = await this.couponRedemption.prepare(
+      group.couponCode,
+      { userId: user.id, unitId: group.unitId, subtotal: group.subtotal },
+      manager,
+    );
+    const amounts = this.pricing.amounts(
+      group.subtotal,
+      prepared?.discountAmount ?? 0,
+      dto.delivery_type,
+      this.pricing.deliveryFee(
+        await manager.findOneByOrFail(Unit, { id: group.unitId }),
+        address,
+        dto.delivery_type,
+        dto.scheduled_delivery_date ? new Date(dto.scheduled_delivery_date) : new Date(),
+      ),
+    );
+    const scheduledDate = dto.scheduled_delivery_date
+      ? new Date(dto.scheduled_delivery_date)
+      : null;
+    const order = await manager.save(
+      Order,
+      manager.create(Order, {
+        checkout_id: checkoutId,
+        client_id: user.id,
+        unit_id: group.unitId,
+        delivery_type: dto.delivery_type,
+        delivery_status:
+          dto.delivery_type === DeliveryType.DELIVERY
+            ? DeliveryStatus.WAITING_DELIVERY_PERSON
+            : null,
+        address_id: address?.id ?? null,
+        coupon_id: prepared?.coupon.id ?? null,
+        scheduled_delivery_date: scheduledDate,
+        is_scheduled: scheduledDate !== null,
+        ...amounts,
+      }),
     );
 
-    const address = await this.resolveAddress(dto, currentUser);
-    const subtotal = this.calculateSubtotal(items);
-
     let deliveryCode: string | null = null;
-    const order = await this.dataSource.transaction(async (manager) => {
-      const prepared = await this.couponRedemption.prepare(
-        dto.coupon_code,
-        {
-          userId: currentUser.id,
-          unitId,
-          subtotal,
-        },
-        manager,
-      );
-      const amounts = this.calculateAmounts(
-        subtotal,
-        prepared?.discountAmount ?? 0,
-        dto.delivery_type,
-      );
-      const order = await this.persistOrder(
-        manager,
-        dto,
-        currentUser,
-        unitId,
-        address,
-        prepared?.coupon ?? null,
-        amounts,
-      );
-      if (order.delivery_type === DeliveryType.DELIVERY) {
-        deliveryCode = this.deliveryCodeService.issue(order, 'DELIVERY');
-        await manager.save(Order, order);
-      }
-      await this.persistOrderItems(manager, order.id, items);
-      await this.decrementStock(manager, items);
-      await manager.save(Payment, manager.create(Payment, { order_id: order.id }));
-      await manager.save(
-        OrderStatusHistory,
-        manager.create(OrderStatusHistory, {
+    if (order.delivery_type === DeliveryType.DELIVERY) {
+      deliveryCode = this.deliveryCodeService.issue(order, 'DELIVERY');
+      await manager.save(Order, order);
+    }
+
+    await manager.save(
+      OrderItem,
+      group.items.map((item) =>
+        manager.create(OrderItem, {
           order_id: order.id,
-          status: order.status,
-          updated_by: currentUser.id,
+          product_id: item.product_id,
+          quantity: item.quantity,
+          unit_price: item.product.price,
         }),
-      );
-      await manager.delete(CartItem, { cart_id: items[0].cart_id });
-      await this.couponRedemption.consume(
-        prepared,
-        order.id,
-        { userId: currentUser.id, unitId, subtotal },
-        manager,
-      );
-      return order;
-    });
-
-    await this.sendOrderStatusNotificationUseCase
-      .notifyUnitOfNewOrder(order)
-      .catch((error) =>
-        this.logger.warn(`Failed to notify unit of new order ${order.id}: ${error.message}`),
-      );
-
-    if (deliveryCode) {
-      await this.sendOrderStatusNotificationUseCase
-        .notifyCustomerOfDeliveryCode(order, deliveryCode)
-        .catch((error) =>
-          this.logger.warn(
-            `Failed to notify customer of delivery code for order ${order.id}: ${error.message}`,
-          ),
-        );
+      ),
+    );
+    for (const item of group.items) {
+      await manager.decrement(Stock, { product_id: item.product_id }, 'quantity', item.quantity);
     }
-
-    return order;
+    await manager.save(
+      Payment,
+      manager.create(Payment, {
+        order_id: order.id,
+        method: dto.payment_method ?? null,
+      }),
+    );
+    await manager.save(
+      OrderStatusHistory,
+      manager.create(OrderStatusHistory, {
+        order_id: order.id,
+        status: order.status,
+        updated_by: user.id,
+      }),
+    );
+    await this.couponRedemption.consume(
+      prepared,
+      order.id,
+      { userId: user.id, unitId: group.unitId, subtotal: group.subtotal },
+      manager,
+    );
+    return { order, deliveryCode };
   }
 
-  private async loadCartItems(userId: number): Promise<CartItem[]> {
-    const cart = await this.cartAccessService.getOrCreateCart(userId);
-    const items = await this.cartItemRepository.find({
-      where: { cart_id: cart.id },
-      relations: ['product'],
+  private async loadItems(manager: EntityManager, cartId: number): Promise<CartItem[]> {
+    return manager.find(CartItem, {
+      where: { cart_id: cartId },
+      relations: ['product', 'product.category'],
+      order: { product_id: 'ASC' },
     });
+  }
 
+  private assertCart(items: CartItem[]): void {
     if (items.length === 0) {
-      throw new BadRequestException('Cart is empty');
+      throw new BadRequestException({
+        code: 'EMPTY_CART',
+        message: 'O carrinho está vazio.',
+      });
     }
-
-    return items;
-  }
-
-  private assertSameUnit(items: CartItem[]): number {
-    const unitIds = new Set(items.map((item) => item.product.unit_id));
-    if (unitIds.size > 1) {
-      throw new BadRequestException('All cart items must belong to the same unit');
-    }
-    return unitIds.values().next().value as number;
-  }
-
-  private assertProductsActive(items: CartItem[]): void {
-    const inactive = items.filter((item) => !item.product.active);
-    if (inactive.length > 0) {
-      throw new BadRequestException(
-        `Unavailable products: ${inactive.map((i) => i.product.name).join(', ')}`,
-      );
+    const unavailable = items.filter(
+      (item) => !item.product.active || !item.product.category?.active,
+    );
+    if (unavailable.length > 0) {
+      throw new BadRequestException({
+        code: 'PRODUCT_UNAVAILABLE',
+        message: `Produtos indisponíveis: ${unavailable.map((item) => item.product.name).join(', ')}.`,
+      });
     }
   }
 
-  private async resolveAddress(dto: CreateOrderDto, currentUser: User): Promise<Address | null> {
-    if (dto.delivery_type !== DeliveryType.DELIVERY) {
-      return null;
+  private async lockAndValidateStock(manager: EntityManager, items: CartItem[]): Promise<void> {
+    const productIds = [...new Set(items.map((item) => item.product_id))].sort((a, b) => a - b);
+    const stocks = await manager
+      .getRepository(Stock)
+      .createQueryBuilder('stock')
+      .setLock('pessimistic_write')
+      .where('stock.product_id IN (:...productIds)', { productIds })
+      .orderBy('stock.product_id', 'ASC')
+      .getMany();
+    const byProduct = new Map(stocks.map((stock) => [stock.product_id, Number(stock.quantity)]));
+    const insufficient = items.filter(
+      (item) => (byProduct.get(item.product_id) ?? 0) < Number(item.quantity),
+    );
+    if (insufficient.length > 0) {
+      throw new BadRequestException({
+        code: 'INSUFFICIENT_STOCK',
+        message: `Estoque insuficiente: ${insufficient.map((item) => item.product.name).join(', ')}.`,
+      });
     }
+  }
 
-    const address = await this.addressRepository.findOne({
-      where: { id: dto.address_id, user_id: currentUser.id },
+  private async resolveAddress(
+    manager: EntityManager,
+    dto: CreateOrderDto,
+    userId: number,
+  ): Promise<Address | null> {
+    if (dto.delivery_type !== DeliveryType.DELIVERY) return null;
+    const address = await manager.findOne(Address, {
+      where: { id: dto.address_id, user_id: userId },
     });
-
-    if (!address) {
-      throw new NotFoundException('Address not found');
-    }
-
+    if (!address) throw new NotFoundException('Address not found');
     return address;
   }
 
-  private calculateSubtotal(items: CartItem[]): number {
-    return items.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0);
+  private async validateSchedule(dto: CreateOrderDto, groups: ICheckoutGroup[]): Promise<void> {
+    if (!dto.scheduled_delivery_date) return;
+    const date = new Date(dto.scheduled_delivery_date);
+    if (date <= new Date()) {
+      throw new BadRequestException('scheduled_delivery_date must be in the future');
+    }
+    await Promise.all(
+      groups.map((group) => this.businessHours.assertWithinBusinessHours(group.unitId, date)),
+    );
   }
 
-  private calculateAmounts(
-    subtotal: number,
-    discount_amount: number,
-    deliveryType: DeliveryType,
-  ): IOrderAmounts {
-    const deliveryFee =
-      deliveryType === DeliveryType.DELIVERY
-        ? Number(this.configService.get<string>('DEFAULT_DELIVERY_FEE', '0'))
-        : 0;
-    const totalAmount = Math.max(0, subtotal - discount_amount + deliveryFee);
+  private async findCheckout(userId: number, checkoutId: string): Promise<Order[]> {
+    return this.orderRepository
+      .createQueryBuilder('order')
+      .addSelect('order.delivery_code_ciphertext')
+      .leftJoinAndSelect('order.unit', 'unit')
+      .where('order.client_id = :userId', { userId })
+      .andWhere('order.checkout_id = :checkoutId', { checkoutId })
+      .orderBy('order.unit_id', 'ASC')
+      .getMany();
+  }
 
+  private async toResponse(checkoutId: string, orders: Order[]): Promise<CheckoutResponseDto> {
+    const detailed = await Promise.all(
+      orders.map(async (order) => {
+        const [persistedOrder, items, payment] = await Promise.all([
+          this.orderRepository
+            .createQueryBuilder('order')
+            .addSelect('order.delivery_code_ciphertext')
+            .leftJoinAndSelect('order.unit', 'unit')
+            .where('order.id = :orderId', { orderId: order.id })
+            .getOneOrFail(),
+          this.orderItemRepository.find({
+            where: { order_id: order.id },
+            relations: ['product'],
+          }),
+          this.paymentRepository.findOne({ where: { order_id: order.id } }),
+        ]);
+        return OrderResponseDto.fromEntity(
+          persistedOrder,
+          items,
+          payment,
+          this.deliveryCodeService.revealDeliveryCode(persistedOrder),
+        );
+      }),
+    );
     return {
-      subtotal,
-      discount_amount,
-      delivery_fee: deliveryFee,
-      total_amount: totalAmount,
+      checkout_id: checkoutId,
+      orders: detailed,
+      total_amount: Number(detailed.reduce((sum, order) => sum + order.total_amount, 0).toFixed(2)),
     };
   }
 
-  private async persistOrder(
-    manager: EntityManager,
-    dto: CreateOrderDto,
-    currentUser: User,
-    unitId: number,
-    address: Address | null,
-    coupon: Coupon | null,
-    amounts: IOrderAmounts,
-  ): Promise<Order> {
-    const order = manager.create(Order, {
-      client_id: currentUser.id,
-      unit_id: unitId,
-      delivery_type: dto.delivery_type,
-      delivery_status:
-        dto.delivery_type === DeliveryType.DELIVERY ? DeliveryStatus.WAITING_DELIVERY_PERSON : null,
-      address_id: address?.id ?? null,
-      coupon_id: coupon?.id ?? null,
-      ...amounts,
-    });
-    return manager.save(Order, order);
+  private async notify(result: CreatedOrder): Promise<void> {
+    await this.sendOrderStatusNotificationUseCase
+      .notifyUnitOfNewOrder(result.order)
+      .catch((error: Error) =>
+        this.logger.warn(`Failed to notify unit of new order ${result.order.id}: ${error.message}`),
+      );
+    if (!result.deliveryCode) return;
+    await this.sendOrderStatusNotificationUseCase
+      .notifyCustomerOfDeliveryCode(result.order, result.deliveryCode)
+      .catch((error: Error) =>
+        this.logger.warn(
+          `Failed to notify customer of delivery code for order ${result.order.id}: ${error.message}`,
+        ),
+      );
   }
 
-  private async persistOrderItems(
-    manager: EntityManager,
-    orderId: number,
-    items: CartItem[],
-  ): Promise<void> {
-    const orderItems = items.map((item) =>
-      manager.create(OrderItem, {
-        order_id: orderId,
-        product_id: item.product_id,
-        quantity: item.quantity,
-        unit_price: item.product.price,
-      }),
-    );
-    await manager.save(OrderItem, orderItems);
-  }
-
-  private async decrementStock(manager: EntityManager, items: CartItem[]): Promise<void> {
-    for (const item of items) {
-      await manager.decrement(Stock, { product_id: item.product_id }, 'quantity', item.quantity);
+  private assertCheckoutId(value: string): void {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)) {
+      throw new BadRequestException({
+        code: 'INVALID_IDEMPOTENCY_KEY',
+        message: 'Idempotency-Key deve ser um UUID v4 válido.',
+      });
     }
   }
 }

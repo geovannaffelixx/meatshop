@@ -24,6 +24,9 @@ export class Order {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column({ type: 'uuid', nullable: true })
+  checkout_id: string | null;
+
   @Column()
   client_id: number;
 
@@ -50,6 +53,9 @@ export class Order {
 
   @Column({ type: 'varchar', length: 64, nullable: true, select: false })
   delivery_code_hash: string | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true, select: false })
+  delivery_code_ciphertext: string | null;
 
   @Column({ type: 'timestamp', nullable: true })
   pickup_code_expires_at: Date | null;
