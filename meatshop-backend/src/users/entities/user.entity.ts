@@ -1,9 +1,4 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
+import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
 import { AppProfile } from '../../common/enums/app-profile.enum';
 import { GlobalRole } from '../../common/enums/global-role.enum';
 
@@ -12,23 +7,35 @@ export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'varchar', length: 100 })
-  name: string;
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  name: string | null;
 
   @Column({ type: 'varchar', unique: true })
   email: string;
 
-  @Column({ type: 'varchar', unique: true })
-  cpf: string;
+  @Column({ type: 'varchar', unique: true, nullable: true })
+  cpf: string | null;
 
-  @Column({ type: 'varchar' })
-  password_hash: string;
+  @Column({ type: 'varchar', nullable: true })
+  password_hash: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  phone: string | null;
+
+  @Column({ type: 'varchar', nullable: true, unique: true })
+  firebase_uid: string | null;
 
   @Column({ type: 'enum', enum: GlobalRole, default: GlobalRole.USER })
   global_role: GlobalRole;
 
-  @Column({ type: 'enum', enum: AppProfile, default: AppProfile.CLIENT })
-  app_profile: AppProfile;
+  @Column({ type: 'enum', enum: AppProfile, nullable: true })
+  app_profile: AppProfile | null;
+
+  @Column({ type: 'boolean', default: false })
+  profile_complete: boolean;
+
+  @Column({ type: 'boolean', default: true })
+  is_active: boolean;
 
   // Flags for account security (RNE-003)
   @Column({ type: 'int', default: 0 })

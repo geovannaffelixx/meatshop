@@ -33,6 +33,8 @@ import { RegisterUseCase } from './use-cases/register.use-case';
 import { RegisterUnitUseCase } from './use-cases/register-unit.use-case';
 import { ResetPasswordUseCase } from './use-cases/reset-password.use-case';
 import { VerifyEmailUseCase } from './use-cases/verify-email.use-case';
+import { FirebaseExchangeDto } from './dto/firebase-exchange.dto';
+import { FirebaseExchangeUseCase } from './use-cases/firebase-exchange.use-case';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -48,7 +50,34 @@ export class AuthController {
     private readonly changePasswordUseCase: ChangePasswordUseCase,
     private readonly verifyEmailUseCase: VerifyEmailUseCase,
     private readonly configService: ConfigService,
+    private readonly firebaseExchangeUseCase: FirebaseExchangeUseCase,
   ) {}
+
+  @ApiOperation({
+    summary: 'Troca um Firebase ID Token por uma sessão MeatShop',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Sessão MeatShop emitida com sucesso',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Primeiro vínculo exige a senha da conta local',
+  })
+  @Public()
+  @Post('firebase/exchange')
+  @HttpCode(HttpStatus.OK)
+  firebaseExchange(@Req() req: Request, @Body() dto: FirebaseExchangeDto) {
+    const authorization = req.headers.authorization;
+    const [scheme, token] = authorization?.split(' ') ?? [];
+    if (scheme?.toLowerCase() !== 'bearer' || !token) {
+      throw new UnauthorizedException({
+        code: 'FIREBASE_TOKEN_REQUIRED',
+        message: 'Firebase ID token is required.',
+      });
+    }
+    return this.firebaseExchangeUseCase.execute(token, dto.password);
+  }
 
   @ApiOperation({ summary: 'Registra um novo usuário' })
   @ApiResponse({ status: 201, description: 'Usuário criado com sucesso' })
@@ -68,7 +97,10 @@ export class AuthController {
     summary:
       'Registra o dono de uma unidade (açougue) e a própria unidade, já autenticando em seguida',
   })
-  @ApiResponse({ status: 201, description: 'Unidade e dono criados com sucesso, já autenticado' })
+  @ApiResponse({
+    status: 201,
+    description: 'Unidade e dono criados com sucesso, já autenticado',
+  })
   @ApiResponse({
     status: 409,
     description: 'Já existe um usuário com este e-mail/CPF, ou uma unidade com este CNPJ',
@@ -83,7 +115,9 @@ export class AuthController {
     return { ...tokens, unit };
   }
 
-  @ApiOperation({ summary: 'Autentica um usuário e retorna os tokens de acesso' })
+  @ApiOperation({
+    summary: 'Autentica um usuário e retorna os tokens de acesso',
+  })
   @ApiResponse({ status: 200, description: 'Login realizado com sucesso' })
   @ApiResponse({ status: 401, description: 'Credenciais inválidas' })
   @Public()
@@ -96,7 +130,9 @@ export class AuthController {
     return tokens;
   }
 
-  @ApiOperation({ summary: 'Encerra a sessão do usuário invalidando o refresh token' })
+  @ApiOperation({
+    summary: 'Encerra a sessão do usuário invalidando o refresh token',
+  })
   @ApiResponse({ status: 200, description: 'Logout realizado com sucesso' })
   @ApiResponse({ status: 400, description: 'Refresh token inválido' })
   @Public()
@@ -116,9 +152,14 @@ export class AuthController {
     return result;
   }
 
-  @ApiOperation({ summary: 'Renova o token de acesso a partir de um refresh token válido' })
+  @ApiOperation({
+    summary: 'Renova o token de acesso a partir de um refresh token válido',
+  })
   @ApiResponse({ status: 200, description: 'Tokens renovados com sucesso' })
-  @ApiResponse({ status: 401, description: 'Refresh token inválido ou expirado' })
+  @ApiResponse({
+    status: 401,
+    description: 'Refresh token inválido ou expirado',
+  })
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
@@ -136,7 +177,9 @@ export class AuthController {
     return tokens;
   }
 
-  @ApiOperation({ summary: 'Envia um e-mail com o link de redefinição de senha' })
+  @ApiOperation({
+    summary: 'Envia um e-mail com o link de redefinição de senha',
+  })
   @ApiResponse({
     status: 200,
     description: 'Solicitação processada com sucesso',
@@ -149,7 +192,9 @@ export class AuthController {
     return this.forgotPasswordUseCase.execute(dto.email);
   }
 
-  @ApiOperation({ summary: 'Redefine a senha do usuário a partir de um token válido' })
+  @ApiOperation({
+    summary: 'Redefine a senha do usuário a partir de um token válido',
+  })
   @ApiResponse({ status: 200, description: 'Senha redefinida com sucesso' })
   @ApiResponse({ status: 400, description: 'Token inválido ou expirado' })
   @Public()
@@ -159,7 +204,9 @@ export class AuthController {
     return this.resetPasswordUseCase.execute(dto.token, dto.new_password);
   }
 
-  @ApiOperation({ summary: 'Verifica o e-mail do usuário a partir de um token de verificação' })
+  @ApiOperation({
+    summary: 'Verifica o e-mail do usuário a partir de um token de verificação',
+  })
   @ApiResponse({ status: 200, description: 'E-mail verificado com sucesso' })
   @ApiResponse({ status: 400, description: 'Token inválido ou expirado' })
   @Public()
@@ -172,7 +219,10 @@ export class AuthController {
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Altera a senha do usuário autenticado' })
   @ApiResponse({ status: 200, description: 'Senha alterada com sucesso' })
-  @ApiResponse({ status: 401, description: 'Senha atual incorreta ou usuário não autenticado' })
+  @ApiResponse({
+    status: 401,
+    description: 'Senha atual incorreta ou usuário não autenticado',
+  })
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
   changePassword(@CurrentUser('id') userId: number, @Body() dto: ChangePasswordDto) {

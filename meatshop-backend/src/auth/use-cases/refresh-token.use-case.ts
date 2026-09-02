@@ -6,7 +6,7 @@ import { Repository } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { RefreshTokenEntity } from '../entities/refresh-token.entity';
 
-interface AuthTokens {
+interface IAuthTokens {
   access_token: string;
   refresh_token: string;
 }
@@ -21,7 +21,7 @@ export class RefreshTokenUseCase {
     private readonly jwtService: JwtService,
   ) {}
 
-  async execute(rawToken: string): Promise<AuthTokens> {
+  async execute(rawToken: string): Promise<IAuthTokens> {
     const hash = crypto.createHash('sha256').update(rawToken).digest('hex');
 
     const stored = await this.refreshTokenRepository.findOne({
@@ -36,6 +36,9 @@ export class RefreshTokenUseCase {
     await this.refreshTokenRepository.save(stored!);
 
     const user = stored!.user;
+    if (!user.is_active) {
+      throw new UnauthorizedException('Account disabled');
+    }
     const [accessToken, newRefreshToken] = await Promise.all([
       this.generateAccessToken(user),
       this.generateAndPersistRefreshToken(user),

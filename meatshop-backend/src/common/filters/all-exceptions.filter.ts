@@ -33,6 +33,14 @@ const UNIQUE_CONSTRAINT_ERRORS: Record<string, ErrorDetails> = {
     code: 'CPF_ALREADY_EXISTS',
     message: 'Já existe uma conta cadastrada com este CPF.',
   },
+  UQ_users_firebase_uid: {
+    code: 'FIREBASE_IDENTITY_ALREADY_LINKED',
+    message: 'Esta identidade Firebase já está vinculada a outra conta.',
+  },
+  UQ_users_phone: {
+    code: 'PHONE_ALREADY_EXISTS',
+    message: 'Já existe uma conta cadastrada com este telefone.',
+  },
   UQ_units_cnpj: {
     code: 'CNPJ_ALREADY_EXISTS',
     message: 'Já existe um açougue cadastrado com este CNPJ.',

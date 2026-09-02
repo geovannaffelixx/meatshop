@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { Repository } from 'typeorm';
@@ -26,10 +22,10 @@ export class ChangePasswordUseCase {
 
     if (!user) throw new UnauthorizedException('User not found');
 
-    const isCurrentPasswordValid = await bcrypt.compare(
-      currentPassword,
-      user.password_hash,
-    );
+    if (!user.password_hash) {
+      throw new BadRequestException('Password authentication is not configured for this account');
+    }
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password_hash);
 
     if (!isCurrentPasswordValid) {
       throw new BadRequestException('Current password is incorrect');
