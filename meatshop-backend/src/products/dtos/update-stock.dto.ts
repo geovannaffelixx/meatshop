@@ -1,12 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsOptional, Min } from 'class-validator';
+import { IsNumber, IsOptional, Min } from 'class-validator';
 
 export class UpdateStockDto {
   @ApiProperty({
     description: 'Nova quantidade em estoque do produto',
     example: 50,
   })
-  @IsInt()
+  @IsNumber({ maxDecimalPlaces: 3 })
   @Min(0)
   quantity: number;
 
@@ -16,7 +16,7 @@ export class UpdateStockDto {
     example: 10,
   })
   @IsOptional()
-  @IsInt()
+  @IsNumber({ maxDecimalPlaces: 3 })
   @Min(0)
   min_quantity?: number;
 }

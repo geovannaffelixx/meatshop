@@ -6,6 +6,13 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ### Adicionado
 
+- Endpoints autenticados `POST/DELETE /users/me/avatar` para o aplicativo mobile, preservando a rota legada do painel.
+- Endpoint `POST /geocoding/resolve` e coordenadas persistidas nos endereços a partir do CEP.
+- Resposta de carrinho com snapshots de apresentação, estoque atual, total geral e agrupamento por unidade.
+- Migration reversível para coordenadas e quantidades fracionadas de carrinho/estoque.
+- Restrição parcial no PostgreSQL que garante no máximo um endereço padrão por usuário.
+- Testes das políticas de disponibilidade e do carrinho multiunidade.
+
 - Domínio de cupons `PLATFORM` e `UNIT`, com escopo por unidades, período, pedido mínimo, teto de desconto e limites total/por cliente.
 - Histórico de resgates por pedido e consumo transacional com bloqueio contra concorrência; cancelamentos liberam o uso.
 - Endpoints paginados de gestão, simulação contextual, detalhe e histórico, autorizados por papel global ou permissão da unidade.
@@ -21,6 +28,10 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 - Reabertura de chamados encerrados e estados de espera separados entre usuário e equipe MeatShop.
 
 ### Alterado
+
+- Inclusão e alteração do carrinho revalidam produto, categoria, preço e estoque e devolvem o estado completo atualizado.
+- Quantidades de produtos vendidos por peso aceitam até três casas decimais.
+- Endereço usado no histórico de pedidos retorna conflito `ADDRESS_IN_USE` em vez de falha de integridade referencial.
 
 - Cupons legados são migrados para campanhas globais preservando código, desconto e validade.
 - Criação de pedidos passa a validar e consumir cupons atomicamente, com códigos de erro estáveis em português.

@@ -1,14 +1,17 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { Address } from '../entities/address.entity';
+import { Order } from '../../orders/entities/order.entity';
 
 @Injectable()
 export class DeleteAddressUseCase {
   constructor(
     @InjectRepository(Address)
     private readonly addressRepository: Repository<Address>,
+    @InjectRepository(Order)
+    private readonly orderRepository: Repository<Order>,
   ) {}
 
   async execute(addressId: number, currentUser: User): Promise<void> {
@@ -18,6 +21,16 @@ export class DeleteAddressUseCase {
 
     if (!address) {
       throw new NotFoundException('Address not found');
+    }
+
+    const isUsedByOrder = await this.orderRepository.exist({
+      where: { address_id: address.id, client_id: currentUser.id },
+    });
+    if (isUsedByOrder) {
+      throw new ConflictException({
+        code: 'ADDRESS_IN_USE',
+        message: 'Este endereço está vinculado ao histórico de pedidos e não pode ser excluído.',
+      });
     }
 
     await this.addressRepository.remove(address);

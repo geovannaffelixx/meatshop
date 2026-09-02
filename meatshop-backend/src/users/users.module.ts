@@ -17,10 +17,12 @@ import { UnitsModule } from '../units/units.module';
 import { EmailModule } from '../email/email.module';
 import { GetPanelContextUseCase } from './use-cases/get-panel-context.use-case';
 import { UpdateProfileUseCase } from './use-cases/update-profile.use-case';
+import { GeocodingController } from './geocoding.controller';
+import { Order } from '../orders/entities/order.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Address, Unit]), UnitsModule, EmailModule],
-  controllers: [UsersController, UsersUploadController, AddressesController],
+  imports: [TypeOrmModule.forFeature([User, Address, Unit, Order]), UnitsModule, EmailModule],
+  controllers: [UsersController, UsersUploadController, AddressesController, GeocodingController],
   providers: [
     GetUserProfileUseCase,
     GetPanelContextUseCase,
