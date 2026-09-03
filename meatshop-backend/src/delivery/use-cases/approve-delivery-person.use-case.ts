@@ -16,10 +16,7 @@ export class ApproveDeliveryPersonUseCase {
     private readonly orderAuthorizationService: OrderAuthorizationService,
   ) {}
 
-  async execute(
-    deliveryPersonId: number,
-    currentUser: User,
-  ): Promise<DeliveryPerson> {
+  async execute(deliveryPersonId: number, currentUser: User): Promise<DeliveryPerson> {
     const deliveryPerson = await this.deliveryPersonRepository.findOne({
       where: { id: deliveryPersonId },
     });
@@ -36,9 +33,7 @@ export class ApproveDeliveryPersonUseCase {
     deliveryPerson.status = DeliveryPersonStatus.ACTIVE;
     await this.deliveryPersonRepository.save(deliveryPerson);
 
-    this.logger.log(
-      `Delivery person ${deliveryPersonId} approved by user ${currentUser.id}`,
-    );
+    this.logger.log(`Delivery person ${deliveryPersonId} approved by user ${currentUser.id}`);
 
     return deliveryPerson;
   }

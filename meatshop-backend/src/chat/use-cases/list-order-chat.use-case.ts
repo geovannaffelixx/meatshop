@@ -45,11 +45,11 @@ export class ListOrderChatUseCase {
     const messages = await this.chatRepository.find({
       where: { order_id: orderId, participant_type: query.participant_type },
       relations: ['sender', 'receiver'],
-      order: { sent_at: 'ASC' },
+      order: { sent_at: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
     });
 
-    return ChatMessageResponseDto.fromEntities(messages);
+    return ChatMessageResponseDto.fromEntities(messages.reverse());
   }
 }

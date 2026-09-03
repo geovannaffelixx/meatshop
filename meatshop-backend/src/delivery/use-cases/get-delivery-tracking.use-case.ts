@@ -23,10 +23,7 @@ export class GetDeliveryTrackingUseCase {
       throw new NotFoundException('Order not found');
     }
 
-    if (
-      order.client_id !== currentUser.id &&
-      currentUser.global_role !== GlobalRole.SUPER_ADMIN
-    ) {
+    if (order.client_id !== currentUser.id && currentUser.global_role !== GlobalRole.SUPER_ADMIN) {
       await this.orderAuthorizationService.assertCanManageOrder(order, currentUser);
     }
 

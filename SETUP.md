@@ -150,4 +150,6 @@ O `docker-compose.yml` é autocontido para desenvolvimento:
 - `DB_SYNCHRONIZE=false`, garantindo que o schema seja controlado apenas pelas migrations;
 - integrações externas (Mercado Pago, e-mail e Firebase) ficam desativadas quando não configuradas e não impedem o restante da aplicação de funcionar.
 
+Para criar pelo painel uma conta que também fará login no aplicativo (inclusive entregadores vinculados), informe `FIREBASE_SERVICE_ACCOUNT` como o JSON da conta de serviço em uma única linha antes de executar o Compose. A ausência dessa credencial não impede a inicialização, mas esse cadastro específico retorna indisponibilidade para evitar uma conta parcialmente criada somente no PostgreSQL.
+
 Para credenciais reais ou deploy, use secrets externos e nunca reaproveite os valores locais do Compose.

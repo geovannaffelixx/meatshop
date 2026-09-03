@@ -1,9 +1,9 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
-import { User } from "../../users/entities/user.entity";
-import { Vehicle } from "../entities/vehicle.entity";
-import { DeliveryPersonAccessService } from "../services/delivery-person-access.service";
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from '../../users/entities/user.entity';
+import { Vehicle } from '../entities/vehicle.entity';
+import { DeliveryPersonAccessService } from '../services/delivery-person-access.service';
 
 @Injectable()
 export class SetActiveVehicleUseCase {
@@ -14,10 +14,9 @@ export class SetActiveVehicleUseCase {
   ) {}
 
   async execute(vehicleId: number, currentUser: User): Promise<Vehicle> {
-    const deliveryPerson =
-      await this.deliveryPersonAccessService.getOwnDeliveryPerson(
-        currentUser.id,
-      );
+    const deliveryPerson = await this.deliveryPersonAccessService.getOwnDeliveryPerson(
+      currentUser.id,
+    );
 
     const vehicle = await this.vehicleRepository.findOne({
       where: {
@@ -27,7 +26,7 @@ export class SetActiveVehicleUseCase {
       },
     });
     if (!vehicle) {
-      throw new NotFoundException("Vehicle not found");
+      throw new NotFoundException('Vehicle not found');
     }
 
     await this.vehicleRepository.update(

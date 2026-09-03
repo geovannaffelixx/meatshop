@@ -3,28 +3,27 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-} from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { In, Repository } from "typeorm";
-import { OrderItem } from "../../orders/entities/order-item.entity";
-import { Order } from "../../orders/entities/order.entity";
-import { DeliveryStatus } from "../../orders/enums/delivery-status.enum";
-import { DeliveryType } from "../../orders/enums/delivery-type.enum";
-import { OrderStatus } from "../../orders/enums/order-status.enum";
-import { User } from "../../users/entities/user.entity";
-import { UserUnit } from "../../units/entities/user-unit.entity";
-import { UserUnitStatus } from "../../common/enums/user-unit-status.enum";
-import { RejectDeliveryOfferDto } from "../dtos/reject-delivery-offer.dto";
-import { UpdateDeliveryGoalDto } from "../dtos/update-delivery-goal.dto";
-import { UpdateVehicleDto } from "../dtos/update-vehicle.dto";
-import {
-  DeliveryGoal,
-  DeliveryGoalPeriod,
-} from "../entities/delivery-goal.entity";
-import { DeliveryOfferRejection } from "../entities/delivery-offer-rejection.entity";
-import { Vehicle } from "../entities/vehicle.entity";
-import { DeliveryPersonStatus } from "../enums/delivery-person-status.enum";
-import { DeliveryPersonAccessService } from "./delivery-person-access.service";
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { In, Repository } from 'typeorm';
+import { OrderItem } from '../../orders/entities/order-item.entity';
+import { Order } from '../../orders/entities/order.entity';
+import { DeliveryStatus } from '../../orders/enums/delivery-status.enum';
+import { DeliveryType } from '../../orders/enums/delivery-type.enum';
+import { OrderStatus } from '../../orders/enums/order-status.enum';
+import { User } from '../../users/entities/user.entity';
+import { UserUnit } from '../../units/entities/user-unit.entity';
+import { UserUnitStatus } from '../../common/enums/user-unit-status.enum';
+import { LocalRole } from '../../common/enums/local-role.enum';
+import { RejectDeliveryOfferDto } from '../dtos/reject-delivery-offer.dto';
+import { UpdateDeliveryGoalDto } from '../dtos/update-delivery-goal.dto';
+import { UpdateVehicleDto } from '../dtos/update-vehicle.dto';
+import { DeliveryGoal, DeliveryGoalPeriod } from '../entities/delivery-goal.entity';
+import { DeliveryOfferRejection } from '../entities/delivery-offer-rejection.entity';
+import { Vehicle } from '../entities/vehicle.entity';
+import { DeliveryPersonStatus } from '../enums/delivery-person-status.enum';
+import { DeliveryAffiliationType } from '../enums/delivery-affiliation-type.enum';
+import { DeliveryPersonAccessService } from './delivery-person-access.service';
 
 const ACTIVE_STATUSES = [DeliveryStatus.PICKUP, DeliveryStatus.ON_THE_WAY];
 
@@ -51,9 +50,9 @@ export class DeliveryMobileService {
       user_id: person.user_id,
       name: user.name,
       status: person.status,
+      affiliation_type: person.affiliation_type,
       vehicle: person.vehicle,
-      average_rating:
-        person.average_rating === null ? null : Number(person.average_rating),
+      average_rating: person.average_rating === null ? null : Number(person.average_rating),
       is_online: person.is_online,
       availability_updated_at: person.availability_updated_at,
       vehicles,
@@ -63,9 +62,7 @@ export class DeliveryMobileService {
   async availability(user: User, isOnline: boolean) {
     const person = await this.access.getOwnDeliveryPerson(user.id);
     if (isOnline && person.status !== DeliveryPersonStatus.ACTIVE) {
-      throw new BadRequestException(
-        "Only approved delivery people can go online",
-      );
+      throw new BadRequestException('Only approved delivery people can go online');
     }
     if (isOnline) {
       const activeVehicle = await this.vehicles.findOne({
@@ -75,8 +72,7 @@ export class DeliveryMobileService {
           is_enabled: true,
         },
       });
-      if (!activeVehicle)
-        throw new BadRequestException("An active vehicle is required");
+      if (!activeVehicle) throw new BadRequestException('An active vehicle is required');
     }
     person.is_online = isOnline;
     person.availability_updated_at = new Date();
@@ -87,7 +83,7 @@ export class DeliveryMobileService {
     const person = await this.access.getOwnDeliveryPerson(user.id);
     return this.vehicles.find({
       where: { delivery_person_id: person.id, is_enabled: true },
-      order: { created_at: "ASC" },
+      order: { created_at: 'ASC' },
     });
   }
 
@@ -99,8 +95,7 @@ export class DeliveryMobileService {
 
   async deleteVehicle(id: number, user: User) {
     const vehicle = await this.ownedVehicle(id, user);
-    if (vehicle.is_active)
-      throw new ConflictException("The active vehicle cannot be deleted");
+    if (vehicle.is_active) throw new ConflictException('The active vehicle cannot be deleted');
     vehicle.is_enabled = false;
     await this.vehicles.save(vehicle);
     return { deleted: true };
@@ -109,11 +104,8 @@ export class DeliveryMobileService {
   async available(user: User) {
     const person = await this.access.getOwnActiveDeliveryPerson(user.id);
     if (!person.is_online) return [];
-    const memberships = await this.memberships.find({
-      where: { user_id: user.id, status: UserUnitStatus.ACTIVE },
-    });
-    const unitIds = memberships.map((membership) => membership.unit_id);
-    if (unitIds.length === 0) return [];
+    const unitIds = await this.servedUnitIds(person);
+    if (person.affiliation_type === DeliveryAffiliationType.UNIT && unitIds.length === 0) return [];
     const rejected = await this.rejections.find({
       where: { delivery_person_id: person.id },
     });
@@ -123,10 +115,12 @@ export class DeliveryMobileService {
         delivery_type: DeliveryType.DELIVERY,
         status: OrderStatus.READY,
         delivery_status: DeliveryStatus.WAITING_DELIVERY_PERSON,
-        unit_id: In(unitIds),
+        ...(person.affiliation_type === DeliveryAffiliationType.UNIT
+          ? { unit_id: In(unitIds) }
+          : {}),
       },
       relations: { client: true, unit: true, address: true },
-      order: { order_date: "ASC" },
+      order: { order_date: 'ASC' },
     });
     return this.mapOrders(
       orders.filter((order) => !rejectedIds.has(order.id)),
@@ -142,7 +136,7 @@ export class DeliveryMobileService {
         delivery_status: In(ACTIVE_STATUSES),
       },
       relations: { client: true, unit: true, address: true },
-      order: { updated_at: "DESC" },
+      order: { updated_at: 'DESC' },
     });
     return order ? this.mapOrder(order, await this.orderItems(order.id)) : null;
   }
@@ -155,7 +149,7 @@ export class DeliveryMobileService {
         delivery_status: DeliveryStatus.DELIVERED,
       },
       relations: { client: true, unit: true, address: true },
-      order: { updated_at: "DESC" },
+      order: { updated_at: 'DESC' },
       take: 100,
     });
     return this.mapOrders(orders);
@@ -163,14 +157,18 @@ export class DeliveryMobileService {
 
   async reject(orderId: number, dto: RejectDeliveryOfferDto, user: User) {
     const person = await this.access.getOwnActiveDeliveryPerson(user.id);
+    if (!person.is_online) {
+      throw new BadRequestException('Delivery person must be online to reject offers');
+    }
     const order = await this.orders.findOne({ where: { id: orderId } });
     if (
       !order ||
       order.status !== OrderStatus.READY ||
       order.delivery_status !== DeliveryStatus.WAITING_DELIVERY_PERSON
     ) {
-      throw new NotFoundException("Delivery offer not found");
+      throw new NotFoundException('Delivery offer not found');
     }
+    await this.assertCanServeUnit(person, order.unit_id);
     const existing = await this.rejections.findOne({
       where: { delivery_person_id: person.id, order_id: orderId },
     });
@@ -192,7 +190,7 @@ export class DeliveryMobileService {
         delivery_person_id: person.id,
         delivery_status: DeliveryStatus.DELIVERED,
       },
-      order: { updated_at: "DESC" },
+      order: { updated_at: 'DESC' },
       take: 365,
     });
     const entries = delivered.map((order) => ({
@@ -234,11 +232,7 @@ export class DeliveryMobileService {
     return goals.map((goal) => ({ ...goal, target: Number(goal.target) }));
   }
 
-  async updateGoal(
-    period: DeliveryGoalPeriod,
-    dto: UpdateDeliveryGoalDto,
-    user: User,
-  ) {
+  async updateGoal(period: DeliveryGoalPeriod, dto: UpdateDeliveryGoalDto, user: User) {
     const person = await this.access.getOwnDeliveryPerson(user.id);
     const goal = await this.goals.findOne({
       where: { delivery_person_id: person.id, period },
@@ -258,21 +252,23 @@ export class DeliveryMobileService {
     const vehicle = await this.vehicles.findOne({
       where: { id, delivery_person_id: person.id, is_enabled: true },
     });
-    if (!vehicle) throw new NotFoundException("Vehicle not found");
+    if (!vehicle) throw new NotFoundException('Vehicle not found');
     return vehicle;
   }
 
   private async mapOrders(orders: Order[], includeDestination = true) {
-    const entries = await Promise.all(
-      orders.map(async (order) =>
-        this.mapOrder(
-          order,
-          await this.orderItems(order.id),
-          includeDestination,
-        ),
-      ),
+    if (orders.length === 0) return [];
+    const items = await this.items.find({
+      where: { order_id: In(orders.map(({ id }) => id)) },
+      relations: { product: true },
+    });
+    const itemsByOrder = new Map<number, OrderItem[]>();
+    for (const item of items) {
+      itemsByOrder.set(item.order_id, [...(itemsByOrder.get(item.order_id) ?? []), item]);
+    }
+    return orders.map((order) =>
+      this.mapOrder(order, itemsByOrder.get(order.id) ?? [], includeDestination),
     );
-    return entries;
   }
 
   private orderItems(orderId: number) {
@@ -282,38 +278,46 @@ export class DeliveryMobileService {
     });
   }
 
-  private mapOrder(
-    order: Order,
-    items: OrderItem[],
-    includeDestination = true,
-  ) {
+  private async servedUnitIds(person: { user_id: number }): Promise<number[]> {
+    const memberships = await this.memberships.find({
+      where: {
+        user_id: person.user_id,
+        local_role: LocalRole.DELIVERY,
+        status: UserUnitStatus.ACTIVE,
+      },
+    });
+    return memberships.map(({ unit_id }) => unit_id);
+  }
+
+  private async assertCanServeUnit(
+    person: { user_id: number; affiliation_type: DeliveryAffiliationType },
+    unitId: number,
+  ): Promise<void> {
+    if (person.affiliation_type === DeliveryAffiliationType.AUTONOMOUS) return;
+    const unitIds = await this.servedUnitIds(person);
+    if (!unitIds.includes(unitId)) throw new NotFoundException('Delivery offer not found');
+  }
+
+  private mapOrder(order: Order, items: OrderItem[], includeDestination = true) {
     const address = order.address;
     const unit = order.unit;
     return {
       id: order.id,
       client_id: String(order.client_id),
-      client_name: order.client?.name ?? "Cliente",
+      client_name: order.client?.name ?? 'Cliente',
       unit_id: String(order.unit_id),
-      unit_name: unit?.name ?? "Unidade",
+      unit_name: unit?.name ?? 'Unidade',
       items: items
-        .map(
-          (item) => `${Number(item.quantity)}x ${item.product?.name ?? "Item"}`,
-        )
-        .join(", "),
+        .map((item) => `${Number(item.quantity)}x ${item.product?.name ?? 'Item'}`)
+        .join(', '),
       total_amount: Number(order.total_amount),
       delivery_fee: Number(order.delivery_fee),
       delivery_status: order.delivery_status,
       delivery_step: order.delivery_step,
       unit_lat: unit?.latitude === null ? null : Number(unit?.latitude),
       unit_lng: unit?.longitude === null ? null : Number(unit?.longitude),
-      dest_lat:
-        includeDestination && address?.latitude != null
-          ? Number(address.latitude)
-          : null,
-      dest_lng:
-        includeDestination && address?.longitude != null
-          ? Number(address.longitude)
-          : null,
+      dest_lat: includeDestination && address?.latitude != null ? Number(address.latitude) : null,
+      dest_lng: includeDestination && address?.longitude != null ? Number(address.longitude) : null,
       unit_address: unit ? this.address(unit) : {},
       delivery_address: address
         ? includeDestination
@@ -338,13 +342,13 @@ export class DeliveryMobileService {
     zip_code: string;
   }) {
     return {
-      street: value.street ?? "",
-      number: value.number ?? "",
-      complement: value.complement ?? "",
-      neighborhood: value.neighborhood ?? "",
-      city: value.city ?? "",
-      state: value.state ?? "",
-      zip_code: value.zip_code ?? "",
+      street: value.street ?? '',
+      number: value.number ?? '',
+      complement: value.complement ?? '',
+      neighborhood: value.neighborhood ?? '',
+      city: value.city ?? '',
+      state: value.state ?? '',
+      zip_code: value.zip_code ?? '',
     };
   }
 }

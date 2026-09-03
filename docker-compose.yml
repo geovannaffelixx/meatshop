@@ -55,7 +55,7 @@ x-backend-environment: &backend-environment
   MP_WEBHOOK_SECRET: ""
   MP_WEBHOOK_TOLERANCE_SECONDS: "300"
   MP_ENV: sandbox
-  FIREBASE_SERVICE_ACCOUNT: ""
+  FIREBASE_SERVICE_ACCOUNT: ${FIREBASE_SERVICE_ACCOUNT:-}
 
 services:
   db:

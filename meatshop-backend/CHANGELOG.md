@@ -6,6 +6,10 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ### Adicionado
 
+- Modalidades explícitas de entregador autônomo e vinculado, com regras de oferta por afiliação e provisionamento Firebase das contas criadas pela unidade.
+- Upload autenticado de até quatro fotos por veículo, validado por MIME, assinatura binária, tamanho e propriedade.
+- Caixa de entrada de chat, total de não lidas e assinatura Socket.IO autorizada por pedido para clientes, unidades e entregadores.
+
 - Cotação autoritativa em `POST /cart/quote` e checkout multiunidade em `POST /orders`, com um pedido por unidade ligado por `checkout_id`.
 - Checkout agregado em `POST /mercadopago/checkouts/:checkoutId/checkout` e campos seguros para rastrear a preferência do provedor.
 - Migration reversível para checkout UUID, quantidade fracionada de itens, URL interna do Mercado Pago e código de entrega criptografado.

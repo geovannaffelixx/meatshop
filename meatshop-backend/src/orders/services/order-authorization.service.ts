@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { DeliveryPerson } from '../../delivery/entities/delivery-person.entity';
 import { DeliveryPersonStatus } from '../../delivery/enums/delivery-person-status.enum';
+import { DeliveryAffiliationType } from '../../delivery/enums/delivery-affiliation-type.enum';
 import { GlobalRole } from '../../common/enums/global-role.enum';
 import { LocalRole } from '../../common/enums/local-role.enum';
 import { UserUnitStatus } from '../../common/enums/user-unit-status.enum';
@@ -91,6 +92,9 @@ export class OrderAuthorizationService {
     deliveryPerson: DeliveryPerson,
     unitId: number,
   ): Promise<void> {
+    if (deliveryPerson.affiliation_type === DeliveryAffiliationType.AUTONOMOUS) {
+      return;
+    }
     const membership = await this.userUnitRepository.findOne({
       where: {
         user_id: deliveryPerson.user_id,

@@ -8,6 +8,7 @@ import {
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
+  WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Repository } from 'typeorm';
@@ -60,8 +61,8 @@ export class ChatGateway implements OnGatewayConnection {
       const user = await this.userRepository.findOne({
         where: { id: payload.sub },
       });
-      if (!user) {
-        throw new Error('User not found');
+      if (!user?.is_active) {
+        throw new Error('User not found or inactive');
       }
       client.data.user = user;
       client.emit('chat:ready', { user_id: user.id });
@@ -86,6 +87,7 @@ export class ChatGateway implements OnGatewayConnection {
     @MessageBody() dto: ChatTypingDto,
   ): Promise<void> {
     try {
+      this.assertThrottle(client, 'typing', 250);
       const order = await this.loadOrder(dto.order_id);
       await this.chatAuthorizationService.assertCanParticipate(
         order,
@@ -138,8 +140,9 @@ export class ChatGateway implements OnGatewayConnection {
   async handleSend(
     @ConnectedSocket() client: Socket,
     @MessageBody() dto: SendChatSocketMessageDto,
-  ): Promise<void> {
+  ): Promise<ChatMessageResponseDto | void> {
     try {
+      this.assertThrottle(client, 'send', 400);
       const message = await this.sendMessageUseCase.execute(
         dto.order_id,
         { participant_type: dto.participant_type, message: dto.message },
@@ -149,6 +152,7 @@ export class ChatGateway implements OnGatewayConnection {
       const room = roomName(dto.order_id, dto.participant_type);
       this.server.to(room).emit('chat:message', message);
       await this.recordSocketEvent(client, dto.order_id, AuditOutcome.SUCCESS);
+      return message;
     } catch (error) {
       await this.recordSocketEvent(client, dto.order_id, AuditOutcome.FAILURE);
       client.emit('chat:error', { message: (error as Error).message });
@@ -187,9 +191,7 @@ export class ChatGateway implements OnGatewayConnection {
   }
 
   private extractToken(client: Socket): string {
-    const authToken =
-      (client.handshake.auth?.token as string | undefined) ??
-      (client.handshake.query?.token as string | undefined);
+    const authToken = client.handshake.auth?.token as string | undefined;
     if (authToken) return authToken;
 
     const cookieHeader = client.handshake.headers.cookie ?? '';
@@ -200,5 +202,13 @@ export class ChatGateway implements OnGatewayConnection {
 
     if (!accessCookie?.[1]) throw new Error('Missing authentication token');
     return decodeURIComponent(accessCookie.slice(1).join('='));
+  }
+
+  private assertThrottle(client: Socket, action: string, intervalMs: number): void {
+    const now = Date.now();
+    const key = `chat:${action}`;
+    const previous = Number(client.data[key] ?? 0);
+    if (now - previous < intervalMs) throw new WsException('Too many realtime events');
+    client.data[key] = now;
   }
 }

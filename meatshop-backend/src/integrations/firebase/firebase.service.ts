@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { App, cert, getApps, initializeApp } from 'firebase-admin/app';
-import type { Auth, DecodedIdToken } from 'firebase-admin/auth';
+import type { Auth, DecodedIdToken, UserRecord } from 'firebase-admin/auth';
 
 @Injectable()
 export class FirebaseService {
@@ -54,5 +54,32 @@ export class FirebaseService {
         message: 'Firebase ID token is invalid, expired, or revoked.',
       });
     }
+  }
+
+  async createPasswordUser(input: {
+    email: string;
+    password: string;
+    displayName: string;
+  }): Promise<UserRecord> {
+    const auth = await this.auth();
+    return auth.createUser({
+      email: input.email,
+      password: input.password,
+      displayName: input.displayName,
+      emailVerified: true,
+      disabled: false,
+    });
+  }
+
+  async deleteUser(uid: string): Promise<void> {
+    await (await this.auth()).deleteUser(uid);
+  }
+
+  private async auth(): Promise<Auth> {
+    const app = this.getApp();
+    const { getAuth } = (await Function('return import(firebase-admin/auth)')()) as {
+      getAuth(app: App): Auth;
+    };
+    return getAuth(app);
   }
 }
