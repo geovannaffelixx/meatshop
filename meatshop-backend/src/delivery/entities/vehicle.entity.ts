@@ -5,11 +5,11 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
-} from 'typeorm';
-import { VehicleType } from '../enums/vehicle-type.enum';
-import { DeliveryPerson } from './delivery-person.entity';
+} from "typeorm";
+import { VehicleType } from "../enums/vehicle-type.enum";
+import { DeliveryPerson } from "./delivery-person.entity";
 
-@Entity('vehicles')
+@Entity("vehicles")
 export class Vehicle {
   @PrimaryGeneratedColumn()
   id: number;
@@ -17,27 +17,30 @@ export class Vehicle {
   @Column()
   delivery_person_id: number;
 
-  @ManyToOne(() => DeliveryPerson, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'delivery_person_id' })
+  @ManyToOne(() => DeliveryPerson, { onDelete: "CASCADE" })
+  @JoinColumn({ name: "delivery_person_id" })
   delivery_person: DeliveryPerson;
 
-  @Column({ type: 'enum', enum: VehicleType })
+  @Column({ type: "enum", enum: VehicleType })
   type: VehicleType;
 
-  @Column({ type: 'varchar', length: 80 })
+  @Column({ type: "varchar", length: 80 })
   model: string;
 
-  @Column({ type: 'varchar', length: 10 })
+  @Column({ type: "varchar", length: 10 })
   plate: string;
 
-  @Column({ type: 'varchar', length: 30 })
+  @Column({ type: "varchar", length: 30 })
   color: string;
 
-  @Column({ type: 'smallint' })
+  @Column({ type: "smallint" })
   year: number;
 
-  @Column({ type: 'boolean', default: false })
+  @Column({ type: "boolean", default: false })
   is_active: boolean;
+
+  @Column({ type: "boolean", default: true })
+  is_enabled: boolean;
 
   @CreateDateColumn()
   created_at: Date;

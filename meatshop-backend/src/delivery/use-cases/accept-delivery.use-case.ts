@@ -1,39 +1,63 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Repository } from 'typeorm';
-import { DeliveryStatus } from '../../orders/enums/delivery-status.enum';
-import { DeliveryStep } from '../../orders/enums/delivery-step.enum';
-import { DeliveryType } from '../../orders/enums/delivery-type.enum';
-import { OrderStatus } from '../../orders/enums/order-status.enum';
-import { Order } from '../../orders/entities/order.entity';
-import { OrderAuthorizationService } from '../../orders/services/order-authorization.service';
-import { DeliveryCodeService } from '../../orders/services/delivery-code.service';
-import { SendOrderStatusNotificationUseCase } from '../../notifications/use-cases/send-order-status-notification.use-case';
-import { User } from '../../users/entities/user.entity';
-import { DeliveryGateway } from '../delivery.gateway';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { IsNull, Repository } from "typeorm";
+import { DeliveryStatus } from "../../orders/enums/delivery-status.enum";
+import { DeliveryStep } from "../../orders/enums/delivery-step.enum";
+import { DeliveryType } from "../../orders/enums/delivery-type.enum";
+import { OrderStatus } from "../../orders/enums/order-status.enum";
+import { Order } from "../../orders/entities/order.entity";
+import { OrderAuthorizationService } from "../../orders/services/order-authorization.service";
+import { DeliveryCodeService } from "../../orders/services/delivery-code.service";
+import { SendOrderStatusNotificationUseCase } from "../../notifications/use-cases/send-order-status-notification.use-case";
+import { User } from "../../users/entities/user.entity";
+import { DeliveryGateway } from "../delivery.gateway";
+import { Vehicle } from "../entities/vehicle.entity";
 
 @Injectable()
 export class AcceptDeliveryUseCase {
   constructor(
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
+    @InjectRepository(Vehicle)
+    private readonly vehicleRepository: Repository<Vehicle>,
     private readonly orderAuthorizationService: OrderAuthorizationService,
     private readonly deliveryCodeService: DeliveryCodeService,
     private readonly notifications: SendOrderStatusNotificationUseCase,
     private readonly deliveryGateway: DeliveryGateway,
   ) {}
 
-  async execute(orderId: number, currentUser: User): Promise<Order> {
+  async execute(
+    orderId: number,
+    currentUser: User,
+  ): Promise<{ order: Order; pickup_code: string }> {
     const deliveryPerson =
       await this.orderAuthorizationService.getActiveDeliveryPerson(currentUser);
+    if (!deliveryPerson.is_online) {
+      throw new BadRequestException(
+        "Delivery person must be online to accept offers",
+      );
+    }
+    const activeVehicle = await this.vehicleRepository.findOne({
+      where: {
+        delivery_person_id: deliveryPerson.id,
+        is_active: true,
+        is_enabled: true,
+      },
+    });
+    if (!activeVehicle)
+      throw new BadRequestException("An active vehicle is required");
 
     const order = await this.orderRepository
-      .createQueryBuilder('order')
-      .addSelect('order.delivery_code_hash')
-      .where('order.id = :orderId', { orderId })
+      .createQueryBuilder("order")
+      .addSelect("order.delivery_code_hash")
+      .where("order.id = :orderId", { orderId })
       .getOne();
     if (!order) {
-      throw new NotFoundException('Order not found');
+      throw new NotFoundException("Order not found");
     }
     this.assertAcceptable(order);
     await this.orderAuthorizationService.assertDeliveryPersonCanServeUnit(
@@ -41,10 +65,10 @@ export class AcceptDeliveryUseCase {
       order.unit_id,
     );
 
-    const pickupCode = this.deliveryCodeService.issue(order, 'PICKUP');
+    const pickupCode = this.deliveryCodeService.issue(order, "PICKUP");
     const deliveryCode = order.delivery_code_hash
       ? null
-      : this.deliveryCodeService.issue(order, 'DELIVERY');
+      : this.deliveryCodeService.issue(order, "DELIVERY");
     const result = await this.orderRepository.update(
       { id: orderId, delivery_person_id: IsNull() },
       {
@@ -68,31 +92,42 @@ export class AcceptDeliveryUseCase {
       },
     );
     if (result.affected === 0) {
-      throw new BadRequestException('Order already has a delivery person assigned');
+      throw new BadRequestException(
+        "Order already has a delivery person assigned",
+      );
     }
 
     order.delivery_person_id = deliveryPerson.id;
     order.delivery_status = DeliveryStatus.PICKUP;
     order.delivery_step = DeliveryStep.PICKUP;
 
-    await this.notifications.notifyDeliveryPersonOfPickupCode(order, currentUser.id, pickupCode);
+    await this.notifications.notifyDeliveryPersonOfPickupCode(
+      order,
+      currentUser.id,
+      pickupCode,
+    );
     await this.notifications.notifyUnitOfDeliveryAssignment(
       order,
-      currentUser.name ?? 'Entregador',
+      currentUser.name ?? "Entregador",
     );
     if (deliveryCode) {
-      await this.notifications.notifyCustomerOfDeliveryCode(order, deliveryCode);
+      await this.notifications.notifyCustomerOfDeliveryCode(
+        order,
+        deliveryCode,
+      );
     }
     this.deliveryGateway.emitDeliveryChanged(order);
-    return order;
+    return { order, pickup_code: pickupCode };
   }
 
   private assertAcceptable(order: Order): void {
     if (order.delivery_type !== DeliveryType.DELIVERY) {
-      throw new BadRequestException('This order does not require a delivery person');
+      throw new BadRequestException(
+        "This order does not require a delivery person",
+      );
     }
     if (order.status !== OrderStatus.READY) {
-      throw new BadRequestException('Order is not ready for pickup');
+      throw new BadRequestException("Order is not ready for pickup");
     }
   }
 }

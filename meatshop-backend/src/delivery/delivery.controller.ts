@@ -1,33 +1,54 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { User } from '../users/entities/user.entity';
-import { CreateDeliveryPersonDto } from './dtos/create-delivery-person.dto';
-import { CreateVehicleDto } from './dtos/create-vehicle.dto';
-import { UpdateDeliveryStatusDto } from './dtos/update-delivery-status.dto';
-import { UpdateLocationDto } from './dtos/update-location.dto';
-import { AssignDeliveryPersonDto } from './dtos/assign-delivery-person.dto';
-import { VerifyDeliveryCodeDto } from './dtos/verify-delivery-code.dto';
-import { AcceptDeliveryUseCase } from './use-cases/accept-delivery.use-case';
-import { ApproveDeliveryPersonUseCase } from './use-cases/approve-delivery-person.use-case';
-import { CreateVehicleUseCase } from './use-cases/create-vehicle.use-case';
-import { FinishDeliveryUseCase } from './use-cases/finish-delivery.use-case';
-import { GetDeliveryTrackingUseCase } from './use-cases/get-delivery-tracking.use-case';
-import { ListLiveDeliveriesUseCase } from './use-cases/list-live-deliveries.use-case';
-import { RegisterDeliveryPersonUseCase } from './use-cases/register-delivery-person.use-case';
-import { SetActiveVehicleUseCase } from './use-cases/set-active-vehicle.use-case';
-import { UpdateDeliveryLocationUseCase } from './use-cases/update-delivery-location.use-case';
-import { UpdateDeliveryStatusUseCase } from './use-cases/update-delivery-status.use-case';
-import { AssignDeliveryPersonUseCase } from './use-cases/assign-delivery-person.use-case';
-import { UnassignDeliveryPersonUseCase } from './use-cases/unassign-delivery-person.use-case';
-import { VerifyPickupCodeUseCase } from './use-cases/verify-pickup-code.use-case';
-import { ListUnitDeliveryPeopleUseCase } from './use-cases/list-unit-delivery-people.use-case';
-import { ApproveUnitDeliveryPersonUseCase } from './use-cases/approve-unit-delivery-person.use-case';
-import { RegenerateDeliveryCodeUseCase } from './use-cases/regenerate-delivery-code.use-case';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseEnumPipe,
+  ParseIntPipe,
+  Patch,
+  Post,
+} from "@nestjs/common";
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from "@nestjs/swagger";
+import { CurrentUser } from "../common/decorators/current-user.decorator";
+import { User } from "../users/entities/user.entity";
+import { CreateDeliveryPersonDto } from "./dtos/create-delivery-person.dto";
+import { CreateVehicleDto } from "./dtos/create-vehicle.dto";
+import { UpdateDeliveryStatusDto } from "./dtos/update-delivery-status.dto";
+import { UpdateLocationDto } from "./dtos/update-location.dto";
+import { AssignDeliveryPersonDto } from "./dtos/assign-delivery-person.dto";
+import { VerifyDeliveryCodeDto } from "./dtos/verify-delivery-code.dto";
+import { AcceptDeliveryUseCase } from "./use-cases/accept-delivery.use-case";
+import { ApproveDeliveryPersonUseCase } from "./use-cases/approve-delivery-person.use-case";
+import { CreateVehicleUseCase } from "./use-cases/create-vehicle.use-case";
+import { FinishDeliveryUseCase } from "./use-cases/finish-delivery.use-case";
+import { GetDeliveryTrackingUseCase } from "./use-cases/get-delivery-tracking.use-case";
+import { ListLiveDeliveriesUseCase } from "./use-cases/list-live-deliveries.use-case";
+import { RegisterDeliveryPersonUseCase } from "./use-cases/register-delivery-person.use-case";
+import { SetActiveVehicleUseCase } from "./use-cases/set-active-vehicle.use-case";
+import { UpdateDeliveryLocationUseCase } from "./use-cases/update-delivery-location.use-case";
+import { UpdateDeliveryStatusUseCase } from "./use-cases/update-delivery-status.use-case";
+import { AssignDeliveryPersonUseCase } from "./use-cases/assign-delivery-person.use-case";
+import { UnassignDeliveryPersonUseCase } from "./use-cases/unassign-delivery-person.use-case";
+import { VerifyPickupCodeUseCase } from "./use-cases/verify-pickup-code.use-case";
+import { ListUnitDeliveryPeopleUseCase } from "./use-cases/list-unit-delivery-people.use-case";
+import { ApproveUnitDeliveryPersonUseCase } from "./use-cases/approve-unit-delivery-person.use-case";
+import { RegenerateDeliveryCodeUseCase } from "./use-cases/regenerate-delivery-code.use-case";
+import { UpdateAvailabilityDto } from "./dtos/update-availability.dto";
+import { RejectDeliveryOfferDto } from "./dtos/reject-delivery-offer.dto";
+import { UpdateDeliveryGoalDto } from "./dtos/update-delivery-goal.dto";
+import { UpdateVehicleDto } from "./dtos/update-vehicle.dto";
+import { DeliveryGoalPeriod } from "./entities/delivery-goal.entity";
+import { DeliveryMobileService } from "./services/delivery-mobile.service";
 
-@ApiTags('Delivery')
-@ApiBearerAuth('access-token')
-@Controller('delivery')
+@ApiTags("Delivery")
+@ApiBearerAuth("access-token")
+@Controller("delivery")
 export class DeliveryController {
   constructor(
     private readonly registerDeliveryPersonUseCase: RegisterDeliveryPersonUseCase,
@@ -46,179 +67,293 @@ export class DeliveryController {
     private readonly listUnitDeliveryPeopleUseCase: ListUnitDeliveryPeopleUseCase,
     private readonly approveUnitDeliveryPersonUseCase: ApproveUnitDeliveryPersonUseCase,
     private readonly regenerateDeliveryCodeUseCase: RegenerateDeliveryCodeUseCase,
+    private readonly mobileService: DeliveryMobileService,
   ) {}
 
+  @Get("me")
+  me(@CurrentUser() currentUser: User) {
+    return this.mobileService.profile(currentUser);
+  }
+
+  @Patch("me/availability")
+  setAvailability(
+    @Body() dto: UpdateAvailabilityDto,
+    @CurrentUser() currentUser: User,
+  ) {
+    return this.mobileService.availability(currentUser, dto.is_online);
+  }
+
+  @Get("me/vehicles")
+  listOwnVehicles(@CurrentUser() currentUser: User) {
+    return this.mobileService.listVehicles(currentUser);
+  }
+
+  @Patch("me/vehicles/:id")
+  updateOwnVehicle(
+    @Param("id", ParseIntPipe) id: number,
+    @Body() dto: UpdateVehicleDto,
+    @CurrentUser() currentUser: User,
+  ) {
+    return this.mobileService.updateVehicle(id, dto, currentUser);
+  }
+
+  @Delete("me/vehicles/:id")
+  deleteOwnVehicle(
+    @Param("id", ParseIntPipe) id: number,
+    @CurrentUser() currentUser: User,
+  ) {
+    return this.mobileService.deleteVehicle(id, currentUser);
+  }
+
+  @Get("me/orders/available")
+  availableOrders(@CurrentUser() currentUser: User) {
+    return this.mobileService.available(currentUser);
+  }
+
+  @Get("me/orders/active")
+  activeOrder(@CurrentUser() currentUser: User) {
+    return this.mobileService.active(currentUser);
+  }
+
+  @Get("me/orders/history")
+  deliveryHistory(@CurrentUser() currentUser: User) {
+    return this.mobileService.history(currentUser);
+  }
+
+  @Post("orders/:orderId/reject")
+  rejectOrder(
+    @Param("orderId", ParseIntPipe) orderId: number,
+    @Body() dto: RejectDeliveryOfferDto,
+    @CurrentUser() currentUser: User,
+  ) {
+    return this.mobileService.reject(orderId, dto, currentUser);
+  }
+
+  @Get("me/earnings")
+  earnings(@CurrentUser() currentUser: User) {
+    return this.mobileService.earnings(currentUser);
+  }
+
+  @Get("me/goals")
+  goals(@CurrentUser() currentUser: User) {
+    return this.mobileService.listGoals(currentUser);
+  }
+
+  @Patch("me/goals/:period")
+  updateGoal(
+    @Param("period", new ParseEnumPipe(DeliveryGoalPeriod))
+    period: DeliveryGoalPeriod,
+    @Body() dto: UpdateDeliveryGoalDto,
+    @CurrentUser() currentUser: User,
+  ) {
+    return this.mobileService.updateGoal(period, dto, currentUser);
+  }
+
   @ApiOperation({
-    summary: 'Lista a operação de entregas ativa de uma unidade',
+    summary: "Lista a operação de entregas ativa de uma unidade",
   })
-  @Get('units/:unitId/live')
+  @Get("units/:unitId/live")
   listLiveDeliveries(
-    @Param('unitId', ParseIntPipe) unitId: number,
+    @Param("unitId", ParseIntPipe) unitId: number,
     @CurrentUser() currentUser: User,
   ) {
     return this.listLiveDeliveriesUseCase.execute(unitId, currentUser);
   }
 
-  @ApiOperation({ summary: 'Lista os entregadores vinculados à unidade' })
-  @Get('units/:unitId/people')
+  @ApiOperation({ summary: "Lista os entregadores vinculados à unidade" })
+  @Get("units/:unitId/people")
   listDeliveryPeople(
-    @Param('unitId', ParseIntPipe) unitId: number,
+    @Param("unitId", ParseIntPipe) unitId: number,
     @CurrentUser() currentUser: User,
   ) {
     return this.listUnitDeliveryPeopleUseCase.execute(unitId, currentUser);
   }
 
-  @ApiOperation({ summary: 'Aprova um entregador vinculado à unidade' })
-  @Patch('units/:unitId/people/:deliveryPersonId/approve')
+  @ApiOperation({ summary: "Aprova um entregador vinculado à unidade" })
+  @Patch("units/:unitId/people/:deliveryPersonId/approve")
   approveUnitDeliveryPerson(
-    @Param('unitId', ParseIntPipe) unitId: number,
-    @Param('deliveryPersonId', ParseIntPipe) deliveryPersonId: number,
+    @Param("unitId", ParseIntPipe) unitId: number,
+    @Param("deliveryPersonId", ParseIntPipe) deliveryPersonId: number,
     @CurrentUser() currentUser: User,
   ) {
-    return this.approveUnitDeliveryPersonUseCase.execute(unitId, deliveryPersonId, currentUser);
+    return this.approveUnitDeliveryPersonUseCase.execute(
+      unitId,
+      deliveryPersonId,
+      currentUser,
+    );
   }
 
-  @ApiOperation({ summary: 'Atribui um entregador ao pedido' })
-  @Post('units/:unitId/orders/:orderId/assign')
+  @ApiOperation({ summary: "Atribui um entregador ao pedido" })
+  @Post("units/:unitId/orders/:orderId/assign")
   assignDeliveryPerson(
-    @Param('unitId', ParseIntPipe) unitId: number,
-    @Param('orderId', ParseIntPipe) orderId: number,
+    @Param("unitId", ParseIntPipe) unitId: number,
+    @Param("orderId", ParseIntPipe) orderId: number,
     @Body() dto: AssignDeliveryPersonDto,
     @CurrentUser() currentUser: User,
   ) {
-    return this.assignDeliveryPersonUseCase.execute(unitId, orderId, dto, currentUser);
+    return this.assignDeliveryPersonUseCase.execute(
+      unitId,
+      orderId,
+      dto,
+      currentUser,
+    );
   }
 
-  @ApiOperation({ summary: 'Remove o entregador do pedido antes da retirada' })
-  @Delete('units/:unitId/orders/:orderId/assignment')
+  @ApiOperation({ summary: "Remove o entregador do pedido antes da retirada" })
+  @Delete("units/:unitId/orders/:orderId/assignment")
   unassignDeliveryPerson(
-    @Param('unitId', ParseIntPipe) unitId: number,
-    @Param('orderId', ParseIntPipe) orderId: number,
+    @Param("unitId", ParseIntPipe) unitId: number,
+    @Param("orderId", ParseIntPipe) orderId: number,
     @CurrentUser() currentUser: User,
   ) {
-    return this.unassignDeliveryPersonUseCase.execute(unitId, orderId, currentUser);
+    return this.unassignDeliveryPersonUseCase.execute(
+      unitId,
+      orderId,
+      currentUser,
+    );
   }
 
   @ApiOperation({
-    summary: 'Valida o código do entregador e libera a retirada',
+    summary: "Valida o código do entregador e libera a retirada",
   })
-  @Post('units/:unitId/orders/:orderId/verify-pickup')
+  @Post("units/:unitId/orders/:orderId/verify-pickup")
   verifyPickup(
-    @Param('unitId', ParseIntPipe) unitId: number,
-    @Param('orderId', ParseIntPipe) orderId: number,
+    @Param("unitId", ParseIntPipe) unitId: number,
+    @Param("orderId", ParseIntPipe) orderId: number,
     @Body() dto: VerifyDeliveryCodeDto,
     @CurrentUser() currentUser: User,
   ) {
-    return this.verifyPickupCodeUseCase.execute(unitId, orderId, dto, currentUser);
+    return this.verifyPickupCodeUseCase.execute(
+      unitId,
+      orderId,
+      dto,
+      currentUser,
+    );
   }
 
-  @ApiOperation({ summary: 'Registra o usuário autenticado como entregador' })
+  @ApiOperation({ summary: "Registra o usuário autenticado como entregador" })
   @ApiResponse({
     status: 201,
-    description: 'Entregador registrado com sucesso',
+    description: "Entregador registrado com sucesso",
   })
   @ApiResponse({
     status: 400,
-    description: 'Usuário já está registrado como entregador',
+    description: "Usuário já está registrado como entregador",
   })
-  @Post('register')
-  register(@Body() dto: CreateDeliveryPersonDto, @CurrentUser() currentUser: User) {
+  @Post("register")
+  register(
+    @Body() dto: CreateDeliveryPersonDto,
+    @CurrentUser() currentUser: User,
+  ) {
     return this.registerDeliveryPersonUseCase.execute(dto, currentUser);
   }
 
-  @ApiOperation({ summary: 'Aprova o cadastro de um entregador' })
-  @ApiResponse({ status: 200, description: 'Entregador aprovado com sucesso' })
+  @ApiOperation({ summary: "Aprova o cadastro de um entregador" })
+  @ApiResponse({ status: 200, description: "Entregador aprovado com sucesso" })
   @ApiResponse({
     status: 403,
-    description: 'Usuário não tem permissão para aprovar entregadores',
+    description: "Usuário não tem permissão para aprovar entregadores",
   })
-  @ApiResponse({ status: 404, description: 'Entregador não encontrado' })
-  @Patch(':id/approve')
-  approve(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
+  @ApiResponse({ status: 404, description: "Entregador não encontrado" })
+  @Patch(":id/approve")
+  approve(
+    @Param("id", ParseIntPipe) id: number,
+    @CurrentUser() currentUser: User,
+  ) {
     return this.approveDeliveryPersonUseCase.execute(id, currentUser);
   }
 
   @ApiOperation({
-    summary: 'Cadastra um novo veículo para o entregador autenticado',
+    summary: "Cadastra um novo veículo para o entregador autenticado",
   })
-  @ApiResponse({ status: 201, description: 'Veículo cadastrado com sucesso' })
-  @ApiResponse({ status: 400, description: 'Dados do veículo inválidos' })
+  @ApiResponse({ status: 201, description: "Veículo cadastrado com sucesso" })
+  @ApiResponse({ status: 400, description: "Dados do veículo inválidos" })
   @ApiResponse({
     status: 403,
-    description: 'Usuário não tem permissão para cadastrar veículos',
+    description: "Usuário não tem permissão para cadastrar veículos",
   })
-  @Post('vehicles')
-  createVehicle(@Body() dto: CreateVehicleDto, @CurrentUser() currentUser: User) {
+  @Post("vehicles")
+  createVehicle(
+    @Body() dto: CreateVehicleDto,
+    @CurrentUser() currentUser: User,
+  ) {
     return this.createVehicleUseCase.execute(dto, currentUser);
   }
 
-  @ApiOperation({ summary: 'Define o veículo ativo do entregador autenticado' })
-  @ApiResponse({ status: 200, description: 'Veículo ativado com sucesso' })
+  @ApiOperation({ summary: "Define o veículo ativo do entregador autenticado" })
+  @ApiResponse({ status: 200, description: "Veículo ativado com sucesso" })
   @ApiResponse({
     status: 403,
-    description: 'Usuário não tem permissão para ativar este veículo',
+    description: "Usuário não tem permissão para ativar este veículo",
   })
-  @ApiResponse({ status: 404, description: 'Veículo não encontrado' })
-  @Patch('vehicles/:id/activate')
-  activateVehicle(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
+  @ApiResponse({ status: 404, description: "Veículo não encontrado" })
+  @Patch("vehicles/:id/activate")
+  activateVehicle(
+    @Param("id", ParseIntPipe) id: number,
+    @CurrentUser() currentUser: User,
+  ) {
     return this.setActiveVehicleUseCase.execute(id, currentUser);
   }
 
   @ApiOperation({
-    summary: 'Aceita um pedido para entrega, vinculando-o ao entregador autenticado',
+    summary:
+      "Aceita um pedido para entrega, vinculando-o ao entregador autenticado",
   })
-  @ApiResponse({ status: 200, description: 'Pedido aceito com sucesso' })
+  @ApiResponse({ status: 200, description: "Pedido aceito com sucesso" })
   @ApiResponse({
     status: 400,
-    description: 'Pedido não está disponível para aceite',
+    description: "Pedido não está disponível para aceite",
   })
   @ApiResponse({
     status: 403,
-    description: 'Usuário não tem permissão para aceitar entregas',
+    description: "Usuário não tem permissão para aceitar entregas",
   })
-  @ApiResponse({ status: 404, description: 'Pedido não encontrado' })
-  @Post('orders/:orderId/accept')
-  acceptOrder(@Param('orderId', ParseIntPipe) orderId: number, @CurrentUser() currentUser: User) {
+  @ApiResponse({ status: 404, description: "Pedido não encontrado" })
+  @Post("orders/:orderId/accept")
+  acceptOrder(
+    @Param("orderId", ParseIntPipe) orderId: number,
+    @CurrentUser() currentUser: User,
+  ) {
     return this.acceptDeliveryUseCase.execute(orderId, currentUser);
   }
 
-  @ApiOperation({ summary: 'Atualiza o status da entrega do pedido' })
+  @ApiOperation({ summary: "Atualiza o status da entrega do pedido" })
   @ApiResponse({
     status: 200,
-    description: 'Status da entrega atualizado com sucesso',
+    description: "Status da entrega atualizado com sucesso",
   })
   @ApiResponse({
     status: 400,
-    description: 'Transição de status de entrega inválida',
+    description: "Transição de status de entrega inválida",
   })
   @ApiResponse({
     status: 403,
-    description: 'Usuário não tem permissão para atualizar esta entrega',
+    description: "Usuário não tem permissão para atualizar esta entrega",
   })
-  @ApiResponse({ status: 404, description: 'Pedido não encontrado' })
-  @Patch('orders/:orderId/status')
+  @ApiResponse({ status: 404, description: "Pedido não encontrado" })
+  @Patch("orders/:orderId/status")
   updateStatus(
-    @Param('orderId', ParseIntPipe) orderId: number,
+    @Param("orderId", ParseIntPipe) orderId: number,
     @Body() dto: UpdateDeliveryStatusDto,
     @CurrentUser() currentUser: User,
   ) {
     return this.updateDeliveryStatusUseCase.execute(orderId, dto, currentUser);
   }
 
-  @ApiOperation({ summary: 'Finaliza a entrega do pedido' })
-  @ApiResponse({ status: 200, description: 'Entrega finalizada com sucesso' })
+  @ApiOperation({ summary: "Finaliza a entrega do pedido" })
+  @ApiResponse({ status: 200, description: "Entrega finalizada com sucesso" })
   @ApiResponse({
     status: 400,
-    description: 'Entrega não pode ser finalizada no status atual',
+    description: "Entrega não pode ser finalizada no status atual",
   })
   @ApiResponse({
     status: 403,
-    description: 'Usuário não tem permissão para finalizar esta entrega',
+    description: "Usuário não tem permissão para finalizar esta entrega",
   })
-  @ApiResponse({ status: 404, description: 'Pedido não encontrado' })
-  @Post('orders/:orderId/finish')
+  @ApiResponse({ status: 404, description: "Pedido não encontrado" })
+  @Post("orders/:orderId/finish")
   finish(
-    @Param('orderId', ParseIntPipe) orderId: number,
+    @Param("orderId", ParseIntPipe) orderId: number,
     @Body() dto: VerifyDeliveryCodeDto,
     @CurrentUser() currentUser: User,
   ) {
@@ -226,62 +361,79 @@ export class DeliveryController {
   }
 
   @ApiOperation({
-    summary: 'Gera novamente o código que o cliente informa na entrega',
+    summary: "Gera novamente o código que o cliente informa na entrega",
   })
-  @Post('orders/:orderId/delivery-code/regenerate')
+  @Post("orders/:orderId/delivery-code/regenerate")
   regenerateCustomerCode(
-    @Param('orderId', ParseIntPipe) orderId: number,
+    @Param("orderId", ParseIntPipe) orderId: number,
     @CurrentUser() currentUser: User,
   ) {
-    return this.regenerateDeliveryCodeUseCase.execute(orderId, 'DELIVERY', currentUser);
+    return this.regenerateDeliveryCodeUseCase.execute(
+      orderId,
+      "DELIVERY",
+      currentUser,
+    );
   }
 
   @ApiOperation({
-    summary: 'Gera novamente o código usado pelo entregador na retirada',
+    summary: "Gera novamente o código usado pelo entregador na retirada",
   })
-  @Post('orders/:orderId/pickup-code/regenerate')
+  @Post("orders/:orderId/pickup-code/regenerate")
   regeneratePickupCode(
-    @Param('orderId', ParseIntPipe) orderId: number,
+    @Param("orderId", ParseIntPipe) orderId: number,
     @CurrentUser() currentUser: User,
   ) {
-    return this.regenerateDeliveryCodeUseCase.execute(orderId, 'PICKUP', currentUser);
+    return this.regenerateDeliveryCodeUseCase.execute(
+      orderId,
+      "PICKUP",
+      currentUser,
+    );
   }
 
   @ApiOperation({
-    summary: 'Atualiza a localização atual do entregador durante a entrega do pedido',
+    summary:
+      "Atualiza a localização atual do entregador durante a entrega do pedido",
   })
   @ApiResponse({
     status: 201,
-    description: 'Localização atualizada com sucesso',
+    description: "Localização atualizada com sucesso",
   })
   @ApiResponse({
     status: 403,
-    description: 'Usuário não tem permissão para atualizar a localização desta entrega',
+    description:
+      "Usuário não tem permissão para atualizar a localização desta entrega",
   })
-  @ApiResponse({ status: 404, description: 'Pedido não encontrado' })
-  @Post('orders/:orderId/location')
+  @ApiResponse({ status: 404, description: "Pedido não encontrado" })
+  @Post("orders/:orderId/location")
   updateLocation(
-    @Param('orderId', ParseIntPipe) orderId: number,
+    @Param("orderId", ParseIntPipe) orderId: number,
     @Body() dto: UpdateLocationDto,
     @CurrentUser() currentUser: User,
   ) {
-    return this.updateDeliveryLocationUseCase.execute(orderId, dto, currentUser);
+    return this.updateDeliveryLocationUseCase.execute(
+      orderId,
+      dto,
+      currentUser,
+    );
   }
 
   @ApiOperation({
-    summary: 'Consulta o acompanhamento (tracking) da entrega do pedido',
+    summary: "Consulta o acompanhamento (tracking) da entrega do pedido",
   })
   @ApiResponse({
     status: 200,
-    description: 'Informações de rastreamento retornadas com sucesso',
+    description: "Informações de rastreamento retornadas com sucesso",
   })
   @ApiResponse({
     status: 403,
-    description: 'Usuário não tem permissão para acompanhar esta entrega',
+    description: "Usuário não tem permissão para acompanhar esta entrega",
   })
-  @ApiResponse({ status: 404, description: 'Pedido não encontrado' })
-  @Get('orders/:orderId/tracking')
-  getTracking(@Param('orderId', ParseIntPipe) orderId: number, @CurrentUser() currentUser: User) {
+  @ApiResponse({ status: 404, description: "Pedido não encontrado" })
+  @Get("orders/:orderId/tracking")
+  getTracking(
+    @Param("orderId", ParseIntPipe) orderId: number,
+    @CurrentUser() currentUser: User,
+  ) {
     return this.getDeliveryTrackingUseCase.execute(orderId, currentUser);
   }
 }
