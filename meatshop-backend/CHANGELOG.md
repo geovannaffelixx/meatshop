@@ -8,6 +8,7 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ### Adicionado
 
+- Script local que valida e injeta a conta de serviço Firebase Admin no Docker sem versionar a chave privada.
 - Proteções globais de produção com Helmet, CORS restritivo por ambiente, rate limiting, correlação de requisições, métricas e validação fail-fast da configuração.
 - Retenção diária automatizada da localização de entregas e alertas Prometheus para disponibilidade, erros, latência e falhas de login.
 - Gates separados para testes unitários, E2E PostgreSQL, cobertura, auditoria de dependências e smoke test de performance.

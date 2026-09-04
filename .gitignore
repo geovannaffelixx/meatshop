@@ -39,6 +39,7 @@ meatshop-backend/db-data/
 .env
 .env.*
 !.env.example
+secrets/*.json
 
 # ===================================
 # Docker

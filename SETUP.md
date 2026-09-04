@@ -9,6 +9,14 @@ Este é o fluxo recomendado para apresentação e avaliação do projeto. Ele so
 
 Não é necessário instalar Node.js, executar `npm install` ou criar arquivos `.env`. As variáveis locais de demonstração já estão declaradas no `docker-compose.yml`.
 
+Para testar o login do mobile com o Firebase real, baixe uma conta de serviço do projeto `meatshop-3c78f`, salve-a como `secrets/firebase-service-account.json` e inicie o ambiente com:
+
+```powershell
+.\scripts\start-local-with-firebase.ps1
+```
+
+O script valida o projeto, injeta a credencial somente no processo Docker e nunca a adiciona ao repositório.
+
 > As credenciais e chaves do Compose são exclusivas para desenvolvimento local. Nunca use esses valores em produção.
 
 ## Pré-requisitos
