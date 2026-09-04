@@ -13,14 +13,21 @@ import type { AppCheckToken } from 'firebase-admin/app-check';
 export class FirebaseService {
   private readonly logger = new Logger(FirebaseService.name);
   private readonly app: App | null;
+  private readonly checkRevokedTokens: boolean;
 
   constructor(config: ConfigService) {
     const rawServiceAccount = (config.get<string>('FIREBASE_SERVICE_ACCOUNT') || '').trim();
+    const projectId = (config.get<string>('FIREBASE_PROJECT_ID') || '').trim();
     if (!rawServiceAccount) {
-      this.app = null;
+      this.checkRevokedTokens = false;
+      this.app =
+        config.get<string>('NODE_ENV') !== 'production' && projectId
+          ? (getApps()[0] ?? initializeApp({ projectId }))
+          : null;
       return;
     }
 
+    this.checkRevokedTokens = true;
     try {
       this.app = getApps()[0] ?? initializeApp({ credential: cert(JSON.parse(rawServiceAccount)) });
     } catch (error) {
@@ -51,7 +58,7 @@ export class FirebaseService {
       const { getAuth } = (await Function('return import("firebase-admin/auth")')()) as {
         getAuth(app: App): Auth;
       };
-      return await getAuth(app).verifyIdToken(idToken, true);
+      return await getAuth(app).verifyIdToken(idToken, this.checkRevokedTokens);
     } catch {
       throw new UnauthorizedException({
         code: 'INVALID_FIREBASE_TOKEN',

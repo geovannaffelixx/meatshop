@@ -29,4 +29,15 @@ describe('RegisterDeliveryPersonUseCase', () => {
       status: DeliveryPersonStatus.ACTIVE,
     });
   });
+
+  it('retorna o cadastro existente ao retomar um fluxo parcialmente concluído', async () => {
+    const existing = { id: 12, user_id: 7 } as DeliveryPerson;
+    jest.mocked(repository.findOne).mockResolvedValue(existing);
+
+    const result = await useCase.execute({ vehicle: DeliveryMode.MOTORCYCLE }, { id: 7 } as User);
+
+    expect(result).toBe(existing);
+    expect(repository.create).not.toHaveBeenCalled();
+    expect(repository.save).not.toHaveBeenCalled();
+  });
 });

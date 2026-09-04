@@ -17,6 +17,12 @@ describe('JwtAuthGuard profile completion', () => {
     expect(guard.handleRequest(null, user, null, context('/users/me'))).toBe(user);
   });
 
+  it('allows an incomplete user to resolve a CEP during profile completion', () => {
+    const user = { id: 1, profile_complete: false };
+
+    expect(guard.handleRequest(null, user, null, context('/geocoding/resolve'))).toBe(user);
+  });
+
   it('blocks operational resources until the PostgreSQL profile is complete', () => {
     const user = { id: 1, profile_complete: false };
 

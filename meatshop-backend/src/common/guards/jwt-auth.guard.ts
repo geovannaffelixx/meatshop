@@ -10,6 +10,8 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
+  private static readonly incompleteProfilePaths = new Set(['/users/me', '/geocoding/resolve']);
+
   constructor(private readonly reflector: Reflector) {
     super();
   }
@@ -32,7 +34,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       throw err ?? new UnauthorizedException('Invalid or expired token');
     }
     const path = context.switchToHttp().getRequest<{ path?: string }>().path;
-    if (!user.profile_complete && path !== '/users/me') {
+    if (!user.profile_complete && !JwtAuthGuard.incompleteProfilePaths.has(path ?? '')) {
       throw new ForbiddenException({
         code: 'PROFILE_INCOMPLETE',
         message: 'Complete the required profile fields before continuing.',

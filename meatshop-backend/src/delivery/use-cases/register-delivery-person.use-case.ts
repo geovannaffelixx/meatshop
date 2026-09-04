@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
@@ -21,7 +21,7 @@ export class RegisterDeliveryPersonUseCase {
       where: { user_id: currentUser.id },
     });
     if (existing) {
-      throw new BadRequestException('You already have a delivery person profile');
+      return existing;
     }
 
     const deliveryPerson = this.deliveryPersonRepository.create({
