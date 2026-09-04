@@ -8,7 +8,10 @@ export class CreateReviewDto {
   @Max(5)
   rating: number;
 
-  @ApiPropertyOptional({ description: 'Comentário sobre a avaliação', example: 'Carne muito fresca, chegou no prazo!' })
+  @ApiPropertyOptional({
+    description: 'Comentário sobre a avaliação',
+    example: 'Carne muito fresca, chegou no prazo!',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(500)

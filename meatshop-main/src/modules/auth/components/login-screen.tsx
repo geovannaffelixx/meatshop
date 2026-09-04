@@ -5,6 +5,7 @@ import { Input } from "@/shared/components/ui/input";
 import { PasswordInput } from "@/shared/components/ui/password-input";
 import { Spinner } from "@/shared/components/ui/spinner";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { apiGet, apiPost } from "@/shared/lib/api";
 import { toast } from "@/shared/lib/toast";
@@ -44,10 +45,13 @@ export function LoginScreen() {
     <div className="flex min-h-screen">
       {/* Lado esquerdo com imagem */}
       <div className="w-1/3 h-screen relative">
-        <img
+        <Image
           src="/entrar.png"
           alt="Imagem"
-          className="w-full h-full object-cover"
+          fill
+          priority
+          sizes="33vw"
+          className="object-cover"
         />
       </div>
 

@@ -6,7 +6,9 @@ describe('UnitPermissionPolicy', () => {
   const policy = new UnitPermissionPolicy();
 
   it('gives every permission to the owner', () => {
-    expect(policy.permissionsFor(LocalRole.OWNER)).toEqual(expect.arrayContaining(Object.values(UnitPermission)));
+    expect(policy.permissionsFor(LocalRole.OWNER)).toEqual(
+      expect.arrayContaining(Object.values(UnitPermission)),
+    );
   });
 
   it('prevents managers from changing unit ownership settings', () => {

@@ -1,0 +1,31 @@
+groups:
+  - name: meatshop-api
+    rules:
+      - alert: MeatshopBackendUnavailable
+        expr: up{job="meatshop-backend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Backend MeatShop indisponível
+      - alert: MeatshopHighErrorRate
+        expr: sum(rate(http_requests_total{status_code=~"5.."}[5m])) / clamp_min(sum(rate(http_requests_total[5m])), 1) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Taxa de erros 5xx acima de 5%
+      - alert: MeatshopHighP95Latency
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_ms_bucket[5m])) by (le)) > 500
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Latência p95 acima de 500 ms
+      - alert: MeatshopLoginFailuresSpike
+        expr: sum(rate(http_requests_total{route="/auth/login",status_code=~"4.."}[5m])) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Pico de falhas de login detectado

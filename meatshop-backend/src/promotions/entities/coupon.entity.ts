@@ -30,8 +30,7 @@ export class Coupon {
   @Column({ type: 'enum', enum: CouponDiscountType }) discount_type: CouponDiscountType;
   @Column({ type: 'decimal', precision: 10, scale: 2 }) discount_amount: number;
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true }) maximum_discount:
-    | number
-    | null;
+    number | null;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 }) minimum_order_value: number;
   @Column({ type: 'timestamp' }) starts_at: Date;

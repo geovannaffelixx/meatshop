@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 
-import { MailerService } from '@nestjs-modules/mailer';
+import { ConfigService } from '@nestjs/config';
+import * as nodemailer from 'nodemailer';
+import type { Transporter } from 'nodemailer';
 
 interface SendEmailData {
   to: string;
@@ -11,14 +13,26 @@ interface SendEmailData {
 
 @Injectable()
 export class EmailService {
-  constructor(
-    private readonly mailerService: MailerService,
-  ) {}
+  private readonly transporter: Transporter;
+  private readonly from: string;
 
-  async sendEmail(
-    data: SendEmailData,
-  ): Promise<void> {
-    await this.mailerService.sendMail({
+  constructor(private readonly configService: ConfigService) {
+    this.transporter = nodemailer.createTransport({
+      host: this.configService.get<string>('MAIL_HOST'),
+      port: Number(this.configService.get<string>('MAIL_PORT')) || 2525,
+      secure: this.configService.get<string>('MAIL_SECURE') === 'true',
+      requireTLS: this.configService.get<string>('NODE_ENV') === 'production',
+      auth: {
+        user: this.configService.get<string>('MAIL_USER'),
+        pass: this.configService.get<string>('MAIL_PASSWORD'),
+      },
+    });
+    this.from = this.configService.get<string>('MAIL_FROM', 'MeatShop <no-reply@meatshop.local>');
+  }
+
+  async sendEmail(data: SendEmailData): Promise<void> {
+    await this.transporter.sendMail({
+      from: this.from,
       to: data.to,
 
       subject: data.subject,

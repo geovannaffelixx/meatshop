@@ -35,7 +35,9 @@ export class CreateProductUseCase {
     }
 
     await this.unitAuthorizationService.assertHasPermission(
-      currentUser, unit.id, UnitPermission.MANAGE_PRODUCTS,
+      currentUser,
+      unit.id,
+      UnitPermission.MANAGE_PRODUCTS,
     );
     await this.ensureCategoryBelongsToUnit(dto.category_id, dto.unit_id);
 
@@ -51,10 +53,7 @@ export class CreateProductUseCase {
     return product;
   }
 
-  private async ensureCategoryBelongsToUnit(
-    categoryId: number,
-    unitId: number,
-  ): Promise<void> {
+  private async ensureCategoryBelongsToUnit(categoryId: number, unitId: number): Promise<void> {
     const category = await this.categoryRepository.findOne({
       where: { id: categoryId },
     });

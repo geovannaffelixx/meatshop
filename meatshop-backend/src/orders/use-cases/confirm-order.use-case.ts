@@ -33,10 +33,6 @@ export class ConfirmOrderUseCase {
       await this.orderAuthorizationService.assertCanManageOrder(order, actor);
     }
 
-    return this.orderStatusService.transition(
-      order,
-      OrderStatus.CONFIRMED,
-      actor?.id ?? null,
-    );
+    return this.orderStatusService.transition(order, OrderStatus.CONFIRMED, actor?.id ?? null);
   }
 }

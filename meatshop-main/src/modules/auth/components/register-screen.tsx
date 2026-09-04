@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useState } from "react";
 import { Input } from "@/shared/components/ui/input";
 import { Button } from "@/shared/components/ui/button";
@@ -236,9 +237,12 @@ export function RegisterScreen() {
                 {previewUrl && (
                   <div className="mt-3 flex items-center gap-3">
                     <span className="text-sm text-gray-600">Pré-visualização:</span>
-                    <img
+                    <Image
                       src={previewUrl}
                       alt="Pré-visualização da logo"
+                      width={64}
+                      height={64}
+                      unoptimized
                       className="h-16 w-16 rounded-full object-cover border"
                     />
                   </div>

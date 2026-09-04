@@ -1,9 +1,6 @@
-import { EmailTemplate } from '../interfaces/email-template.interface';
+import type { EmailTemplate } from '../interfaces/email-template.interface';
 
-export function resetPasswordTemplate(
-  userName: string,
-  resetUrl: string,
-): EmailTemplate {
+export function resetPasswordTemplate(userName: string, resetUrl: string): EmailTemplate {
   return {
     subject: 'Redefinição de senha - MeatShop',
 

@@ -73,9 +73,7 @@ export class UnitAuthorizationService {
       order: { created_at: 'ASC' },
     });
 
-    return memberships.filter(({ local_role }) =>
-      this.permissionPolicy.canAccessPanel(local_role),
-    );
+    return memberships.filter(({ local_role }) => this.permissionPolicy.canAccessPanel(local_role));
   }
 
   /**

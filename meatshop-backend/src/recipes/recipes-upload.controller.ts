@@ -93,7 +93,9 @@ export class RecipesUploadController {
     if (!recipe) throw new NotFoundException('Receita não encontrada');
 
     await this.unitAuthorizationService.assertHasPermission(
-      currentUser, recipe.unit_id, UnitPermission.MANAGE_PRODUCTS,
+      currentUser,
+      recipe.unit_id,
+      UnitPermission.MANAGE_PRODUCTS,
     );
 
     recipe.image_url = `/uploads/recipes/${file.filename}`;

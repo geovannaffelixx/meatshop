@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { LessThan, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { DeliveryStatus } from '../../orders/enums/delivery-status.enum';
 import { Order } from '../../orders/entities/order.entity';
 import { OrderAuthorizationService } from '../../orders/services/order-authorization.service';
@@ -61,9 +61,6 @@ export class UpdateDeliveryLocationUseCase {
       accuracy: dto.accuracy ?? null,
     });
     const savedTracking = await this.trackingRepository.save(tracking);
-    await this.trackingRepository.delete({
-      created_at: LessThan(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)),
-    });
     this.deliveryGateway.emitLocation(order, savedTracking);
     return savedTracking;
   }

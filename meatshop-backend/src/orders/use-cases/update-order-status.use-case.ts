@@ -18,22 +18,14 @@ export class UpdateOrderStatusUseCase {
     private readonly transitionValidator: OrderStatusTransitionValidator,
   ) {}
 
-  async execute(
-    orderId: number,
-    dto: UpdateOrderStatusDto,
-    currentUser: User,
-  ): Promise<Order> {
+  async execute(orderId: number, dto: UpdateOrderStatusDto, currentUser: User): Promise<Order> {
     const order = await this.orderRepository.findOne({ where: { id: orderId } });
     if (!order) {
       throw new NotFoundException('Order not found');
     }
 
     await this.orderAuthorizationService.assertCanManageOrder(order, currentUser);
-    this.transitionValidator.assertValid(
-      order.status,
-      dto.status,
-      order.delivery_type,
-    );
+    this.transitionValidator.assertValid(order.status, dto.status, order.delivery_type);
 
     return this.orderStatusService.transition(order, dto.status, currentUser.id);
   }

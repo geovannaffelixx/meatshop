@@ -1,7 +1,6 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class RebuildAuthAndUnitsSchema1786366218996
-  implements MigrationInterface {
+export class RebuildAuthAndUnitsSchema1786366218996 implements MigrationInterface {
   name = 'RebuildAuthAndUnitsSchema1786366218996';
 
   async up(queryRunner: QueryRunner): Promise<void> {
@@ -10,18 +9,14 @@ export class RebuildAuthAndUnitsSchema1786366218996
     await queryRunner.query(`DROP TABLE IF EXISTS "users" CASCADE`);
 
     // ── Enum types ───────────────────────────────────────────────────────
-    await queryRunner.query(
-      `CREATE TYPE "users_global_role_enum" AS ENUM('SUPER_ADMIN', 'USER')`,
-    );
+    await queryRunner.query(`CREATE TYPE "users_global_role_enum" AS ENUM('SUPER_ADMIN', 'USER')`);
     await queryRunner.query(
       `CREATE TYPE "users_app_profile_enum" AS ENUM('CLIENT', 'DELIVERY', 'BOTH')`,
     );
     await queryRunner.query(
       `CREATE TYPE "user_units_local_role_enum" AS ENUM('ADMIN', 'MEMBER', 'DELIVERY')`,
     );
-    await queryRunner.query(
-      `CREATE TYPE "user_units_status_enum" AS ENUM('ACTIVE', 'INACTIVE')`,
-    );
+    await queryRunner.query(`CREATE TYPE "user_units_status_enum" AS ENUM('ACTIVE', 'INACTIVE')`);
 
     // ── users ────────────────────────────────────────────────────────────
     await queryRunner.query(`
@@ -113,20 +108,12 @@ export class RebuildAuthAndUnitsSchema1786366218996
   }
 
   async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `ALTER TABLE "user_units" DROP CONSTRAINT "FK_user_units_unit_id"`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "user_units" DROP CONSTRAINT "FK_user_units_user_id"`,
-    );
-    await queryRunner.query(
-      `DROP INDEX "public"."IDX_user_units_user_id_unit_id"`,
-    );
+    await queryRunner.query(`ALTER TABLE "user_units" DROP CONSTRAINT "FK_user_units_unit_id"`);
+    await queryRunner.query(`ALTER TABLE "user_units" DROP CONSTRAINT "FK_user_units_user_id"`);
+    await queryRunner.query(`DROP INDEX "public"."IDX_user_units_user_id_unit_id"`);
     await queryRunner.query(`DROP TABLE "user_units"`);
 
-    await queryRunner.query(
-      `ALTER TABLE "units" DROP CONSTRAINT "FK_units_admin_id"`,
-    );
+    await queryRunner.query(`ALTER TABLE "units" DROP CONSTRAINT "FK_units_admin_id"`);
     await queryRunner.query(`DROP TABLE "units"`);
 
     await queryRunner.query(

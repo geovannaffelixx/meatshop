@@ -2,7 +2,6 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UnitPermission } from '../../common/enums/unit-permission.enum';
-import { Unit } from '../../units/entities/unit.entity';
 import { UnitAuthorizationService } from '../../units/services/unit-authorization.service';
 import { User } from '../../users/entities/user.entity';
 import { UpdateCategoryDto } from '../dtos/update-category.dto';
@@ -15,16 +14,10 @@ export class UpdateCategoryUseCase {
   constructor(
     @InjectRepository(Category)
     private readonly categoryRepository: Repository<Category>,
-    @InjectRepository(Unit)
-    private readonly unitRepository: Repository<Unit>,
     private readonly unitAuthorizationService: UnitAuthorizationService,
   ) {}
 
-  async execute(
-    categoryId: number,
-    dto: UpdateCategoryDto,
-    currentUser: User,
-  ): Promise<Category> {
+  async execute(categoryId: number, dto: UpdateCategoryDto, currentUser: User): Promise<Category> {
     const category = await this.categoryRepository.findOne({
       where: { id: categoryId },
     });
@@ -32,11 +25,10 @@ export class UpdateCategoryUseCase {
       throw new NotFoundException('Category not found');
     }
 
-    const unit = await this.unitRepository.findOne({
-      where: { id: category.unit_id },
-    });
     await this.unitAuthorizationService.assertHasPermission(
-      currentUser, category.unit_id, UnitPermission.MANAGE_CATEGORIES,
+      currentUser,
+      category.unit_id,
+      UnitPermission.MANAGE_CATEGORIES,
     );
 
     Object.assign(category, dto);

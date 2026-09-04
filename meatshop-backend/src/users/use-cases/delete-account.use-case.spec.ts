@@ -15,15 +15,17 @@ describe('DeleteAccountUseCase', () => {
       operation(manager),
     ),
   } as unknown as DataSource;
-  const useCase = new DeleteAccountUseCase(dataSource);
+  const firebase = { deleteUser: jest.fn(async () => undefined) };
+  const useCase = new DeleteAccountUseCase(dataSource, firebase as never);
 
   it('revoga sessões e anonimiza dados pessoais preservando histórico operacional', async () => {
-    jest.mocked(manager.findOne).mockResolvedValue({ id: 12 } as User);
+    jest.mocked(manager.findOne).mockResolvedValue({ id: 12, firebase_uid: 'firebase-12' } as User);
     await useCase.execute(12);
 
     expect(manager.delete).toHaveBeenCalledWith('refresh_tokens', {
       user_id: 12,
     });
+    expect(firebase.deleteUser).toHaveBeenCalledWith('firebase-12');
     expect(manager.delete).toHaveBeenCalledWith('user_device_tokens', {
       user_id: 12,
     });

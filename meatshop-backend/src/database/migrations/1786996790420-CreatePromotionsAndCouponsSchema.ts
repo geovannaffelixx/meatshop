@@ -1,7 +1,6 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreatePromotionsAndCouponsSchema1786996790420
-  implements MigrationInterface {
+export class CreatePromotionsAndCouponsSchema1786996790420 implements MigrationInterface {
   name = 'CreatePromotionsAndCouponsSchema1786996790420';
 
   async up(queryRunner: QueryRunner): Promise<void> {
@@ -52,12 +51,8 @@ export class CreatePromotionsAndCouponsSchema1786996790420
   async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`DROP TABLE "coupons"`);
 
-    await queryRunner.query(
-      `ALTER TABLE "promotions" DROP CONSTRAINT "FK_promotions_product_id"`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "promotions" DROP CONSTRAINT "FK_promotions_unit_id"`,
-    );
+    await queryRunner.query(`ALTER TABLE "promotions" DROP CONSTRAINT "FK_promotions_product_id"`);
+    await queryRunner.query(`ALTER TABLE "promotions" DROP CONSTRAINT "FK_promotions_unit_id"`);
     await queryRunner.query(`DROP TABLE "promotions"`);
   }
 }

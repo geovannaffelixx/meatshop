@@ -21,9 +21,7 @@ export class CartAccessService {
       return existing;
     }
 
-    return this.cartRepository.save(
-      this.cartRepository.create({ user_id: userId }),
-    );
+    return this.cartRepository.save(this.cartRepository.create({ user_id: userId }));
   }
 
   async findOwnCartItem(itemId: number, userId: number): Promise<CartItem> {

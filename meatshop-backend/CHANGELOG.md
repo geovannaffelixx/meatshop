@@ -8,6 +8,9 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ### Adicionado
 
+- Proteções globais de produção com Helmet, CORS restritivo por ambiente, rate limiting, correlação de requisições, métricas e validação fail-fast da configuração.
+- Retenção diária automatizada da localização de entregas e alertas Prometheus para disponibilidade, erros, latência e falhas de login.
+- Gates separados para testes unitários, E2E PostgreSQL, cobertura, auditoria de dependências e smoke test de performance.
 - Contrato de estado das avaliações por pedido e perfil público do entregador protegido pela relação com o cliente.
 - Exclusão de conta LGPD com revogação de tokens, anonimização transacional e preservação do histórico operacional sem identidade pessoal.
 
@@ -19,6 +22,8 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ### Alterado
 
+- Runtime atualizado para NestJS 11.2.3, Express 5, Mercado Pago 3, Nodemailer 10, Firebase Admin 14 e TypeORM 0.3.31.
+- Envio de e-mail passou a usar Nodemailer diretamente, reduzindo dependências intermediárias sem alterar o contrato do domínio.
 - Manifests do backend e do painel alinhados à versão cumulativa 3.0.0 da integração mobile.
 - Integração mobile concluída sem persistência operacional no Firebase; PostgreSQL é a fonte única para todos os domínios.
 
@@ -27,6 +32,9 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ### Segurança
 
+- App Check agora é decidido exclusivamente pelas rotas protegidas no servidor; cabeçalhos informados pelo cliente não podem mais contornar a validação.
+- Exclusão LGPD também remove a identidade Firebase, e conexões Socket.IO recusam contas inativas e origens não autorizadas.
+- DTOs rejeitam propriedades desconhecidas e a aplicação não inicia em produção com secrets fracos, HTTP, sincronização de schema ou Firebase Admin ausente.
 - Dados públicos do entregador somente são revelados ao cliente de um pedido atribuído; exclusão remove identificadores, contato, credencial local, avatar e vínculo Firebase.
 
 - Códigos de retirada e confirmação deixaram de aparecer em notificações persistidas ou push.

@@ -28,7 +28,9 @@ export class DeleteExpenseUseCase {
     const unit = await this.unitRepository.findOne({ where: { id: expense.unit_id } });
     if (unit) {
       await this.unitAuthorizationService.assertHasPermission(
-        currentUser, unit.id, UnitPermission.MANAGE_FINANCE,
+        currentUser,
+        unit.id,
+        UnitPermission.MANAGE_FINANCE,
       );
     }
 

@@ -177,21 +177,22 @@ Estas frentes pertencem ao produto completo e aos próximos meses, não a módul
 
 ### 8.4 Qualidade e padronização
 
-- Zerar o passivo global de ESLint do backend.
-- Padronizar Prettier e finais de linha entre os projetos.
-- Garantir lint, typecheck, testes e builds obrigatórios no CI.
-- Remover código legado e atualizar documentação técnica e funcional.
+**Status:** concluído no código da versão 3.0.0.
+
+- Passivo de lint eliminado no backend, no painel e no mobile.
+- Typecheck, testes, builds, cobertura, auditoria e E2E PostgreSQL são gates obrigatórios no CI.
+- Dependências e runtimes suportados atualizados; documentação técnica e operacional revisada.
 
 ### 8.5 Produção e segurança
 
-- Preparar ambientes de staging e produção.
-- Secrets externos, rotação de chaves e configuração segura de cookies/CORS.
-- Rate limiting, proteção contra abuso e políticas por endpoint.
-- Revisão LGPD: base legal, consentimento, retenção, exportação e exclusão de dados.
-- Hardening de containers, banco, uploads, logs e WebSockets.
-- Testes de carga, metas de latência e capacidade.
-- Alertas, backups, restauração, observabilidade e resposta a incidentes.
-- Deploy em nuvem e validação pós-deploy.
+**Status do código:** concluído para publicação, conforme `PRODUCTION_DEPLOYMENT.md`.
+
+- Configuração fail-fast, secrets fortes, HTTPS, cookies seguros, CORS, App Check e banco sem sincronização automática.
+- Rate limiting com memória limitada, validação estrita de entrada, headers seguros e proteção de uploads e WebSockets.
+- Exclusão e anonimização de conta, retenção automática de localização e trilha de auditoria para os controles LGPD técnicos.
+- Imagens não privilegiadas, migrations isoladas, métricas, alertas Prometheus, CodeQL e smoke de latência no CI.
+
+**Pendente no ambiente real:** provisionar staging/produção, DNS/TLS, secret manager, backups com restauração ensaiada, homologar Firebase/Mercado Pago/SMTP/push, definir políticas e responsáveis LGPD, publicar e executar a validação pós-deploy. Essas ações dependem das contas, credenciais e decisões operacionais da organização, não de código adicional no repositório.
 
 ## Decisão de encerramento do painel
 

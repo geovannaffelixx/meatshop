@@ -1,7 +1,6 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateDeliveryTrackingSchema1786998623173
-  implements MigrationInterface {
+export class CreateDeliveryTrackingSchema1786998623173 implements MigrationInterface {
   name = 'CreateDeliveryTrackingSchema1786998623173';
 
   async up(queryRunner: QueryRunner): Promise<void> {

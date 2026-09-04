@@ -16,7 +16,7 @@ describe('App Smoke Test', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
   });
 
   it('A aplicação deve inicializar sem erros', async () => {

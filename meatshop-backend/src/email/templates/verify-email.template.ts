@@ -1,9 +1,6 @@
-import { EmailTemplate } from '../interfaces/email-template.interface';
+import type { EmailTemplate } from '../interfaces/email-template.interface';
 
-export function verifyEmailTemplate(
-  userName: string,
-  verificationUrl: string,
-): EmailTemplate {
+export function verifyEmailTemplate(userName: string, verificationUrl: string): EmailTemplate {
   return {
     subject: 'Confirme sua conta MeatShop',
 

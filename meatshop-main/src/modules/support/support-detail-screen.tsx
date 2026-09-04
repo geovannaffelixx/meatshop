@@ -1,5 +1,8 @@
 "use client";
 
+/* Attachments use authenticated runtime URLs that are intentionally not optimized by Next.js. */
+/* eslint-disable @next/next/no-img-element */
+
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, ImagePlus, LockKeyhole, Send } from "lucide-react";
 import { useRouter } from "next/navigation";

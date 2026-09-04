@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Image from "next/image";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
 import { Spinner } from "@/shared/components/ui/spinner";
 import { API_URL, apiGet, apiPatch, apiPut } from "@/shared/lib/api";
@@ -112,7 +113,7 @@ function UnitSettings() {
     <section className="rounded-xl border bg-white p-6">
       <h1 className="text-2xl font-bold text-gray-900">Configurações da unidade</h1>
       <p className="mt-1 text-sm text-gray-600">Informações públicas e operacionais do açougue selecionado.</p>
-      <div className="mt-5 flex items-center gap-4"><div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg bg-gray-100">{unit.image_url ? <img src={`${API_URL}${unit.image_url}`} alt="Logo da unidade" className="h-full w-full object-cover" /> : <span className="text-2xl font-bold text-gray-400">{unit.name.charAt(0)}</span>}</div><label className="cursor-pointer rounded-md border px-4 py-2 text-sm font-semibold hover:bg-gray-50">Alterar logo<input type="file" accept="image/*" className="hidden" onChange={(event) => void uploadLogo(event.target.files?.[0])} /></label></div>
+      <div className="mt-5 flex items-center gap-4"><div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg bg-gray-100">{unit.image_url ? <Image src={`${API_URL}${unit.image_url}`} alt="Logo da unidade" width={80} height={80} unoptimized className="h-full w-full object-cover" /> : <span className="text-2xl font-bold text-gray-400">{unit.name.charAt(0)}</span>}</div><label className="cursor-pointer rounded-md border px-4 py-2 text-sm font-semibold hover:bg-gray-50">Alterar logo<input type="file" accept="image/*" className="hidden" onChange={(event) => void uploadLogo(event.target.files?.[0])} /></label></div>
       <form onSubmit={saveUnit} className="mt-6 grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2">{field("name", "Nome do açougue")}</div>
         {field("cnpj", "CNPJ", true)}

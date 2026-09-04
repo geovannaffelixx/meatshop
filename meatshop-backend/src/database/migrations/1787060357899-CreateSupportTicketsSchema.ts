@@ -1,7 +1,6 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateSupportTicketsSchema1787060357899
-  implements MigrationInterface {
+export class CreateSupportTicketsSchema1787060357899 implements MigrationInterface {
   name = 'CreateSupportTicketsSchema1787060357899';
 
   async up(queryRunner: QueryRunner): Promise<void> {

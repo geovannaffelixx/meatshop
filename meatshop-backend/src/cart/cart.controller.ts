@@ -1,20 +1,5 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-} from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiParam,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { User } from '../users/entities/user.entity';
 import { AddCartItemDto } from './dtos/add-cart-item.dto';
@@ -89,10 +74,7 @@ export class CartController {
   })
   @ApiResponse({ status: 404, description: 'Item do carrinho não encontrado' })
   @Delete('items/:itemId')
-  removeItem(
-    @Param('itemId', ParseIntPipe) itemId: number,
-    @CurrentUser() currentUser: User,
-  ) {
+  removeItem(@Param('itemId', ParseIntPipe) itemId: number, @CurrentUser() currentUser: User) {
     return this.removeCartItemUseCase.execute(itemId, currentUser);
   }
 

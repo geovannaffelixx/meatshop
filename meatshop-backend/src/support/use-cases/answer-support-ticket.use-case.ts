@@ -7,11 +7,7 @@ import { SendSupportMessageUseCase } from './send-support-message.use-case';
 export class AnswerSupportTicketUseCase {
   constructor(private readonly sendMessage: SendSupportMessageUseCase) {}
 
-  async execute(
-    ticketId: number,
-    dto: AnswerSupportTicketDto,
-    currentUser: User,
-  ) {
+  async execute(ticketId: number, dto: AnswerSupportTicketDto, currentUser: User) {
     return this.sendMessage.execute(ticketId, dto.response, [], currentUser);
   }
 }

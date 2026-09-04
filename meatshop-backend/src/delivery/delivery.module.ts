@@ -36,6 +36,7 @@ import { DeliveryOfferRejection } from './entities/delivery-offer-rejection.enti
 import { DeliveryMobileService } from './services/delivery-mobile.service';
 import { DeliveryUploadController } from './delivery-upload.controller';
 import { VehiclePhotoService } from './services/vehicle-photo.service';
+import { DeliveryTrackingRetentionService } from './services/delivery-tracking-retention.service';
 
 @Module({
   imports: [
@@ -78,6 +79,7 @@ import { VehiclePhotoService } from './services/vehicle-photo.service';
     RegenerateDeliveryCodeUseCase,
     DeliveryMobileService,
     VehiclePhotoService,
+    DeliveryTrackingRetentionService,
   ],
   exports: [TypeOrmModule],
 })

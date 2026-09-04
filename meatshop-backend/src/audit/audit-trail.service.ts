@@ -98,8 +98,8 @@ export class AuditTrailService {
     return String(data.email ?? data.cpf ?? data.cnpj ?? '') || null;
   }
 
-  private numberParam(value?: string): number | null {
-    const parsed = Number(value);
+  private numberParam(value?: string | string[]): number | null {
+    const parsed = Number(Array.isArray(value) ? value[0] : value);
     return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
   }
 }

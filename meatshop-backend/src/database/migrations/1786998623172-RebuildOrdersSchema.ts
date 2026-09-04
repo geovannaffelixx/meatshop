@@ -156,24 +156,18 @@ export class RebuildOrdersSchema1786998623172 implements MigrationInterface {
     );
     await queryRunner.query(`DROP TABLE "order_status_history"`);
 
-    await queryRunner.query(
-      `ALTER TABLE "payments" DROP CONSTRAINT "FK_payments_order_id"`,
-    );
+    await queryRunner.query(`ALTER TABLE "payments" DROP CONSTRAINT "FK_payments_order_id"`);
     await queryRunner.query(`DROP TABLE "payments"`);
 
     await queryRunner.query(
       `ALTER TABLE "order_items" DROP CONSTRAINT "FK_order_items_product_id"`,
     );
-    await queryRunner.query(
-      `ALTER TABLE "order_items" DROP CONSTRAINT "FK_order_items_order_id"`,
-    );
+    await queryRunner.query(`ALTER TABLE "order_items" DROP CONSTRAINT "FK_order_items_order_id"`);
     await queryRunner.query(`DROP TABLE "order_items"`);
 
     await queryRunner.query(`ALTER TABLE "orders" DROP CONSTRAINT "FK_orders_coupon_id"`);
     await queryRunner.query(`ALTER TABLE "orders" DROP CONSTRAINT "FK_orders_address_id"`);
-    await queryRunner.query(
-      `ALTER TABLE "orders" DROP CONSTRAINT "FK_orders_delivery_person_id"`,
-    );
+    await queryRunner.query(`ALTER TABLE "orders" DROP CONSTRAINT "FK_orders_delivery_person_id"`);
     await queryRunner.query(`ALTER TABLE "orders" DROP CONSTRAINT "FK_orders_unit_id"`);
     await queryRunner.query(`ALTER TABLE "orders" DROP CONSTRAINT "FK_orders_client_id"`);
     await queryRunner.query(`DROP TABLE "orders"`);

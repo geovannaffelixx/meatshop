@@ -28,6 +28,9 @@ export class FirebaseService {
         'Failed to initialize Firebase Admin SDK',
         error instanceof Error ? error.stack : undefined,
       );
+      if (config.get<string>('NODE_ENV') === 'production') {
+        throw new Error('Firebase Admin initialization failed', { cause: error });
+      }
       this.app = null;
     }
   }
@@ -90,14 +93,23 @@ export class FirebaseService {
   }
 
   async deleteUser(uid: string): Promise<void> {
-    await (await this.auth()).deleteUser(uid);
+    try {
+      await (await this.auth()).deleteUser(uid);
+    } catch (error: unknown) {
+      if (this.firebaseErrorCode(error) !== 'auth/user-not-found') throw error;
+    }
   }
 
   private async auth(): Promise<Auth> {
     const app = this.getApp();
-    const { getAuth } = (await Function('return import(firebase-admin/auth)')()) as {
+    const { getAuth } = (await Function('return import("firebase-admin/auth")')()) as {
       getAuth(app: App): Auth;
     };
     return getAuth(app);
+  }
+
+  private firebaseErrorCode(error: unknown): string | undefined {
+    if (typeof error !== 'object' || error === null || !('code' in error)) return undefined;
+    return typeof error.code === 'string' ? error.code : undefined;
   }
 }

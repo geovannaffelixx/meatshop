@@ -17,7 +17,7 @@ describe('Health Endpoint (e2e)', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
   });
 
   it('/health (GET) deve responder 200', async () => {

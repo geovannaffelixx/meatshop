@@ -17,7 +17,7 @@ describe('Metrics Endpoint (e2e)', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
   });
 
   it('/metrics (GET) deve conter métricas básicas', async () => {

@@ -13,13 +13,20 @@ import {
 import { MetricsService } from './metrics/metrics.service';
 import { setupSwagger } from './config/swagger.config';
 import { join } from 'path';
+import helmet from 'helmet';
+import { getAllowedOrigins, validateEnvironment } from './config/runtime-config';
 
 async function bootstrap() {
+  validateEnvironment(process.env);
   const startAt = Date.now();
 
   const winstonLogger = createAppLogger();
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  app.use(helmet());
+  if (process.env.TRUST_PROXY === 'true') {
+    app.set('trust proxy', 1);
+  }
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
     prefix: '/uploads/',
   });
@@ -32,15 +39,13 @@ async function bootstrap() {
   try {
     metricsService = app.get(MetricsService);
     if (metricsService) {
-      app.set('MetricsService', metricsService);
       appLogger.info('MetricsService registrado com sucesso');
     }
   } catch {
     appLogger.warn('MetricsService não encontrado — métricas desativadas');
   }
-  const httpLogger = new HttpLoggerMiddleware(appLogger);
+  const httpLogger = new HttpLoggerMiddleware(appLogger, metricsService);
   app.use((req: Request, res: Response, next: NextFunction) => {
-    (req as any).metricsService = metricsService;
     httpLogger.use(req, res, next);
   });
 
@@ -49,21 +54,20 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: false,
+      forbidNonWhitelisted: true,
       transform: true,
       transformOptions: { enableImplicitConversion: true },
     }),
   );
 
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    origin: getAllowedOrigins(process.env),
     credentials: true,
   });
   appLogger.info('CORS e CookieParser configurados com sucesso');
 
   const swaggerEnabled =
-    process.env.SWAGGER_ENABLED === 'true' ||
-    process.env.NODE_ENV !== 'production';
+    process.env.SWAGGER_ENABLED === 'true' || process.env.NODE_ENV !== 'production';
 
   if (swaggerEnabled) {
     setupSwagger(app);

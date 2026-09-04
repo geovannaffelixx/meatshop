@@ -25,9 +25,7 @@ export class SupportTicketAccessService {
     const isSuperAdmin = currentUser.global_role === GlobalRole.SUPER_ADMIN;
 
     if (!isOwner && !isSuperAdmin) {
-      throw new ForbiddenException(
-        'Only the ticket owner or a super admin can close this ticket',
-      );
+      throw new ForbiddenException('Only the ticket owner or a super admin can close this ticket');
     }
   }
 }

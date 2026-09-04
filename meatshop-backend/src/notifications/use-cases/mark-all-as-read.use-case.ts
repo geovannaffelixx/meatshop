@@ -13,7 +13,10 @@ export class MarkAllAsReadUseCase {
 
   async execute(currentUser: User, unitId?: number): Promise<void> {
     if (unitId === undefined) {
-      await this.notificationRepository.update({ user_id: currentUser.id, read: false }, { read: true });
+      await this.notificationRepository.update(
+        { user_id: currentUser.id, read: false },
+        { read: true },
+      );
       return;
     }
 

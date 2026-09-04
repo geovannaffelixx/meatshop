@@ -1,19 +1,5 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-} from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CreateAddressDto } from './dtos/create-address.dto';
 import { UpdateAddressDto } from './dtos/update-address.dto';
@@ -52,10 +38,7 @@ export class AddressesController {
   @ApiOperation({ summary: 'Obtém um endereço específico do usuário' })
   @ApiResponse({ status: 200, description: 'Endereço encontrado com sucesso' })
   @ApiResponse({ status: 404, description: 'Endereço não encontrado' })
-  getOne(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() currentUser: User,
-  ) {
+  getOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
     return this.getAddressUseCase.execute(id, currentUser.id);
   }
 
@@ -85,10 +68,7 @@ export class AddressesController {
     description: 'Endereço definido como padrão com sucesso',
   })
   @ApiResponse({ status: 404, description: 'Endereço não encontrado' })
-  setDefault(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() currentUser: User,
-  ) {
+  setDefault(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
     return this.setDefaultAddressUseCase.execute(id, currentUser);
   }
 
@@ -96,10 +76,7 @@ export class AddressesController {
   @ApiOperation({ summary: 'Remove um endereço do usuário' })
   @ApiResponse({ status: 200, description: 'Endereço removido com sucesso' })
   @ApiResponse({ status: 404, description: 'Endereço não encontrado' })
-  remove(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() currentUser: User,
-  ) {
+  remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
     return this.deleteAddressUseCase.execute(id, currentUser);
   }
 }

@@ -49,7 +49,9 @@ export class CreateNotificationsSchema1787072787553 implements MigrationInterfac
     );
     await queryRunner.query(`DROP TABLE "user_device_tokens"`);
 
-    await queryRunner.query(`ALTER TABLE "notifications" DROP CONSTRAINT "FK_notifications_user_id"`);
+    await queryRunner.query(
+      `ALTER TABLE "notifications" DROP CONSTRAINT "FK_notifications_user_id"`,
+    );
     await queryRunner.query(`DROP TABLE "notifications"`);
     await queryRunner.query(`DROP TYPE "notifications_type_enum"`);
   }

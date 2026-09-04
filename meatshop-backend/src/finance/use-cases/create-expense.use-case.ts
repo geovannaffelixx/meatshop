@@ -26,7 +26,9 @@ export class CreateExpenseUseCase {
       throw new NotFoundException('Unit not found');
     }
     await this.unitAuthorizationService.assertHasPermission(
-      currentUser, unit.id, UnitPermission.MANAGE_FINANCE,
+      currentUser,
+      unit.id,
+      UnitPermission.MANAGE_FINANCE,
     );
 
     const expense = this.expenseRepository.create({

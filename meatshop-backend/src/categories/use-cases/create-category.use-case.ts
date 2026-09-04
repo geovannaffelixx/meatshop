@@ -29,7 +29,9 @@ export class CreateCategoryUseCase {
     }
 
     await this.unitAuthorizationService.assertHasPermission(
-      currentUser, unit.id, UnitPermission.MANAGE_CATEGORIES,
+      currentUser,
+      unit.id,
+      UnitPermission.MANAGE_CATEGORIES,
     );
 
     const category = this.categoryRepository.create(dto);

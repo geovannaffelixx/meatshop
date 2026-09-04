@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UnitPermission } from '../../common/enums/unit-permission.enum';
 import { Category } from '../../categories/entities/category.entity';
-import { Unit } from '../../units/entities/unit.entity';
 import { UnitAuthorizationService } from '../../units/services/unit-authorization.service';
 import { User } from '../../users/entities/user.entity';
 import { UpdateProductDto } from '../dtos/update-product.dto';
@@ -16,18 +15,12 @@ export class UpdateProductUseCase {
   constructor(
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
-    @InjectRepository(Unit)
-    private readonly unitRepository: Repository<Unit>,
     @InjectRepository(Category)
     private readonly categoryRepository: Repository<Category>,
     private readonly unitAuthorizationService: UnitAuthorizationService,
   ) {}
 
-  async execute(
-    productId: number,
-    dto: UpdateProductDto,
-    currentUser: User,
-  ): Promise<Product> {
+  async execute(productId: number, dto: UpdateProductDto, currentUser: User): Promise<Product> {
     const product = await this.productRepository.findOne({
       where: { id: productId },
     });
@@ -35,11 +28,10 @@ export class UpdateProductUseCase {
       throw new NotFoundException('Product not found');
     }
 
-    const unit = await this.unitRepository.findOne({
-      where: { id: product.unit_id },
-    });
     await this.unitAuthorizationService.assertHasPermission(
-      currentUser, product.unit_id, UnitPermission.MANAGE_PRODUCTS,
+      currentUser,
+      product.unit_id,
+      UnitPermission.MANAGE_PRODUCTS,
     );
 
     if (dto.category_id) {
@@ -54,10 +46,7 @@ export class UpdateProductUseCase {
     return product;
   }
 
-  private async ensureCategoryBelongsToUnit(
-    categoryId: number,
-    unitId: number,
-  ): Promise<void> {
+  private async ensureCategoryBelongsToUnit(categoryId: number, unitId: number): Promise<void> {
     const category = await this.categoryRepository.findOne({
       where: { id: categoryId },
     });

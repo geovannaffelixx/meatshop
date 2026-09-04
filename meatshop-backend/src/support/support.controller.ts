@@ -1,13 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -48,7 +39,9 @@ export class SupportController {
     return this.createSupportTicketUseCase.execute(dto, currentUser);
   }
 
-  @ApiOperation({ summary: 'Lista os chamados de suporte (o usuário vê os próprios; SUPER_ADMIN vê todos)' })
+  @ApiOperation({
+    summary: 'Lista os chamados de suporte (o usuário vê os próprios; SUPER_ADMIN vê todos)',
+  })
   @ApiResponse({ status: 200, description: 'Lista de chamados retornada com sucesso' })
   @Get()
   list(@CurrentUser() currentUser: User) {

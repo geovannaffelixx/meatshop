@@ -1,7 +1,6 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateAddressesAndCartSchema1786996379479
-  implements MigrationInterface {
+export class CreateAddressesAndCartSchema1786996379479 implements MigrationInterface {
   name = 'CreateAddressesAndCartSchema1786996379479';
 
   async up(queryRunner: QueryRunner): Promise<void> {
@@ -74,21 +73,15 @@ export class CreateAddressesAndCartSchema1786996379479
   }
 
   async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `ALTER TABLE "cart_items" DROP CONSTRAINT "FK_cart_items_product_id"`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "cart_items" DROP CONSTRAINT "FK_cart_items_cart_id"`,
-    );
+    await queryRunner.query(`ALTER TABLE "cart_items" DROP CONSTRAINT "FK_cart_items_product_id"`);
+    await queryRunner.query(`ALTER TABLE "cart_items" DROP CONSTRAINT "FK_cart_items_cart_id"`);
     await queryRunner.query(`DROP INDEX "public"."IDX_cart_items_cart_id_product_id"`);
     await queryRunner.query(`DROP TABLE "cart_items"`);
 
     await queryRunner.query(`ALTER TABLE "cart" DROP CONSTRAINT "FK_cart_user_id"`);
     await queryRunner.query(`DROP TABLE "cart"`);
 
-    await queryRunner.query(
-      `ALTER TABLE "addresses" DROP CONSTRAINT "FK_addresses_user_id"`,
-    );
+    await queryRunner.query(`ALTER TABLE "addresses" DROP CONSTRAINT "FK_addresses_user_id"`);
     await queryRunner.query(`DROP TABLE "addresses"`);
     await queryRunner.query(`DROP TYPE "addresses_label_enum"`);
   }

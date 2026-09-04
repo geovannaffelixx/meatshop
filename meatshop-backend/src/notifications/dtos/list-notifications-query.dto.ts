@@ -3,7 +3,10 @@ import { Type } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
 
 export class ListNotificationsQueryDto {
-  @ApiPropertyOptional({ description: 'Filtra pela unidade ativa e notificações globais', example: 3 })
+  @ApiPropertyOptional({
+    description: 'Filtra pela unidade ativa e notificações globais',
+    example: 3,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()

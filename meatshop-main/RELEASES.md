@@ -1,5 +1,9 @@
 # Releases do painel web
 
+## 3.0.0 — Qualidade e segurança para produção
+
+O painel foi atualizado para Next.js 16, recebeu auditoria automatizada de dependências, testes do controle de acesso, headers de segurança e validações obrigatórias no CI. A navegação, o catálogo, as entregas ao vivo, o chat e os módulos administrativos continuam integrados ao backend, agora com imagens otimizadas e build standalone validado.
+
 ## 2.3.0 — Central de notificações
 
 Lançada em 26 de agosto de 2026.

@@ -92,7 +92,7 @@ export function DeliveriesScreen() {
   const [loading, setLoading] = useState(true);
   const [connected, setConnected] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(0);
   const [tab, setTab] = useState<"operation" | "people">("operation");
   const [assigningOrder, setAssigningOrder] = useState<LiveDelivery | null>(
     null,

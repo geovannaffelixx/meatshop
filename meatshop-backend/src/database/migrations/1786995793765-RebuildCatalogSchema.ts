@@ -70,22 +70,14 @@ export class RebuildCatalogSchema1786995793765 implements MigrationInterface {
   }
 
   async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `ALTER TABLE "stock" DROP CONSTRAINT "FK_stock_product_id"`,
-    );
+    await queryRunner.query(`ALTER TABLE "stock" DROP CONSTRAINT "FK_stock_product_id"`);
     await queryRunner.query(`DROP TABLE "stock"`);
 
-    await queryRunner.query(
-      `ALTER TABLE "products" DROP CONSTRAINT "FK_products_category_id"`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "products" DROP CONSTRAINT "FK_products_unit_id"`,
-    );
+    await queryRunner.query(`ALTER TABLE "products" DROP CONSTRAINT "FK_products_category_id"`);
+    await queryRunner.query(`ALTER TABLE "products" DROP CONSTRAINT "FK_products_unit_id"`);
     await queryRunner.query(`DROP TABLE "products"`);
 
-    await queryRunner.query(
-      `ALTER TABLE "categories" DROP CONSTRAINT "FK_categories_unit_id"`,
-    );
+    await queryRunner.query(`ALTER TABLE "categories" DROP CONSTRAINT "FK_categories_unit_id"`);
     await queryRunner.query(`DROP TABLE "categories"`);
   }
 }

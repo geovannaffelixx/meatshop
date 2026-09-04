@@ -108,7 +108,9 @@ export class ProductsUploadController {
     if (!product) throw new NotFoundException('Produto não encontrado');
 
     await this.unitAuthorizationService.assertHasPermission(
-      currentUser, product.unit_id, UnitPermission.MANAGE_PRODUCTS,
+      currentUser,
+      product.unit_id,
+      UnitPermission.MANAGE_PRODUCTS,
     );
 
     const created = await this.productImages.save(
@@ -143,7 +145,9 @@ export class ProductsUploadController {
     if (!product) throw new NotFoundException('Produto não encontrado');
 
     await this.unitAuthorizationService.assertHasPermission(
-      currentUser, product.unit_id, UnitPermission.MANAGE_PRODUCTS,
+      currentUser,
+      product.unit_id,
+      UnitPermission.MANAGE_PRODUCTS,
     );
 
     await this.productImages.remove(image);

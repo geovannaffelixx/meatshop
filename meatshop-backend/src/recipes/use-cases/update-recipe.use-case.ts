@@ -3,7 +3,6 @@ import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, In, Repository } from 'typeorm';
 import { UnitPermission } from '../../common/enums/unit-permission.enum';
 import { Product } from '../../products/entities/product.entity';
-import { Unit } from '../../units/entities/unit.entity';
 import { UnitAuthorizationService } from '../../units/services/unit-authorization.service';
 import { User } from '../../users/entities/user.entity';
 import { UpdateRecipeDto } from '../dtos/update-recipe.dto';
@@ -27,8 +26,6 @@ export class UpdateRecipeUseCase {
     private readonly recipeIngredientRepository: Repository<RecipeIngredient>,
     @InjectRepository(RecipeProduct)
     private readonly recipeProductRepository: Repository<RecipeProduct>,
-    @InjectRepository(Unit)
-    private readonly unitRepository: Repository<Unit>,
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
     private readonly unitAuthorizationService: UnitAuthorizationService,
@@ -47,9 +44,10 @@ export class UpdateRecipeUseCase {
       throw new NotFoundException('Recipe not found');
     }
 
-    const unit = await this.unitRepository.findOne({ where: { id: recipe.unit_id } });
     await this.unitAuthorizationService.assertHasPermission(
-      currentUser, recipe.unit_id, UnitPermission.MANAGE_PRODUCTS,
+      currentUser,
+      recipe.unit_id,
+      UnitPermission.MANAGE_PRODUCTS,
     );
 
     if (dto.products?.length) {

@@ -1,7 +1,8 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
-  testRegex: '.*\\.(e2e-)?spec\\.ts$',
+  testRegex: '.*\\.spec\\.ts$',
+  testPathIgnorePatterns: ['\\.e2e-spec\\.ts$'],
   collectCoverage: false,
 
   moduleNameMapper: {

@@ -41,7 +41,9 @@ export class CreateRecipeUseCase {
       throw new NotFoundException('Unit not found');
     }
     await this.unitAuthorizationService.assertHasPermission(
-      currentUser, unit.id, UnitPermission.MANAGE_PRODUCTS,
+      currentUser,
+      unit.id,
+      UnitPermission.MANAGE_PRODUCTS,
     );
 
     if (dto.products?.length) {

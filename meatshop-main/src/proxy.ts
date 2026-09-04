@@ -7,7 +7,7 @@ function isStaticAsset(pathname: string) {
   return /\.(png|jpg|jpeg|svg|gif|webp|ico|css|js)$/i.test(pathname);
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 0) Se for arquivo estático → NÃO passa pelo middleware

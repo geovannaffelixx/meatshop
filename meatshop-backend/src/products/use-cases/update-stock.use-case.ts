@@ -2,7 +2,6 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UnitPermission } from '../../common/enums/unit-permission.enum';
-import { Unit } from '../../units/entities/unit.entity';
 import { UnitAuthorizationService } from '../../units/services/unit-authorization.service';
 import { User } from '../../users/entities/user.entity';
 import { UpdateStockDto } from '../dtos/update-stock.dto';
@@ -18,8 +17,6 @@ export class UpdateStockUseCase {
     private readonly productRepository: Repository<Product>,
     @InjectRepository(Stock)
     private readonly stockRepository: Repository<Stock>,
-    @InjectRepository(Unit)
-    private readonly unitRepository: Repository<Unit>,
     private readonly unitAuthorizationService: UnitAuthorizationService,
   ) {}
 
@@ -31,11 +28,10 @@ export class UpdateStockUseCase {
       throw new NotFoundException('Product not found');
     }
 
-    const unit = await this.unitRepository.findOne({
-      where: { id: product.unit_id },
-    });
     await this.unitAuthorizationService.assertHasPermission(
-      currentUser, product.unit_id, UnitPermission.MANAGE_PRODUCTS,
+      currentUser,
+      product.unit_id,
+      UnitPermission.MANAGE_PRODUCTS,
     );
 
     const stock = await this.stockRepository.findOne({

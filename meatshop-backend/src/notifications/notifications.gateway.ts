@@ -1,20 +1,20 @@
 import { Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-  OnGatewayConnection,
-  WebSocketGateway,
-  WebSocketServer,
-} from '@nestjs/websockets';
+import { OnGatewayConnection, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import { NotificationResponseDto } from './dtos/notification-response.dto';
 import { Notification } from './entities/notification.entity';
+import { getAllowedOrigins } from '../config/runtime-config';
 
 const USER_ROOM_PREFIX = 'user:';
 
-@WebSocketGateway({ namespace: '/notifications', cors: { origin: true, credentials: true } })
+@WebSocketGateway({
+  namespace: '/notifications',
+  cors: { origin: getAllowedOrigins(process.env), credentials: true },
+})
 export class NotificationsGateway implements OnGatewayConnection {
   private readonly logger = new Logger(NotificationsGateway.name);
 
@@ -31,7 +31,7 @@ export class NotificationsGateway implements OnGatewayConnection {
     try {
       const payload = await this.jwtService.verifyAsync<{ sub: number }>(this.extractToken(client));
       const user = await this.userRepository.findOne({ where: { id: payload.sub } });
-      if (!user) throw new Error('User not found');
+      if (!user?.is_active) throw new Error('User not found or inactive');
 
       client.data.userId = user.id;
       await client.join(`${USER_ROOM_PREFIX}${user.id}`);

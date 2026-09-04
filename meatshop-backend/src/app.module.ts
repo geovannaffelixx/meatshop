@@ -74,6 +74,8 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { FirebaseModule } from './integrations/firebase/firebase.module';
 import { SearchModule } from './search/search.module';
 import { AppCheckMiddleware } from './integrations/firebase/app-check.middleware';
+import { ScheduleModule } from '@nestjs/schedule';
+import { RateLimitMiddleware } from './common/middleware/rate-limit.middleware';
 @Module({
   imports: [
     // Configuração global
@@ -81,6 +83,7 @@ import { AppCheckMiddleware } from './integrations/firebase/app-check.middleware
     LoggerModule,
     MetricsModule,
     FirebaseModule,
+    ScheduleModule.forRoot(),
 
     EmailModule,
 
@@ -177,10 +180,10 @@ import { AppCheckMiddleware } from './integrations/firebase/app-check.middleware
     SearchModule,
   ],
   controllers: [AppController],
-  providers: [AppService, AllExceptionsFilter],
+  providers: [AppService, AllExceptionsFilter, RateLimitMiddleware],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(AppCheckMiddleware).forRoutes('*');
+    consumer.apply(RateLimitMiddleware, AppCheckMiddleware).forRoutes('*');
   }
 }

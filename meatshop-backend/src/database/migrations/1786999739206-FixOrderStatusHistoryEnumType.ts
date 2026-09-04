@@ -1,7 +1,6 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class FixOrderStatusHistoryEnumType1786999739206
-  implements MigrationInterface {
+export class FixOrderStatusHistoryEnumType1786999739206 implements MigrationInterface {
   name = 'FixOrderStatusHistoryEnumType1786999739206';
 
   async up(queryRunner: QueryRunner): Promise<void> {

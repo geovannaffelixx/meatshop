@@ -30,9 +30,7 @@ export class StockAvailabilityValidator {
     }
 
     if (insufficient.length > 0) {
-      throw new BadRequestException(
-        `Insufficient stock for: ${insufficient.join(', ')}`,
-      );
+      throw new BadRequestException(`Insufficient stock for: ${insufficient.join(', ')}`);
     }
   }
 }

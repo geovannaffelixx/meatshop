@@ -1,9 +1,7 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CompleteDeliveryPersonFlow1788540000000
-  implements MigrationInterface
-{
-  name = "CompleteDeliveryPersonFlow1788540000000";
+export class CompleteDeliveryPersonFlow1788540000000 implements MigrationInterface {
+  name = 'CompleteDeliveryPersonFlow1788540000000';
 
   async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
@@ -33,19 +31,13 @@ export class CompleteDeliveryPersonFlow1788540000000
   }
 
   async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `ALTER TABLE "delivery_tracking" DROP COLUMN "accuracy"`,
-    );
+    await queryRunner.query(`ALTER TABLE "delivery_tracking" DROP COLUMN "accuracy"`);
     await queryRunner.query(`DROP INDEX "IDX_delivery_tracking_order_created"`);
     await queryRunner.query(`DROP TABLE "delivery_goals"`);
     await queryRunner.query(`DROP TYPE "delivery_goals_period_enum"`);
     await queryRunner.query(`DROP TABLE "delivery_offer_rejections"`);
     await queryRunner.query(`ALTER TABLE "vehicles" DROP COLUMN "is_enabled"`);
-    await queryRunner.query(
-      `ALTER TABLE "delivery_persons" DROP COLUMN "availability_updated_at"`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "delivery_persons" DROP COLUMN "is_online"`,
-    );
+    await queryRunner.query(`ALTER TABLE "delivery_persons" DROP COLUMN "availability_updated_at"`);
+    await queryRunner.query(`ALTER TABLE "delivery_persons" DROP COLUMN "is_online"`);
   }
 }

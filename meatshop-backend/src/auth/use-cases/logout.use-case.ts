@@ -12,10 +12,7 @@ export class LogoutUseCase {
   ) {}
 
   async execute(rawRefreshToken: string): Promise<{ message: string }> {
-    const hash = crypto
-      .createHash('sha256')
-      .update(rawRefreshToken)
-      .digest('hex');
+    const hash = crypto.createHash('sha256').update(rawRefreshToken).digest('hex');
 
     const token = await this.refreshTokenRepository.findOne({
       where: { token_hash: hash, revoked: false },

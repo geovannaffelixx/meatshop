@@ -11,9 +11,7 @@ export class ReviewEligibilityService {
     }
 
     if (order.status !== OrderStatus.DELIVERED) {
-      throw new BadRequestException(
-        'Only delivered orders can be reviewed',
-      );
+      throw new BadRequestException('Only delivered orders can be reviewed');
     }
   }
 }

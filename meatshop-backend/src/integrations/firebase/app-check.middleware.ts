@@ -12,7 +12,7 @@ export class AppCheckMiddleware implements NestMiddleware {
 
   async use(req: Request, _res: Response, next: NextFunction): Promise<void> {
     const enforce = this.config.get<string>('FIREBASE_APP_CHECK_ENFORCED') === 'true';
-    if (!enforce || req.header('x-meatshop-client') !== 'mobile') {
+    if (!enforce || !this.isProtectedRoute(req)) {
       next();
       return;
     }
@@ -25,5 +25,16 @@ export class AppCheckMiddleware implements NestMiddleware {
     }
     await this.firebase.verifyAppCheckToken(token);
     next();
+  }
+
+  private isProtectedRoute(request: Request): boolean {
+    const configured =
+      this.config.get<string>('FIREBASE_APP_CHECK_PROTECTED_PATHS') ?? '/auth/firebase-exchange';
+    const requestPath = request.path || request.originalUrl.split('?')[0];
+    return configured
+      .split(',')
+      .map((path) => path.trim())
+      .filter(Boolean)
+      .some((path) => requestPath === path || requestPath.startsWith(`${path}/`));
   }
 }

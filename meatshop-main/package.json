@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "jest --runInBand",
+    "test:coverage": "jest --runInBand --coverage"
   },
   "dependencies": {
     "@radix-ui/react-collapsible": "^1.1.12",
@@ -26,7 +28,7 @@
     "embla-carousel-react": "^8.6.0",
     "lucide-react": "^0.544.0",
     "maplibre-gl": "^6.6.0",
-    "next": "15.5.3",
+    "next": "16.3.4",
     "next-auth": "^4.24.11",
     "react": "^19.1.0",
     "react-dom": "19.1.0",
@@ -41,14 +43,16 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/react-input-mask": "^3.0.6",
     "cypress": "^15.2.0",
     "eslint": "^9",
-    "eslint-config-next": "15.5.3",
+    "eslint-config-next": "16.3.4",
     "jest": "^30.1.3",
+    "jest-environment-jsdom": "^30.1.2",
     "tailwindcss": "^4",
     "tw-animate-css": "^1.3.8",
     "typescript": "^5"

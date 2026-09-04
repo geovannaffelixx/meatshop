@@ -18,7 +18,10 @@ export class OrderListItemDto {
   @ApiProperty({ description: 'Id da unidade responsável pelo pedido', example: 3 })
   unit_id: number;
 
-  @ApiProperty({ description: 'Data e hora em que o pedido foi criado', example: '2026-08-17T12:00:00.000Z' })
+  @ApiProperty({
+    description: 'Data e hora em que o pedido foi criado',
+    example: '2026-08-17T12:00:00.000Z',
+  })
   order_date: Date;
 
   @ApiProperty({ description: 'Status atual do pedido', example: 'PENDING' })

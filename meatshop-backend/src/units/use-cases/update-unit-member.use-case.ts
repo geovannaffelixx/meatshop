@@ -30,7 +30,10 @@ export class UpdateUnitMemberUseCase {
     if (membership.local_role === LocalRole.OWNER) {
       throw new ForbiddenException('The unit owner cannot be changed through this endpoint');
     }
-    if (dto.local_role === LocalRole.MANAGER && currentUser.global_role !== GlobalRole.SUPER_ADMIN) {
+    if (
+      dto.local_role === LocalRole.MANAGER &&
+      currentUser.global_role !== GlobalRole.SUPER_ADMIN
+    ) {
       const actor = await this.membershipRepository.findOne({
         where: { user_id: currentUser.id, unit_id: unitId },
       });

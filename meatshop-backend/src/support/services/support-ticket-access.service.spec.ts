@@ -1,7 +1,7 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { GlobalRole } from '../../common/enums/global-role.enum';
-import { User } from '../../users/entities/user.entity';
-import { SupportTicket } from '../entities/support-ticket.entity';
+import type { User } from '../../users/entities/user.entity';
+import type { SupportTicket } from '../entities/support-ticket.entity';
 import { SupportTicketAccessService } from './support-ticket-access.service';
 
 describe('SupportTicketAccessService', () => {

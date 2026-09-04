@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class ReplaceUnitLocalRoles1787400000000 implements MigrationInterface {
   name = 'ReplaceUnitLocalRoles1787400000000';

@@ -4,8 +4,11 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ## [Não lançado]
 
+## [3.0.0] - Em desenvolvimento
+
 ### Adicionado
 
+- Testes automatizados do mapa declarativo de acesso e gates de cobertura no CI.
 - Gestão completa de cupons no painel: campanhas globais para `SUPER_ADMIN` e cupons locais para gestores da unidade.
 - Formulário de escopo, desconto, período, pedido mínimo e limites, além de listagem, ativação e histórico de utilizações.
 - Traduções dos códigos de erro de elegibilidade e limites dos cupons.
@@ -15,6 +18,16 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 - Console global de suporte para `SUPER_ADMIN`, com solicitante, unidade, prioridade, status e filtros.
 - Conversa completa por chamado, envio e visualização de imagens, encerramento e reabertura.
 - Feedback visual de carregamento, sucesso e falha em todas as ações do módulo.
+
+### Alterado
+
+- Painel atualizado para Next.js 16.3.4 e convenção de proxy atual, com build standalone e auditoria de dependências sem vulnerabilidades conhecidas.
+- Imagens internas migradas para o componente otimizado do Next.js e skeletons tornados determinísticos.
+
+### Segurança
+
+- Headers de proteção contra MIME sniffing, framing, vazamento de referência e uso indevido de recursos do navegador.
+- Rotas privadas continuam protegidas no proxy e na guarda declarativa, com negação segura para rotas não mapeadas.
 
 ## [2.3.0] - 2026-08-26
 

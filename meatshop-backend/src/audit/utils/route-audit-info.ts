@@ -47,7 +47,7 @@ export function isExcludedPath(path: string): boolean {
 export function resolveRouteAuditInfo(
   method: string,
   routePath: string,
-  params: Record<string, string>,
+  params: Record<string, string | string[]>,
 ): IRouteAuditInfo {
   const segments = routePath.split('/').filter(Boolean);
   const entity = deriveEntity(segments);
@@ -77,11 +77,11 @@ function deriveEntity(segments: string[]): string {
   return candidate.replace(/-/g, '_');
 }
 
-function deriveEntityId(params: Record<string, string>): string | null {
-  if (params.id) return params.id;
+function deriveEntityId(params: Record<string, string | string[]>): string | null {
+  if (params.id) return Array.isArray(params.id) ? (params.id[0] ?? null) : params.id;
 
   const firstParamValue = Object.values(params)[0];
-  return firstParamValue ?? null;
+  return Array.isArray(firstParamValue) ? (firstParamValue[0] ?? null) : (firstParamValue ?? null);
 }
 
 export function tableNameFor(entity: string): string | null {

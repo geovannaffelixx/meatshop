@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import Autoplay from "embla-carousel-autoplay"
 import {
   Carousel,
@@ -185,9 +186,12 @@ export function DashboardScreen() {
                       <div className="flex flex-col items-center justify-center bg-gray-200 rounded-lg overflow-hidden aspect-square">
                         <div className="w-full bg-gray-200 rounded-t-lg overflow-hidden flex items-center justify-center"
                             style={{ height: "120px" }}>
-                          <img
+                          <Image
                             src={`${process.env.NEXT_PUBLIC_API_URL}${s.imageUrl}`}
                             alt={s.name}
+                            width={160}
+                            height={120}
+                            unoptimized
                             className="w-full h-full object-contain"
                           />
                         </div>
