@@ -1,5 +1,9 @@
 # Releases do backend
 
+## 3.0.0 — Push mobile e proteção do aplicativo
+
+Em desenvolvimento. O backend agora administra os dispositivos do aplicativo no PostgreSQL, envia alertas por eventos reais e elimina tokens inválidos ou inativos. O App Check pode ser ativado gradualmente para validar aplicativos legítimos. Códigos de entrega e conteúdo privado não aparecem na tela bloqueada.
+
 ## Não lançado — Integração mobile de perfil e carrinho
 
 O aplicativo passa a contar com contratos completos para perfil, avatar, endereços com localização por CEP e carrinho persistente. Um mesmo carrinho aceita produtos de vários açougues e os organiza por unidade, preparando a criação de pedidos separados no checkout. Preço, disponibilidade e estoque são conferidos no servidor a cada alteração.

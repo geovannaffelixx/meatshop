@@ -19,6 +19,7 @@ import { User } from '../users/entities/user.entity';
 import { CreateNotificationDto } from './dtos/create-notification.dto';
 import { ListNotificationsQueryDto } from './dtos/list-notifications-query.dto';
 import { RegisterDeviceTokenDto } from './dtos/register-device-token.dto';
+import { UnregisterDeviceTokenDto } from './dtos/unregister-device-token.dto';
 import { ListNotificationsUseCase } from './use-cases/list-notifications.use-case';
 import { MarkAllAsReadUseCase } from './use-cases/mark-all-as-read.use-case';
 import { MarkAsReadUseCase } from './use-cases/mark-as-read.use-case';
@@ -79,8 +80,8 @@ export class NotificationsController {
   @ApiResponse({ status: 204, description: 'Token removido com sucesso' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete('device-tokens')
-  unregisterDeviceToken(@Query('fcm_token') fcmToken: string, @CurrentUser() currentUser: User) {
-    return this.unregisterDeviceTokenUseCase.execute(fcmToken, currentUser);
+  unregisterDeviceToken(@Body() dto: UnregisterDeviceTokenDto, @CurrentUser() currentUser: User) {
+    return this.unregisterDeviceTokenUseCase.execute(dto.fcm_token, currentUser);
   }
 
   @ApiOperation({

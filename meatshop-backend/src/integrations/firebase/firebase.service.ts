@@ -7,6 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { App, cert, getApps, initializeApp } from 'firebase-admin/app';
 import type { Auth, DecodedIdToken, UserRecord } from 'firebase-admin/auth';
+import type { AppCheckToken } from 'firebase-admin/app-check';
 
 @Injectable()
 export class FirebaseService {
@@ -52,6 +53,23 @@ export class FirebaseService {
       throw new UnauthorizedException({
         code: 'INVALID_FIREBASE_TOKEN',
         message: 'Firebase ID token is invalid, expired, or revoked.',
+      });
+    }
+  }
+
+  async verifyAppCheckToken(token: string): Promise<AppCheckToken> {
+    const app = this.getApp();
+    try {
+      const { getAppCheck } = (await Function('return import("firebase-admin/app-check")')()) as {
+        getAppCheck(app: App): {
+          verifyToken(value: string): Promise<AppCheckToken>;
+        };
+      };
+      return await getAppCheck(app).verifyToken(token);
+    } catch {
+      throw new UnauthorizedException({
+        code: 'INVALID_APP_CHECK_TOKEN',
+        message: 'App attestation is invalid or expired.',
       });
     }
   }

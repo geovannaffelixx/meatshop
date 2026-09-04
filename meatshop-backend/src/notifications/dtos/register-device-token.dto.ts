@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsIn, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class RegisterDeviceTokenDto {
   @ApiProperty({
@@ -8,5 +8,22 @@ export class RegisterDeviceTokenDto {
   })
   @IsNotEmpty()
   @IsString()
+  @MaxLength(300)
   fcm_token: string;
+
+  @ApiProperty({
+    required: false,
+    enum: ['ANDROID', 'IOS', 'WEB'],
+    example: 'ANDROID',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(['ANDROID', 'IOS', 'WEB'])
+  platform?: 'ANDROID' | 'IOS' | 'WEB';
+
+  @ApiProperty({ required: false, description: 'Versão pública do aplicativo' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  app_version?: string;
 }

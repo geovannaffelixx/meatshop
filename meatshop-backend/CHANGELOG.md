@@ -4,6 +4,24 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ## [Não lançado]
 
+## [3.0.0] - Em desenvolvimento
+
+### Adicionado
+
+- Validação opcional de Firebase App Check para chamadas identificadas como mobile, sem afetar o painel web.
+- Metadados de plataforma e versão do aplicativo nos dispositivos FCM, com migration reversível.
+- Evento Socket.IO `delivery:unsubscribe-order` para encerrar corretamente a assinatura de tracking.
+
+### Alterado
+
+- Push de eventos reais inclui somente identificador, tipo e rota; textos de tela bloqueada são genéricos e sem códigos ou conversa.
+- Tokens FCM inválidos são eliminados pelo retorno do provedor e registros inativos há 90 dias são descartados.
+
+### Segurança
+
+- Códigos de retirada e confirmação deixaram de aparecer em notificações persistidas ou push.
+- App Check retorna códigos estáveis sem registrar o atestado, tokens ou dados pessoais.
+
 ### Adicionado
 
 - Modalidades explícitas de entregador autônomo e vinculado, com regras de oferta por afiliação e provisionamento Firebase das contas criadas pela unidade.

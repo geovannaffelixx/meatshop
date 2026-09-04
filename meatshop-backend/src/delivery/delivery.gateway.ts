@@ -25,7 +25,10 @@ const allowedOrigins = (process.env.FRONTEND_URL ?? 'http://localhost:3000')
   .split(',')
   .map((origin) => origin.trim());
 
-@WebSocketGateway({ namespace: '/delivery', cors: { origin: allowedOrigins, credentials: true } })
+@WebSocketGateway({
+  namespace: '/delivery',
+  cors: { origin: allowedOrigins, credentials: true },
+})
 export class DeliveryGateway implements OnGatewayConnection {
   private readonly logger = new Logger(DeliveryGateway.name);
 
@@ -46,7 +49,9 @@ export class DeliveryGateway implements OnGatewayConnection {
   async handleConnection(client: Socket): Promise<void> {
     try {
       const payload = await this.jwtService.verifyAsync<{ sub: number }>(this.extractToken(client));
-      const user = await this.userRepository.findOne({ where: { id: payload.sub } });
+      const user = await this.userRepository.findOne({
+        where: { id: payload.sub },
+      });
       if (!user?.is_active) throw new Error('User not found or inactive');
       client.data.user = user;
     } catch (error) {
@@ -65,10 +70,25 @@ export class DeliveryGateway implements OnGatewayConnection {
     if (!user || !Number.isInteger(orderId) || orderId <= 0) {
       throw new WsException('Invalid order subscription');
     }
-    const order = await this.orderRepository.findOne({ where: { id: orderId } });
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+    });
     if (!order) throw new WsException('Order not found');
     await this.assertCanTrackOrder(order, user);
     await client.join(`${ORDER_ROOM_PREFIX}${orderId}`);
+    return { orderId };
+  }
+
+  @SubscribeMessage('delivery:unsubscribe-order')
+  async unsubscribeFromOrder(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() body: { orderId?: number },
+  ): Promise<{ orderId: number }> {
+    const orderId = Number(body?.orderId);
+    if (!Number.isInteger(orderId) || orderId <= 0) {
+      throw new WsException('Invalid order subscription');
+    }
+    await client.leave(`${ORDER_ROOM_PREFIX}${orderId}`);
     return { orderId };
   }
 

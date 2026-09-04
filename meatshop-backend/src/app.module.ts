@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
@@ -73,6 +73,7 @@ import { EmailModule } from './email/email.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { FirebaseModule } from './integrations/firebase/firebase.module';
 import { SearchModule } from './search/search.module';
+import { AppCheckMiddleware } from './integrations/firebase/app-check.middleware';
 @Module({
   imports: [
     // Configuração global
@@ -178,4 +179,8 @@ import { SearchModule } from './search/search.module';
   controllers: [AppController],
   providers: [AppService, AllExceptionsFilter],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(AppCheckMiddleware).forRoutes('*');
+  }
+}

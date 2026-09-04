@@ -72,12 +72,12 @@ export class SendOrderStatusNotificationUseCase {
     });
   }
 
-  async notifyCustomerOfDeliveryCode(order: Order, code: string): Promise<void> {
+  async notifyCustomerOfDeliveryCode(order: Order, _code: string): Promise<void> {
     await this.sendNotificationUseCase.execute({
       user_id: order.client_id,
       unit_id: order.unit_id,
       title: 'Código de confirmação da entrega',
-      message: `Informe o código ${code} ao entregador somente quando receber o pedido #${order.id}.`,
+      message: `O código de confirmação do pedido #${order.id} está disponível somente na tela protegida do pedido.`,
       action_url: `/orders/${order.id}`,
       type: NotificationType.DELIVERY,
     });
@@ -86,13 +86,13 @@ export class SendOrderStatusNotificationUseCase {
   async notifyDeliveryPersonOfPickupCode(
     order: Order,
     deliveryUserId: number,
-    code: string,
+    _code: string,
   ): Promise<void> {
     await this.sendNotificationUseCase.execute({
       user_id: deliveryUserId,
       unit_id: order.unit_id,
       title: 'Código para retirar o pedido',
-      message: `Apresente o código ${code} na unidade para retirar o pedido #${order.id}.`,
+      message: `O código de retirada do pedido #${order.id} está disponível somente na tela protegida da entrega.`,
       action_url: `/orders/${order.id}`,
       type: NotificationType.DELIVERY,
     });

@@ -27,6 +27,9 @@ export class UserDeviceToken {
   @Column({ type: 'varchar', length: 20, default: 'WEB' })
   platform: string;
 
+  @Column({ type: 'varchar', length: 30, nullable: true })
+  app_version: string | null;
+
   @CreateDateColumn()
   created_at: Date;
 

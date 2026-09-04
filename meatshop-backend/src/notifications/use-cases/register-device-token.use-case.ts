@@ -19,6 +19,9 @@ export class RegisterDeviceTokenUseCase {
 
     if (existing) {
       existing.user_id = currentUser.id;
+      existing.platform = dto.platform ?? existing.platform;
+      existing.app_version = dto.app_version ?? null;
+      existing.last_seen_at = new Date();
       await this.deviceTokenRepository.save(existing);
       return;
     }
@@ -27,6 +30,8 @@ export class RegisterDeviceTokenUseCase {
       this.deviceTokenRepository.create({
         user_id: currentUser.id,
         fcm_token: dto.fcm_token,
+        platform: dto.platform ?? 'WEB',
+        app_version: dto.app_version ?? null,
       }),
     );
   }
