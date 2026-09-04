@@ -1,8 +1,8 @@
 # Releases do backend
 
-## 3.0.0 — Push mobile e proteção do aplicativo
+## 3.0.0 — Integração mobile e fonte única PostgreSQL
 
-Em desenvolvimento. O backend agora administra os dispositivos do aplicativo no PostgreSQL, envia alertas por eventos reais e elimina tokens inválidos ou inativos. O App Check pode ser ativado gradualmente para validar aplicativos legítimos. Códigos de entrega e conteúdo privado não aparecem na tela bloqueada.
+Em desenvolvimento. Além de administrar push e proteção do aplicativo, o backend agora oferece uma preparação local reproduzível: o PostgreSQL pode ser recriado pelas 46 migrations e recebe um dataset sintético idempotente para validar cliente, unidade, catálogo e entregadores. O seed possui trava contra produção e o reset remove somente o volume de banco confirmado.
 
 ## Não lançado — Integração mobile de perfil e carrinho
 

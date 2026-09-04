@@ -8,6 +8,8 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ### Adicionado
 
+- Seed sintético idempotente para unidade, catálogo, cupons e contas de cliente, gestão e entrega, executável somente com habilitação explícita fora de produção.
+- Script protegido de reset local que remove apenas o volume PostgreSQL validado, executa as 46 migrations e prepara todo o stack.
 - Validação opcional de Firebase App Check para chamadas identificadas como mobile, sem afetar o painel web.
 - Metadados de plataforma e versão do aplicativo nos dispositivos FCM, com migration reversível.
 - Evento Socket.IO `delivery:unsubscribe-order` para encerrar corretamente a assinatura de tracking.

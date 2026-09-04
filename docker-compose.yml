@@ -39,7 +39,7 @@ x-backend-environment: &backend-environment
 
   SEED_ENABLED: "false"
   SEED_ADMIN_EMAIL: admin@meatshop.local
-  SEED_ADMIN_PASSWORD: Admin123@
+  SEED_PASSWORD: MeatshopDev123!
 
   LOG_LEVEL: info
   LOG_DIR: logs
