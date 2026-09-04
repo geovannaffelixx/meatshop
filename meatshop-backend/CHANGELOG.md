@@ -8,6 +8,9 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ### Adicionado
 
+- Contrato de estado das avaliações por pedido e perfil público do entregador protegido pela relação com o cliente.
+- Exclusão de conta LGPD com revogação de tokens, anonimização transacional e preservação do histórico operacional sem identidade pessoal.
+
 - Seed sintético idempotente para unidade, catálogo, cupons e contas de cliente, gestão e entrega, executável somente com habilitação explícita fora de produção.
 - Script protegido de reset local que remove apenas o volume PostgreSQL validado, executa as 46 migrations e prepara todo o stack.
 - Validação opcional de Firebase App Check para chamadas identificadas como mobile, sem afetar o painel web.
@@ -16,10 +19,15 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ### Alterado
 
+- Manifests do backend e do painel alinhados à versão cumulativa 3.0.0 da integração mobile.
+- Integração mobile concluída sem persistência operacional no Firebase; PostgreSQL é a fonte única para todos os domínios.
+
 - Push de eventos reais inclui somente identificador, tipo e rota; textos de tela bloqueada são genéricos e sem códigos ou conversa.
 - Tokens FCM inválidos são eliminados pelo retorno do provedor e registros inativos há 90 dias são descartados.
 
 ### Segurança
+
+- Dados públicos do entregador somente são revelados ao cliente de um pedido atribuído; exclusão remove identificadores, contato, credencial local, avatar e vínculo Firebase.
 
 - Códigos de retirada e confirmação deixaram de aparecer em notificações persistidas ou push.
 - App Check retorna códigos estáveis sem registrar o atestado, tokens ou dados pessoais.

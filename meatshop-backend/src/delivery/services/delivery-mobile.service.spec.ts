@@ -23,13 +23,16 @@ describe('DeliveryMobileService', () => {
   const access = {
     getOwnDeliveryPerson: jest.fn(),
     getOwnActiveDeliveryPerson: jest.fn(),
-    deliveryPersonRepository: { save: jest.fn() },
+    deliveryPersonRepository: { save: jest.fn(), findOne: jest.fn() },
   } as unknown as DeliveryPersonAccessService;
   const vehicles = {
     findOne: jest.fn(),
     find: jest.fn(),
   } as unknown as Repository<Vehicle>;
-  const orders = { find: jest.fn(), findOne: jest.fn() } as unknown as Repository<Order>;
+  const orders = {
+    find: jest.fn(),
+    findOne: jest.fn(),
+  } as unknown as Repository<Order>;
   const items = { find: jest.fn() } as unknown as Repository<OrderItem>;
   const rejections = {
     find: jest.fn(),
@@ -75,6 +78,32 @@ describe('DeliveryMobileService', () => {
     jest.mocked(items.find).mockResolvedValue([]);
     jest.mocked(orders.find).mockResolvedValue([]);
     jest.mocked(memberships.find).mockResolvedValue([]);
+  });
+
+  it('expõe perfil público somente quando o entregador está atribuído ao cliente', async () => {
+    jest.mocked(orders.findOne).mockResolvedValue({ id: 22 } as Order);
+    jest.mocked(access.deliveryPersonRepository.findOne).mockResolvedValue({
+      ...person(),
+      user: { name: 'Carlos', avatar_url: '/uploads/avatar.jpg' } as User,
+    });
+    jest.mocked(vehicles.findOne).mockResolvedValue({
+      type: 'MOTORCYCLE',
+      model: 'CG 160',
+      plate: 'ABC1D23',
+      color: 'Preta',
+      photo_urls: ['/uploads/vehicle.jpg'],
+    } as Vehicle);
+
+    await expect(service.publicProfile(3, user)).resolves.toMatchObject({
+      id: 3,
+      name: 'Carlos',
+      vehicle: { plate: 'ABC1D23' },
+    });
+  });
+
+  it('não revela perfil de entregador sem pedido do cliente', async () => {
+    jest.mocked(orders.findOne).mockResolvedValue(null);
+    await expect(service.publicProfile(3, user)).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('persiste disponibilidade para entregador ativo com veículo ativo', async () => {

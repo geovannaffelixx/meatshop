@@ -70,6 +70,14 @@ export class DeliveryController {
     return this.mobileService.profile(currentUser);
   }
 
+  @ApiOperation({
+    summary: 'Retorna ao cliente o perfil público do entregador atribuído',
+  })
+  @Get(':id/public-profile')
+  publicProfile(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
+    return this.mobileService.publicProfile(id, currentUser);
+  }
+
   @Patch('me/availability')
   setAvailability(@Body() dto: UpdateAvailabilityDto, @CurrentUser() currentUser: User) {
     return this.mobileService.availability(currentUser, dto.is_online);

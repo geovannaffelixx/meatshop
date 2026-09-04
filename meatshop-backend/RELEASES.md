@@ -2,7 +2,7 @@
 
 ## 3.0.0 — Integração mobile e fonte única PostgreSQL
 
-Em desenvolvimento. Além de administrar push e proteção do aplicativo, o backend agora oferece uma preparação local reproduzível: o PostgreSQL pode ser recriado pelas 46 migrations e recebe um dataset sintético idempotente para validar cliente, unidade, catálogo e entregadores. O seed possui trava contra produção e o reset remove somente o volume de banco confirmado.
+Integração concluída em 4 de setembro de 2026. Além de administrar push e proteção do aplicativo, o backend oferece preparação local reproduzível, contratos completos para o mobile e PostgreSQL como fonte única dos dados operacionais. A exclusão de conta revoga sessões e anonimiza dados pessoais; o perfil público do entregador só é visível ao cliente de um pedido atribuído.
 
 ## Não lançado — Integração mobile de perfil e carrinho
 

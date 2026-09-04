@@ -19,6 +19,7 @@ import { GetPanelContextUseCase } from './use-cases/get-panel-context.use-case';
 import { UpdateProfileUseCase } from './use-cases/update-profile.use-case';
 import { GeocodingController } from './geocoding.controller';
 import { Order } from '../orders/entities/order.entity';
+import { DeleteAccountUseCase } from './use-cases/delete-account.use-case';
 
 @Module({
   imports: [TypeOrmModule.forFeature([User, Address, Unit, Order]), UnitsModule, EmailModule],
@@ -33,6 +34,7 @@ import { Order } from '../orders/entities/order.entity';
     ListAddressesUseCase,
     GetAddressUseCase,
     DeleteAddressUseCase,
+    DeleteAccountUseCase,
   ],
   exports: [TypeOrmModule],
 })

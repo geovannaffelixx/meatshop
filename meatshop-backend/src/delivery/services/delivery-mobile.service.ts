@@ -59,6 +59,42 @@ export class DeliveryMobileService {
     };
   }
 
+  async publicProfile(deliveryPersonId: number, user: User) {
+    const assignedOrder = await this.orders.findOne({
+      where: { delivery_person_id: deliveryPersonId, client_id: user.id },
+    });
+    if (!assignedOrder) {
+      throw new NotFoundException('Delivery person not found for this customer');
+    }
+    const person = await this.access.deliveryPersonRepository.findOne({
+      where: { id: deliveryPersonId },
+      relations: ['user'],
+    });
+    if (!person) throw new NotFoundException('Delivery person not found');
+    const vehicle = await this.vehicles.findOne({
+      where: {
+        delivery_person_id: deliveryPersonId,
+        is_active: true,
+        is_enabled: true,
+      },
+    });
+    return {
+      id: person.id,
+      name: person.user.name,
+      photo_url: person.user.avatar_url,
+      average_rating: person.average_rating === null ? null : Number(person.average_rating),
+      vehicle: vehicle
+        ? {
+            type: vehicle.type,
+            model: vehicle.model,
+            plate: vehicle.plate,
+            color: vehicle.color,
+            photo_urls: vehicle.photo_urls,
+          }
+        : null,
+    };
+  }
+
   async availability(user: User, isOnline: boolean) {
     const person = await this.access.getOwnDeliveryPerson(user.id);
     if (isOnline && person.status !== DeliveryPersonStatus.ACTIVE) {

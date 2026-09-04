@@ -11,6 +11,7 @@ import { CreateUnitReviewUseCase } from './use-cases/create-unit-review.use-case
 import { GetReviewUseCase } from './use-cases/get-review.use-case';
 import { ListDeliveryReviewsUseCase } from './use-cases/list-delivery-reviews.use-case';
 import { ListReviewsUseCase } from './use-cases/list-reviews.use-case';
+import { GetOrderReviewStatusUseCase } from './use-cases/get-order-review-status.use-case';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Review, DeliveryReview]), OrdersModule],
@@ -23,6 +24,7 @@ import { ListReviewsUseCase } from './use-cases/list-reviews.use-case';
     ListReviewsUseCase,
     GetReviewUseCase,
     ListDeliveryReviewsUseCase,
+    GetOrderReviewStatusUseCase,
   ],
 })
 export class ReviewsModule {}
