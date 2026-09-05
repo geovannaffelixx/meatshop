@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Input } from "@/shared/components/ui/input";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
-import { Image as ImageIcon } from "lucide-react";
+import { CheckCircle2, Image as ImageIcon, Search } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
 import { PasswordInput } from "@/shared/components/ui/password-input";
 import { Spinner } from "@/shared/components/ui/spinner";
@@ -38,6 +38,12 @@ interface FormData {
   confirmPassword: string;
 }
 
+type CepLookup = Pick<FormData, "street" | "neighborhood" | "city" | "state"> & {
+  zip_code: string;
+  latitude: number;
+  longitude: number;
+};
+
 const REQUIRED_FIELDS: (keyof FormData)[] = [
   "unitName", "cnpj", "zipCode", "street", "neighborhood", "city", "state",
   "ownerName", "email", "cpf", "password", "confirmPassword",
@@ -61,12 +67,11 @@ function maskCEP(value: string) {
 }
 
 function maskCPF(value: string) {
-  return value
-    .replace(/\D/g, "")
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d{1,2})$/, "$1-$2")
-    .slice(0, 14);
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  return digits
+    .replace(/^(\d{3})(\d)/, "$1.$2")
+    .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
 }
 
 function isPasswordValid(password: string) {
@@ -98,7 +103,52 @@ export function RegisterScreen() {
   const [msg, setMsg] = useState("");
   const [alertType, setAlertType] = useState<"success" | "error" | "">("");
   const [submitting, setSubmitting] = useState(false);
+  const [lookingUpCep, setLookingUpCep] = useState(false);
+  const [cepResolved, setCepResolved] = useState(false);
   const router = useRouter();
+
+  const lookupCep = async () => {
+    if (lookingUpCep) return;
+    const cep = form.zipCode.replace(/\D/g, "");
+    if (cep.length !== 8) {
+      setErrors((previous) => ({ ...previous, zipCode: true }));
+      setMsg("Informe um CEP válido com 8 dígitos.");
+      setAlertType("error");
+      return;
+    }
+
+    setLookingUpCep(true);
+    setCepResolved(false);
+    setMsg("");
+    setAlertType("");
+    try {
+      const address = await apiPost("/geocoding/resolve", {
+        zip_code: cep,
+      }) as CepLookup;
+      setForm((current) => ({
+        ...current,
+        zipCode: address.zip_code,
+        street: address.street,
+        neighborhood: address.neighborhood,
+        city: address.city,
+        state: address.state,
+      }));
+      setErrors((previous) => ({
+        ...previous,
+        zipCode: false,
+        street: false,
+        neighborhood: false,
+        city: false,
+        state: false,
+      }));
+      setCepResolved(true);
+    } catch (error) {
+      setMsg(error instanceof Error ? error.message : "Não foi possível consultar o CEP.");
+      setAlertType("error");
+    } finally {
+      setLookingUpCep(false);
+    }
+  };
 
   const handleChange = (field: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((f) => ({ ...f, [field]: e.target.value }));
@@ -254,14 +304,42 @@ export function RegisterScreen() {
               <h2 className="font-semibold mb-2">Endereço</h2>
               <div className="grid gap-1">
                 <RequiredLabel label="CEP" required />
-                <Input
-                  value={form.zipCode}
-                  onInput={(e) => {
-                    const value = maskCEP(e.currentTarget.value);
-                    setForm((f) => ({ ...f, zipCode: value }));
-                  }}
-                  className={inputClass("zipCode")}
-                />
+                <div className="flex gap-2">
+                  <Input
+                    inputMode="numeric"
+                    value={form.zipCode}
+                    onInput={(e) => {
+                      const value = maskCEP(e.currentTarget.value);
+                      setCepResolved(false);
+                      setForm((f) => ({ ...f, zipCode: value }));
+                      setErrors((previous) => ({ ...previous, zipCode: false }));
+                    }}
+                    onBlur={() => {
+                      if (form.zipCode.replace(/\D/g, "").length === 8 && !cepResolved) {
+                        void lookupCep();
+                      }
+                    }}
+                    className={inputClass("zipCode")}
+                    placeholder="00000-000"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={lookingUpCep || form.zipCode.replace(/\D/g, "").length !== 8}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => void lookupCep()}
+                    className="min-w-28"
+                  >
+                    {lookingUpCep ? <Spinner /> : <Search className="h-4 w-4" />}
+                    {lookingUpCep ? "Buscando" : "Buscar"}
+                  </Button>
+                </div>
+                {cepResolved && (
+                  <p className="flex items-center gap-2 text-sm text-emerald-700">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Endereço localizado. Confira o número e o complemento.
+                  </p>
+                )}
                 <RequiredLabel label="Logradouro" required />
                 <Input
                   value={form.street}

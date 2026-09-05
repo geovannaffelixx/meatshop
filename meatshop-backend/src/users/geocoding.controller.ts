@@ -1,5 +1,6 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Public } from '../common/decorators/public.decorator';
 import { UnitAddressService } from '../units/services/unit-address.service';
 import { ResolveAddressDto } from './dtos/resolve-address.dto';
 
@@ -9,6 +10,7 @@ import { ResolveAddressDto } from './dtos/resolve-address.dto';
 export class GeocodingController {
   constructor(private readonly addressService: UnitAddressService) {}
 
+  @Public()
   @Post('resolve')
   @ApiOperation({ summary: 'Resolve endereço e coordenadas a partir do CEP' })
   async resolve(@Body() dto: ResolveAddressDto) {

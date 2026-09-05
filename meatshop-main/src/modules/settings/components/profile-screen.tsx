@@ -4,13 +4,16 @@ import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
 import { Spinner } from "@/shared/components/ui/spinner";
-import { API_URL, apiGet, apiPatch, apiPut } from "@/shared/lib/api";
+import { API_URL, apiGet, apiPatch, apiPost, apiPut } from "@/shared/lib/api";
 import { toast } from "@/shared/lib/toast";
 import { CheckCircle2, Search } from "lucide-react";
 
 type UnitForm = { name: string; cnpj: string; zip_code: string; street: string; number: string; complement: string; neighborhood: string; city: string; state: string; image_url?: string | null };
 type Day = { weekday: string; is_open: boolean; opening_time: string | null; closing_time: string | null };
-type CepLookup = Pick<UnitForm, "zip_code" | "street" | "neighborhood" | "city" | "state">;
+type CepLookup = Pick<UnitForm, "zip_code" | "street" | "neighborhood" | "city" | "state"> & {
+  latitude: number;
+  longitude: number;
+};
 
 const weekdays = [
   ["MONDAY", "Segunda-feira"], ["TUESDAY", "Terça-feira"], ["WEDNESDAY", "Quarta-feira"],
@@ -43,7 +46,7 @@ function UnitSettings() {
   useEffect(() => { void load(); }, [load]);
 
   async function lookupCep() {
-    if (!unitId || lookingUpCep) return;
+    if (lookingUpCep) return;
     const cep = unit.zip_code.replace(/\D/g, "");
     if (cep.length !== 8) {
       toast.warning("Informe um CEP válido com 8 dígitos.");
@@ -52,9 +55,9 @@ function UnitSettings() {
     setLookingUpCep(true);
     setCepResolved(false);
     try {
-      const address = await apiGet(
-        `/units/${unitId}/address/cep/${cep}`,
-      ) as CepLookup;
+      const address = await apiPost("/geocoding/resolve", {
+        zip_code: cep,
+      }) as CepLookup;
       setUnit((current) => ({
         ...current,
         zip_code: address.zip_code,
