@@ -36,6 +36,10 @@ O backend usa a API HTTPS do Resend em produção e preserva SMTP como alternati
 3. Configure `NEXT_PUBLIC_API_URL=https://api.seudominio.com.br`.
 4. Cadastre `app.seudominio.com.br` como custom domain.
 
+## Mercado Pago
+
+O Blueprint inicia com `PAYMENTS_ENABLED=false`, portanto a demonstração funciona sem credenciais. As rotas de pagamento respondem como indisponíveis até configurar as credenciais. Para ativar depois, defina `PAYMENTS_ENABLED=true`, `MP_ENV=production`, `MP_ACCESS_TOKEN` e `MP_WEBHOOK_SECRET` na Render.
+
 ## Mobile
 
 Copie `.env.render.example` para `.env.render`, substitua a URL provisória pela URL real da Render e gere o APK com:

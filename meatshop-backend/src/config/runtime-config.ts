@@ -46,20 +46,14 @@ export function validateEnvironment(environment: Environment): void {
     'JWT_REFRESH_SECRET',
     'DELIVERY_CODE_SECRET',
     'DELIVERY_CODE_ENCRYPTION_KEY',
-    'MP_WEBHOOK_SECRET',
   ].forEach((name) => assertStrongSecret(environment, name));
   if (!environment.FIREBASE_SERVICE_ACCOUNT) {
     throw new Error('FIREBASE_SERVICE_ACCOUNT is required in production');
   }
   assertFirebaseServiceAccount(environment.FIREBASE_SERVICE_ACCOUNT);
-  [
-    'DB_HOST',
-    'DB_USERNAME',
-    'DB_PASSWORD',
-    'DB_DATABASE',
-    'BACKEND_PUBLIC_URL',
-    'MP_ACCESS_TOKEN',
-  ].forEach((name) => assertRequired(environment, name));
+  ['DB_HOST', 'DB_USERNAME', 'DB_PASSWORD', 'DB_DATABASE', 'BACKEND_PUBLIC_URL'].forEach((name) =>
+    assertRequired(environment, name),
+  );
   assertEmailProvider(environment);
   ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'].forEach((name) =>
     assertRequired(environment, name),
@@ -67,8 +61,10 @@ export function validateEnvironment(environment: Environment): void {
   if (environment.FIREBASE_APP_CHECK_ENFORCED !== 'true') {
     throw new Error('FIREBASE_APP_CHECK_ENFORCED must be true in production');
   }
-  if (environment.MP_ENV !== 'production') {
-    throw new Error('MP_ENV must be production');
+  if (environment.PAYMENTS_ENABLED === 'true') {
+    assertRequired(environment, 'MP_ACCESS_TOKEN');
+    assertStrongSecret(environment, 'MP_WEBHOOK_SECRET');
+    if (environment.MP_ENV !== 'production') throw new Error('MP_ENV must be production');
   }
   if (environment.SWAGGER_ENABLED === 'true') {
     throw new Error('SWAGGER_ENABLED must be false in production');

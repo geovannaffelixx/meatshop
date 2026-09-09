@@ -68,12 +68,10 @@ services:
         sync: false
       - key: FIREBASE_APP_CHECK_ENFORCED
         value: "true"
-      - key: MP_ACCESS_TOKEN
-        sync: false
-      - key: MP_WEBHOOK_SECRET
-        sync: false
+      - key: PAYMENTS_ENABLED
+        value: "false"
       - key: MP_ENV
-        value: production
+        value: sandbox
 
 databases:
   - name: meatshop-db

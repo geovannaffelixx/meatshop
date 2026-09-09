@@ -48,6 +48,7 @@ describe('runtime config', () => {
         }),
         FIREBASE_APP_CHECK_ENFORCED: 'true',
         MP_ENV: 'production',
+        PAYMENTS_ENABLED: 'true',
         MP_ACCESS_TOKEN: 'access-token',
         MP_WEBHOOK_SECRET: 'e'.repeat(32),
         MAIL_HOST: 'smtp.example.com',
