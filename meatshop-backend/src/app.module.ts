@@ -1,5 +1,6 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import type { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import * as path from 'path';
@@ -76,6 +77,7 @@ import { SearchModule } from './search/search.module';
 import { AppCheckMiddleware } from './integrations/firebase/app-check.middleware';
 import { ScheduleModule } from '@nestjs/schedule';
 import { RateLimitMiddleware } from './common/middleware/rate-limit.middleware';
+import { StorageModule } from './storage/storage.module';
 @Module({
   imports: [
     // Configuração global
@@ -84,6 +86,7 @@ import { RateLimitMiddleware } from './common/middleware/rate-limit.middleware';
     MetricsModule,
     FirebaseModule,
     ScheduleModule.forRoot(),
+    StorageModule,
 
     EmailModule,
 
@@ -151,8 +154,14 @@ import { RateLimitMiddleware } from './common/middleware/rate-limit.middleware';
           ],
           autoLoadEntities: true,
           synchronize: config.get<string>('DB_SYNCHRONIZE') === 'true',
+          ...(dbType === 'postgres'
+            ? {
+                ssl:
+                  config.get<string>('DB_SSL') === 'true' ? { rejectUnauthorized: false } : false,
+              }
+            : {}),
           logging: config.get<string>('NODE_ENV') !== 'production',
-        };
+        } as TypeOrmModuleOptions;
       },
     }),
 

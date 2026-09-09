@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Plus, X } from "lucide-react"
 import { Spinner } from "@/shared/components/ui/spinner"
-import { apiGet, apiPatch, apiPost, API_URL } from "@/shared/lib/api"
+import { apiGet, apiPatch, apiPost, API_URL, resolveAssetUrl } from "@/shared/lib/api"
 import { toast } from "@/shared/lib/toast"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
 
@@ -197,7 +197,7 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
     )
   }
 
-  const coverSrc = stagedPreview ?? (imageUrl ? `${API_URL}${imageUrl}` : null)
+  const coverSrc = stagedPreview ?? (imageUrl ? resolveAssetUrl(imageUrl) : null)
 
   return (
     <div className="min-h-screen bg-gray-100 bg-[url('/BackgroundClaro.png')] bg-repeat flex items-start justify-center py-8">

@@ -11,17 +11,13 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { randomUUID } from 'crypto';
 import { Buffer } from 'buffer';
-import * as fs from 'fs';
-import * as path from 'path';
-import { diskStorage } from 'multer';
+import { memoryStorage } from 'multer';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { User } from '../users/entities/user.entity';
 import { VehiclePhotoService } from './services/vehicle-photo.service';
+import { MediaStorageService } from '../storage/media-storage.service';
 
-const uploadDirectory = path.join(process.cwd(), 'uploads', 'vehicles');
-fs.mkdirSync(uploadDirectory, { recursive: true });
 const extensions = new Map([
   ['image/jpeg', '.jpg'],
   ['image/png', '.png'],
@@ -41,7 +37,7 @@ function imageFilter(
 }
 
 async function hasValidSignature(file: Express.Multer.File): Promise<boolean> {
-  const bytes = await fs.promises.readFile(file.path);
+  const bytes = file.buffer;
   if (file.mimetype === 'image/jpeg') return bytes[0] === 0xff && bytes[1] === 0xd8;
   if (file.mimetype === 'image/png') {
     return bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
@@ -53,18 +49,17 @@ async function hasValidSignature(file: Express.Multer.File): Promise<boolean> {
 @ApiBearerAuth('access-token')
 @Controller('delivery/me/vehicles')
 export class DeliveryUploadController {
-  constructor(private readonly photos: VehiclePhotoService) {}
+  constructor(
+    private readonly photos: VehiclePhotoService,
+    private readonly storage: MediaStorageService,
+  ) {}
 
   @Post(':id/photos')
   @ApiOperation({ summary: 'Adiciona uma foto ao veículo do entregador autenticado' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({
-        destination: uploadDirectory,
-        filename: (_request, file, callback) =>
-          callback(null, `${randomUUID()}${extensions.get(file.mimetype)}`),
-      }),
+      storage: memoryStorage(),
       fileFilter: imageFilter,
       limits: { fileSize: 5 * 1024 * 1024 },
     }),
@@ -75,19 +70,15 @@ export class DeliveryUploadController {
     @CurrentUser() actor: User,
   ) {
     if (!file) throw new BadRequestException('Arquivo não enviado.');
-    try {
-      if (!(await hasValidSignature(file))) {
-        throw new BadRequestException('Conteúdo de imagem inválido.');
-      }
-      const vehicle = await this.photos.add(id, file.filename, actor);
-      return {
-        url: `/uploads/vehicles/${file.filename}`,
-        vehicle,
-      };
-    } catch (error) {
-      await fs.promises.unlink(file.path).catch(() => undefined);
-      throw error;
+    if (!(await hasValidSignature(file))) {
+      throw new BadRequestException('Conteúdo de imagem inválido.');
     }
+    const url = await this.storage.upload(file, 'vehicles');
+    const vehicle = await this.photos.add(id, url, actor);
+    return {
+      url,
+      vehicle,
+    };
   }
 
   @Delete(':id/photos/:filename')

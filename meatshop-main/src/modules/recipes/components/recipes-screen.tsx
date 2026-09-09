@@ -6,7 +6,7 @@ import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent } from "@/shared/components/ui/card"
 import { Spinner } from "@/shared/components/ui/spinner"
 import { CalendarDays, Plus } from "lucide-react"
-import { apiDelete, apiGet, API_URL } from "@/shared/lib/api"
+import { apiDelete, apiGet, resolveAssetUrl } from "@/shared/lib/api"
 import { toast } from "@/shared/lib/toast"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
 
@@ -120,7 +120,7 @@ export function RecipesScreen() {
                   {recipe.image_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={`${API_URL}${recipe.image_url}`}
+                      src={resolveAssetUrl(recipe.image_url)}
                       alt={recipe.title}
                       className="h-full w-full object-cover"
                     />

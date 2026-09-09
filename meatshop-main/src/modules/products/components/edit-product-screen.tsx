@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { X } from "lucide-react"
-import { apiGet, apiPatch, apiDelete, API_URL } from "@/shared/lib/api"
+import { apiGet, apiPatch, apiDelete, API_URL, resolveAssetUrl } from "@/shared/lib/api"
 import { Spinner } from "@/shared/components/ui/spinner"
 import { toast } from "@/shared/lib/toast"
 
@@ -302,7 +302,7 @@ export function EditProductScreen() {
               {images.map((image) => (
                 <div key={image.id} className="relative h-20 w-20 overflow-hidden rounded-md border border-gray-300">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={`${API_URL}${image.image_url}`} alt="Foto do produto" className="h-full w-full object-cover" />
+                  <img src={resolveAssetUrl(image.image_url)} alt="Foto do produto" className="h-full w-full object-cover" />
                   <button
                     type="button"
                     onClick={() => handleRemoveImage(image)}

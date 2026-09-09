@@ -12,10 +12,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { diskStorage } from 'multer';
-import * as path from 'path';
-import * as fs from 'fs';
-import * as crypto from 'crypto';
+import { memoryStorage } from 'multer';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -27,20 +24,7 @@ import {
 
 import { User } from './entities/user.entity';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-
-const AVATARS_DIR = path.join(process.cwd(), 'uploads', 'avatars');
-
-// Garante que a pasta exista
-function ensureDir(dirPath: string) {
-  if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
-}
-ensureDir(AVATARS_DIR);
-
-// Nomeia o arquivo de forma segura
-function safeFileName(originalName: string) {
-  const extension = path.extname(originalName).toLowerCase();
-  return `${crypto.randomUUID()}${extension}`;
-}
+import { MediaStorageService } from '../storage/media-storage.service';
 
 // Valida o tipo de arquivo
 function imageFileFilter(
@@ -57,7 +41,10 @@ function imageFileFilter(
 @ApiTags('Users')
 @Controller('users')
 export class UsersUploadController {
-  constructor(@InjectRepository(User) private readonly users: Repository<User>) {}
+  constructor(
+    @InjectRepository(User) private readonly users: Repository<User>,
+    private readonly storage: MediaStorageService,
+  ) {}
 
   @Post('me/avatar')
   @ApiBearerAuth('access-token')
@@ -67,10 +54,7 @@ export class UsersUploadController {
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({
-        destination: (_req, _file, cb) => cb(null, AVATARS_DIR),
-        filename: (_req, file, cb) => cb(null, safeFileName(file.originalname)),
-      }),
+      storage: memoryStorage(),
       fileFilter: imageFileFilter,
       limits: { fileSize: 2 * 1024 * 1024 },
     }),
@@ -88,7 +72,7 @@ export class UsersUploadController {
   async deleteCurrentAvatar(@CurrentUser('id') userId: number) {
     const user = await this.users.findOne({ where: { id: userId } });
     if (!user) throw new BadRequestException('Usuário não encontrado');
-    this.deleteLocalAvatar(user.avatar_url);
+    await this.storage.delete(user.avatar_url);
     user.avatar_url = null;
     await this.users.save(user);
     return { ok: true, avatar_url: null };
@@ -117,10 +101,7 @@ export class UsersUploadController {
   })
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({
-        destination: (_req, _file, cb) => cb(null, AVATARS_DIR),
-        filename: (_req, file, cb) => cb(null, safeFileName(file.originalname)),
-      }),
+      storage: memoryStorage(),
       fileFilter: imageFileFilter,
       limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
     }),
@@ -142,8 +123,8 @@ export class UsersUploadController {
     if (!file) throw new BadRequestException('Arquivo não enviado');
     const user = await this.users.findOne({ where: { id: userId } });
     if (!user) throw new BadRequestException('Usuário não encontrado');
-    this.deleteLocalAvatar(user.avatar_url);
-    const publicUrl = `/uploads/avatars/${file.filename}`;
+    const publicUrl = await this.storage.upload(file, 'avatars');
+    await this.storage.delete(user.avatar_url);
 
     user.avatar_url = publicUrl;
     await this.users.save(user);
@@ -153,11 +134,5 @@ export class UsersUploadController {
       avatar_url: publicUrl,
       message: 'Imagem atualizada com sucesso',
     };
-  }
-
-  private deleteLocalAvatar(publicUrl: string | null): void {
-    if (!publicUrl?.startsWith('/uploads/avatars/')) return;
-    const filePath = path.join(AVATARS_DIR, path.basename(publicUrl));
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
   }
 }

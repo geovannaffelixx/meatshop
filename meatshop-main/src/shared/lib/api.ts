@@ -4,6 +4,14 @@ import { toast } from "@/shared/lib/toast";
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
+export function resolveAssetUrl(value?: string | null): string {
+  if (!value) return "";
+  if (/^https?:\/\//i.test(value) || value.startsWith("data:") || value.startsWith("blob:")) {
+    return value;
+  }
+  return `${API_URL}${value.startsWith("/") ? "" : "/"}${value}`;
+}
+
 // Endpoints públicos de autenticação: um 401 aqui é uma resposta normal
 // (ex.: senha errada), não uma sessão expirada — nunca deve disparar refresh.
 const AUTH_EXEMPT_PATHS = [

@@ -59,11 +59,11 @@ export function validateEnvironment(environment: Environment): void {
     'DB_DATABASE',
     'BACKEND_PUBLIC_URL',
     'MP_ACCESS_TOKEN',
-    'MAIL_HOST',
-    'MAIL_USER',
-    'MAIL_PASSWORD',
-    'MAIL_FROM',
   ].forEach((name) => assertRequired(environment, name));
+  assertEmailProvider(environment);
+  ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'].forEach((name) =>
+    assertRequired(environment, name),
+  );
   if (environment.FIREBASE_APP_CHECK_ENFORCED !== 'true') {
     throw new Error('FIREBASE_APP_CHECK_ENFORCED must be true in production');
   }
@@ -83,6 +83,13 @@ export function validateEnvironment(environment: Environment): void {
   if (!environment.BACKEND_PUBLIC_URL?.startsWith('https://')) {
     throw new Error('BACKEND_PUBLIC_URL must use HTTPS in production');
   }
+}
+
+function assertEmailProvider(environment: Environment): void {
+  if (environment.RESEND_API_KEY?.trim() && environment.RESEND_FROM?.trim()) return;
+  ['MAIL_HOST', 'MAIL_USER', 'MAIL_PASSWORD', 'MAIL_FROM'].forEach((name) =>
+    assertRequired(environment, name),
+  );
 }
 
 function assertValidOrigin(origin: string): void {

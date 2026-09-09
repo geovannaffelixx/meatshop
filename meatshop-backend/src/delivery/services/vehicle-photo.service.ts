@@ -1,13 +1,12 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import * as fs from 'fs';
 import * as path from 'path';
 import { Repository } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Vehicle } from '../entities/vehicle.entity';
 import { DeliveryPersonAccessService } from './delivery-person-access.service';
+import { MediaStorageService } from '../../storage/media-storage.service';
 
-const VEHICLE_UPLOAD_PREFIX = '/uploads/vehicles/';
 const MAX_PHOTOS = 4;
 
 @Injectable()
@@ -15,28 +14,28 @@ export class VehiclePhotoService {
   constructor(
     @InjectRepository(Vehicle) private readonly vehicles: Repository<Vehicle>,
     private readonly access: DeliveryPersonAccessService,
+    private readonly storage: MediaStorageService,
   ) {}
 
-  async add(vehicleId: number, filename: string, actor: User): Promise<Vehicle> {
+  async add(vehicleId: number, url: string, actor: User): Promise<Vehicle> {
     const vehicle = await this.ownedVehicle(vehicleId, actor);
     const current = vehicle.photo_urls ?? [];
     if (current.length >= MAX_PHOTOS) {
       throw new BadRequestException(`O veículo aceita no máximo ${MAX_PHOTOS} fotos.`);
     }
-    vehicle.photo_urls = [...current, `${VEHICLE_UPLOAD_PREFIX}${filename}`];
+    vehicle.photo_urls = [...current, url];
     return this.vehicles.save(vehicle);
   }
 
   async remove(vehicleId: number, filename: string, actor: User): Promise<Vehicle> {
     const vehicle = await this.ownedVehicle(vehicleId, actor);
-    const url = `${VEHICLE_UPLOAD_PREFIX}${path.basename(filename)}`;
-    if (!(vehicle.photo_urls ?? []).includes(url))
-      throw new NotFoundException('Foto não encontrada.');
+    const url = (vehicle.photo_urls ?? []).find(
+      (item) => path.basename(item) === path.basename(filename),
+    );
+    if (!url) throw new NotFoundException('Foto não encontrada.');
     vehicle.photo_urls = vehicle.photo_urls.filter((item) => item !== url);
     const saved = await this.vehicles.save(vehicle);
-    await fs.promises
-      .unlink(path.join(process.cwd(), 'uploads', 'vehicles', path.basename(filename)))
-      .catch(() => undefined);
+    await this.storage.delete(url);
     return saved;
   }
 

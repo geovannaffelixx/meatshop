@@ -12,6 +12,7 @@ import { SupportTicketStatus } from '../enums/support-ticket-status.enum';
 import { SupportTicketAccessService } from '../services/support-ticket-access.service';
 
 export type SupportUpload = {
+  file_url: string;
   filename: string;
   originalname: string;
   mimetype: string;
@@ -65,7 +66,7 @@ export class SendSupportMessageUseCase {
         files.map((file) =>
           manager.create(SupportAttachment, {
             message_id: message.id,
-            file_url: `/uploads/support/${file.filename}`,
+            file_url: file.file_url,
             original_name: file.originalname.slice(0, 120),
             mime_type: file.mimetype,
             size_bytes: file.size,

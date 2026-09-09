@@ -12,9 +12,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { diskStorage } from 'multer';
-import * as path from 'path';
-import * as fs from 'fs';
+import { memoryStorage } from 'multer';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -28,22 +26,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { User } from '../users/entities/user.entity';
 import { Unit } from './entities/unit.entity';
 import { UnitAuthorizationService } from './services/unit-authorization.service';
-
-const UNIT_LOGOS_DIR = path.join(process.cwd(), 'uploads', 'units');
-
-function ensureDir(dirPath: string) {
-  if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
-}
-ensureDir(UNIT_LOGOS_DIR);
-
-function safeFileName(originalName: string) {
-  const timestamp = Date.now();
-  const base = originalName
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9.\-_]/g, '');
-  return `${timestamp}-${base}`;
-}
+import { MediaStorageService } from '../storage/media-storage.service';
 
 function imageFileFilter(_req: any, file: Express.Multer.File, cb: any) {
   if (!file.mimetype.match(/^image\/(png|jpe?g|webp|gif)$/)) {
@@ -58,6 +41,7 @@ export class UnitsUploadController {
   constructor(
     @InjectRepository(Unit) private readonly units: Repository<Unit>,
     private readonly unitAuthorizationService: UnitAuthorizationService,
+    private readonly storage: MediaStorageService,
   ) {}
 
   @Post(':id/logo')
@@ -73,10 +57,7 @@ export class UnitsUploadController {
   @ApiResponse({ status: 404, description: 'Unidade não encontrada' })
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({
-        destination: (_req, _file, cb) => cb(null, UNIT_LOGOS_DIR),
-        filename: (_req, file, cb) => cb(null, safeFileName(file.originalname)),
-      }),
+      storage: memoryStorage(),
       fileFilter: imageFileFilter,
       limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
     }),
@@ -93,8 +74,10 @@ export class UnitsUploadController {
 
     this.unitAuthorizationService.assertCanManageUnit(unit, currentUser);
 
-    unit.image_url = `/uploads/units/${file.filename}`;
+    const previousUrl = unit.image_url;
+    unit.image_url = await this.storage.upload(file, 'units');
     await this.units.save(unit);
+    await this.storage.delete(previousUrl);
 
     return { ok: true, image_url: unit.image_url };
   }

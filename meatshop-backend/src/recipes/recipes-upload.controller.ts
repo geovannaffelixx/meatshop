@@ -12,9 +12,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { diskStorage } from 'multer';
-import * as path from 'path';
-import * as fs from 'fs';
+import { memoryStorage } from 'multer';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -29,22 +27,7 @@ import { UnitPermission } from '../common/enums/unit-permission.enum';
 import { User } from '../users/entities/user.entity';
 import { Recipe } from './entities/recipe.entity';
 import { UnitAuthorizationService } from '../units/services/unit-authorization.service';
-
-const RECIPE_IMAGES_DIR = path.join(process.cwd(), 'uploads', 'recipes');
-
-function ensureDir(dirPath: string) {
-  if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
-}
-ensureDir(RECIPE_IMAGES_DIR);
-
-function safeFileName(originalName: string) {
-  const timestamp = Date.now();
-  const base = originalName
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9.\-_]/g, '');
-  return `${timestamp}-${base}`;
-}
+import { MediaStorageService } from '../storage/media-storage.service';
 
 function imageFileFilter(_req: any, file: Express.Multer.File, cb: any) {
   if (!file.mimetype.match(/^image\/(png|jpe?g|webp|gif)$/)) {
@@ -59,6 +42,7 @@ export class RecipesUploadController {
   constructor(
     @InjectRepository(Recipe) private readonly recipes: Repository<Recipe>,
     private readonly unitAuthorizationService: UnitAuthorizationService,
+    private readonly storage: MediaStorageService,
   ) {}
 
   @Post(':id/image')
@@ -74,10 +58,7 @@ export class RecipesUploadController {
   @ApiResponse({ status: 404, description: 'Receita não encontrada' })
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({
-        destination: (_req, _file, cb) => cb(null, RECIPE_IMAGES_DIR),
-        filename: (_req, file, cb) => cb(null, safeFileName(file.originalname)),
-      }),
+      storage: memoryStorage(),
       fileFilter: imageFileFilter,
       limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
     }),
@@ -98,8 +79,10 @@ export class RecipesUploadController {
       UnitPermission.MANAGE_PRODUCTS,
     );
 
-    recipe.image_url = `/uploads/recipes/${file.filename}`;
+    const previousUrl = recipe.image_url;
+    recipe.image_url = await this.storage.upload(file, 'recipes');
     await this.recipes.save(recipe);
+    await this.storage.delete(previousUrl);
 
     return { ok: true, image_url: recipe.image_url };
   }

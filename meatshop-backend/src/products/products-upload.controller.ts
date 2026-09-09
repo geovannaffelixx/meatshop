@@ -13,9 +13,7 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { diskStorage } from 'multer';
-import * as path from 'path';
-import * as fs from 'fs';
+import { memoryStorage } from 'multer';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -31,24 +29,9 @@ import { User } from '../users/entities/user.entity';
 import { Product } from './entities/product.entity';
 import { ProductImage } from './entities/product-image.entity';
 import { UnitAuthorizationService } from '../units/services/unit-authorization.service';
+import { MediaStorageService } from '../storage/media-storage.service';
 
-const PRODUCT_IMAGES_DIR = path.join(process.cwd(), 'uploads', 'products');
 const MAX_FILES_PER_UPLOAD = 10;
-
-function ensureDir(dirPath: string) {
-  if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
-}
-ensureDir(PRODUCT_IMAGES_DIR);
-
-function safeFileName(originalName: string) {
-  const timestamp = Date.now();
-  const random = Math.round(Math.random() * 1e9);
-  const base = originalName
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9.\-_]/g, '');
-  return `${timestamp}-${random}-${base}`;
-}
 
 function imageFileFilter(_req: any, file: Express.Multer.File, cb: any) {
   if (!file.mimetype.match(/^image\/(png|jpe?g|webp|gif)$/)) {
@@ -64,6 +47,7 @@ export class ProductsUploadController {
     @InjectRepository(Product) private readonly products: Repository<Product>,
     @InjectRepository(ProductImage) private readonly productImages: Repository<ProductImage>,
     private readonly unitAuthorizationService: UnitAuthorizationService,
+    private readonly storage: MediaStorageService,
   ) {}
 
   @Post(':id/images')
@@ -87,10 +71,7 @@ export class ProductsUploadController {
   @ApiResponse({ status: 404, description: 'Produto não encontrado' })
   @UseInterceptors(
     FilesInterceptor('files', MAX_FILES_PER_UPLOAD, {
-      storage: diskStorage({
-        destination: (_req, _file, cb) => cb(null, PRODUCT_IMAGES_DIR),
-        filename: (_req, file, cb) => cb(null, safeFileName(file.originalname)),
-      }),
+      storage: memoryStorage(),
       fileFilter: imageFileFilter,
       limits: { fileSize: 2 * 1024 * 1024 }, // 2MB por arquivo
     }),
@@ -113,11 +94,18 @@ export class ProductsUploadController {
       UnitPermission.MANAGE_PRODUCTS,
     );
 
+    const uploadedUrls: string[] = [];
+    try {
+      for (const file of files) uploadedUrls.push(await this.storage.upload(file, 'products'));
+    } catch (error) {
+      await Promise.all(uploadedUrls.map((url) => this.storage.delete(url)));
+      throw error;
+    }
     const created = await this.productImages.save(
-      files.map((file) =>
+      uploadedUrls.map((imageUrl) =>
         this.productImages.create({
           product_id: product.id,
-          image_url: `/uploads/products/${file.filename}`,
+          image_url: imageUrl,
         }),
       ),
     );
@@ -153,11 +141,8 @@ export class ProductsUploadController {
     await this.productImages.remove(image);
     await this.syncCoverImage(id);
 
-    const filePath = path.join(PRODUCT_IMAGES_DIR, path.basename(image.image_url));
-    fs.promises.unlink(filePath).catch(() => {
-      // Arquivo já pode ter sido removido; a linha do banco é a fonte da verdade.
-    });
-
+    await this.storage.delete(image.image_url);
+    // Arquivo já pode ter sido removido; a linha do banco é a fonte da verdade.
     return { ok: true };
   }
 

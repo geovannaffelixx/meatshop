@@ -25,7 +25,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/shared/components/ui/chart"
-import { apiGet } from "@/shared/lib/api"
+import { apiGet, resolveAssetUrl } from "@/shared/lib/api"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
 
 const chartConfig = {
@@ -187,7 +187,7 @@ export function DashboardScreen() {
                         <div className="w-full bg-gray-200 rounded-t-lg overflow-hidden flex items-center justify-center"
                             style={{ height: "120px" }}>
                           <Image
-                            src={`${process.env.NEXT_PUBLIC_API_URL}${s.imageUrl}`}
+                            src={resolveAssetUrl(s.imageUrl)}
                             alt={s.name}
                             width={160}
                             height={120}
