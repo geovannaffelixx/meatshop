@@ -7,7 +7,7 @@ services:
     autoDeployTrigger: checksPass
     dockerfilePath: ./meatshop-backend/Dockerfile
     dockerContext: ./meatshop-backend
-    dockerCommand: npm run migration:run:prod && node dist/main.js
+    dockerCommand: npm run start:render
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV

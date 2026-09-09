@@ -15,6 +15,7 @@
     "migration:generate": "cross-env DOTENV_CONFIG_PATH=.env.local-migrations typeorm-ts-node-commonjs migration:generate -d src/database/data-source.ts",
     "migration:run": "cross-env DOTENV_CONFIG_PATH=.env.local-migrations typeorm-ts-node-commonjs -d src/database/data-source.ts migration:run",
     "migration:run:prod": "typeorm -d dist/database/data-source.js migration:run",
+    "start:render": "npm run migration:run:prod && node dist/main.js",
     "migration:revert": "npm run typeorm -- migration:revert",
     "seed:run": "node dist/database/seed/run-seed.js"
   },
