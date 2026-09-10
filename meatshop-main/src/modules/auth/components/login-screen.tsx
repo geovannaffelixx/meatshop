@@ -58,17 +58,9 @@ export function LoginScreen() {
 
       <section className="flex min-h-screen items-center justify-center bg-white px-5 py-10 sm:px-8">
         <div className="w-full max-w-md">
-          <div className="mb-8">
-            <Image
-              src="/logoEscuraCompleta.png"
-              alt="MeatShop"
-              width={220}
-              height={90}
-              priority
-              className="mx-auto h-auto w-48 object-contain lg:mx-0"
-            />
-            <h2 className="mt-8 text-3xl font-bold tracking-tight text-slate-950">
-              Bem-vindo de volta
+          <div className="mb-8 text-center">
+            <h2 className="text-3xl font-bold tracking-tight text-slate-950">
+              Bem-vindo
             </h2>
             <p className="mt-2 text-sm text-slate-600">
               Entre com sua conta para acessar o painel de gestão.
