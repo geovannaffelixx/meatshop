@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // Vercel empacota o Next com seu próprio adapter. No Next 16.3, combinar
+  // esse adapter com standalone remove um arquivo NFT exigido no pós-build.
+  output: process.env.VERCEL ? undefined : "standalone",
   outputFileTracingRoot: process.cwd(),
   poweredByHeader: false,
   images: {
