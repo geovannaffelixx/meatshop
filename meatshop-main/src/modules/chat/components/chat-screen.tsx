@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { MessageSquare, Search, Truck, UserRound } from "lucide-react";
+import { ArrowLeft, MessageSquare, Search, Truck, UserRound } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { ORDER_STATUS_LABELS } from "@/modules/orders/utils/status-labels";
 import { Input } from "@/shared/components/ui/input";
@@ -29,6 +29,7 @@ export function ChatScreen() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [mobileThreadOpen, setMobileThreadOpen] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -82,7 +83,7 @@ export function ChatScreen() {
   if (!user) return null;
 
   return (
-    <main className="flex min-h-[calc(100vh-6rem)] flex-col bg-slate-50 p-6">
+    <main className="flex min-h-[calc(100dvh-5rem)] flex-col bg-slate-50 p-4 sm:p-6">
       <div className="mb-5">
         <h1 className="text-2xl font-bold text-slate-950">Mensagens</h1>
         <p className="mt-1 text-sm text-slate-500">
@@ -90,8 +91,8 @@ export function ChatScreen() {
         </p>
       </div>
 
-      <div className="grid min-h-[42rem] flex-1 overflow-hidden rounded-2xl border bg-white shadow-sm lg:grid-cols-[21rem_1fr]">
-        <aside className="flex min-h-0 flex-col border-r bg-white">
+      <div className="grid min-h-[36rem] flex-1 overflow-hidden rounded-2xl border bg-white shadow-sm lg:grid-cols-[21rem_1fr]">
+        <aside className={`${mobileThreadOpen ? "hidden lg:flex" : "flex"} min-h-0 flex-col border-r bg-white`}>
           <div className="border-b p-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
@@ -122,7 +123,10 @@ export function ChatScreen() {
                   <button
                     key={order.id}
                     type="button"
-                    onClick={() => setSelectedOrderId(order.id)}
+                    onClick={() => {
+                      setSelectedOrderId(order.id);
+                      setMobileThreadOpen(true);
+                    }}
                     className={`w-full border-b px-4 py-3 text-left transition-colors ${
                       active ? "border-l-4 border-l-red-600 bg-red-50" : "hover:bg-slate-50"
                     }`}
@@ -144,7 +148,7 @@ export function ChatScreen() {
           </div>
         </aside>
 
-        <section className="flex min-h-0 flex-col">
+        <section className={`${mobileThreadOpen ? "flex" : "hidden lg:flex"} min-h-0 flex-col`}>
           {!selectedOrder ? (
             <div className="flex flex-1 flex-col items-center justify-center text-center text-slate-500">
               <MessageSquare className="mb-3 size-9 text-slate-300" />
@@ -154,6 +158,14 @@ export function ChatScreen() {
           ) : (
             <>
               <div className="flex flex-wrap items-center gap-2 border-b bg-white px-5 py-3">
+                <button
+                  type="button"
+                  onClick={() => setMobileThreadOpen(false)}
+                  className="mr-1 inline-flex size-10 items-center justify-center rounded-lg border text-slate-600 lg:hidden"
+                  aria-label="Voltar para conversas"
+                >
+                  <ArrowLeft className="size-4" />
+                </button>
                 <button
                   type="button"
                   onClick={() => setChannel("UNIT")}

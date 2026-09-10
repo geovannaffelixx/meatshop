@@ -1,14 +1,25 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent } from "@/shared/components/ui/card"
 import { Spinner } from "@/shared/components/ui/spinner"
-import { CalendarDays, Plus } from "lucide-react"
+import { CalendarDays, Plus, Search, UtensilsCrossed } from "lucide-react"
 import { apiDelete, apiGet, resolveAssetUrl } from "@/shared/lib/api"
 import { toast } from "@/shared/lib/toast"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
+import { PageHeader } from "@/shared/components/page-header"
+import { EmptyState } from "@/shared/components/empty-state"
+import { Input } from "@/shared/components/ui/input"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/shared/components/ui/dialog"
 
 type Recipe = {
   id: number
@@ -23,7 +34,11 @@ type Recipe = {
 
 function isCurrentWeek(weekStart: string | null) {
   if (!weekStart) return false
-  return new Date(weekStart) <= new Date()
+  const start = new Date(weekStart)
+  const end = new Date(start)
+  end.setDate(end.getDate() + 7)
+  const now = new Date()
+  return start <= now && now < end
 }
 
 export function RecipesScreen() {
@@ -34,6 +49,15 @@ export function RecipesScreen() {
   const [error, setError] = useState<string | null>(null)
   const [removing, setRemoving] = useState<Recipe | null>(null)
   const [confirmingRemoval, setConfirmingRemoval] = useState(false)
+  const [search, setSearch] = useState("")
+
+  const filteredRecipes = useMemo(() => {
+    const term = search.trim().toLocaleLowerCase("pt-BR")
+    if (!term) return recipes
+    return recipes.filter((recipe) =>
+      `${recipe.title} ${recipe.tag ?? ""}`.toLocaleLowerCase("pt-BR").includes(term),
+    )
+  }, [recipes, search])
 
   const loadRecipes = async (unit: number) => {
     setLoading(true)
@@ -69,14 +93,17 @@ export function RecipesScreen() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gray-100 bg-[url('/BackgroundClaro.png')] bg-repeat">
-      <div className="container mx-auto px-4 py-6 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h2 className="text-3xl font-bold text-red-700">Receitas</h2>
-
-          <div className="flex items-center gap-3">
+    <div className="page-surface">
+      <div className="page-container">
+        <PageHeader
+          eyebrow="Marketing"
+          title="Receitas"
+          description="Publique conteúdos que aproximam os clientes dos produtos da unidade."
+          actions={
+            <>
             {units.length > 1 && (
               <select
+                aria-label="Unidade ativa"
                 value={unitId ?? ""}
                 onChange={(e) => setUnitId(Number(e.target.value))}
                 className="border rounded-md px-3 py-2"
@@ -95,27 +122,37 @@ export function RecipesScreen() {
                 Nova receita
               </Link>
             </Button>
-          </div>
-        </div>
+            </>
+          }
+        />
 
         {!unitsLoading && units.length === 0 && (
           <div className="text-center text-red-600">Nenhuma unidade encontrada para este usuário.</div>
         )}
 
+        <label className="relative block max-w-xl">
+          <span className="sr-only">Buscar receitas</span>
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+          <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por título ou tag" className="pl-9" />
+        </label>
+
         {loading ? (
           <div className="p-6 text-center italic text-gray-500">Carregando receitas...</div>
         ) : error ? (
           <div className="p-4 text-center font-semibold text-red-600">Erro: {error}</div>
-        ) : recipes.length === 0 ? (
-          <Card className="bg-white/70 backdrop-blur-md shadow-lg">
-            <CardContent className="p-6 text-center italic text-gray-500">
-              Nenhuma receita cadastrada ainda.
-            </CardContent>
+        ) : filteredRecipes.length === 0 ? (
+          <Card className="border-0 bg-white shadow-sm">
+            <EmptyState
+              icon={UtensilsCrossed}
+              title={recipes.length ? "Nenhuma receita encontrada" : "Nenhuma receita cadastrada"}
+              description={recipes.length ? "Tente buscar por outro título ou tag." : "Crie a primeira receita para divulgar produtos da unidade."}
+              action={!recipes.length ? <Button asChild><Link href="/recipes/new"><Plus />Nova receita</Link></Button> : undefined}
+            />
           </Card>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {recipes.map((recipe) => (
-              <Card key={recipe.id} className="overflow-hidden bg-white/70 backdrop-blur-md shadow-lg">
+            {filteredRecipes.map((recipe) => (
+              <Card key={recipe.id} className="overflow-hidden border-0 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
                 <div className="h-36 w-full bg-gray-200">
                   {recipe.image_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -161,29 +198,23 @@ export function RecipesScreen() {
         )}
       </div>
 
-      {removing && (
-        <div role="dialog" aria-modal="true" aria-labelledby="remove-recipe-title" className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
-          <section className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-            <h2 id="remove-recipe-title" className="text-lg font-bold">Remover receita?</h2>
-            <p className="mt-2 text-gray-600">
-              A receita <strong>{removing.title}</strong> será removida permanentemente, junto com seus ingredientes e modo de preparo.
-            </p>
-            <div className="mt-6 flex justify-end gap-3">
-              <button disabled={confirmingRemoval} onClick={() => setRemoving(null)} className="rounded-md border px-4 py-2 disabled:opacity-50">
-                Cancelar
-              </button>
-              <button
-                disabled={confirmingRemoval}
-                onClick={() => void confirmRemove()}
-                className="flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 font-semibold text-white disabled:opacity-50"
-              >
-                {confirmingRemoval && <Spinner />}
-                {confirmingRemoval ? "Removendo..." : "Remover receita"}
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
+      <Dialog open={Boolean(removing)} onOpenChange={(nextOpen) => !nextOpen && setRemoving(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Remover receita?</DialogTitle>
+            <DialogDescription>
+              A receita {removing?.title} será removida permanentemente, junto com ingredientes e modo de preparo.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" disabled={confirmingRemoval} onClick={() => setRemoving(null)}>Cancelar</Button>
+            <Button variant="destructive" disabled={confirmingRemoval} onClick={() => void confirmRemove()}>
+              {confirmingRemoval && <Spinner />}
+              {confirmingRemoval ? "Removendo..." : "Remover receita"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react"
 import Link from "next/link"
-import { MessageSquare } from "lucide-react"
+import { ArrowLeft, MessageSquare } from "lucide-react"
 import { apiGet, apiPatch } from "@/shared/lib/api"
 import {
   DELIVERY_TYPE_LABELS,
@@ -20,6 +20,7 @@ import {
 import { Input } from "@/shared/components/ui/input"
 import { Textarea } from "@/shared/components/ui/textarea"
 import { Spinner } from "@/shared/components/ui/spinner"
+import { formatCurrency, formatDateTime } from "@/shared/lib/formatters"
 
 type OrderItem = {
   id: number
@@ -56,11 +57,6 @@ type Order = {
 interface OrderDetailScreenProps {
   orderId: string
 }
-
-const formatarMoeda = (valor: number) => `R$ ${Number(valor).toFixed(2)}`
-
-const formatarData = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleString("pt-BR") : "-"
 
 function toDatetimeLocal(iso: string | null) {
   if (!iso) return ""
@@ -154,16 +150,19 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
   const nextAction = getNextAction(order.status, order.delivery_type)
 
   return (
-    <div className="flex flex-col items-center bg-gray-100 min-h-screen p-6 font-sans">
-      <div className="bg-white shadow-md rounded-lg p-6 w-full max-w-5xl">
-        <h1 className="text-center text-2xl font-bold text-red-700 mb-1">
+    <div className="page-surface p-4 sm:p-6">
+      <div className="mx-auto w-full max-w-5xl rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+        <Link href="/orders" className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-red-700">
+          <ArrowLeft className="size-4" />
+          Voltar aos pedidos
+        </Link>
+        <h1 className="text-2xl font-bold text-slate-950">
           Pedido #{order.id}
         </h1>
-        <p className="text-center text-gray-600 font-medium mb-6">
+        <span className="mt-2 mb-6 inline-flex rounded-full bg-red-50 px-3 py-1 text-sm font-semibold text-red-700">
           {ORDER_STATUS_LABELS[order.status] ?? order.status}
-        </p>
+        </span>
 
-        {/* Dados do Cliente */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-6">
           <div className="sm:col-span-2">
             <label className="text-xs text-gray-500">Cliente</label>
@@ -174,7 +173,7 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
           <div>
             <label className="text-xs text-gray-500">Data do pedido</label>
             <div className="border rounded-md px-3 py-2 bg-gray-50 font-semibold">
-              {formatarData(order.order_date)}
+              {formatDateTime(order.order_date)}
             </div>
           </div>
           <div>
@@ -182,13 +181,12 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
             <div className="border rounded-md px-3 py-2 bg-gray-50 font-semibold">
               {DELIVERY_TYPE_LABELS[order.delivery_type] ?? order.delivery_type}
               {order.is_scheduled && order.scheduled_delivery_date
-                ? ` — agendado para ${formatarData(order.scheduled_delivery_date)}`
+                ? ` — agendado para ${formatDateTime(order.scheduled_delivery_date)}`
                 : ""}
             </div>
           </div>
         </div>
 
-        {/* Pagamento */}
         <div className="grid grid-cols-1 sm:grid-cols-6 gap-3 mb-6">
           <div className="sm:col-span-3">
             <label className="text-xs text-gray-500">Pagamento</label>
@@ -200,21 +198,21 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
           <div className="sm:col-span-3">
             <label className="text-xs text-gray-500">Valor</label>
             <div className="border rounded-md px-3 py-2 bg-red-50 border-red-300 text-red-700 font-bold text-right">
-              {formatarMoeda(order.total_amount)}
+              {formatCurrency(order.total_amount)}
             </div>
           </div>
         </div>
 
-        {/* Produtos */}
         <div className="overflow-x-auto">
-          <table className="w-full border border-gray-300 rounded-lg text-sm">
+          <table className="data-table">
+            <caption className="sr-only">Itens do pedido</caption>
             <thead className="bg-gray-200 text-gray-700 font-semibold">
               <tr>
-                <th className="p-2 text-left">ID</th>
-                <th className="p-2 text-left">DESCRIÇÃO DO PRODUTO</th>
-                <th className="p-2 text-center">QTD</th>
-                <th className="p-2 text-center">V. UNITÁRIO</th>
-                <th className="p-2 text-center">V. TOTAL</th>
+                <th scope="col">ID</th>
+                <th scope="col">Produto</th>
+                <th scope="col" className="text-center">Quantidade</th>
+                <th scope="col" className="text-center">Valor unitário</th>
+                <th scope="col" className="text-center">Total</th>
               </tr>
             </thead>
             <tbody>
@@ -223,9 +221,9 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
                   <td className="p-2">{item.product_id}</td>
                   <td className="p-2">{item.product_name}</td>
                   <td className="p-2 text-center">{item.quantity}</td>
-                  <td className="p-2 text-center">{formatarMoeda(item.unit_price)}</td>
+                  <td className="p-2 text-center">{formatCurrency(item.unit_price)}</td>
                   <td className="p-2 text-center">
-                    {formatarMoeda(item.quantity * item.unit_price)}
+                    {formatCurrency(item.quantity * item.unit_price)}
                   </td>
                 </tr>
               ))}
@@ -233,7 +231,6 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
           </table>
         </div>
 
-        {/* Detalhes */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
           <div className="border rounded-lg p-4 bg-gray-50">
             <h3 className="font-semibold text-gray-700 mb-2 border-b pb-1">
@@ -245,7 +242,7 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
             )}
             {order.status === "CANCELLED" && (
               <>
-                <p><strong>CANCELADO EM:</strong> {formatarData(order.cancelled_at)}</p>
+                <p><strong>Cancelado em:</strong> {formatDateTime(order.cancelled_at)}</p>
                 <p><strong>MOTIVO:</strong> {order.cancellation_reason ?? "-"}</p>
               </>
             )}
@@ -255,14 +252,13 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
             <h3 className="font-semibold text-gray-700 mb-2 border-b pb-1">
               Detalhes do pedido
             </h3>
-            <p><strong>SUBTOTAL:</strong> {formatarMoeda(order.subtotal)}</p>
-            <p><strong>DESCONTO:</strong> {formatarMoeda(order.discount_amount)}</p>
-            <p><strong>TAXA DE ENTREGA:</strong> {formatarMoeda(order.delivery_fee)}</p>
-            <p><strong>TOTAL:</strong> {formatarMoeda(order.total_amount)}</p>
+            <p><strong>Subtotal:</strong> {formatCurrency(order.subtotal)}</p>
+            <p><strong>Desconto:</strong> {formatCurrency(order.discount_amount)}</p>
+            <p><strong>Taxa de entrega:</strong> {formatCurrency(order.delivery_fee)}</p>
+            <p><strong>Total:</strong> {formatCurrency(order.total_amount)}</p>
           </div>
         </div>
 
-        {/* Ações */}
         <div className="mt-8 border-t pt-6">
           {actionError && (
             <p className="text-sm text-red-600 text-center mb-4">{actionError}</p>
@@ -318,8 +314,9 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
             <DialogTitle>Cancelar pedido #{order.id}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <label className="text-sm font-medium text-gray-700">Motivo do cancelamento</label>
+            <label htmlFor="cancellation-reason" className="text-sm font-medium text-gray-700">Motivo do cancelamento</label>
             <Textarea
+              id="cancellation-reason"
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
               rows={3}
@@ -349,9 +346,11 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
             <DialogTitle>Agendar entrega do pedido #{order.id}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <label className="text-sm font-medium text-gray-700">Data e horário</label>
+            <label htmlFor="scheduled-delivery-date" className="text-sm font-medium text-gray-700">Data e horário</label>
             <Input
+              id="scheduled-delivery-date"
               type="datetime-local"
+              min={toDatetimeLocal(new Date().toISOString())}
               value={scheduleDate}
               onChange={(e) => setScheduleDate(e.target.value)}
             />

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent } from "@/shared/components/ui/card"
 import {
@@ -13,9 +13,12 @@ import {
 import { Input } from "@/shared/components/ui/input"
 import { Textarea } from "@/shared/components/ui/textarea"
 import { Spinner } from "@/shared/components/ui/spinner"
-import { Plus } from "lucide-react"
+import { Plus, Search, Tags } from "lucide-react"
 import { apiGet, apiPatch, apiPost } from "@/shared/lib/api"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
+import { PageHeader } from "@/shared/components/page-header"
+import { EmptyState } from "@/shared/components/empty-state"
+import { toast } from "@/shared/lib/toast"
 
 type Category = {
   id: number
@@ -46,6 +49,17 @@ export function CategoriesScreen() {
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [togglingId, setTogglingId] = useState<number | null>(null)
+  const [search, setSearch] = useState("")
+
+  const filteredCategories = useMemo(() => {
+    const term = search.trim().toLocaleLowerCase("pt-BR")
+    if (!term) return categories
+    return categories.filter((category) =>
+      `${category.name} ${category.description ?? ""}`
+        .toLocaleLowerCase("pt-BR")
+        .includes(term),
+    )
+  }, [categories, search])
 
   const loadCategories = async (unit: number) => {
     setLoading(true)
@@ -111,6 +125,7 @@ export function CategoriesScreen() {
 
       setOpen(false)
       await loadCategories(unitId)
+      toast.success(editingId ? "Categoria atualizada." : "Categoria criada.")
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Erro ao salvar categoria.")
     } finally {
@@ -124,6 +139,7 @@ export function CategoriesScreen() {
     try {
       await apiPatch(`/categories/${category.id}`, { active: !category.active })
       await loadCategories(unitId)
+      toast.success(category.active ? "Categoria desativada." : "Categoria ativada.")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao atualizar categoria.")
     } finally {
@@ -132,14 +148,17 @@ export function CategoriesScreen() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gray-100 bg-[url('/BackgroundClaro.png')] bg-repeat">
-        <div className="container mx-auto px-4 py-6 space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h2 className="text-3xl font-bold text-red-700">Categorias</h2>
-
-            <div className="flex items-center gap-3">
+    <div className="page-surface">
+        <div className="page-container">
+          <PageHeader
+            eyebrow="Catálogo"
+            title="Categorias"
+            description="Organize os produtos em categorias fáceis de encontrar."
+            actions={
+              <>
               {units.length > 1 && (
                 <select
+                  aria-label="Unidade ativa"
                   value={unitId ?? ""}
                   onChange={(e) => setUnitId(Number(e.target.value))}
                   className="border rounded-md px-3 py-2"
@@ -154,10 +173,7 @@ export function CategoriesScreen() {
 
               <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
-                  <Button
-                    onClick={openCreate}
-                    className="bg-red-600 hover:bg-red-700 text-white flex items-center gap-2"
-                  >
+                  <Button onClick={openCreate}>
                     <Plus size={18} />
                     Nova categoria
                   </Button>
@@ -214,8 +230,9 @@ export function CategoriesScreen() {
                   </div>
                 </DialogContent>
               </Dialog>
-            </div>
-          </div>
+              </>
+            }
+          />
 
           {!unitsLoading && units.length === 0 && (
             <div className="text-center text-red-600">
@@ -223,25 +240,47 @@ export function CategoriesScreen() {
             </div>
           )}
 
-          <Card className="bg-white/70 backdrop-blur-md shadow-lg">
+          <label className="relative block max-w-xl">
+            <span className="sr-only">Buscar categorias</span>
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+            <Input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Buscar por nome ou descrição"
+              className="pl-9"
+            />
+          </label>
+
+          <Card className="overflow-hidden border-0 bg-white shadow-sm">
             <CardContent className="p-0">
               {loading ? (
-                <div className="p-4 text-gray-500 italic">Carregando categorias...</div>
+                <div className="p-10 text-center text-slate-500">Carregando categorias...</div>
               ) : error ? (
-                <div className="p-4 text-red-600 font-semibold">Erro: {error}</div>
+                <div className="p-10 text-center">
+                  <p className="font-semibold text-red-700">{error}</p>
+                  {unitId && <button type="button" onClick={() => void loadCategories(unitId)} className="mt-3 text-sm font-semibold text-red-700 hover:underline">Tentar novamente</button>}
+                </div>
+              ) : filteredCategories.length === 0 ? (
+                <EmptyState
+                  icon={Tags}
+                  title={categories.length ? "Nenhuma categoria encontrada" : "Nenhuma categoria cadastrada"}
+                  description={categories.length ? "Tente usar outro termo de busca." : "Crie uma categoria para começar a organizar o catálogo."}
+                  action={!categories.length ? <Button onClick={openCreate}><Plus />Nova categoria</Button> : undefined}
+                />
               ) : (
-                <table className="w-full text-sm text-left">
+                <div className="overflow-x-auto">
+                <table className="data-table">
+                  <caption className="sr-only">Categorias cadastradas</caption>
                   <thead className="bg-gray-100 text-gray-700 font-semibold">
                     <tr>
-                      <th className="p-3">Nome</th>
-                      <th className="p-3">Descrição</th>
-                      <th className="p-3">Status</th>
-                      <th className="p-3 text-center">Ações</th>
+                      <th scope="col">Nome</th>
+                      <th scope="col">Descrição</th>
+                      <th scope="col">Status</th>
+                      <th scope="col" className="text-right">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {categories.length > 0 ? (
-                      categories.map((category) => (
+                    {filteredCategories.map((category) => (
                         <tr key={category.id} className="border-t hover:bg-gray-50">
                           <td className="p-3 font-medium">{category.name}</td>
                           <td className="p-3 text-gray-600">{category.description ?? "-"}</td>
@@ -256,7 +295,7 @@ export function CategoriesScreen() {
                               {category.active ? "Ativa" : "Inativa"}
                             </span>
                           </td>
-                          <td className="p-3 text-center space-x-3">
+                          <td className="space-x-3 whitespace-nowrap text-right">
                             <button
                               onClick={() => openEdit(category)}
                               className="text-red-600 font-semibold hover:underline"
@@ -272,16 +311,10 @@ export function CategoriesScreen() {
                             </button>
                           </td>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={4} className="text-center p-6 text-gray-500 italic">
-                          Nenhuma categoria cadastrada ainda.
-                        </td>
-                      </tr>
-                    )}
+                      ))}
                   </tbody>
                 </table>
+                </div>
               )}
             </CardContent>
           </Card>

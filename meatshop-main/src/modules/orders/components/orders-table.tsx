@@ -5,12 +5,15 @@ import { useRouter } from "next/navigation"
 import { apiGet, apiPatch } from "@/shared/lib/api"
 import { ORDER_STATUS_LABELS } from "@/modules/orders/utils/status-labels"
 import { Spinner } from "@/shared/components/ui/spinner"
+import { DataPagination } from "@/shared/components/data-pagination"
+import { formatCurrency, formatDate } from "@/shared/lib/formatters"
+import { toast } from "@/shared/lib/toast"
 
 interface Filters {
-  dataPedido: { de: string; ate: string }
-  dataAgendada: { de: string; ate: string }
+  orderDate: { from: string; to: string }
+  scheduledDate: { from: string; to: string }
   status: string
-  cliente: { id: string; nome: string }
+  customer: { orderId: string; name: string }
 }
 
 interface OrdersTableProps {
@@ -57,38 +60,39 @@ export function OrdersTable({ filters, currentPage, onPageChange }: OrdersTableP
     setConfirmingId(orderId)
     try {
       await apiPatch(`/orders/${orderId}/confirm`, {})
+      toast.success("Pedido confirmado com sucesso.")
       loadOrders()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao confirmar pedido.")
+      toast.error(err instanceof Error ? err.message : "Erro ao confirmar pedido.")
     } finally {
       setConfirmingId(null)
     }
   }
 
-  const inRange = (valueISO: string | null, de: string, ate: string) => {
-    if (!de && !ate) return true
+  const inRange = (valueISO: string | null, from: string, to: string) => {
+    if (!from && !to) return true
     if (!valueISO) return false
     const v = new Date(valueISO)
-    const from = de ? new Date(de + "T00:00:00") : null
-    const to = ate ? new Date(ate + "T23:59:59") : null
-    return (!from || v >= from) && (!to || v <= to)
+    const fromDate = from ? new Date(from + "T00:00:00") : null
+    const toDate = to ? new Date(to + "T23:59:59") : null
+    return (!fromDate || v >= fromDate) && (!toDate || v <= toDate)
   }
 
   const filtered = useMemo(() => {
     return orders.filter((o) => {
-      const idOk = filters.cliente.id ? o.id.toString().includes(filters.cliente.id) : true
-      const nomeOk = filters.cliente.nome
-        ? (o.client_name ?? "").toLowerCase().includes(filters.cliente.nome.toLowerCase())
+      const idMatches = filters.customer.orderId ? o.id.toString().includes(filters.customer.orderId) : true
+      const nameMatches = filters.customer.name
+        ? (o.client_name ?? "").toLowerCase().includes(filters.customer.name.toLowerCase())
         : true
-      const statusOk = filters.status ? o.status === filters.status : true
-      const dataPedidoOk = inRange(o.order_date, filters.dataPedido.de, filters.dataPedido.ate)
-      const dataAgendadaOk = inRange(
+      const statusMatches = filters.status ? o.status === filters.status : true
+      const orderDateMatches = inRange(o.order_date, filters.orderDate.from, filters.orderDate.to)
+      const scheduledDateMatches = inRange(
         o.scheduled_delivery_date,
-        filters.dataAgendada.de,
-        filters.dataAgendada.ate,
+        filters.scheduledDate.from,
+        filters.scheduledDate.to,
       )
 
-      return idOk && nomeOk && statusOk && dataPedidoOk && dataAgendadaOk
+      return idMatches && nameMatches && statusMatches && orderDateMatches && scheduledDateMatches
     })
   }, [filters, orders])
 
@@ -103,39 +107,52 @@ export function OrdersTable({ filters, currentPage, onPageChange }: OrdersTableP
   }
 
   if (loading) {
-    return <div className="p-4 text-gray-500 italic">Carregando pedidos...</div>
+    return <div className="p-10 text-center text-slate-500">Carregando pedidos...</div>
   }
   if (error) {
-    return <div className="p-4 text-red-600 font-semibold">Erro: {error}</div>
+    return (
+      <div className="p-10 text-center">
+        <p className="font-semibold text-red-700">{error}</p>
+        <button type="button" onClick={loadOrders} className="mt-3 text-sm font-semibold text-red-700 hover:underline">
+          Tentar novamente
+        </button>
+      </div>
+    )
   }
 
   return (
-    <div className="overflow-x-auto bg-white rounded-xl border border-gray-300 p-4">
-      <table className="w-full text-sm text-left">
-        <thead className="bg-gray-100 text-gray-700 font-semibold">
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-x-auto">
+      <table className="data-table">
+        <caption className="sr-only">Pedidos encontrados</caption>
+        <thead>
           <tr>
-            <th className="p-2">ID</th>
-            <th className="p-2">Nome Cliente</th>
-            <th className="p-2">Data do Pedido</th>
-            <th className="p-2">Data Agendada</th>
-            <th className="p-2">Status do pedido</th>
-            <th className="p-2">Valor</th>
-            <th className="p-2">Entrega</th>
-            <th className="p-2 text-center">Ações</th>
+            <th scope="col">Pedido</th>
+            <th scope="col">Cliente</th>
+            <th scope="col">Data do pedido</th>
+            <th scope="col">Data agendada</th>
+            <th scope="col">Status</th>
+            <th scope="col">Valor</th>
+            <th scope="col">Entrega</th>
+            <th scope="col" className="text-right">Ações</th>
           </tr>
         </thead>
         <tbody>
           {pageData.length > 0 ? (
             pageData.map((o) => (
-              <tr key={o.id} className="border-t hover:bg-gray-50 transition-colors">
-                <td className="p-2">{o.id}</td>
-                <td className="p-2">{o.client_name ?? `Cliente #${o.client_id}`}</td>
-                <td className="p-2">{o.order_date?.substring(0, 10) ?? "-"}</td>
-                <td className="p-2">{o.scheduled_delivery_date?.substring(0, 10) ?? "-"}</td>
-                <td className="p-2">{ORDER_STATUS_LABELS[o.status] ?? o.status}</td>
-                <td className="p-2">R$ {Number(o.total_amount).toFixed(2)}</td>
-                <td className="p-2">{o.delivery_type === "DELIVERY" ? "Entrega" : "Retirada"}</td>
-                <td className="p-2 text-center space-x-3">
+              <tr key={o.id}>
+                <td className="font-semibold text-slate-900">#{o.id}</td>
+                <td>{o.client_name ?? `Cliente #${o.client_id}`}</td>
+                <td className="whitespace-nowrap">{formatDate(o.order_date)}</td>
+                <td className="whitespace-nowrap">{formatDate(o.scheduled_delivery_date)}</td>
+                <td>
+                  <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                    {ORDER_STATUS_LABELS[o.status] ?? o.status}
+                  </span>
+                </td>
+                <td className="whitespace-nowrap font-medium">{formatCurrency(o.total_amount)}</td>
+                <td>{o.delivery_type === "DELIVERY" ? "Entrega" : "Retirada"}</td>
+                <td className="space-x-3 whitespace-nowrap text-right">
                   {o.status === "PENDING" && (
                     <button
                       onClick={() => handleConfirm(o.id)}
@@ -148,48 +165,30 @@ export function OrdersTable({ filters, currentPage, onPageChange }: OrdersTableP
                   )}
                   <button
                     onClick={() => router.push(`/orders/${o.id}`)}
-                    className="text-red-600 font-semibold hover:underline"
+                    className="font-semibold text-red-700 hover:underline"
                   >
-                    VER MAIS
+                    Ver detalhes
                   </button>
                 </td>
               </tr>
             ))
           ) : (
             <tr>
-              <td colSpan={8} className="text-center p-4 text-gray-500 italic">
+              <td colSpan={8} className="p-10 text-center text-slate-500">
                 Nenhum pedido encontrado com os filtros aplicados.
               </td>
             </tr>
           )}
         </tbody>
       </table>
-
-      <div className="flex justify-center items-center gap-2 mt-4">
-        <button
-          onClick={() => changePage(safePage - 1)}
-          className="px-2 text-gray-600 disabled:opacity-50"
-          disabled={safePage === 1}
-        >
-          {"<"}
-        </button>
-        {Array.from({ length: totalPages }, (_, i) => (
-          <button
-            key={i + 1}
-            onClick={() => changePage(i + 1)}
-            className={`px-2 ${safePage === i + 1 ? "text-red-700 font-bold" : "text-gray-600"}`}
-          >
-            {i + 1}
-          </button>
-        ))}
-        <button
-          onClick={() => changePage(safePage + 1)}
-          className="px-2 text-gray-600 disabled:opacity-50"
-          disabled={safePage === totalPages}
-        >
-          {">"}
-        </button>
       </div>
+      <DataPagination
+        page={safePage}
+        pageSize={itemsPerPage}
+        totalItems={filtered.length}
+        totalPages={totalPages}
+        onPageChange={changePage}
+      />
     </div>
   )
 }

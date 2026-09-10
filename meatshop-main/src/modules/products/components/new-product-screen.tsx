@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { X } from "lucide-react"
+import { ArrowLeft, ImagePlus, X } from "lucide-react"
 import { apiGet, apiPatch, apiPost, API_URL } from "@/shared/lib/api"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
 import { Spinner } from "@/shared/components/ui/spinner"
@@ -25,11 +25,12 @@ export function NewProductScreen() {
     category_id: 0,
     active: true,
     initialQuantity: 0,
+    initialMinimumQuantity: 0,
   })
 
-  const [salvando, setSalvando] = useState(false)
-  const [erro, setErro] = useState("")
-  const [ok, setOk] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState("")
+  const [created, setCreated] = useState(false)
 
   const [stagedImages, setStagedImages] = useState<File[]>([])
   const [stagedPreviews, setStagedPreviews] = useState<string[]>([])
@@ -41,13 +42,13 @@ export function NewProductScreen() {
         setCategories(cats ?? [])
         if (cats?.length > 0) setForm((f) => ({ ...f, category_id: cats[0].id }))
       })
-      .catch((err) => setErro(err.message))
+      .catch((err) => setError(err.message))
   }, [unitId])
 
   const handleChange = <K extends keyof typeof form>(key: K, value: typeof form[K]) => {
     setForm((f) => ({ ...f, [key]: value }))
-    setErro("")
-    setOk(false)
+    setError("")
+    setCreated(false)
   }
 
   const handlePickImages = (files: FileList | null) => {
@@ -87,15 +88,15 @@ export function NewProductScreen() {
 
   const handleSave = async () => {
     if (!form.name.trim() || !form.category_id || form.price <= 0) {
-      setErro("Preencha pelo menos o nome, categoria e valor do produto.")
+      setError("Preencha pelo menos o nome, categoria e valor do produto.")
       return
     }
     if (!unitId) {
-      setErro("Nenhuma unidade selecionada.")
+      setError("Nenhuma unidade selecionada.")
       return
     }
 
-    setSalvando(true)
+    setSaving(true)
 
     try {
       const created = await apiPost("/products", {
@@ -112,83 +113,87 @@ export function NewProductScreen() {
       if (form.initialQuantity > 0) {
         await apiPatch(`/products/${created.id}/stock`, {
           quantity: form.initialQuantity,
+          min_quantity: form.initialMinimumQuantity,
         })
       }
 
       await uploadStagedImages(created.id)
 
-      setOk(true)
+      setCreated(true)
 
       setTimeout(() => {
         router.push("/products")
       }, 1200)
     } catch (error) {
-      console.error("Erro ao salvar produto:", error)
-      setErro(error instanceof Error ? error.message : "Ocorreu um erro ao salvar o produto.")
+      setError(error instanceof Error ? error.message : "Ocorreu um erro ao salvar o produto.")
     } finally {
-      setSalvando(false)
+      setSaving(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 bg-[url('/BackgroundClaro.png')] bg-repeat flex items-start justify-center py-8">
-      <div className="relative w-[960px] max-w-[96vw] bg-[#D9D9D9] rounded-xl shadow-lg p-5 border border-gray-400">
-        <button
-          onClick={() => router.back()}
-          className="absolute top-3 right-4 text-red-700 font-bold text-2xl hover:scale-110 transition-transform"
-        >
-          ✕
-        </button>
+    <div className="page-surface px-4 py-6 sm:px-6">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          void handleSave()
+        }}
+        className="mx-auto w-full max-w-5xl rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"
+      >
+        <Link href="/products" className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-red-700">
+          <ArrowLeft className="size-4" />
+          Voltar aos produtos
+        </Link>
 
-        <h2 className="text-center text-2xl font-extrabold text-red-700 mb-4">
-          Novo Produto
+        <h2 className="text-2xl font-bold text-slate-950">
+          Novo produto
         </h2>
+        <p className="mt-1 mb-6 text-sm text-slate-600">Cadastre informações comerciais, estoque e imagens.</p>
 
-        {erro && (
+        {error && (
           <div className="mb-3 rounded-md bg-red-100 text-red-700 px-3 py-2 text-sm border border-red-300">
-            {erro}
+            {error}
           </div>
         )}
 
-        {ok && (
+        {created && (
           <div className="mb-3 rounded-md bg-green-100 text-green-800 px-3 py-2 text-sm border border-green-300">
             Produto adicionado com sucesso!
           </div>
         )}
 
-        {/* Linha 1 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-          <fieldset className="border-2 border-[#A0332C] rounded-md px-3 py-1">
-            <legend className="text-[#A0332C] font-semibold px-1 text-sm">Status</legend>
+          <fieldset className="rounded-xl border border-slate-200 px-3 py-2">
+            <legend className="px-1 text-sm font-semibold text-slate-700">Status</legend>
             <select
               value={form.active ? "ATIVO" : "INATIVO"}
               onChange={(e) => handleChange("active", e.target.value === "ATIVO")}
-              className="w-full bg-white/60 rounded-md px-3 py-2 text-[#A0332C] font-bold"
+              className="input"
             >
               <option value="ATIVO">ATIVO</option>
               <option value="INATIVO">INATIVO</option>
             </select>
           </fieldset>
 
-          <fieldset className="border-2 border-[#A0332C] rounded-md px-3 py-1">
-            <legend className="text-[#A0332C] font-semibold px-1 text-sm">Produto</legend>
+          <fieldset className="rounded-xl border border-slate-200 px-3 py-2">
+            <legend className="px-1 text-sm font-semibold text-slate-700">Produto</legend>
             <input
               type="text"
               value={form.name}
               onChange={(e) => handleChange("name", e.target.value)}
-              className="w-full bg-white/60 rounded-md px-3 py-2 font-semibold text-gray-800"
+              className="input"
+              required
             />
           </fieldset>
         </div>
 
-        {/* Linha 2 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-          <fieldset className="border border-gray-400 rounded-md px-3 py-2">
+          <fieldset className="rounded-xl border border-slate-200 px-3 py-2">
             <legend className="text-gray-600 font-medium px-1 text-sm">Categoria</legend>
             <select
               value={form.category_id}
               onChange={(e) => handleChange("category_id", Number(e.target.value))}
-              className="w-full bg-white/60 rounded-md px-3 py-2 text-gray-800"
+              className="input"
             >
               {categories.length === 0 && <option value={0}>Nenhuma categoria</option>}
               {categories.map((c) => (
@@ -204,70 +209,87 @@ export function NewProductScreen() {
             )}
           </fieldset>
 
-          <fieldset className="border border-gray-400 rounded-md px-3 py-2">
+          <fieldset className="rounded-xl border border-slate-200 px-3 py-2">
             <legend className="text-gray-600 font-medium px-1 text-sm">Marca</legend>
             <input
               type="text"
               value={form.brand}
               onChange={(e) => handleChange("brand", e.target.value)}
-              className="w-full bg-white/60 rounded-md px-3 py-2 text-gray-800"
+              className="input"
             />
           </fieldset>
 
-          <fieldset className="border border-gray-400 rounded-md px-3 py-2">
+          <fieldset className="rounded-xl border border-slate-200 px-3 py-2">
             <legend className="text-gray-600 font-medium px-1 text-sm">Unidade de medida</legend>
-            <input
-              type="text"
+            <select
               value={form.unit_of_measure}
               onChange={(e) => handleChange("unit_of_measure", e.target.value)}
-              placeholder="Ex: KG, PCT, UN"
-              className="w-full bg-white/60 rounded-md px-3 py-2 text-gray-800"
-            />
+              className="input"
+            >
+              <option value="KG">Quilograma (kg)</option>
+              <option value="G">Grama (g)</option>
+              <option value="UN">Unidade</option>
+              <option value="PCT">Pacote</option>
+            </select>
           </fieldset>
         </div>
 
-        {/* Linha 3 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-          <fieldset className="border border-gray-400 rounded-md px-3 py-2 text-center">
+          <fieldset className="rounded-xl border border-slate-200 px-3 py-2">
             <legend className="text-gray-600 font-medium px-1 text-sm">
               Quantidade inicial em estoque
             </legend>
             <input
               type="number"
               value={form.initialQuantity}
-              onChange={(e) => handleChange("initialQuantity", parseInt(e.target.value, 10) || 0)}
-              className="bg-[#EDEDED] text-center text-sm rounded-md border border-gray-300 py-2 w-full"
+              min={0}
+              step="0.001"
+              onChange={(e) => handleChange("initialQuantity", Number(e.target.value) || 0)}
+              className="input"
             />
           </fieldset>
 
-          <fieldset className="border border-gray-400 rounded-md px-3 py-2">
-            <legend className="text-gray-600 font-medium px-1 text-sm">Valor do produto</legend>
+          <fieldset className="rounded-xl border border-slate-200 px-3 py-2">
+            <legend className="px-1 text-sm font-medium text-slate-600">Estoque mínimo</legend>
             <input
               type="number"
-              value={form.price}
-              onChange={(e) => handleChange("price", parseFloat(e.target.value) || 0)}
-              className="bg-[#EDEDED] text-center text-sm rounded-md border border-gray-300 py-2 w-full"
+              min={0}
+              step="0.001"
+              value={form.initialMinimumQuantity}
+              onChange={(e) => handleChange("initialMinimumQuantity", Number(e.target.value) || 0)}
+              className="input"
             />
           </fieldset>
         </div>
 
-        {/* Linha 4 */}
-        <div className="grid grid-cols-1">
-          <fieldset className="border border-gray-400 rounded-md px-3 py-2">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <fieldset className="rounded-xl border border-slate-200 px-3 py-2">
+            <legend className="px-1 text-sm font-medium text-slate-600">Preço do produto</legend>
+            <input
+              type="number"
+              min={0.01}
+              step="0.01"
+              value={form.price}
+              onChange={(e) => handleChange("price", parseFloat(e.target.value) || 0)}
+              className="input"
+              required
+            />
+          </fieldset>
+
+          <fieldset className="rounded-xl border border-slate-200 px-3 py-2">
             <legend className="text-gray-600 font-medium px-1 text-sm">
               Descrição do produto
             </legend>
             <textarea
               value={form.description}
               onChange={(e) => handleChange("description", e.target.value)}
-              className="resize-none bg-[#EDEDED] w-full h-[110px] p-3 text-sm border border-gray-300 rounded-md focus:outline-none"
+              className="input h-24 resize-none"
             />
           </fieldset>
         </div>
 
-        {/* Fotos */}
         <div className="grid grid-cols-1 mt-3">
-          <fieldset className="border border-gray-400 rounded-md px-3 py-2">
+          <fieldset className="rounded-xl border border-slate-200 px-3 py-3">
             <legend className="text-gray-600 font-medium px-1 text-sm">Fotos do produto</legend>
             <div className="flex flex-wrap gap-3">
               {stagedPreviews.map((src, index) => (
@@ -284,11 +306,12 @@ export function NewProductScreen() {
                   </button>
                 </div>
               ))}
-              <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-dashed border-gray-400 text-xs text-gray-500 hover:bg-gray-50">
-                + Adicionar
+              <label className="flex h-20 w-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-slate-400 text-xs text-slate-600 hover:bg-slate-50">
+                <ImagePlus className="size-5" />
+                Adicionar
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp"
                   multiple
                   className="hidden"
                   onChange={(e) => handlePickImages(e.target.files)}
@@ -298,18 +321,20 @@ export function NewProductScreen() {
           </fieldset>
         </div>
 
-        {/* Botão Salvar */}
-        <div className="flex justify-center mt-5">
+        <div className="mt-6 flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end">
+          <Link href="/products" className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+            Cancelar
+          </Link>
           <button
-            onClick={handleSave}
-            disabled={salvando}
-            className="flex items-center justify-center gap-2 bg-[#A0332C] hover:bg-[#7F2721] text-white px-12 py-2 rounded-md font-semibold text-lg shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+            type="submit"
+            disabled={saving}
+            className="flex min-h-10 items-center justify-center gap-2 rounded-lg bg-red-700 px-8 py-2 font-semibold text-white shadow-sm hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {salvando && <Spinner />}
-            {salvando ? "Salvando..." : "Salvar"}
+            {saving && <Spinner />}
+            {saving ? "Salvando..." : "Salvar produto"}
           </button>
         </div>
-      </div>
+      </form>
     </div>
   )
 }

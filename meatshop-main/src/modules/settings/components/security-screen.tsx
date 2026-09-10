@@ -20,7 +20,9 @@ export function SecurityScreen() {
       await apiPost("/auth/change-password", { current_password: currentPassword, new_password: newPassword });
       setCurrentPassword(""); setNewPassword(""); setConfirmation("");
       toast.success("Senha alterada com sucesso.");
-    } catch { /* Erro apresentado pelo cliente da API. */ }
+    } catch {
+      return;
+    }
     finally { setSaving(false); }
   }
 

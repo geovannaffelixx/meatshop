@@ -13,10 +13,11 @@ import {
 import { Input } from "@/shared/components/ui/input"
 import { Textarea } from "@/shared/components/ui/textarea"
 import { Spinner } from "@/shared/components/ui/spinner"
-import { Plus } from "lucide-react"
+import { Plus, Search } from "lucide-react"
 import { apiGet, apiPatch, apiPost } from "@/shared/lib/api"
 import { toast } from "@/shared/lib/toast"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
+import { PageHeader } from "@/shared/components/page-header"
 
 type Product = { id: number; name: string; active: boolean }
 
@@ -89,11 +90,27 @@ export function PromotionsScreen() {
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [togglingId, setTogglingId] = useState<number | null>(null)
+  const [search, setSearch] = useState("")
+  const [statusFilter, setStatusFilter] = useState("")
 
   const productName = useMemo(() => {
     const map = new Map(products.map((p) => [p.id, p.name]))
     return (id: number) => map.get(id) ?? `Produto #${id}`
   }, [products])
+
+  const filteredPromotions = useMemo(() => {
+    const term = search.trim().toLocaleLowerCase("pt-BR")
+    return promotions.filter((promotion) => {
+      const status = promotionStatus(promotion).label
+      const searchMatches =
+        !term ||
+        `${promotion.title} ${productName(promotion.product_id)}`
+          .toLocaleLowerCase("pt-BR")
+          .includes(term)
+      const statusMatches = !statusFilter || status === statusFilter
+      return searchMatches && statusMatches
+    })
+  }, [productName, promotions, search, statusFilter])
 
   const loadData = async (unit: number) => {
     setLoading(true)
@@ -174,10 +191,6 @@ export function PromotionsScreen() {
     setFormError(null)
 
     try {
-      // Ao editar, o campo do modo de desconto não escolhido precisa ir como null (não
-      // omitido) para limpar de fato um valor antigo caso o usuário troque de percentual
-      // para preço fixo ou vice-versa. Na criação, undefined é o correto (DTO exige
-      // exatamente um dos dois via ValidateIf, que checa "=== undefined").
       const clearValue = editingId ? null : undefined
       const payload = {
         title: form.title.trim(),
@@ -218,14 +231,17 @@ export function PromotionsScreen() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gray-100 bg-[url('/BackgroundClaro.png')] bg-repeat">
-      <div className="container mx-auto px-4 py-6 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h2 className="text-3xl font-bold text-red-700">Promoções</h2>
-
-          <div className="flex items-center gap-3">
+    <div className="page-surface">
+      <div className="page-container">
+        <PageHeader
+          eyebrow="Marketing"
+          title="Promoções"
+          description="Planeje campanhas por produto, período e tipo de desconto."
+          actions={
+            <>
             {units.length > 1 && (
               <select
+                aria-label="Unidade ativa"
                 value={unitId ?? ""}
                 onChange={(e) => setUnitId(Number(e.target.value))}
                 className="border rounded-md px-3 py-2"
@@ -243,7 +259,6 @@ export function PromotionsScreen() {
                 <Button
                   onClick={openCreate}
                   disabled={products.length === 0}
-                  className="bg-red-600 hover:bg-red-700 text-white flex items-center gap-2"
                 >
                   <Plus size={18} />
                   Nova promoção
@@ -376,8 +391,9 @@ export function PromotionsScreen() {
                 </div>
               </DialogContent>
             </Dialog>
-          </div>
-        </div>
+            </>
+          }
+        />
 
         {!unitsLoading && units.length === 0 && (
           <div className="text-center text-red-600">Nenhuma unidade encontrada para este usuário.</div>
@@ -389,27 +405,44 @@ export function PromotionsScreen() {
           </div>
         )}
 
-        <Card className="bg-white/70 backdrop-blur-md shadow-lg">
+        <div className="grid gap-3 sm:grid-cols-[1fr_13rem]">
+          <label className="relative">
+            <span className="sr-only">Buscar promoções</span>
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+            <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar promoção ou produto" className="pl-9" />
+          </label>
+          <select aria-label="Filtrar por status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="input">
+            <option value="">Todos os status</option>
+            <option value="Ativa">Ativas</option>
+            <option value="Agendada">Agendadas</option>
+            <option value="Expirada">Expiradas</option>
+            <option value="Inativa">Inativas</option>
+          </select>
+        </div>
+
+        <Card className="overflow-hidden border-0 bg-white shadow-sm">
           <CardContent className="p-0">
             {loading ? (
-              <div className="p-4 text-gray-500 italic">Carregando promoções...</div>
+              <div className="p-10 text-center text-slate-500">Carregando promoções...</div>
             ) : error ? (
               <div className="p-4 text-red-600 font-semibold">Erro: {error}</div>
             ) : (
-              <table className="w-full text-sm text-left">
+              <div className="overflow-x-auto">
+              <table className="data-table">
+                <caption className="sr-only">Promoções cadastradas</caption>
                 <thead className="bg-gray-100 text-gray-700 font-semibold">
                   <tr>
-                    <th className="p-3">Título</th>
-                    <th className="p-3">Produto</th>
-                    <th className="p-3">Desconto</th>
-                    <th className="p-3">Período</th>
-                    <th className="p-3">Status</th>
-                    <th className="p-3 text-center">Ações</th>
+                    <th scope="col">Título</th>
+                    <th scope="col">Produto</th>
+                    <th scope="col">Desconto</th>
+                    <th scope="col">Período</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" className="text-right">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {promotions.length > 0 ? (
-                    promotions.map((promotion) => {
+                  {filteredPromotions.length > 0 ? (
+                    filteredPromotions.map((promotion) => {
                       const status = promotionStatus(promotion)
                       return (
                         <tr key={promotion.id} className="border-t hover:bg-gray-50">
@@ -424,7 +457,7 @@ export function PromotionsScreen() {
                             {formatDateTimeBR(promotion.starts_at)} — {formatDateTimeBR(promotion.ends_at)}
                           </td>
                           <td className={`p-3 font-semibold ${status.className}`}>{status.label}</td>
-                          <td className="p-3 text-center space-x-3">
+                          <td className="space-x-3 whitespace-nowrap text-right">
                             <button
                               onClick={() => openEdit(promotion)}
                               className="text-red-600 font-semibold hover:underline"
@@ -445,12 +478,13 @@ export function PromotionsScreen() {
                   ) : (
                     <tr>
                       <td colSpan={6} className="text-center p-6 text-gray-500 italic">
-                        Nenhuma promoção cadastrada ainda.
+                        Nenhuma promoção encontrada.
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
+              </div>
             )}
           </CardContent>
         </Card>

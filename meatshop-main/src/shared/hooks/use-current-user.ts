@@ -17,22 +17,17 @@ export function useCurrentUser() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // ================================
-  // 1) Busca o usuário via /users/me usando cookies HttpOnly
-  // ================================
   async function fetchMe() {
     try {
-      const data = await apiGet("/users/me");  // 👈 AGORA USANDO API PADRÃO
+      const data = await apiGet("/users/me");
 
       if (data?.ok && data?.user) {
         setUser(data.user);
 
-        // Salva no cache local (sidebar instantânea)
         localStorage.setItem("currentUser", JSON.stringify(data.user));
         window.dispatchEvent(new Event("currentUserUpdated"));
       }
     } catch (err) {
-      // Quando o cookie expirou → 401 → não autenticado
       setUser(null);
       localStorage.removeItem("currentUser");
       console.error("Erro ao buscar /users/me", err);
@@ -41,22 +36,18 @@ export function useCurrentUser() {
     }
   }
 
-  // ================================
-  // 2) Carrega cache local antes do request
-  // ================================
   useEffect(() => {
     const cached = localStorage.getItem("currentUser");
     if (cached) {
       try {
         setUser(JSON.parse(cached));
-      } catch {}
+      } catch {
+        localStorage.removeItem("currentUser");
+      }
     }
     fetchMe();
   }, []);
 
-  // ================================
-  // 3) Atualiza quando login/logout acontece
-  // ================================
   useEffect(() => {
     function handleUpdate() {
       const raw = localStorage.getItem("currentUser");

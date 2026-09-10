@@ -11,13 +11,13 @@ import { LockIcon } from "lucide-react";
 import Link from "next/link";
 import { apiPost } from "@/shared/lib/api";
 
-function validarSenha(senha: string) {
+function isPasswordValid(password: string) {
   return (
-    senha.length >= 8 &&
-    /[a-z]/.test(senha) &&
-    /[A-Z]/.test(senha) &&
-    /\d/.test(senha) &&
-    /[\W_]/.test(senha)
+    password.length >= 8 &&
+    /[a-z]/.test(password) &&
+    /[A-Z]/.test(password) &&
+    /\d/.test(password) &&
+    /[\W_]/.test(password)
   );
 }
 
@@ -26,8 +26,8 @@ function ResetPasswordFormContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? "";
 
-  const [senha, setSenha] = useState("");
-  const [confirmarSenha, setConfirmarSenha] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -41,12 +41,12 @@ function ResetPasswordFormContent() {
       return;
     }
 
-    if (senha !== confirmarSenha) {
+    if (password !== passwordConfirmation) {
       setError("As senhas não coincidem.");
       return;
     }
 
-    if (!validarSenha(senha)) {
+    if (!isPasswordValid(password)) {
       setError(
         "A senha deve ter no mínimo 8 caracteres, com maiúscula, minúscula, número e caractere especial.",
       );
@@ -56,7 +56,7 @@ function ResetPasswordFormContent() {
     setLoading(true);
 
     try {
-      await apiPost("/auth/reset-password", { token, new_password: senha });
+      await apiPost("/auth/reset-password", { token, new_password: password });
 
       setSuccess(true);
       setTimeout(() => router.push("/login"), 3000);
@@ -68,7 +68,7 @@ function ResetPasswordFormContent() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4 bg-[url('/BackgroundClaro.png')]">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 bg-[url('/backgroundClaro.png')] p-4">
       <Card className="w-full max-w-md shadow-md">
         <CardHeader className="flex flex-col items-center">
           <LockIcon className="w-10 h-10 text-[#BE2C1B] mb-2" />
@@ -82,21 +82,29 @@ function ResetPasswordFormContent() {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            <label htmlFor="new-password" className="block text-sm font-medium text-slate-700">
+              Nova senha
             <PasswordInput
+              id="new-password"
               placeholder="Nova senha"
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               autoComplete="new-password"
-              className="border border-gray-300 focus:ring-[#BE2C1B] focus:border-[#BE2C1B]"
+              className="mt-1"
             />
+            </label>
 
+            <label htmlFor="new-password-confirmation" className="block text-sm font-medium text-slate-700">
+              Confirme a nova senha
             <PasswordInput
+              id="new-password-confirmation"
               placeholder="Confirmar nova senha"
-              value={confirmarSenha}
-              onChange={(e) => setConfirmarSenha(e.target.value)}
+              value={passwordConfirmation}
+              onChange={(e) => setPasswordConfirmation(e.target.value)}
               autoComplete="new-password"
-              className="border border-gray-300 focus:ring-[#BE2C1B] focus:border-[#BE2C1B]"
+              className="mt-1"
             />
+            </label>
 
             <ul className="text-sm text-gray-500 list-disc pl-5">
               <li>Mínimo de 8 caracteres</li>
@@ -137,7 +145,7 @@ function ResetPasswordFormContent() {
 
 export function ResetPasswordScreen() {
   return (
-    <Suspense>
+    <Suspense fallback={<div className="grid min-h-screen place-items-center text-slate-500">Carregando...</div>}>
       <ResetPasswordFormContent />
     </Suspense>
   );

@@ -42,7 +42,7 @@ export function ForgotPasswordScreen() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4 bg-[url('/BackgroundClaro.png')]">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 bg-[url('/backgroundClaro.png')] p-4">
       <Card className="w-full max-w-md shadow-md">
         <CardHeader className="flex flex-col items-center">
           <MailIcon className="w-10 h-10 mb-2" />
@@ -57,14 +57,16 @@ export function ForgotPasswordScreen() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="recovery-email" className="block text-sm font-medium text-gray-700 mb-1">
                 E-mail
               </label>
               <Input
+                id="recovery-email"
                 type="email"
                 placeholder="Digite seu e-mail"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
               />
             </div>
 

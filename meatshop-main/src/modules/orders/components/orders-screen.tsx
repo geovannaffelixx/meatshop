@@ -5,13 +5,15 @@ import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent } from "@/shared/components/ui/card"
 import { OrdersTable } from "./orders-table"
 import { ORDER_STATUS_LABELS } from "../utils/status-labels"
+import { PageHeader } from "@/shared/components/page-header"
+import { RotateCcw, Search } from "lucide-react"
 
 export function OrdersScreen() {
   const [filters, setFilters] = useState({
-    dataPedido: { de: "", ate: "" },
-    dataAgendada: { de: "", ate: "" },
+    orderDate: { from: "", to: "" },
+    scheduledDate: { from: "", to: "" },
     status: "",
-    cliente: { id: "", nome: "" },
+    customer: { orderId: "", name: "" },
   })
 
   const [appliedFilters, setAppliedFilters] = useState(filters)
@@ -26,147 +28,176 @@ export function OrdersScreen() {
     setCurrentPage(1)
   }
 
+  const clearFilters = () => {
+    const emptyFilters = {
+      orderDate: { from: "", to: "" },
+      scheduledDate: { from: "", to: "" },
+      status: "",
+      customer: { orderId: "", name: "" },
+    }
+    setFilters(emptyFilters)
+    setAppliedFilters(emptyFilters)
+    setCurrentPage(1)
+  }
+
   return (
-    <div className="min-h-screen w-full bg-gray-100 bg-[url('/BackgroundClaro.png')] bg-repeat">
-        <div className="container mx-auto px-4 py-6 space-y-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-red-700 mb-6">Pedidos</h2>
-          </div>
+    <div className="page-surface">
+        <div className="page-container">
+          <PageHeader
+            eyebrow="Operação"
+            title="Pedidos"
+            description="Localize, confirme e acompanhe os pedidos da unidade."
+          />
 
-          <Card className="bg-gray/70 backdrop-blur-md rounded-xl shadow p-4 mb-6">
+          <Card className="border-0 bg-white shadow-sm">
             <CardContent className="space-y-4">
-
-              {/* 1ª linha: datas */}
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6">
-                {/* Data do pedido */}
-                <fieldset className="border p-4 rounded-md">
-                  <legend className="text-gray-600 font-medium">Data do pedido</legend>
-                  <div className="flex space-x-2">
+              <div className="grid gap-4 lg:grid-cols-2">
+                <fieldset className="rounded-xl border border-slate-200 p-4">
+                  <legend className="px-1 text-sm font-semibold text-slate-700">Data do pedido</legend>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="text-xs font-medium text-slate-500">
+                      De
                     <input
+                      aria-label="Data inicial do pedido"
                       type="date"
-                      value={filters.dataPedido.de}
+                      value={filters.orderDate.from}
                       onChange={(e) =>
                         handleFilterChange({
                           ...filters,
-                          dataPedido: { ...filters.dataPedido, de: e.target.value },
+                          orderDate: { ...filters.orderDate, from: e.target.value },
                         })
                       }
-                      className="w-full p-2 border rounded-md"
+                      className="input mt-1"
                     />
+                    </label>
+                    <label className="text-xs font-medium text-slate-500">
+                      Até
                     <input
+                      aria-label="Data final do pedido"
                       type="date"
-                      value={filters.dataPedido.ate}
+                      value={filters.orderDate.to}
                       onChange={(e) =>
                         handleFilterChange({
                           ...filters,
-                          dataPedido: { ...filters.dataPedido, ate: e.target.value },
+                          orderDate: { ...filters.orderDate, to: e.target.value },
                         })
                       }
-                      className="w-full p-2 border rounded-md"
+                      className="input mt-1"
                     />
+                    </label>
                   </div>
                 </fieldset>
 
-                {/* Data agendada */}
-                <fieldset className="border p-4 rounded-md">
-                  <legend className="text-gray-600 font-medium">Data agendada</legend>
-                  <div className="flex space-x-2">
+                <fieldset className="rounded-xl border border-slate-200 p-4">
+                  <legend className="px-1 text-sm font-semibold text-slate-700">Data agendada</legend>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="text-xs font-medium text-slate-500">
+                      De
                     <input
+                      aria-label="Data agendada inicial"
                       type="date"
-                      value={filters.dataAgendada.de}
+                      value={filters.scheduledDate.from}
                       onChange={(e) =>
                         handleFilterChange({
                           ...filters,
-                          dataAgendada: { ...filters.dataAgendada, de: e.target.value },
+                          scheduledDate: { ...filters.scheduledDate, from: e.target.value },
                         })
                       }
-                      className="w-full p-2 border rounded-md"
+                      className="input mt-1"
                     />
+                    </label>
+                    <label className="text-xs font-medium text-slate-500">
+                      Até
                     <input
+                      aria-label="Data agendada final"
                       type="date"
-                      value={filters.dataAgendada.ate}
+                      value={filters.scheduledDate.to}
                       onChange={(e) =>
                         handleFilterChange({
                           ...filters,
-                          dataAgendada: { ...filters.dataAgendada, ate: e.target.value },
+                          scheduledDate: { ...filters.scheduledDate, to: e.target.value },
                         })
                       }
-                      className="w-full p-2 border rounded-md"
+                      className="input mt-1"
                     />
+                    </label>
                   </div>
                 </fieldset>
-
               </div>
 
-              {/* 2ª linha: cliente + status */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <fieldset className="border p-4 rounded-md">
-                  <legend className="text-gray-600 font-medium">ID</legend>
+              <div className="grid gap-4 md:grid-cols-3">
+                <label className="text-sm font-medium text-slate-700">
+                  ID do pedido
                   <input
                     type="text"
-                    value={filters.cliente.id}
+                    inputMode="numeric"
+                    placeholder="Ex.: 1042"
+                    value={filters.customer.orderId}
                     onChange={(e) =>
                       handleFilterChange({
                         ...filters,
-                        cliente: { ...filters.cliente, id: e.target.value },
+                        customer: { ...filters.customer, orderId: e.target.value },
                       })
                     }
-                    className="w-full p-2 border rounded-md"
+                    className="input mt-1"
                   />
-                </fieldset>
+                </label>
 
-                <fieldset className="border p-4 rounded-md">
-                  <legend className="text-gray-600 font-medium">Nome</legend>
+                <label className="text-sm font-medium text-slate-700">
+                  Cliente
                   <input
                     type="text"
-                    value={filters.cliente.nome}
+                    placeholder="Nome do cliente"
+                    value={filters.customer.name}
                     onChange={(e) =>
                       handleFilterChange({
                         ...filters,
-                        cliente: { ...filters.cliente, nome: e.target.value },
+                        customer: { ...filters.customer, name: e.target.value },
                       })
                     }
-                    className="w-full p-2 border rounded-md"
+                    className="input mt-1"
                   />
-                </fieldset>
+                </label>
 
-                <fieldset className="border p-4 rounded-md">
-                  <legend className="text-gray-600 font-medium">Status</legend>
+                <label className="text-sm font-medium text-slate-700">
+                  Status
                   <select
                     value={filters.status}
                     onChange={(e) =>
                       handleFilterChange({ ...filters, status: e.target.value })
                     }
-                    className="w-full p-2 border rounded-md"
+                    className="input mt-1"
                   >
-                    <option value="">Selecione</option>
+                    <option value="">Todos os status</option>
                     {Object.entries(ORDER_STATUS_LABELS).map(([value, label]) => (
                       <option key={value} value={value}>
                         {label}
                       </option>
                     ))}
                   </select>
-                </fieldset>
+                </label>
               </div>
 
-              <div className="flex justify-start items-center gap-6">
+              <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
+                <Button type="button" variant="outline" onClick={clearFilters}>
+                  <RotateCcw />
+                  Limpar filtros
+                </Button>
                 <Button
                   onClick={handleApplyFilters}
-                  className="bg-red-600 hover:bg-red-700 text-white w-auto"
                 >
-                  Localizar
+                  <Search />
+                  Aplicar filtros
                 </Button>
               </div>
             </CardContent>
           </Card>
 
-          <div className="bg-gray/70 backdrop-blur-md rounded-xl shadow">
-            <OrdersTable
+          <OrdersTable
               filters={appliedFilters}
               currentPage={currentPage}
               onPageChange={setCurrentPage}
-            />
-          </div>
+          />
         </div>
       </div>
   )

@@ -55,7 +55,7 @@ function AccountForm() {
           : "Dados atualizados com sucesso.",
       );
     } catch {
-      // Erro apresentado pelo cliente da API.
+      return;
     } finally {
       setSaving(false);
     }

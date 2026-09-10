@@ -12,9 +12,9 @@ import { PasswordInput } from "@/shared/components/ui/password-input";
 import { Spinner } from "@/shared/components/ui/spinner";
 import { apiPost, API_URL } from "@/shared/lib/api";
 
-function RequiredLabel({ label, required = false }: { label: string; required?: boolean }) {
+function RequiredLabel({ label, htmlFor, required = false }: { label: string; htmlFor: string; required?: boolean }) {
   return (
-    <label className="font-medium text-sm text-gray-700">
+    <label htmlFor={htmlFor} className="font-medium text-sm text-gray-700">
       {label}
       {required && <span className="text-red-500 ml-1">*</span>}
     </label>
@@ -95,7 +95,7 @@ export function RegisterScreen() {
     password: "",
     confirmPassword: "",
   });
-  const [semNumero, setSemNumero] = useState(false);
+  const [withoutNumber, setWithoutNumber] = useState(false);
   const [logo, setLogo] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
@@ -162,8 +162,8 @@ export function RegisterScreen() {
     setPreviewUrl(file ? URL.createObjectURL(file) : null);
   };
 
-  const handleSemNumeroChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSemNumero(e.target.checked);
+  const handleWithoutNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setWithoutNumber(e.target.checked);
     if (e.target.checked) setForm((f) => ({ ...f, number: "" }));
   };
 
@@ -171,7 +171,7 @@ export function RegisterScreen() {
     const newErrors: Record<string, boolean> = {};
 
     REQUIRED_FIELDS.forEach((field) => {
-      if (field === "number" && semNumero) return;
+      if (field === "number" && withoutNumber) return;
       if (!form[field].trim()) newErrors[field] = true;
     });
 
@@ -251,26 +251,32 @@ export function RegisterScreen() {
     errors[field] ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "";
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[url('/BackgroundClaro.png')] p-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 bg-[url('/backgroundClaro.png')] p-4">
       <Card className="w-full max-w-2xl">
         <CardHeader>
-          <CardTitle className="text-center text-3xl font-bold bg-clip-text bg-gradient-to-r text-[#BE2C1B] tracking-wide">
-            Cadastro de Açougue
+          <CardTitle className="text-center text-3xl font-bold tracking-tight text-red-700">
+            Crie sua unidade
           </CardTitle>
+          <p className="text-center text-sm text-slate-600">
+            Configure o açougue e o acesso do proprietário.
+          </p>
         </CardHeader>
         <CardContent className="space-y-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <h2 className="font-semibold mb-2">Seu açougue</h2>
               <div className="grid gap-0.5">
-                <RequiredLabel label="Nome do açougue" required />
+                <RequiredLabel htmlFor="unit-name" label="Nome do açougue" required />
                 <Input
+                  id="unit-name"
                   value={form.unitName}
                   onChange={handleChange("unitName")}
                   className={inputClass("unitName")}
                 />
-                <RequiredLabel label="CNPJ" required />
+                <RequiredLabel htmlFor="unit-cnpj" label="CNPJ" required />
                 <Input
+                  id="unit-cnpj"
+                  inputMode="numeric"
                   value={form.cnpj}
                   onInput={(e) => {
                     const value = maskCNPJ(e.currentTarget.value);
@@ -303,9 +309,10 @@ export function RegisterScreen() {
             <div>
               <h2 className="font-semibold mb-2">Endereço</h2>
               <div className="grid gap-1">
-                <RequiredLabel label="CEP" required />
+                <RequiredLabel htmlFor="unit-zip-code" label="CEP" required />
                 <div className="flex gap-2">
                   <Input
+                    id="unit-zip-code"
                     inputMode="numeric"
                     value={form.zipCode}
                     onInput={(e) => {
@@ -340,41 +347,46 @@ export function RegisterScreen() {
                     Endereço localizado. Confira o número e o complemento.
                   </p>
                 )}
-                <RequiredLabel label="Logradouro" required />
+                <RequiredLabel htmlFor="unit-street" label="Logradouro" required />
                 <Input
+                  id="unit-street"
                   value={form.street}
                   onChange={handleChange("street")}
                   className={inputClass("street")}
                 />
-                <RequiredLabel label="Número" />
+                <RequiredLabel htmlFor="unit-number" label="Número" />
                 <div className="flex items-center gap-2">
                   <Input
+                    id="unit-number"
                     value={form.number}
                     onChange={handleChange("number")}
-                    disabled={semNumero}
-                    className={`${inputClass("number")} ${semNumero ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                    disabled={withoutNumber}
+                    className={`${inputClass("number")} ${withoutNumber ? "bg-gray-100 cursor-not-allowed" : ""}`}
                   />
                   <label className="flex items-center gap-1 text-sm">
-                    <input type="checkbox" checked={semNumero} onChange={handleSemNumeroChange} />
+                    <input type="checkbox" checked={withoutNumber} onChange={handleWithoutNumberChange} />
                     S/N
                   </label>
                 </div>
-                <RequiredLabel label="Complemento" />
-                <Input value={form.complement} onChange={handleChange("complement")} />
-                <RequiredLabel label="Bairro" required />
+                <RequiredLabel htmlFor="unit-complement" label="Complemento" />
+                <Input id="unit-complement" value={form.complement} onChange={handleChange("complement")} />
+                <RequiredLabel htmlFor="unit-neighborhood" label="Bairro" required />
                 <Input
+                  id="unit-neighborhood"
                   value={form.neighborhood}
                   onChange={handleChange("neighborhood")}
                   className={inputClass("neighborhood")}
                 />
-                <RequiredLabel label="Cidade" required />
+                <RequiredLabel htmlFor="unit-city" label="Cidade" required />
                 <Input
+                  id="unit-city"
                   value={form.city}
                   onChange={handleChange("city")}
                   className={inputClass("city")}
                 />
-                <RequiredLabel label="Estado (UF)" required />
+                <RequiredLabel htmlFor="unit-state" label="Estado (UF)" required />
                 <Input
+                  id="unit-state"
                   value={form.state}
                   maxLength={2}
                   onChange={(e) => setForm((f) => ({ ...f, state: e.target.value }))}
@@ -386,21 +398,27 @@ export function RegisterScreen() {
             <div>
               <h2 className="font-semibold mb-2">Seus dados</h2>
               <div className="grid gap-1">
-                <RequiredLabel label="Nome completo" required />
+                <RequiredLabel htmlFor="owner-name" label="Nome completo" required />
                 <Input
+                  id="owner-name"
+                  autoComplete="name"
                   value={form.ownerName}
                   onChange={handleChange("ownerName")}
                   className={inputClass("ownerName")}
                 />
-                <RequiredLabel label="E-mail" required />
+                <RequiredLabel htmlFor="owner-email" label="E-mail" required />
                 <Input
+                  id="owner-email"
                   type="email"
+                  autoComplete="email"
                   value={form.email}
                   onChange={handleChange("email")}
                   className={inputClass("email")}
                 />
-                <RequiredLabel label="CPF" required />
+                <RequiredLabel htmlFor="owner-cpf" label="CPF" required />
                 <Input
+                  id="owner-cpf"
+                  inputMode="numeric"
                   value={form.cpf}
                   onInput={(e) => {
                     const value = maskCPF(e.currentTarget.value);
@@ -408,15 +426,17 @@ export function RegisterScreen() {
                   }}
                   className={inputClass("cpf")}
                 />
-                <RequiredLabel label="Senha" required />
+                <RequiredLabel htmlFor="owner-password" label="Senha" required />
                 <PasswordInput
+                  id="owner-password"
                   value={form.password}
                   onChange={handleChange("password")}
                   autoComplete="new-password"
                   className={inputClass("password")}
                 />
-                <RequiredLabel label="Confirme sua senha" required />
+                <RequiredLabel htmlFor="owner-password-confirmation" label="Confirme sua senha" required />
                 <PasswordInput
+                  id="owner-password-confirmation"
                   value={form.confirmPassword}
                   onChange={handleChange("confirmPassword")}
                   autoComplete="new-password"
@@ -450,6 +470,12 @@ export function RegisterScreen() {
               <AlertDescription>{msg}</AlertDescription>
             </Alert>
           )}
+          <p className="text-center text-sm text-slate-600">
+            Já possui uma conta?{" "}
+            <button type="button" onClick={() => router.push("/login")} className="font-semibold text-red-700 hover:underline">
+              Entrar
+            </button>
+          </p>
         </CardContent>
       </Card>
     </div>

@@ -12,13 +12,13 @@ import { toast } from "@/shared/lib/toast";
 
 export function LoginScreen() {
   const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
+  const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!email.trim() || !senha.trim()) {
+    if (!email.trim() || !password.trim()) {
       toast.warning("Preencha o e-mail e a senha para continuar.");
       return;
     }
@@ -26,7 +26,10 @@ export function LoginScreen() {
 
     setSubmitting(true);
     try {
-      await apiPost("/auth/login", { email, password: senha });
+      await apiPost("/auth/login", {
+        email: email.trim().toLowerCase(),
+        password,
+      });
       const session = await apiGet("/users/me");
 
       window.dispatchEvent(new Event("currentUserUpdated"));
@@ -34,86 +37,111 @@ export function LoginScreen() {
       toast.success("Login realizado. Redirecionando...");
 
       const destination = session?.panel?.can_access ? "/dashboard" : "/no-panel-access";
-      setTimeout(() => router.push(destination), 800);
+      router.push(destination);
     } catch {
-      // O cliente da API traduz e exibe o erro no toast global.
       setSubmitting(false);
     }
   }
 
   return (
-    <div className="flex min-h-screen">
-      {/* Lado esquerdo com imagem */}
-      <div className="w-1/3 h-screen relative">
+    <main className="grid min-h-screen bg-slate-950 lg:grid-cols-[minmax(22rem,0.85fr)_1.15fr]">
+      <section className="relative hidden min-h-screen overflow-hidden lg:block">
         <Image
           src="/entrar.png"
-          alt="Imagem"
+          alt=""
           fill
           priority
-          sizes="33vw"
+          sizes="42vw"
           className="object-cover"
         />
-      </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/25 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 p-10 text-white">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-red-300">
+            Gestão MeatShop
+          </p>
+          <h1 className="mt-3 max-w-lg text-4xl font-bold leading-tight">
+            Sua operação organizada do pedido à entrega.
+          </h1>
+          <p className="mt-3 max-w-md text-sm leading-6 text-slate-200">
+            Acompanhe vendas, estoque, equipe e clientes em um único painel.
+          </p>
+        </div>
+      </section>
 
-      {/* Formulário de login */}
-      <div className="w-2/3 flex items-center justify-center bg-white">
-        <div className="w-full max-w-md space-y-6 p-8">
-          <h2 className="text-2xl font-bold text-center text-gray-800">
-            Bem-vindo
-          </h2>
+      <section className="flex min-h-screen items-center justify-center bg-white px-5 py-10 sm:px-8">
+        <div className="w-full max-w-md">
+          <div className="mb-8">
+            <Image
+              src="/logoEscuraCompleta.png"
+              alt="MeatShop"
+              width={220}
+              height={90}
+              priority
+              className="mx-auto h-auto w-48 object-contain lg:mx-0"
+            />
+            <h2 className="mt-8 text-3xl font-bold tracking-tight text-slate-950">
+              Bem-vindo de volta
+            </h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Entre com sua conta para acessar o painel de gestão.
+            </p>
+          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-3">
+          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label htmlFor="login-email" className="mb-1.5 block text-sm font-medium text-slate-700">
                 E-mail
               </label>
               <Input
+                id="login-email"
                 type="email"
                 placeholder="Informe seu e-mail"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
+                required
+                className="h-11"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Senha
-              </label>
-              <PasswordInput
-                placeholder="Informe sua senha"
-                value={senha}
-                onChange={(e) => setSenha(e.target.value)}
-                autoComplete="current-password"
-              />
-              <div className="mt-1">
-                <Link
-                  href="/forgot-password"
-                  className="text-sm text-red-600 hover:underline"
-                >
+              <div className="mb-1.5 flex items-center justify-between">
+                <label htmlFor="login-password" className="text-sm font-medium text-slate-700">
+                  Senha
+                </label>
+                <Link href="/forgot-password" className="text-sm font-semibold text-red-700 hover:underline">
                   Esqueceu sua senha?
                 </Link>
               </div>
+              <PasswordInput
+                id="login-password"
+                placeholder="Informe sua senha"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+                className="h-11"
+              />
             </div>
 
             <button
               type="submit"
               disabled={submitting}
-              className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-md font-semibold mt-4 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="mt-2 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-red-700 px-4 py-2 font-semibold text-white shadow-sm transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting && <Spinner />}
-              {submitting ? "Entrando..." : "ENTRAR"}
+              {submitting ? "Entrando..." : "Entrar"}
             </button>
           </form>
 
-          <p className="text-center text-sm text-gray-600">
+          <p className="mt-7 text-center text-sm text-slate-600">
             Não tem uma conta?{" "}
-            <Link href="/register" className="text-red-600 hover:underline">
-              Cadastre-se
+            <Link href="/register" className="font-semibold text-red-700 hover:underline">
+              Criar unidade
             </Link>
           </p>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

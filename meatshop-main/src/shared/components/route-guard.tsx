@@ -33,7 +33,6 @@ export function RouteGuard({ children }: RouteGuardProps) {
 
     const requiredPermissions = getRoutePermissions(pathname);
 
-    // Rotas privadas não declaradas são negadas por padrão.
     if (!requiredPermissions) return "/no-panel-access";
 
     const allowed = requiredPermissions.some((permission) => {

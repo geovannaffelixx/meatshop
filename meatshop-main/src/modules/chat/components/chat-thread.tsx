@@ -51,7 +51,7 @@ export function ChatThread({ orderId, participantType, participantLabel, current
     try {
       await apiPatch(`/orders/${orderId}/chat/read?participant_type=${participantType}`, {}, { silent: true });
     } catch {
-      // Falhas de leitura não interrompem o envio ou o recebimento.
+      return;
     }
   }, [orderId, participantType]);
 

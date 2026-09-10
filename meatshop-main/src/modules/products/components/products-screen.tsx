@@ -5,14 +5,16 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent } from "@/shared/components/ui/card"
 import { ProductsTable } from "./products-table"
+import { PageHeader } from "@/shared/components/page-header"
+import { Plus, RotateCcw, Search } from "lucide-react"
 
 export function ProductsScreen() {
   const router = useRouter()
 
   const [filters, setFilters] = useState({
     id: "",
-    descricao: "",
-    categoria: "",
+    name: "",
+    category: "",
     status: "",
   })
 
@@ -32,92 +34,99 @@ export function ProductsScreen() {
     router.push("/products/new")
   }
 
-  return (
-    <div className="min-h-screen w-full bg-gray-100 bg-[url('/BackgroundClaro.png')] bg-repeat">
-        <div className="container mx-auto px-4 py-6 space-y-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-red-700 mb-6">Estoque</h2>
-          </div>
+  const clearFilters = () => {
+    const emptyFilters = { id: "", name: "", category: "", status: "" }
+    setFilters(emptyFilters)
+    setAppliedFilters(emptyFilters)
+    setCurrentPage(1)
+  }
 
-          {/* Filtros */}
-          <Card className="bg-gray/70 backdrop-blur-md rounded-xl shadow p-4 mb-6">
+  return (
+    <div className="page-surface">
+        <div className="page-container">
+          <PageHeader
+            eyebrow="Catálogo"
+            title="Produtos e estoque"
+            description="Gerencie o catálogo, os preços e a disponibilidade dos produtos."
+            actions={
+              <Button onClick={handleAddNew}>
+                <Plus />
+                Novo produto
+              </Button>
+            }
+          />
+
+          <Card className="border-0 bg-white shadow-sm">
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <fieldset className="border p-4 rounded-md">
-                  <legend className="text-gray-600 font-medium">Produto</legend>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <label className="text-sm font-medium text-slate-700">
+                  ID do produto
                   <input
                     type="text"
-                    placeholder="ID"
+                    inputMode="numeric"
+                    placeholder="Ex.: 42"
                     value={filters.id}
                     onChange={(e) => handleFilterChange({ ...filters, id: e.target.value })}
-                    className="w-full p-2 border rounded-md mb-2"
+                    className="input mt-1"
                   />
+                </label>
+                <label className="text-sm font-medium text-slate-700">
+                  Nome do produto
                   <input
                     type="text"
-                    placeholder="Descrição"
-                    value={filters.descricao}
+                    placeholder="Ex.: Picanha"
+                    value={filters.name}
                     onChange={(e) =>
-                      handleFilterChange({ ...filters, descricao: e.target.value })
+                      handleFilterChange({ ...filters, name: e.target.value })
                     }
-                    className="w-full p-2 border rounded-md"
+                    className="input mt-1"
                   />
-                </fieldset>
+                </label>
 
-                <fieldset className="border p-4 rounded-md">
-                  <legend className="text-gray-600 font-medium">Categoria</legend>
+                <label className="text-sm font-medium text-slate-700">
+                  Categoria
                   <input
                     type="text"
-                    value={filters.categoria}
+                    placeholder="Nome da categoria"
+                    value={filters.category}
                     onChange={(e) =>
-                      handleFilterChange({ ...filters, categoria: e.target.value })
+                      handleFilterChange({ ...filters, category: e.target.value })
                     }
-                    className="w-full p-2 border rounded-md"
+                    className="input mt-1"
                   />
-                </fieldset>
+                </label>
 
-                <fieldset className="border p-4 rounded-md">
-                  <legend className="text-gray-600 font-medium">Status</legend>
+                <label className="text-sm font-medium text-slate-700">
+                  Status
                   <select
                     value={filters.status}
                     onChange={(e) => handleFilterChange({ ...filters, status: e.target.value })}
-                    className="w-full p-2 border rounded-md"
+                    className="input mt-1"
                   >
-                    <option value="">Selecione</option>
+                    <option value="">Todos os status</option>
                     <option value="ATIVO">Ativo</option>
                     <option value="INATIVO">Inativo</option>
                   </select>
-                </fieldset>
-
-                <div className="flex items-end">
-                  <Button
-                    onClick={handleApplyFilters}
-                    className="bg-red-600 hover:bg-red-700 text-white w-full"
-                  >
-                    Localizar
-                  </Button>
-                </div>
+                </label>
+              </div>
+              <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
+                <Button variant="outline" onClick={clearFilters}>
+                  <RotateCcw />
+                  Limpar filtros
+                </Button>
+                <Button onClick={handleApplyFilters}>
+                  <Search />
+                  Aplicar filtros
+                </Button>
               </div>
             </CardContent>
           </Card>
 
-          {/* Botão adicionar */}
-          <div className="flex items-center gap-2 mb-2">
-            <button
-              onClick={handleAddNew}
-              className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-semibold"
-            >
-              <span className="text-lg">+</span> Adicionar novo produto
-            </button>
-          </div>
-
-          {/* Tabela */}
-          <div className="bg-gray/70 backdrop-blur-md rounded-xl shadow">
             <ProductsTable
               filters={appliedFilters}
               currentPage={currentPage}
               onPageChange={setCurrentPage}
             />
-          </div>
         </div>
       </div>
   )

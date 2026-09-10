@@ -1,6 +1,3 @@
-// Espelha as regras de src/orders/validators/order-status-transition.validator.ts do backend.
-// O backend continua validando de verdade — isto só decide o que mostrar na tela.
-
 export type NextAction = {
   label: string
   endpoint: "confirm" | "status"

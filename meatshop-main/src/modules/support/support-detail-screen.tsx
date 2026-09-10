@@ -1,10 +1,9 @@
 "use client";
 
-/* Attachments use authenticated runtime URLs that are intentionally not optimized by Next.js. */
 /* eslint-disable @next/next/no-img-element */
 
 import { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, ImagePlus, LockKeyhole, Send } from "lucide-react";
+import { ArrowLeft, ImagePlus, LockKeyhole, Send, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { apiGet, apiPatch, apiUpload, resolveAssetUrl } from "@/shared/lib/api";
 import { Spinner } from "@/shared/components/ui/spinner";
@@ -52,7 +51,7 @@ export function SupportDetailScreen({ ticketId }: { ticketId: number }) {
       toast.success("Mensagem enviada.");
       await load();
     } catch {
-      /* O cliente da API apresenta o erro. */
+      return;
     } finally {
       setSending(false);
     }
@@ -66,7 +65,7 @@ export function SupportDetailScreen({ ticketId }: { ticketId: number }) {
       );
       await load();
     } catch {
-      /* O cliente da API apresenta o erro. */
+      return;
     }
   }
 
@@ -207,6 +206,23 @@ export function SupportDetailScreen({ ticketId }: { ticketId: number }) {
                     }
                   />
                 </label>
+                {images.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {images.map((image, index) => (
+                      <span key={`${image.name}-${index}`} className="flex max-w-52 items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">
+                        <span className="truncate">{image.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => setImages((current) => current.filter((_, itemIndex) => itemIndex !== index))}
+                          aria-label={`Remover ${image.name}`}
+                          className="shrink-0 rounded-full p-0.5 hover:bg-slate-200"
+                        >
+                          <X className="size-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <button
                   disabled={sending || (!message.trim() && images.length === 0)}
                   className="flex items-center gap-2 rounded-md bg-red-700 px-4 py-2 font-semibold text-white disabled:opacity-50"

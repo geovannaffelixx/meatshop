@@ -314,7 +314,7 @@ export function DeliveriesScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-6 lg:px-8">
+    <div className="page-surface px-4 py-6 lg:px-8">
       <div className="mx-auto max-w-[1600px] space-y-6">
         <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
@@ -403,7 +403,7 @@ export function DeliveriesScreen() {
 
             {snapshot && (
               <section className="grid gap-5 xl:grid-cols-[420px_minmax(0,1fr)]">
-                <div className="h-[560px] space-y-3 overflow-y-auto pr-1">
+                <div className="max-h-[560px] space-y-3 overflow-y-auto pr-1 xl:h-[560px]">
                   {deliveries.length === 0 && (
                     <Card className="border-dashed">
                       <CardContent className="flex flex-col items-center p-10 text-center">

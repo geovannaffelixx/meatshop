@@ -18,10 +18,6 @@ export type RoutePermission =
   | "AUTHENTICATED"
   | "SUPER_ADMIN";
 
-/**
- * Fonte única da verdade para autorização de rotas privadas.
- * As permissões de uma mesma rota são alternativas (OU).
- */
 export const routePermissions = {
   "/dashboard": [unitPermissions.viewDashboard],
   "/orders": [unitPermissions.manageOrders],

@@ -1,5 +1,5 @@
 import { RecipeFormScreen } from "@/modules/recipes";
 
-export default function Page() {
+export default function NewRecipePage() {
   return <RecipeFormScreen />;
 }

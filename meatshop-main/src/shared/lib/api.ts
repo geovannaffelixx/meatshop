@@ -12,8 +12,6 @@ export function resolveAssetUrl(value?: string | null): string {
   return `${API_URL}${value.startsWith("/") ? "" : "/"}${value}`;
 }
 
-// Endpoints públicos de autenticação: um 401 aqui é uma resposta normal
-// (ex.: senha errada), não uma sessão expirada — nunca deve disparar refresh.
 const AUTH_EXEMPT_PATHS = [
   "/auth/login",
   "/auth/register",
@@ -29,8 +27,6 @@ function isAuthExempt(path: string) {
   return AUTH_EXEMPT_PATHS.some((exempt) => path.startsWith(exempt));
 }
 
-// Compartilha uma única renovação em andamento entre chamadas concorrentes
-// que recebam 401 ao mesmo tempo, evitando várias requisições de refresh.
 let refreshPromise: Promise<boolean> | null = null;
 
 async function refreshSession(): Promise<boolean> {
@@ -57,14 +53,11 @@ async function handleResponse(res: Response) {
 
     try {
       payload = text ? JSON.parse(text) : null;
-    } catch {
-      // Mantém o texto original quando a API não retorna JSON.
-    }
+    } catch {}
 
     throw new ApiError(translateApiError(payload, res.status), res.status, payload);
   }
 
-  // Alguns endpoints podem retornar 204 (sem conteúdo)
   const text = await res.text();
   if (!text) return null;
 

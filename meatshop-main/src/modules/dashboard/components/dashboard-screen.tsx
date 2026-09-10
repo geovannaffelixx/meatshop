@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import Autoplay from "embla-carousel-autoplay"
 import {
   Carousel,
   CarouselContent,
@@ -27,6 +26,9 @@ import {
 } from "@/shared/components/ui/chart"
 import { apiGet, resolveAssetUrl } from "@/shared/lib/api"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
+import { formatCurrency } from "@/shared/lib/formatters"
+import { PageHeader } from "@/shared/components/page-header"
+import { AlertTriangle, ArrowRight, PackageOpen, ShoppingBag, TrendingUp } from "lucide-react"
 
 const chartConfig = {
   vendas: { label: "Receita", color: "#525252" },
@@ -62,15 +64,18 @@ export function DashboardScreen() {
   const [errorSales, setErrorSales] = useState<string | null>(null)
 
   useEffect(() => {
+    if (!unitId) return
     let active = true
+    setLoadingSales(true)
+    setErrorSales(null)
 
-    apiGet("/sales")
+    apiGet(`/sales?unit_id=${unitId}`)
       .then((list) => { if (active) setSales(Array.isArray(list) ? list : []) })
       .catch((e) => { if (active) setErrorSales(e.message) })
       .finally(() => { if (active) setLoadingSales(false) })
 
     return () => { active = false }
-  }, [])
+  }, [unitId])
 
   useEffect(() => {
     if (!unitId) return
@@ -95,58 +100,125 @@ export function DashboardScreen() {
     }))
   }, [dashboard])
 
-  const pedidosPendentes = useMemo(() => {
+  const pendingOrders = useMemo(() => {
     return (dashboard?.recentOrders ?? [])
       .filter((o) => o.status === "PENDING")
       .slice(0, 20)
   }, [dashboard])
 
   return (
-<>
-      <div className="min-h-screen w-full bg-gray-100 bg-[url('/BackgroundClaro.png')] bg-repeat">
-        <div className="container mx-auto px-4 py-6 space-y-8">
+    <div className="page-surface">
+      <div className="page-container">
+        <PageHeader
+          eyebrow="Visão geral"
+          title="Painel da operação"
+          description="Acompanhe pedidos, receita, estoque e campanhas da unidade selecionada."
+        />
 
-          {/* Pedidos pendentes */}
-          <div className="bg-gray/70 backdrop-blur-md rounded-xl p-6 shadow">
-            <h2 className="text-2xl font-bold text-red-700 text-center mb-4">
-              Pedidos pendentes
-            </h2>
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Card className="border-0 shadow-sm">
+            <CardContent className="flex items-center justify-between p-5">
+              <div>
+                <p className="text-sm text-slate-500">Receita no mês</p>
+                <strong className="mt-1 block text-2xl text-slate-950">
+                  {formatCurrency(dashboard?.revenueThisMonth)}
+                </strong>
+              </div>
+              <span className="rounded-xl bg-emerald-50 p-3 text-emerald-700">
+                <TrendingUp className="size-5" />
+              </span>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-sm">
+            <CardContent className="flex items-center justify-between p-5">
+              <div>
+                <p className="text-sm text-slate-500">Pedidos pendentes</p>
+                <strong className="mt-1 block text-2xl text-slate-950">
+                  {pendingOrders.length}
+                </strong>
+              </div>
+              <span className="rounded-xl bg-blue-50 p-3 text-blue-700">
+                <ShoppingBag className="size-5" />
+              </span>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-sm">
+            <CardContent className="flex items-center justify-between p-5">
+              <div>
+                <p className="text-sm text-slate-500">Estoque baixo</p>
+                <strong className="mt-1 block text-2xl text-slate-950">
+                  {dashboard?.lowStockCount ?? 0}
+                </strong>
+              </div>
+              <span className="rounded-xl bg-amber-50 p-3 text-amber-700">
+                <AlertTriangle className="size-5" />
+              </span>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-sm">
+            <CardContent className="flex items-center justify-between p-5">
+              <div>
+                <p className="text-sm text-slate-500">Promoções ativas</p>
+                <strong className="mt-1 block text-2xl text-slate-950">
+                  {sales.length}
+                </strong>
+              </div>
+              <span className="rounded-xl bg-red-50 p-3 text-red-700">
+                <PackageOpen className="size-5" />
+              </span>
+            </CardContent>
+          </Card>
+        </section>
 
-            {loading && <p className="text-center text-gray-500">Carregando...</p>}
-            {error && <p className="text-center text-red-600">Erro: {error}</p>}
-
-            {!loading && !error && pedidosPendentes.length === 0 && (
-              <p className="text-center text-gray-500 italic">Nenhum pedido pendente.</p>
-            )}
-
-            <div className="grid grid-cols-2 gap-3">
-              {pedidosPendentes.map((pedido) => (
-                <div key={pedido.id} className="flex justify-between items-center bg-gray-200 rounded-lg px-3 py-2 text-sm">
-                  <span className="font-semibold">#{pedido.id}</span>
-                  <span>{pedido.client_name ?? "-"}</span>
-                  <span className="text-gray-500">
-                    {new Date(pedido.order_date).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                  </span>
-                </div>
-              ))}
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+            <div>
+              <h2 className="font-bold text-slate-950">Pedidos pendentes</h2>
+              <p className="text-sm text-slate-500">Priorize os pedidos que aguardam confirmação.</p>
             </div>
-
-            <div className="mt-2 text-right">
-              <Link href="/orders" className="text-red-600 text-sm font-medium hover:underline">
-                Ver todos
-              </Link>
-            </div>
+            <Link href="/orders" className="flex items-center gap-1 text-sm font-semibold text-red-700 hover:underline">
+              Ver todos <ArrowRight className="size-4" />
+            </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {loading && <p className="p-8 text-center text-slate-500">Carregando pedidos...</p>}
+          {error && <p className="p-8 text-center text-red-700">{error}</p>}
 
-            {/* Financeiro */}
-            <Card className="bg-gray/70 backdrop-blur-md rounded-xl shadow md:col-span-1">
-              <a href="/finance">
+          {!loading && !error && pendingOrders.length === 0 ? (
+            <div className="p-10 text-center text-sm text-slate-500">
+              Não há pedidos aguardando confirmação.
+            </div>
+          ) : (
+            <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3">
+              {pendingOrders.map((order) => (
+                <Link
+                  key={order.id}
+                  href={`/orders/${order.id}`}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-4 transition hover:border-red-200 hover:bg-red-50/40"
+                >
+                  <span className="min-w-0">
+                    <strong className="block text-sm text-slate-900">Pedido #{order.id}</strong>
+                    <span className="block truncate text-sm text-slate-500">{order.client_name ?? "Cliente não identificado"}</span>
+                  </span>
+                  <span className="shrink-0 text-right">
+                    <strong className="block text-sm text-slate-800">{formatCurrency(order.value)}</strong>
+                    <time className="text-xs text-slate-500">
+                      {new Date(order.order_date).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                    </time>
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <div className="grid gap-6 xl:grid-cols-[minmax(20rem,0.8fr)_1.2fr]">
+          <Card className="border-0 shadow-sm">
+            <Link href="/finance" className="block">
                 <CardHeader>
-                  <CardTitle className="text-xl font-bold text-red-700 text-center">Financeiro</CardTitle>
-                  <CardDescription className="text-center">
-                    Receita do mês: R$ {Number(dashboard?.revenueThisMonth ?? 0).toFixed(2)}
+                  <CardTitle className="text-lg font-bold text-slate-950">Receita semanal</CardTitle>
+                  <CardDescription>
+                    Consulte o detalhamento financeiro da unidade.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -158,56 +230,56 @@ export function DashboardScreen() {
                       <Bar dataKey="vendas" fill="var(--color-vendas)" radius={8} />
                     </BarChart>
                   </ChartContainer>
-                  {dashboard && dashboard.lowStockCount > 0 && (
-                    <Link
-                      href="/products"
-                      className="mt-3 block text-center text-sm text-amber-600 font-medium hover:underline"
-                    >
-                      {dashboard.lowStockCount} produto(s) com estoque baixo
-                    </Link>
-                  )}
                 </CardContent>
-              </a>
-            </Card>
+            </Link>
+          </Card>
 
-            {/* Carrossel de promoções (Sales) */}
-            <div className="bg-gray/70 backdrop-blur-md rounded-xl p-6 md:col-span-3 shadow-md">
-              <Link href="/products">
-                <h2 className="text-2xl font-bold text-red-700 text-center mb-4">Promoções ativas</h2>
-              </Link>
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="font-bold text-slate-950">Promoções ativas</h2>
+                <p className="text-sm text-slate-500">Campanhas disponíveis para os clientes.</p>
+              </div>
+              <Link href="/promotions" className="text-sm font-semibold text-red-700 hover:underline">Gerenciar</Link>
+            </div>
 
-              {loadingSales && <p className="text-center text-gray-500">Carregando promoções...</p>}
-              {errorSales && <p className="text-center text-red-600">Erro: {errorSales}</p>}
+            {loadingSales && <p className="p-8 text-center text-slate-500">Carregando promoções...</p>}
+            {errorSales && <p className="p-8 text-center text-red-700">{errorSales}</p>}
+            {!loadingSales && !errorSales && sales.length === 0 && (
+              <p className="p-8 text-center text-sm text-slate-500">Nenhuma promoção ativa no momento.</p>
+            )}
 
-              <Carousel plugins={[Autoplay({ delay: 2500, stopOnInteraction: true })]} className="w-full mx-auto" opts={{ align: "start", loop: true }}>
+            {sales.length > 0 && (
+              <Carousel className="mx-auto w-full" opts={{ align: "start" }}>
                 <CarouselContent>
                   {sales.map((s) => (
-                    <CarouselItem key={s.id} className="basis-1/5">
-                      <div className="flex flex-col items-center justify-center bg-gray-200 rounded-lg overflow-hidden aspect-square">
-                        <div className="w-full bg-gray-200 rounded-t-lg overflow-hidden flex items-center justify-center"
-                            style={{ height: "120px" }}>
+                    <CarouselItem key={s.id} className="basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                      <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                        <div className="flex h-32 w-full items-center justify-center bg-white">
                           <Image
                             src={resolveAssetUrl(s.imageUrl)}
                             alt={s.name}
                             width={160}
                             height={120}
                             unoptimized
-                            className="w-full h-full object-contain"
+                            className="h-full w-full object-contain p-2"
                           />
                         </div>
-                        <span className="text-sm font-medium mt-2 text-center">{s.name}</span>
-                        <span className="text-xs text-gray-500 text-center">Desconto: R$ {s.discountValue}</span>
+                        <div className="p-3">
+                          <span className="block truncate text-sm font-semibold text-slate-900">{s.name}</span>
+                          <span className="mt-1 block text-xs font-medium text-emerald-700">Economize {formatCurrency(s.discountValue)}</span>
+                        </div>
                       </div>
                     </CarouselItem>
                   ))}
                 </CarouselContent>
-                <CarouselPrevious className="text-red-600" />
-                <CarouselNext className="text-red-600" />
+                <CarouselPrevious className="left-2 text-red-700" />
+                <CarouselNext className="right-2 text-red-700" />
               </Carousel>
-            </div>
-          </div>
+            )}
+          </section>
         </div>
       </div>
-    </>
+    </div>
   )
 }

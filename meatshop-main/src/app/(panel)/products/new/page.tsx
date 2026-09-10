@@ -1,5 +1,5 @@
 import { NewProductScreen } from "@/modules/products";
 
-export default function Page() {
+export default function NewProductPage() {
   return <NewProductScreen />;
 }

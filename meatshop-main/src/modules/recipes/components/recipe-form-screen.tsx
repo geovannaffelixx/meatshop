@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, X } from "lucide-react"
+import Link from "next/link"
+import { ArrowLeft, Plus, X } from "lucide-react"
 import { Spinner } from "@/shared/components/ui/spinner"
 import { apiGet, apiPatch, apiPost, API_URL, resolveAssetUrl } from "@/shared/lib/api"
 import { toast } from "@/shared/lib/toast"
@@ -36,7 +37,7 @@ function toDateInput(iso: string | null) {
   return iso.slice(0, 10)
 }
 
-const fieldClass = "w-full bg-white/60 rounded-md px-3 py-2 text-gray-800 border border-gray-300"
+const fieldClass = "input"
 
 export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
   const router = useRouter()
@@ -191,7 +192,7 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
 
   if (loadingRecipe) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-600 text-lg">
+      <div className="grid min-h-[60vh] place-items-center text-slate-500">
         Carregando receita...
       </div>
     )
@@ -200,18 +201,23 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
   const coverSrc = stagedPreview ?? (imageUrl ? resolveAssetUrl(imageUrl) : null)
 
   return (
-    <div className="min-h-screen bg-gray-100 bg-[url('/BackgroundClaro.png')] bg-repeat flex items-start justify-center py-8">
-      <div className="relative w-[860px] max-w-[96vw] bg-[#D9D9D9] rounded-xl shadow-lg p-5 border border-gray-400">
-        <button
-          onClick={() => router.back()}
-          className="absolute top-3 right-4 text-red-700 font-bold text-2xl hover:scale-110 transition-transform"
-        >
-          ✕
-        </button>
+    <div className="page-surface px-4 py-6 sm:px-6">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          void handleSave()
+        }}
+        className="mx-auto w-full max-w-5xl rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"
+      >
+        <Link href="/recipes" className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-red-700">
+          <ArrowLeft className="size-4" />
+          Voltar às receitas
+        </Link>
 
-        <h2 className="text-center text-2xl font-extrabold text-red-700 mb-4">
-          {isEditing ? "Editar Receita" : "Nova Receita"}
+        <h2 className="text-2xl font-bold text-slate-950">
+          {isEditing ? "Editar receita" : "Nova receita"}
         </h2>
+        <p className="mt-1 mb-6 text-sm text-slate-600">Organize a capa, os ingredientes e o modo de preparo.</p>
 
         {error && (
           <div className="mb-3 rounded-md bg-red-100 text-red-700 px-3 py-2 text-sm border border-red-300">
@@ -219,7 +225,6 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
           </div>
         )}
 
-        {/* Capa */}
         <fieldset className="border border-gray-400 rounded-md px-3 py-2 mb-3">
           <legend className="text-gray-600 font-medium px-1 text-sm">Foto de capa</legend>
           <div className="flex items-center gap-4">
@@ -245,7 +250,6 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
           </div>
         </fieldset>
 
-        {/* Dados básicos */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
           <fieldset className="border border-gray-400 rounded-md px-3 py-2 md:col-span-2">
             <legend className="text-gray-600 font-medium px-1 text-sm">Título</legend>
@@ -285,7 +289,6 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
           </fieldset>
         </div>
 
-        {/* Ingredientes */}
         <fieldset className="border border-gray-400 rounded-md px-3 py-2 mb-3">
           <legend className="text-gray-600 font-medium px-1 text-sm">Ingredientes</legend>
           <div className="space-y-2">
@@ -330,7 +333,6 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
           </button>
         </fieldset>
 
-        {/* Modo de preparo */}
         <fieldset className="border border-gray-400 rounded-md px-3 py-2 mb-3">
           <legend className="text-gray-600 font-medium px-1 text-sm">Modo de preparo</legend>
           <div className="space-y-2">
@@ -373,7 +375,6 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
           </button>
         </fieldset>
 
-        {/* Produtos em destaque */}
         <fieldset className="border border-gray-400 rounded-md px-3 py-2 mb-3">
           <legend className="text-gray-600 font-medium px-1 text-sm">Produtos em destaque (opcional)</legend>
           <div className="space-y-2">
@@ -415,18 +416,20 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
           </button>
         </fieldset>
 
-        {/* Botão Salvar */}
-        <div className="flex justify-center mt-5">
+        <div className="mt-6 flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end">
+          <Link href="/recipes" className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+            Cancelar
+          </Link>
           <button
-            onClick={handleSave}
+            type="submit"
             disabled={saving}
-            className="flex items-center justify-center gap-2 bg-[#A0332C] hover:bg-[#7F2721] text-white px-12 py-2 rounded-md font-semibold text-lg shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+            className="flex min-h-10 items-center justify-center gap-2 rounded-lg bg-red-700 px-8 py-2 font-semibold text-white shadow-sm hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {saving && <Spinner />}
-            {saving ? "Salvando..." : "Salvar"}
+            {saving ? "Salvando..." : "Salvar receita"}
           </button>
         </div>
-      </div>
+      </form>
     </div>
   )
 }

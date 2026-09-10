@@ -62,14 +62,13 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          // 🔧 Modal mais horizontal e espaçoso
           "bg-background fixed top-1/2 left-1/2 z-50 " +
-            "w-full max-w-5xl translate-x-[-50%] translate-y-[-50%] " +
-            "rounded-xl border border-border p-8 shadow-2xl " +
+            "max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-3xl translate-x-[-50%] translate-y-[-50%] overflow-y-auto " +
+            "rounded-2xl border border-border p-5 shadow-2xl sm:p-6 " +
             "data-[state=open]:animate-in data-[state=closed]:animate-out " +
             "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 " +
             "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 " +
-            "duration-200 grid gap-6",
+            "duration-200 grid gap-5",
           className
         )}
         {...props}

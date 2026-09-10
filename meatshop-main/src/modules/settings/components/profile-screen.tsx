@@ -125,7 +125,7 @@ function UnitSettings() {
       setCepResolved(true);
       toast.success("Endereço localizado. Confira o número antes de salvar.");
     } catch {
-      // O cliente da API apresenta a mensagem específica do provedor.
+      return;
     } finally {
       setLookingUpCep(false);
     }
@@ -149,7 +149,7 @@ function UnitSettings() {
       toast.success("Dados da unidade atualizados.");
       await Promise.all([refresh(), load()]);
     } catch {
-      /* Erro apresentado pelo cliente da API. */
+      return;
     } finally {
       setSaving(false);
     }
@@ -157,6 +157,17 @@ function UnitSettings() {
 
   async function saveHours() {
     if (!unitId) return;
+    const invalidDay = days.find(
+      (day) =>
+        day.is_open &&
+        (!day.opening_time ||
+          !day.closing_time ||
+          day.closing_time <= day.opening_time),
+    );
+    if (invalidDay) {
+      toast.warning("Confira os horários: o fechamento deve ser posterior à abertura.");
+      return;
+    }
     setSaving(true);
     try {
       await apiPut(`/units/${unitId}/business-hours`, {
@@ -166,7 +177,7 @@ function UnitSettings() {
       });
       toast.success("Horários de funcionamento atualizados.");
     } catch {
-      /* Erro apresentado pelo cliente da API. */
+      return;
     } finally {
       setSaving(false);
     }

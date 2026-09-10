@@ -81,18 +81,13 @@ export function DeliveriesMap({
         });
         const markReady = () => {
           if (cancelled) return;
-          if (!initialized) {
-            // Alguns estilos públicos incluem uma câmera mundial própria.
-            // Reaplica a câmera da operação depois que o estilo é carregado.
-            map.jumpTo({ center, zoom: initialZoom });
-          }
+          if (!initialized) map.jumpTo({ center, zoom: initialZoom });
           initialized = true;
           setReady(true);
           setError(null);
         };
 
         map.addControl(new maplibre.NavigationControl(), "top-right");
-        // O estilo fica utilizável antes de tiles e fontes terminarem de baixar.
         map.once("styledata", markReady);
         map.once("load", markReady);
         mapRef.current = map;
@@ -194,7 +189,7 @@ export function DeliveriesMap({
   }, [deliveries, selectedOrderId]);
 
   return (
-    <div className="relative h-[560px] overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+    <div className="relative h-[420px] overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 xl:h-[560px]">
       <div
         ref={containerRef}
         className="h-full w-full"

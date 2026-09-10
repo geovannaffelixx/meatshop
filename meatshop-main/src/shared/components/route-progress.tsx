@@ -2,9 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { LoadingOverlay } from "@/shared/components/loading-overlay";
-
-const MINIMUM_VISIBLE_MS = 1000;
 const NAVIGATION_TIMEOUT_MS = 15000;
 
 function isInternalNavigationClick(event: MouseEvent): boolean {
@@ -31,11 +28,9 @@ function isInternalNavigationClick(event: MouseEvent): boolean {
   const url = new URL(href, window.location.href);
   if (url.origin !== window.location.origin) return false;
 
-  // Mudanças apenas na query não trocam a página observada por usePathname.
   return url.pathname !== window.location.pathname;
 }
 
-/** Feedback visual durante trocas de página dentro do painel. */
 export function RouteProgress() {
   const pathname = usePathname();
   const [visible, setVisible] = useState(false);
@@ -87,18 +82,15 @@ export function RouteProgress() {
     setWidth(100);
 
     const elapsed = performance.now() - startedAt.current;
-    const remaining = Math.max(MINIMUM_VISIBLE_MS - elapsed, 150);
+    const remaining = Math.max(250 - elapsed, 80);
     timers.current.push(setTimeout(finishNavigation, remaining));
   }, [pathname]);
 
   return (
-    <>
-      {visible && <LoadingOverlay title="Carregando página..." />}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none fixed left-0 top-0 z-[101] h-[3px] bg-[#BE2C1B] transition-[width,opacity] duration-200 ease-out"
-        style={{ width: `${width}%`, opacity: visible ? 1 : 0 }}
-      />
-    </>
+    <div
+      aria-hidden="true"
+      className="pointer-events-none fixed left-0 top-0 z-[101] h-1 bg-red-600 transition-[width,opacity] duration-200 ease-out"
+      style={{ width: `${width}%`, opacity: visible ? 1 : 0 }}
+    />
   );
 }

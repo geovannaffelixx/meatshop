@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/shared/components/ui/card"
 import { Star, Store } from "lucide-react"
 import { apiGet } from "@/shared/lib/api"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
+import { PageHeader } from "@/shared/components/page-header"
 
 type Review = {
   id: number
@@ -74,13 +75,15 @@ export function ReviewsScreen() {
   }, [reviews])
 
   return (
-    <div className="min-h-screen w-full bg-gray-100 bg-[url('/BackgroundClaro.png')] bg-repeat">
-      <div className="container mx-auto px-4 py-6 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h2 className="text-3xl font-bold text-red-700">Avaliações</h2>
-
-          {units.length > 1 && (
+    <div className="page-surface">
+      <div className="page-container">
+        <PageHeader
+          eyebrow="Clientes"
+          title="Avaliações"
+          description="Acompanhe a satisfação com a unidade e com os produtos."
+          actions={units.length > 1 ? (
             <select
+              aria-label="Unidade ativa"
               value={unitId ?? ""}
               onChange={(e) => setUnitId(Number(e.target.value))}
               className="border rounded-md px-3 py-2"
@@ -91,15 +94,15 @@ export function ReviewsScreen() {
                 </option>
               ))}
             </select>
-          )}
-        </div>
+          ) : undefined}
+        />
 
         {!unitsLoading && units.length === 0 && (
           <div className="text-center text-red-600">Nenhuma unidade encontrada para este usuário.</div>
         )}
 
         {!loading && !error && reviews.length > 0 && (
-          <Card className="bg-white/70 backdrop-blur-md shadow-lg">
+          <Card className="border-0 bg-white shadow-sm">
             <CardContent className="flex items-center justify-between p-4">
               <div>
                 <p className="text-sm text-gray-500">Nota média</p>
@@ -153,7 +156,7 @@ export function ReviewsScreen() {
             </Card>
           ) : (
             filtered.map((review) => (
-              <Card key={review.id} className="bg-white/70 backdrop-blur-md shadow-lg">
+              <Card key={review.id} className="border-0 bg-white shadow-sm">
                 <CardContent className="p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-3">

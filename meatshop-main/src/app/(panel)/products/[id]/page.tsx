@@ -1,5 +1,5 @@
 import { EditProductScreen } from "@/modules/products";
 
-export default function Page() {
+export default function EditProductPage() {
   return <EditProductScreen />;
 }

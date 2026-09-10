@@ -97,7 +97,6 @@ function translateMessage(message: string): string {
     if (pattern.test(message)) return translation;
   }
 
-  // Mensagens que já vieram em português podem ser exibidas com segurança.
   if (/[áàâãéêíóôõúç]|\b(não|erro|senha|usuário|pedido|produto|unidade)\b/i.test(message)) {
     return message;
   }

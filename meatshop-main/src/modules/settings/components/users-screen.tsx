@@ -6,6 +6,15 @@ import { PasswordInput } from "@/shared/components/ui/password-input";
 import { Spinner } from "@/shared/components/ui/spinner";
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/shared/lib/api";
 import { toast } from "@/shared/lib/toast";
+import { Button } from "@/shared/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/shared/components/ui/dialog";
 
 type Role = "OWNER" | "MANAGER" | "OPERATOR" | "DELIVERY";
 type Member = {
@@ -78,7 +87,6 @@ function TeamManager() {
       toast.success("Usuário criado e adicionado à equipe.");
       await load();
     } catch {
-      /* Erro apresentado pelo cliente da API. */
     } finally {
       setSaving(false);
     }
@@ -95,7 +103,6 @@ function TeamManager() {
       toast.success("Acesso atualizado.");
       await load();
     } catch {
-      /* Erro apresentado pelo cliente da API. */
     } finally {
       setBusyId(null);
     }
@@ -110,7 +117,6 @@ function TeamManager() {
       setRemoving(null);
       await load();
     } catch {
-      /* Erro apresentado pelo cliente da API. */
     } finally {
       setConfirmingRemoval(false);
     }
@@ -309,41 +315,25 @@ function TeamManager() {
         )}
       </section>
 
-      {removing && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="remove-title"
-          className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"
-        >
-          <section className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-            <h2 id="remove-title" className="text-lg font-bold">
-              Remover acesso?
-            </h2>
-            <p className="mt-2 text-gray-600">
-              {removing.user.name} não poderá mais acessar esta unidade. A conta
-              pessoal não será excluída.
-            </p>
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                disabled={confirmingRemoval}
-                onClick={() => setRemoving(null)}
-                className="rounded-md border px-4 py-2 disabled:opacity-50"
-              >
-                Cancelar
-              </button>
-              <button
-                disabled={confirmingRemoval}
-                onClick={() => void confirmRemoval()}
-                className="flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 font-semibold text-white disabled:opacity-50"
-              >
-                {confirmingRemoval && <Spinner />}
-                {confirmingRemoval ? "Removendo..." : "Remover acesso"}
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
+      <Dialog open={Boolean(removing)} onOpenChange={(nextOpen) => !nextOpen && setRemoving(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Remover acesso?</DialogTitle>
+            <DialogDescription>
+              {removing?.user.name} não poderá mais acessar esta unidade. A conta pessoal não será excluída.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" disabled={confirmingRemoval} onClick={() => setRemoving(null)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" disabled={confirmingRemoval} onClick={() => void confirmRemoval()}>
+              {confirmingRemoval && <Spinner />}
+              {confirmingRemoval ? "Removendo..." : "Remover acesso"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

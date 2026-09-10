@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
 import Link from "next/link"
-import { X } from "lucide-react"
+import { ArrowLeft, ImagePlus, X } from "lucide-react"
 import { apiGet, apiPatch, apiDelete, API_URL, resolveAssetUrl } from "@/shared/lib/api"
 import { Spinner } from "@/shared/components/ui/spinner"
 import { toast } from "@/shared/lib/toast"
@@ -31,9 +31,8 @@ type Category = { id: number; name: string }
 
 export function EditProductScreen() {
   const { id } = useParams()
-  const router = useRouter()
-  const produtoId = useMemo(() => Number(id), [id])
-  const produtoKey = produtoId.toString().padStart(5, "0")
+  const productId = useMemo(() => Number(id), [id])
+  const productKey = productId.toString().padStart(5, "0")
 
   const [product, setProduct] = useState<Product | null>(null)
   const [stock, setStock] = useState<Stock>({ quantity: 0, min_quantity: 0 })
@@ -46,7 +45,7 @@ export function EditProductScreen() {
   const [deletingImageId, setDeletingImageId] = useState<number | null>(null)
 
   useEffect(() => {
-    apiGet(`/products/${produtoId}`)
+    apiGet(`/products/${productId}`)
       .then((res: { product: Product; stock: Stock | null; images?: ProductImage[] }) => {
         setProduct(res.product)
         setStock(res.stock ?? { quantity: 0, min_quantity: 0 })
@@ -55,7 +54,7 @@ export function EditProductScreen() {
       })
       .then((cats) => setCategories(cats ?? []))
       .catch((err) => setError(err.message))
-  }, [produtoId])
+  }, [productId])
 
   const handleAddImages = async (files: FileList | null) => {
     if (!files || files.length === 0 || !product) return
@@ -144,14 +143,18 @@ export function EditProductScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 bg-[url('/BackgroundClaro.png')] bg-repeat flex items-start justify-center py-8">
-      <div className="relative w-[960px] max-w-[96vw] bg-[#D9D9D9] rounded-xl shadow-lg p-5 border border-gray-400">
-        <button
-          onClick={() => router.back()}
-          className="absolute top-3 right-4 text-red-700 font-bold text-2xl hover:scale-110 transition-transform"
-        >
-          ✕
-        </button>
+    <div className="page-surface px-4 py-6 sm:px-6">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          void handleSave()
+        }}
+        className="mx-auto w-full max-w-5xl rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"
+      >
+        <Link href="/products" className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-red-700">
+          <ArrowLeft className="size-4" />
+          Voltar aos produtos
+        </Link>
 
         {saved && (
           <div className="mb-3 rounded-md bg-green-100 text-green-800 px-3 py-2 text-sm border border-green-300">
@@ -164,18 +167,18 @@ export function EditProductScreen() {
           </div>
         )}
 
-        <h2 className="text-center text-2xl font-extrabold text-red-700 mb-3">
-          Produto #{produtoKey}
+        <h2 className="text-2xl font-bold text-slate-950">
+          Editar produto #{productKey}
         </h2>
+        <p className="mt-1 mb-6 text-sm text-slate-600">Atualize informações comerciais, estoque e imagens.</p>
 
-        {/* Linha 1 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
           <fieldset className="border-2 border-[#A0332C] rounded-md px-3 py-1">
             <legend className="text-[#A0332C] font-semibold px-1 text-sm">Status</legend>
             <select
               value={product.active ? "ATIVO" : "INATIVO"}
               onChange={(e) => handleChange("active", e.target.value === "ATIVO")}
-              className="w-full bg-white/60 rounded-md px-3 py-2 text-[#A0332C] font-bold"
+              className="input"
             >
               <option value="ATIVO">ATIVO</option>
               <option value="INATIVO">INATIVO</option>
@@ -188,19 +191,19 @@ export function EditProductScreen() {
               type="text"
               value={product.name}
               onChange={(e) => handleChange("name", e.target.value)}
-              className="w-full bg-white/60 rounded-md px-3 py-2 font-semibold text-gray-800"
+              className="input"
+              required
             />
           </fieldset>
         </div>
 
-        {/* Linha 2 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
           <fieldset className="border border-gray-400 rounded-md px-3 py-2">
             <legend className="text-gray-600 font-medium px-1 text-sm">Categoria</legend>
             <select
               value={product.category_id}
               onChange={(e) => handleChange("category_id", Number(e.target.value))}
-              className="w-full bg-white/60 rounded-md px-3 py-2 text-gray-800"
+              className="input"
             >
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -219,22 +222,25 @@ export function EditProductScreen() {
               type="text"
               value={product.brand ?? ""}
               onChange={(e) => handleChange("brand", e.target.value)}
-              className="w-full bg-white/60 rounded-md px-3 py-2 text-gray-800"
+              className="input"
             />
           </fieldset>
 
           <fieldset className="border border-gray-400 rounded-md px-3 py-2">
             <legend className="text-gray-600 font-medium px-1 text-sm">Unidade de medida</legend>
-            <input
-              type="text"
+            <select
               value={product.unit_of_measure}
               onChange={(e) => handleChange("unit_of_measure", e.target.value)}
-              className="w-full bg-white/60 rounded-md px-3 py-2 text-gray-800"
-            />
+              className="input"
+            >
+              <option value="KG">Quilograma (kg)</option>
+              <option value="G">Grama (g)</option>
+              <option value="UN">Unidade</option>
+              <option value="PCT">Pacote</option>
+            </select>
           </fieldset>
         </div>
 
-        {/* Linha 3 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
           <fieldset className="border border-gray-400 rounded-md px-3 py-2">
             <legend className="text-gray-600 font-medium px-1 text-sm">
@@ -245,22 +251,26 @@ export function EditProductScreen() {
                 <label className="text-xs text-gray-600 mb-1">QUANTIDADE ATUAL</label>
                 <input
                   type="number"
+                  min={0}
+                  step="0.001"
                   value={stock.quantity}
                   onChange={(e) =>
-                    setStock({ ...stock, quantity: parseInt(e.target.value, 10) || 0 })
+                    setStock({ ...stock, quantity: Number(e.target.value) || 0 })
                   }
-                  className="bg-[#EDEDED] text-center text-sm rounded-md border border-gray-300 py-2"
+                  className="input"
                 />
               </div>
               <div className="flex flex-col">
                 <label className="text-xs text-gray-600 mb-1">MÍNIMO (ALERTA)</label>
                 <input
                   type="number"
+                  min={0}
+                  step="0.001"
                   value={stock.min_quantity}
                   onChange={(e) =>
-                    setStock({ ...stock, min_quantity: parseInt(e.target.value, 10) || 0 })
+                    setStock({ ...stock, min_quantity: Number(e.target.value) || 0 })
                   }
-                  className="bg-[#EDEDED] text-center text-sm rounded-md border border-gray-300 py-2"
+                  className="input"
                 />
               </div>
             </div>
@@ -272,15 +282,16 @@ export function EditProductScreen() {
               <label className="text-xs text-gray-600 mb-1">VALOR DO PRODUTO</label>
               <input
                 type="number"
+                min={0.01}
+                step="0.01"
                 value={product.price}
                 onChange={(e) => handleChange("price", parseFloat(e.target.value) || 0)}
-                className="bg-[#EDEDED] text-center text-sm rounded-md border border-gray-300 py-2"
+                className="input"
               />
             </div>
           </fieldset>
         </div>
 
-        {/* Linha 4 */}
         <div className="grid grid-cols-1">
           <fieldset className="border border-gray-400 rounded-md px-3 py-2">
             <legend className="text-gray-600 font-medium px-1 text-sm">
@@ -289,12 +300,11 @@ export function EditProductScreen() {
             <textarea
               value={product.description}
               onChange={(e) => handleChange("description", e.target.value)}
-              className="resize-none bg-[#EDEDED] w-full h-[110px] p-3 text-sm border border-gray-300 rounded-md focus:outline-none"
+              className="input h-24 resize-none"
             />
           </fieldset>
         </div>
 
-        {/* Fotos */}
         <div className="grid grid-cols-1 mt-3">
           <fieldset className="border border-gray-400 rounded-md px-3 py-2">
             <legend className="text-gray-600 font-medium px-1 text-sm">Fotos do produto</legend>
@@ -314,11 +324,12 @@ export function EditProductScreen() {
                   </button>
                 </div>
               ))}
-              <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-dashed border-gray-400 text-xs text-gray-500 hover:bg-gray-50">
-                {uploadingImages ? <Spinner /> : "+ Adicionar"}
+              <label className="flex h-20 w-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-slate-400 text-xs text-slate-600 hover:bg-slate-50">
+                {uploadingImages ? <Spinner /> : <ImagePlus className="size-5" />}
+                {uploadingImages ? "Enviando" : "Adicionar"}
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp"
                   multiple
                   disabled={uploadingImages}
                   className="hidden"
@@ -329,18 +340,20 @@ export function EditProductScreen() {
           </fieldset>
         </div>
 
-        {/* Botão Editar */}
-        <div className="flex justify-center mt-5">
+        <div className="mt-6 flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end">
+          <Link href="/products" className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+            Cancelar
+          </Link>
           <button
-            onClick={handleSave}
+            type="submit"
             disabled={saving}
-            className="flex items-center justify-center gap-2 bg-[#A0332C] hover:bg-[#7F2721] text-white px-12 py-2 rounded-md font-semibold text-lg shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+            className="flex min-h-10 items-center justify-center gap-2 rounded-lg bg-red-700 px-8 py-2 font-semibold text-white shadow-sm hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {saving && <Spinner />}
-            {saving ? "Salvando..." : "Salvar"}
+            {saving ? "Salvando..." : "Salvar alterações"}
           </button>
         </div>
-      </div>
+      </form>
     </div>
   )
 }
