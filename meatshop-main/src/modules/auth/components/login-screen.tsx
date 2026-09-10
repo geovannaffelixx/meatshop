@@ -54,18 +54,6 @@ export function LoginScreen() {
           sizes="42vw"
           className="object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/25 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 p-10 text-white">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-red-300">
-            Gestão MeatShop
-          </p>
-          <h1 className="mt-3 max-w-lg text-4xl font-bold leading-tight">
-            Sua operação organizada do pedido à entrega.
-          </h1>
-          <p className="mt-3 max-w-md text-sm leading-6 text-slate-200">
-            Acompanhe vendas, estoque, equipe e clientes em um único painel.
-          </p>
-        </div>
       </section>
 
       <section className="flex min-h-screen items-center justify-center bg-white px-5 py-10 sm:px-8">
