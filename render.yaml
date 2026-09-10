@@ -33,7 +33,7 @@ services:
       - key: COOKIE_SECURE
         value: "true"
       - key: COOKIE_SAMESITE
-        value: lax
+        value: none
       - key: TRUST_PROXY
         value: "true"
       - key: SWAGGER_ENABLED

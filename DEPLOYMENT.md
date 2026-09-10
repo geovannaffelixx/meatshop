@@ -5,7 +5,7 @@
 - Painel web: `https://app.seudominio.com.br` (Vercel)
 - API e WebSocket: `https://api.seudominio.com.br` (Render)
 
-Os dois subdomínios sob o mesmo domínio permitem cookies seguros com `SameSite=Lax`.
+Os dois subdomínios sob o mesmo domínio permitem cookies seguros com `SameSite=Lax`. Enquanto forem usados os domínios gratuitos `vercel.app` e `onrender.com`, use `SameSite=None`.
 
 ## Render (backend e PostgreSQL)
 
