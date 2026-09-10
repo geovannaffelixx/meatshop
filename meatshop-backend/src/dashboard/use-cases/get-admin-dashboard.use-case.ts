@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { GetMonthlyRevenueUseCase } from '../../finance/use-cases/get-monthly-revenue.use-case';
 import { Order } from '../../orders/entities/order.entity';
 import { PaymentStatus } from '../../orders/enums/payment-status.enum';
+import { OrderStatus } from '../../orders/enums/order-status.enum';
 import { UnitAuthorizationService } from '../../units/services/unit-authorization.service';
 import { User } from '../../users/entities/user.entity';
 import { UnitScopedQueryDto } from '../dtos/unit-scoped-query.dto';
@@ -21,6 +22,7 @@ export type AdminDashboardResult = {
     value: number;
     order_date: Date;
   }[];
+  pendingOrdersCount: number;
   lowStockCount: number;
   topProducts: TopProductItem[];
 };
@@ -49,11 +51,14 @@ export class GetAdminDashboardUseCase {
 
     const currentMonth = new Date().toISOString().slice(0, 7);
 
-    const [weeklyChart, stockAlerts, topProducts, recentOrders, revenue] = await Promise.all([
+    const [weeklyChart, stockAlerts, topProducts, recentOrders, pendingOrdersCount, revenue] = await Promise.all([
       this.getOrdersChartUseCase.forUnit(unitId, WEEKLY_CHART_DAYS),
       this.getStockAlertsUseCase.forUnit(unitId),
       this.getTopProductsUseCase.forUnit(unitId, TOP_PRODUCTS_LIMIT),
-      this.getRecentOrders(unitId),
+      this.getPendingOrders(unitId),
+      this.orderRepository.count({
+        where: { unit_id: unitId, status: OrderStatus.PENDING },
+      }),
       this.getMonthlyRevenueUseCase.forUnit(unitId, currentMonth),
     ]);
 
@@ -61,14 +66,15 @@ export class GetAdminDashboardUseCase {
       revenueThisMonth: revenue.revenueTotal,
       weeklyChart,
       recentOrders,
+      pendingOrdersCount,
       lowStockCount: stockAlerts.length,
       topProducts,
     };
   }
 
-  private async getRecentOrders(unitId: number) {
+  private async getPendingOrders(unitId: number) {
     const orders = await this.orderRepository.find({
-      where: { unit_id: unitId },
+      where: { unit_id: unitId, status: OrderStatus.PENDING },
       relations: ['client'],
       order: { order_date: 'DESC' },
       take: RECENT_ORDERS_LIMIT,

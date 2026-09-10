@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
 import { Spinner } from "@/shared/components/ui/spinner";
-import { API_URL, apiPatch } from "@/shared/lib/api";
+import { PasswordInput } from "@/shared/components/ui/password-input";
+import { API_URL, apiPatch, apiPost } from "@/shared/lib/api";
 import { toast } from "@/shared/lib/toast";
+import { PageHeader } from "@/shared/components/page-header";
 
 function formatCpf(cpf: string) {
   const digits = cpf.replace(/\D/g, "");
@@ -27,6 +28,10 @@ function AccountForm() {
   const [email, setEmail] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -82,6 +87,30 @@ function AccountForm() {
     }
   }
 
+  async function changePassword(event: React.FormEvent) {
+    event.preventDefault();
+    if (newPassword !== passwordConfirmation) {
+      toast.warning("A confirmação não corresponde à nova senha.");
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      await apiPost("/auth/change-password", {
+        current_password: currentPassword,
+        new_password: newPassword,
+      });
+      setCurrentPassword("");
+      setNewPassword("");
+      setPasswordConfirmation("");
+      toast.success("Senha alterada com sucesso.");
+    } catch {
+      return;
+    } finally {
+      setChangingPassword(false);
+    }
+  }
+
   const avatarSrc = user.avatar_url
     ? user.avatar_url.startsWith("http")
       ? user.avatar_url
@@ -89,10 +118,16 @@ function AccountForm() {
     : null;
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="page-surface">
+      <div className="page-container max-w-5xl">
+      <PageHeader
+        eyebrow="Configurações"
+        title="Minha conta"
+        description="Gerencie seus dados pessoais e a segurança do acesso."
+      />
       <section className="rounded-xl border bg-white p-6">
-        <h1 className="text-2xl font-bold text-gray-900">Minha conta</h1>
-        <p className="mt-1 text-sm text-gray-600">Suas informações pessoais de acesso ao painel.</p>
+        <h2 className="text-lg font-semibold text-gray-900">Dados pessoais</h2>
+        <p className="mt-1 text-sm text-gray-600">Informações utilizadas para identificar sua conta.</p>
 
         <div className="mt-5 flex items-center gap-4">
           <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-gray-100">
@@ -169,15 +204,56 @@ function AccountForm() {
       </section>
 
       <section className="rounded-xl border bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900">Senha</h2>
+        <h2 className="text-lg font-semibold text-gray-900">Segurança</h2>
         <p className="mt-1 text-sm text-gray-600">
-          Para trocar sua senha, acesse{" "}
-          <Link href="/settings/security" className="text-red-600 hover:underline">
-            Segurança da conta
-          </Link>
-          .
+          Atualize sua senha de acesso com segurança.
         </p>
+        <form onSubmit={changePassword} className="mt-6 grid gap-4 md:grid-cols-2">
+          <label className="text-sm font-medium text-gray-700 md:col-span-2">
+            Senha atual
+            <PasswordInput
+              value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+              autoComplete="current-password"
+              className="mt-1 w-full"
+              required
+            />
+          </label>
+          <label className="text-sm font-medium text-gray-700">
+            Nova senha
+            <PasswordInput
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+              autoComplete="new-password"
+              className="mt-1 w-full"
+              required
+            />
+          </label>
+          <label className="text-sm font-medium text-gray-700">
+            Confirmar nova senha
+            <PasswordInput
+              value={passwordConfirmation}
+              onChange={(event) => setPasswordConfirmation(event.target.value)}
+              autoComplete="new-password"
+              className="mt-1 w-full"
+              required
+            />
+          </label>
+          <p className="text-xs text-gray-500 md:col-span-2">
+            Use pelo menos 8 caracteres, incluindo maiúscula, minúscula, número e caractere especial.
+          </p>
+          <div className="md:col-span-2">
+            <button
+              disabled={changingPassword}
+              className="flex items-center gap-2 rounded-md bg-red-600 px-5 py-2 font-semibold text-white disabled:opacity-50"
+            >
+              {changingPassword && <Spinner />}
+              {changingPassword ? "Alterando..." : "Alterar senha"}
+            </button>
+          </div>
+        </form>
       </section>
+      </div>
     </div>
   );
 }

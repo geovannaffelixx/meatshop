@@ -21,7 +21,6 @@ import {
   PiggyBank,
   ScrollText,
   Settings,
-  Shield,
   ShoppingBag,
   Star,
   Tags,
@@ -95,7 +94,6 @@ const navGroups: NavGroup[] = [
     id: "operation",
     title: "Operação",
     icon: ClipboardList,
-    defaultOpen: true,
     items: [
       {
         title: "Pedidos",
@@ -210,12 +208,6 @@ const navGroups: NavGroup[] = [
         icon: UserIcon,
         permission: unitPermissions.viewDashboard,
       },
-      {
-        title: "Segurança da conta",
-        url: "/settings/security",
-        icon: Shield,
-        permission: unitPermissions.viewDashboard,
-      },
     ],
   },
 ];
@@ -241,7 +233,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
     hasPermission,
   } = usePanelAccess();
   const displayUser = currentUser ??
-    user ?? { name: "Usuário", email: "email@exemplo.com", avatar_url: null };
+    user ?? { name: "Conta", email: "", avatar_url: null };
   const resolvedSrc = displayUser.avatar_url
     ? displayUser.avatar_url.startsWith("http")
       ? displayUser.avatar_url
@@ -263,9 +255,14 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
               (!item.adminOnly ||
                 currentUser?.global_role === "SUPER_ADMIN") &&
               (!item.permission || hasPermission(item.permission)),
+          ).sort((first, second) =>
+            first.title.localeCompare(second.title, "pt-BR"),
           ),
         }))
-        .filter((group) => group.items.length > 0),
+        .filter((group) => group.items.length > 0)
+        .sort((first, second) =>
+          first.title.localeCompare(second.title, "pt-BR"),
+        ),
     [currentUser?.global_role, hasPermission],
   );
 
@@ -383,7 +380,6 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
           <SidebarGroupLabel>Navegação</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {directItem(dashboardItem)}
               {visibleGroups.map((group) => {
                 const GroupIcon = group.icon;
                 const groupActive = group.items.some((item) =>
@@ -451,6 +447,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
               })}
               <div className="my-1 border-t border-slate-100" />
               {directItem(supportItem)}
+              {directItem(dashboardItem)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

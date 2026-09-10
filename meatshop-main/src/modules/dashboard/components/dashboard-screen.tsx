@@ -29,6 +29,7 @@ import { useManagedUnits } from "@/shared/hooks/use-managed-units"
 import { formatCurrency } from "@/shared/lib/formatters"
 import { PageHeader } from "@/shared/components/page-header"
 import { AlertTriangle, ArrowRight, PackageOpen, ShoppingBag, TrendingUp } from "lucide-react"
+import Autoplay from "embla-carousel-autoplay"
 
 const chartConfig = {
   vendas: { label: "Receita", color: "#525252" },
@@ -48,6 +49,7 @@ type DashboardData = {
     value: number
     order_date: string
   }[]
+  pendingOrdersCount: number
   lowStockCount: number
   topProducts: { product_id: number; product_name: string; quantity_sold: number; revenue: number }[]
 }
@@ -55,6 +57,10 @@ type DashboardData = {
 type Sale = { id: number; name: string; imageUrl: string; discountValue: number }
 
 export function DashboardScreen() {
+  const promotionAutoplay = useMemo(
+    () => Autoplay({ delay: 4500, stopOnInteraction: true, stopOnMouseEnter: true }),
+    [],
+  )
   const { unitId } = useManagedUnits()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -101,9 +107,7 @@ export function DashboardScreen() {
   }, [dashboard])
 
   const pendingOrders = useMemo(() => {
-    return (dashboard?.recentOrders ?? [])
-      .filter((o) => o.status === "PENDING")
-      .slice(0, 20)
+    return dashboard?.recentOrders ?? []
   }, [dashboard])
 
   return (
@@ -134,7 +138,7 @@ export function DashboardScreen() {
               <div>
                 <p className="text-sm text-slate-500">Pedidos pendentes</p>
                 <strong className="mt-1 block text-2xl text-slate-950">
-                  {pendingOrders.length}
+                  {dashboard?.pendingOrdersCount ?? 0}
                 </strong>
               </div>
               <span className="rounded-xl bg-blue-50 p-3 text-blue-700">
@@ -212,8 +216,8 @@ export function DashboardScreen() {
           )}
         </section>
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(20rem,0.8fr)_1.2fr]">
-          <Card className="border-0 shadow-sm">
+        <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,3fr)]">
+          <Card className="h-80 min-w-0 overflow-hidden border-0 shadow-sm">
             <Link href="/finance" className="block">
                 <CardHeader>
                   <CardTitle className="text-lg font-bold text-slate-950">Receita semanal</CardTitle>
@@ -234,7 +238,7 @@ export function DashboardScreen() {
             </Link>
           </Card>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <section className="h-80 min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h2 className="font-bold text-slate-950">Promoções ativas</h2>
@@ -250,12 +254,16 @@ export function DashboardScreen() {
             )}
 
             {sales.length > 0 && (
-              <Carousel className="mx-auto w-full" opts={{ align: "start" }}>
+              <Carousel
+                className="w-full min-w-0"
+                opts={{ align: "start", loop: sales.length > 1 }}
+                plugins={sales.length > 1 ? [promotionAutoplay] : undefined}
+              >
                 <CarouselContent>
                   {sales.map((s) => (
-                    <CarouselItem key={s.id} className="basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                    <CarouselItem key={s.id} className="basis-full sm:basis-1/2 lg:basis-1/3">
                       <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                        <div className="flex h-32 w-full items-center justify-center bg-white">
+                        <div className="flex h-28 w-full items-center justify-center bg-white">
                           <Image
                             src={resolveAssetUrl(s.imageUrl)}
                             alt={s.name}

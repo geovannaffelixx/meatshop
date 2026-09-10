@@ -149,7 +149,8 @@ function TeamManager() {
   );
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="page-surface">
+    <div className="page-container max-w-6xl">
       <section className="rounded-xl border bg-white p-6">
         <h1 className="text-2xl font-bold text-gray-900">Equipe e acessos</h1>
         <p className="mt-1 text-sm text-gray-600">
@@ -334,6 +335,7 @@ function TeamManager() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
     </div>
   );
 }

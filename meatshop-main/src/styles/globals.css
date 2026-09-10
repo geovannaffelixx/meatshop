@@ -168,6 +168,14 @@
   .data-table tbody tr {
     @apply border-t border-slate-200 transition-colors hover:bg-slate-50;
   }
+
+  table {
+    @apply border-collapse;
+  }
+
+  table :is(th, td) {
+    @apply border border-slate-200;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

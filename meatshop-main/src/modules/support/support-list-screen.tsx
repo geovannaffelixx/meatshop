@@ -93,6 +93,7 @@ export function SupportListScreen() {
   }
 
   return (
+    <div className="page-surface">
     <section className="page-container max-w-6xl">
       <PageHeader
         eyebrow={isAdmin ? "Administração" : "Atendimento"}
@@ -312,5 +313,6 @@ export function SupportListScreen() {
         </DialogContent>
       </Dialog>
     </section>
+    </div>
   );
 }

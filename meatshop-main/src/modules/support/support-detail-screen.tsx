@@ -71,20 +71,25 @@ export function SupportDetailScreen({ ticketId }: { ticketId: number }) {
 
   if (loading && !ticket)
     return (
-      <div className="grid min-h-[60vh] place-items-center text-slate-500">
-        Carregando chamado...
+      <div className="page-surface">
+        <div className="grid min-h-[60vh] place-items-center text-slate-500">
+          Carregando chamado...
+        </div>
       </div>
     );
   if (!ticket)
     return (
-      <div className="p-8 text-center text-slate-500">
-        Chamado não encontrado.
+      <div className="page-surface">
+        <div className="p-8 text-center text-slate-500">
+          Chamado não encontrado.
+        </div>
       </div>
     );
   const closed = ticket.status === "CLOSED";
 
   return (
-    <section className="mx-auto max-w-5xl p-6">
+    <div className="page-surface">
+    <section className="page-container max-w-5xl">
       <button
         onClick={() => router.push("/support")}
         className="mb-4 flex items-center gap-2 text-sm text-slate-600 hover:text-red-700"
@@ -273,5 +278,6 @@ export function SupportDetailScreen({ ticketId }: { ticketId: number }) {
         </aside>
       </div>
     </section>
+    </div>
   );
 }

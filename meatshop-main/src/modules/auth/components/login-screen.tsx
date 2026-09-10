@@ -44,15 +44,15 @@ export function LoginScreen() {
   }
 
   return (
-    <main className="grid min-h-screen bg-slate-950 lg:grid-cols-[minmax(22rem,0.85fr)_1.15fr]">
-      <section className="relative hidden min-h-screen overflow-hidden lg:block">
+    <main className="grid min-h-screen bg-white lg:grid-cols-[minmax(22rem,0.85fr)_1.15fr]">
+      <section className="relative hidden min-h-screen overflow-hidden bg-white lg:block">
         <Image
           src="/entrar.png"
           alt=""
           fill
           priority
           sizes="42vw"
-          className="object-cover"
+          className="scale-[1.01] object-cover"
         />
       </section>
 

@@ -1,5 +1,5 @@
-import { SecurityScreen } from "@/modules/settings";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <SecurityScreen />;
+  redirect("/settings/account");
 }

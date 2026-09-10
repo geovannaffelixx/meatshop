@@ -222,7 +222,8 @@ function UnitSettings() {
   );
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="page-surface">
+    <div className="page-container max-w-6xl">
       <section className="rounded-xl border bg-white p-6">
         <h1 className="text-2xl font-bold text-gray-900">
           Configurações da unidade
@@ -400,6 +401,7 @@ function UnitSettings() {
           {saving ? "Salvando..." : "Salvar horários"}
         </button>
       </section>
+    </div>
     </div>
   );
 }
