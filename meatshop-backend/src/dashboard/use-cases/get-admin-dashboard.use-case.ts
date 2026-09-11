@@ -51,16 +51,17 @@ export class GetAdminDashboardUseCase {
 
     const currentMonth = new Date().toISOString().slice(0, 7);
 
-    const [weeklyChart, stockAlerts, topProducts, recentOrders, pendingOrdersCount, revenue] = await Promise.all([
-      this.getOrdersChartUseCase.forUnit(unitId, WEEKLY_CHART_DAYS),
-      this.getStockAlertsUseCase.forUnit(unitId),
-      this.getTopProductsUseCase.forUnit(unitId, TOP_PRODUCTS_LIMIT),
-      this.getPendingOrders(unitId),
-      this.orderRepository.count({
-        where: { unit_id: unitId, status: OrderStatus.PENDING },
-      }),
-      this.getMonthlyRevenueUseCase.forUnit(unitId, currentMonth),
-    ]);
+    const [weeklyChart, stockAlerts, topProducts, recentOrders, pendingOrdersCount, revenue] =
+      await Promise.all([
+        this.getOrdersChartUseCase.forUnit(unitId, WEEKLY_CHART_DAYS),
+        this.getStockAlertsUseCase.forUnit(unitId),
+        this.getTopProductsUseCase.forUnit(unitId, TOP_PRODUCTS_LIMIT),
+        this.getPendingOrders(unitId),
+        this.orderRepository.count({
+          where: { unit_id: unitId, status: OrderStatus.PENDING },
+        }),
+        this.getMonthlyRevenueUseCase.forUnit(unitId, currentMonth),
+      ]);
 
     return {
       revenueThisMonth: revenue.revenueTotal,
@@ -82,7 +83,7 @@ export class GetAdminDashboardUseCase {
 
     return orders.map((o) => ({
       id: o.id,
-      client_name: o.client?.name ?? 'Cliente',
+      client_name: o.client?.name ?? 'Customer',
       status: o.status,
       value: o.payment_status === PaymentStatus.PAID ? Number(o.total_amount) : 0,
       order_date: o.order_date,

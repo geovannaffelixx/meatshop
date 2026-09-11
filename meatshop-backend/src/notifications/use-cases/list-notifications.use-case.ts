@@ -31,7 +31,9 @@ export class ListNotificationsUseCase {
       .take(limit);
 
     if (query.read !== undefined) {
-      builder.andWhere('notification.read = :read', { read: query.read === 'true' });
+      builder.andWhere('notification.read = :read', {
+        read: query.read === 'true',
+      });
     }
     if (query.unit_id !== undefined) {
       builder.andWhere('(notification.unit_id = :unitId OR notification.unit_id IS NULL)', {

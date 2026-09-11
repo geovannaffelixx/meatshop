@@ -29,7 +29,7 @@ export class ReviewsController {
 
   @ApiBearerAuth('access-token')
   @ApiOperation({
-    summary: 'Retorna as avaliações já enviadas pelo cliente para o pedido',
+    summary: 'Returns reviews already submitted by the customer for the order',
   })
   @Get('orders/:orderId/reviews/status')
   getOrderReviewStatus(
@@ -41,11 +41,11 @@ export class ReviewsController {
 
   @Public()
   @ApiOperation({
-    summary: 'Lista avaliações de unidade/produto, opcionalmente filtradas',
+    summary: 'Lists unit or product reviews with optional filters',
   })
   @ApiResponse({
     status: 200,
-    description: 'Lista de avaliações retornada com sucesso',
+    description: 'Review list returned successfully',
   })
   @Get('reviews')
   list(@Query() filters: FilterReviewsDto) {
@@ -54,10 +54,10 @@ export class ReviewsController {
 
   @Public()
   @ApiOperation({
-    summary: 'Busca uma avaliação de unidade/produto pelo identificador',
+    summary: 'Gets a unit or product review by identifier',
   })
-  @ApiResponse({ status: 200, description: 'Avaliação encontrada com sucesso' })
-  @ApiResponse({ status: 404, description: 'Avaliação não encontrada' })
+  @ApiResponse({ status: 200, description: 'Review found successfully' })
+  @ApiResponse({ status: 404, description: 'Review not found' })
   @Get('reviews/:id')
   getOne(@Param('id', ParseIntPipe) id: number) {
     return this.getReviewUseCase.execute(id);
@@ -65,12 +65,12 @@ export class ReviewsController {
 
   @ApiBearerAuth('access-token')
   @ApiOperation({
-    summary: 'Avalia a unidade (açougue) responsável pelo pedido',
+    summary: 'Reviews the butcher shop unit responsible for the order',
   })
-  @ApiResponse({ status: 201, description: 'Avaliação registrada com sucesso' })
-  @ApiResponse({ status: 400, description: 'Pedido ainda não foi entregue' })
-  @ApiResponse({ status: 404, description: 'Pedido não encontrado' })
-  @ApiResponse({ status: 409, description: 'Pedido já foi avaliado' })
+  @ApiResponse({ status: 201, description: 'Review submitted successfully' })
+  @ApiResponse({ status: 400, description: 'Order has not been delivered yet' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
+  @ApiResponse({ status: 409, description: 'Order has already been reviewed' })
   @Post('orders/:orderId/reviews/unit')
   reviewUnit(
     @Param('orderId', ParseIntPipe) orderId: number,
@@ -81,16 +81,18 @@ export class ReviewsController {
   }
 
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Avalia um produto específico comprado no pedido' })
-  @ApiResponse({ status: 201, description: 'Avaliação registrada com sucesso' })
+  @ApiOperation({
+    summary: 'Reviews a specific product purchased in the order',
+  })
+  @ApiResponse({ status: 201, description: 'Review submitted successfully' })
   @ApiResponse({
     status: 400,
-    description: 'Pedido ainda não foi entregue ou o produto não pertence ao pedido',
+    description: 'Order has not been delivered yet or the product does not belong to the order',
   })
-  @ApiResponse({ status: 404, description: 'Pedido não encontrado' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
   @ApiResponse({
     status: 409,
-    description: 'Produto já foi avaliado neste pedido',
+    description: 'Product has already been reviewed for this order',
   })
   @Post('orders/:orderId/reviews/products/:productId')
   reviewProduct(
@@ -103,14 +105,16 @@ export class ReviewsController {
   }
 
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Avalia o entregador responsável pelo pedido' })
-  @ApiResponse({ status: 201, description: 'Avaliação registrada com sucesso' })
+  @ApiOperation({
+    summary: 'Reviews the delivery person responsible for the order',
+  })
+  @ApiResponse({ status: 201, description: 'Review submitted successfully' })
   @ApiResponse({
     status: 400,
-    description: 'Pedido ainda não foi entregue ou não teve entregador',
+    description: 'Order has not been delivered yet ou did not have a delivery person',
   })
-  @ApiResponse({ status: 404, description: 'Pedido não encontrado' })
-  @ApiResponse({ status: 409, description: 'Pedido já foi avaliado' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
+  @ApiResponse({ status: 409, description: 'Order has already been reviewed' })
   @Post('orders/:orderId/delivery-review')
   reviewDelivery(
     @Param('orderId', ParseIntPipe) orderId: number,
@@ -121,10 +125,10 @@ export class ReviewsController {
   }
 
   @Public()
-  @ApiOperation({ summary: 'Lista as avaliações recebidas por um entregador' })
+  @ApiOperation({ summary: 'Lists reviews received by a delivery person' })
   @ApiResponse({
     status: 200,
-    description: 'Lista de avaliações retornada com sucesso',
+    description: 'Review list returned successfully',
   })
   @Get('delivery-persons/:deliveryPersonId/reviews')
   listDeliveryReviews(@Param('deliveryPersonId', ParseIntPipe) deliveryPersonId: number) {

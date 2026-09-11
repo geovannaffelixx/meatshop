@@ -80,7 +80,7 @@ describe('DeliveryMobileService', () => {
     jest.mocked(memberships.find).mockResolvedValue([]);
   });
 
-  it('expõe perfil público somente quando o entregador está atribuído ao cliente', async () => {
+  it('exposes the public profile only when the delivery person is assigned to the customer', async () => {
     jest.mocked(orders.findOne).mockResolvedValue({ id: 22 } as Order);
     jest.mocked(access.deliveryPersonRepository.findOne).mockResolvedValue({
       ...person(),
@@ -101,12 +101,12 @@ describe('DeliveryMobileService', () => {
     });
   });
 
-  it('não revela perfil de entregador sem pedido do cliente', async () => {
+  it('does not expose a delivery person profile without a customer order', async () => {
     jest.mocked(orders.findOne).mockResolvedValue(null);
     await expect(service.publicProfile(3, user)).rejects.toBeInstanceOf(NotFoundException);
   });
 
-  it('persiste disponibilidade para entregador ativo com veículo ativo', async () => {
+  it('persists availability for an active delivery person with an active vehicle', async () => {
     const deliveryPerson = person();
     deliveryPerson.is_online = false;
     jest.mocked(access.getOwnDeliveryPerson).mockResolvedValue(deliveryPerson);
@@ -117,12 +117,12 @@ describe('DeliveryMobileService', () => {
     expect(access.deliveryPersonRepository.save).toHaveBeenCalledWith(deliveryPerson);
   });
 
-  it('recusa ficar online sem veículo ativo', async () => {
+  it('rejects going online without an active vehicle', async () => {
     jest.mocked(vehicles.findOne).mockResolvedValue(null);
     await expect(service.availability(user, true)).rejects.toBeInstanceOf(BadRequestException);
   });
 
-  it('permite que autônomo online consulte ofertas de qualquer unidade', async () => {
+  it('allows an online independent delivery person to view offers from any unit', async () => {
     await service.available(user);
 
     expect(orders.find).toHaveBeenCalledWith(
@@ -132,7 +132,7 @@ describe('DeliveryMobileService', () => {
     );
   });
 
-  it('restringe entregador vinculado às unidades ativas em que possui cargo', async () => {
+  it('restricts a linked delivery person to active units where they have a role', async () => {
     jest
       .mocked(access.getOwnActiveDeliveryPerson)
       .mockResolvedValue(person(DeliveryAffiliationType.UNIT));
@@ -154,7 +154,7 @@ describe('DeliveryMobileService', () => {
     );
   });
 
-  it('impede rejeição de oferta fora da unidade do entregador vinculado', async () => {
+  it('prevents rejecting an offer outside the linked delivery person unit', async () => {
     jest
       .mocked(access.getOwnActiveDeliveryPerson)
       .mockResolvedValue(person(DeliveryAffiliationType.UNIT));
@@ -165,7 +165,7 @@ describe('DeliveryMobileService', () => {
       delivery_status: DeliveryStatus.WAITING_DELIVERY_PERSON,
     } as Order);
 
-    await expect(service.reject(20, { reasons: ['Distância'] }, user)).rejects.toBeInstanceOf(
+    await expect(service.reject(20, { reasons: ['Distance'] }, user)).rejects.toBeInstanceOf(
       NotFoundException,
     );
   });

@@ -15,7 +15,7 @@ function sanitizeMeta(meta?: Meta): Meta | undefined {
 
   const SENSITIVE_KEYS = [
     'password',
-    'senha',
+    'password',
     'token',
     'accessToken',
     'refreshToken',

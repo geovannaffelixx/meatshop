@@ -2,13 +2,16 @@ import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
 import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateRecipeStepDto {
-  @ApiProperty({ description: 'Número de ordem do passo, começando em 1', example: 1 })
+  @ApiProperty({
+    description: 'Step sequence number, starting at 1',
+    example: 1,
+  })
   @IsInt()
   @Min(1)
   step_number: number;
 
   @ApiProperty({
-    description: 'Descrição do passo',
+    description: 'Step description',
     example: 'Retire a picanha da geladeira 40 minutos antes de grelhar.',
   })
   @IsNotEmpty()
@@ -16,8 +19,8 @@ export class CreateRecipeStepDto {
   description: string;
 
   @ApiPropertyOptional({
-    description: 'Dica extra para esse passo específico',
-    example: 'Apenas sal grosso — não complique.',
+    description: 'Extra tip for this specific step',
+    example: 'Use only coarse salt - keep it simple.',
   })
   @IsOptional()
   @IsString()

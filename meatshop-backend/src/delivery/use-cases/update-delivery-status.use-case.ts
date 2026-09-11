@@ -19,7 +19,9 @@ export class UpdateDeliveryStatusUseCase {
     const deliveryPerson =
       await this.orderAuthorizationService.getActiveDeliveryPerson(currentUser);
 
-    const order = await this.orderRepository.findOne({ where: { id: orderId } });
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+    });
     if (!order) {
       throw new NotFoundException('Order not found');
     }
@@ -30,8 +32,6 @@ export class UpdateDeliveryStatusUseCase {
     }
 
     void dto;
-    throw new BadRequestException(
-      'A retirada deve ser liberada pela unidade após a validação do código.',
-    );
+    throw new BadRequestException('Pickup must be released by the unit after code validation.');
   }
 }

@@ -38,7 +38,7 @@ export class UnitAddressService {
     if (!/^\d{8}$/.test(cep)) {
       throw new BadRequestException({
         code: 'INVALID_CEP',
-        message: 'Informe um CEP válido com 8 dígitos.',
+        message: 'Provide a valid 8-digit postal code.',
       });
     }
 
@@ -56,20 +56,20 @@ export class UnitAddressService {
     } catch {
       throw new BadGatewayException({
         code: 'CEP_PROVIDER_UNAVAILABLE',
-        message: 'A consulta de CEP está indisponível. Tente novamente em instantes.',
+        message: 'Postal code lookup is unavailable. Try again shortly.',
       });
     }
 
     if (response.status === 404) {
       throw new NotFoundException({
         code: 'CEP_NOT_FOUND',
-        message: 'CEP não encontrado.',
+        message: 'Postal code not found.',
       });
     }
     if (!response.ok) {
       throw new BadGatewayException({
         code: 'CEP_PROVIDER_ERROR',
-        message: 'Não foi possível consultar o CEP agora.',
+        message: 'Could not look up the postal code now.',
       });
     }
 
@@ -88,7 +88,8 @@ export class UnitAddressService {
     ) {
       throw new BadGatewayException({
         code: 'CEP_WITHOUT_COORDINATES',
-        message: 'O provedor encontrou o endereço, mas ainda não possui coordenadas para este CEP.',
+        message:
+          'The provider found the address but does not have coordinates for this postal code yet.',
       });
     }
 

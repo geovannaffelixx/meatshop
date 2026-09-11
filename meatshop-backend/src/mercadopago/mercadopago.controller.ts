@@ -31,18 +31,17 @@ export class MercadoPagoController {
   ) {}
 
   @ApiOperation({
-    summary:
-      'Cria uma preferência de pagamento no Mercado Pago e retorna a URL de checkout do pedido',
+    summary: 'Creates a Mercado Pago payment preference and returns the order checkout URL',
   })
   @ApiResponse({
     status: 201,
-    description: 'Preferência de pagamento criada com sucesso',
+    description: 'Payment preference created successfully',
   })
   @ApiResponse({
     status: 403,
-    description: 'Usuário não tem permissão para pagar este pedido',
+    description: 'User is not allowed to pay for this order',
   })
-  @ApiResponse({ status: 404, description: 'Pedido não encontrado' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
   @Post('orders/:id/checkout')
   async createCheckout(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
     const order = await this.ordersRepo.findOne({ where: { id } });
@@ -57,7 +56,7 @@ export class MercadoPagoController {
     const pref = await this.mp.createPreference({
       orderId: order.id,
       amount: Number(order.total_amount),
-      description: `Pedido #${order.id} - MeatShop`,
+      description: `Order #${order.id} - MeatShop`,
     });
 
     const payment = await this.getOrCreatePayment(order.id);
@@ -69,7 +68,7 @@ export class MercadoPagoController {
   }
 
   @ApiOperation({
-    summary: 'Cria uma única preferência para todos os pedidos do checkout',
+    summary: 'Creates a single preference for all checkout orders',
   })
   @Post('checkouts/:checkoutId/checkout')
   async createMultiUnitCheckout(
@@ -113,7 +112,7 @@ export class MercadoPagoController {
       items: orders.map((order) => ({
         orderId: order.id,
         amount: Number(order.total_amount),
-        description: `Pedido #${order.id} - MeatShop`,
+        description: `Order #${order.id} - MeatShop`,
       })),
     });
     const byOrder = new Map(payments.map((payment) => [payment.order_id, payment]));

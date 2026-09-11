@@ -34,7 +34,7 @@ export class CouponAccessService {
     if (actor.global_role !== GlobalRole.SUPER_ADMIN) {
       throw new ForbiddenException({
         code: 'COUPON_PLATFORM_FORBIDDEN',
-        message: 'Somente a administração MeatShop pode gerenciar cupons da plataforma.',
+        message: 'Only MeatShop administrators can manage platform coupons.',
       });
     }
   }

@@ -33,25 +33,24 @@ export class CouponPolicyService {
 
   private assertLifecycle(coupon: Coupon): void {
     const now = new Date();
-    if (!coupon.active) this.fail('COUPON_INACTIVE', 'Este cupom está inativo.');
-    if (coupon.starts_at > now)
-      this.fail('COUPON_NOT_STARTED', 'Este cupom ainda não está válido.');
-    if (coupon.expires_at <= now) this.fail('COUPON_EXPIRED', 'Este cupom expirou.');
+    if (!coupon.active) this.fail('COUPON_INACTIVE', 'This coupon is inactive.');
+    if (coupon.starts_at > now) this.fail('COUPON_NOT_STARTED', 'This coupon is not valid yet.');
+    if (coupon.expires_at <= now) this.fail('COUPON_EXPIRED', 'This coupon has expired.');
     if (coupon.total_usage_limit && coupon.current_usage_count >= coupon.total_usage_limit) {
-      this.fail('COUPON_USAGE_LIMIT_REACHED', 'O limite de utilizações deste cupom foi atingido.');
+      this.fail('COUPON_USAGE_LIMIT_REACHED', 'This coupon usage limit has been reached.');
     }
   }
 
   private assertScope(coupon: Coupon, unitId: number): void {
     if (coupon.type === CouponType.UNIT && coupon.unit_id !== unitId) {
-      this.fail('COUPON_NOT_APPLICABLE', 'Este cupom não é válido para esta unidade.');
+      this.fail('COUPON_NOT_APPLICABLE', 'This coupon is not valid for this unit.');
     }
     if (
       coupon.type === CouponType.PLATFORM &&
       coupon.allowed_units?.length &&
       !coupon.allowed_units.some((item) => item.unit_id === unitId)
     ) {
-      this.fail('COUPON_NOT_APPLICABLE', 'Este cupom não é válido para esta unidade.');
+      this.fail('COUPON_NOT_APPLICABLE', 'This coupon is not valid for this unit.');
     }
   }
 
@@ -59,7 +58,7 @@ export class CouponPolicyService {
     if (subtotal < Number(coupon.minimum_order_value)) {
       this.fail(
         'COUPON_MINIMUM_NOT_REACHED',
-        `O pedido mínimo para este cupom é R$ ${Number(coupon.minimum_order_value).toFixed(2)}.`,
+        `The minimum order for this coupon is BRL ${Number(coupon.minimum_order_value).toFixed(2)}.`,
       );
     }
   }
@@ -67,10 +66,14 @@ export class CouponPolicyService {
   private async assertUsage(coupon: Coupon, userId: number, manager: EntityManager): Promise<void> {
     if (!coupon.usage_limit_per_user) return;
     const used = await manager.count(CouponRedemption, {
-      where: { coupon_id: coupon.id, user_id: userId, status: CouponRedemptionStatus.REDEEMED },
+      where: {
+        coupon_id: coupon.id,
+        user_id: userId,
+        status: CouponRedemptionStatus.REDEEMED,
+      },
     });
     if (used >= coupon.usage_limit_per_user)
-      this.fail('COUPON_USER_LIMIT_REACHED', 'Você já atingiu o limite de uso deste cupom.');
+      this.fail('COUPON_USER_LIMIT_REACHED', 'You have reached the usage limit for this coupon.');
   }
 
   private fail(code: string, message: string): never {

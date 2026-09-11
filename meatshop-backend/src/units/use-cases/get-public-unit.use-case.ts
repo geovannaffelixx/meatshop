@@ -15,13 +15,18 @@ export class GetPublicUnitUseCase {
   async execute(id: number): Promise<PublicUnitDto> {
     const unit = await this.units.findOne({ where: { id } });
     if (!unit) throw new NotFoundException('Unit not found');
-    const reviews = await this.reviews.find({ where: { unit_id: id, product_id: IsNull() } });
+    const reviews = await this.reviews.find({
+      where: { unit_id: id, product_id: IsNull() },
+    });
     const average =
       reviews.length === 0
         ? 0
         : Number(
             (reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1),
           );
-    return PublicUnitDto.fromEntity(unit, undefined, { average, count: reviews.length });
+    return PublicUnitDto.fromEntity(unit, undefined, {
+      average,
+      count: reviews.length,
+    });
   }
 }

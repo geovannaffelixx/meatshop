@@ -25,7 +25,10 @@ export class ListPublicUnitsUseCase {
       all.length === 0
         ? []
         : await this.reviews.find({
-            where: { unit_id: In(all.map((unit) => unit.id)), product_id: IsNull() },
+            where: {
+              unit_id: In(all.map((unit) => unit.id)),
+              product_id: IsNull(),
+            },
           });
     const ratings = new Map<number, { sum: number; count: number }>();
     for (const review of reviews) {
@@ -68,7 +71,10 @@ export class ListPublicUnitsUseCase {
 
   private rating(value?: { sum: number; count: number }) {
     return value
-      ? { average: Number((value.sum / value.count).toFixed(1)), count: value.count }
+      ? {
+          average: Number((value.sum / value.count).toFixed(1)),
+          count: value.count,
+        }
       : { average: 0, count: 0 };
   }
 

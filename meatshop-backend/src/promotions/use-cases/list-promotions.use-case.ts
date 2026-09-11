@@ -26,11 +26,17 @@ export class ListPromotionsUseCase {
         })
         .innerJoin('stock', 'stock', 'stock.product_id = product.id AND stock.quantity > 0')
         .where('promotion.active = :active', { active: true })
-        .andWhere('promotion.starts_at <= :now AND promotion.ends_at >= :now', { now: new Date() });
+        .andWhere('promotion.starts_at <= :now AND promotion.ends_at >= :now', {
+          now: new Date(),
+        });
       if (filters.unit_id)
-        query.andWhere('promotion.unit_id = :unitId', { unitId: filters.unit_id });
+        query.andWhere('promotion.unit_id = :unitId', {
+          unitId: filters.unit_id,
+        });
       if (filters.product_id)
-        query.andWhere('promotion.product_id = :productId', { productId: filters.product_id });
+        query.andWhere('promotion.product_id = :productId', {
+          productId: filters.product_id,
+        });
       const [data, total] = await query
         .orderBy('promotion.ends_at', 'ASC')
         .addOrderBy('promotion.id', 'ASC')

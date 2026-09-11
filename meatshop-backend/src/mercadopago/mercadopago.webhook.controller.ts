@@ -38,13 +38,13 @@ export class MercadoPagoWebhookController {
   ) {}
 
   @ApiOperation({
-    summary: 'Recebe notificações oficiais de pagamento do Mercado Pago',
+    summary: 'Receives official Mercado Pago payment notifications',
   })
   @ApiResponse({
     status: 200,
-    description: 'Notificação processada ou deduplicada',
+    description: 'Notification processed or deduplicated',
   })
-  @ApiResponse({ status: 401, description: 'Assinatura inválida ou expirada' })
+  @ApiResponse({ status: 401, description: 'Invalid or expired signature' })
   @Public()
   @Post('mercadopago')
   @HttpCode(200)
@@ -57,7 +57,7 @@ export class MercadoPagoWebhookController {
     const paymentId = this.extractPaymentId(query, body);
     if (!paymentId) return { ok: true, ignored: true, reason: 'missing_payment_id' };
     if (!this.verifyIfConfigured(paymentId, xSignature, xRequestId)) {
-      throw new UnauthorizedException('Webhook signature inválida');
+      throw new UnauthorizedException('Invalid webhook signature');
     }
 
     let snapshot: MercadoPagoPaymentSnapshot;
@@ -178,7 +178,7 @@ export class MercadoPagoWebhookController {
   private verifyIfConfigured(paymentId: string, xSignature?: string, xRequestId?: string): boolean {
     const secret = (this.config.get<string>('MP_WEBHOOK_SECRET') || '').trim();
     if (!secret) {
-      this.logger.error('MP_WEBHOOK_SECRET não configurado; webhook rejeitado.');
+      this.logger.error('MP_WEBHOOK_SECRET is not configured; webhook rejected.');
       return false;
     }
     return this.verifySignature({ secret, xSignature, xRequestId, paymentId });

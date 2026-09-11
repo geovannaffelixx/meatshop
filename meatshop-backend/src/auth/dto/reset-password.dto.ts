@@ -3,7 +3,7 @@ import { IsNotEmpty, IsString, Matches, MaxLength, MinLength } from 'class-valid
 
 export class ResetPasswordDto {
   @ApiProperty({
-    description: 'Token de redefinição de senha enviado por e-mail ao usuário',
+    description: 'Password reset token sent to the user by email',
     example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   })
   @IsNotEmpty()
@@ -12,7 +12,7 @@ export class ResetPasswordDto {
 
   @ApiProperty({
     description:
-      'Nova senha do usuário (mínimo 8 caracteres, deve conter maiúscula, minúscula, número e caractere especial)',
+      'User new password (minimum 8 characters, including uppercase, lowercase, number, and special character)',
     example: 'NovaSenha123!',
   })
   @IsNotEmpty()

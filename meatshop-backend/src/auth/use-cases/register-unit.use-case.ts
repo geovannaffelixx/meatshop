@@ -87,7 +87,7 @@ export class RegisterUnitUseCase {
     if (existing) {
       throw new ConflictException({
         code: 'EMAIL_ALREADY_EXISTS',
-        message: 'Já existe uma conta cadastrada com este e-mail.',
+        message: 'An account with this email already exists.',
       });
     }
   }
@@ -97,7 +97,7 @@ export class RegisterUnitUseCase {
     if (existing) {
       throw new ConflictException({
         code: 'CPF_ALREADY_EXISTS',
-        message: 'Já existe uma conta cadastrada com este CPF.',
+        message: 'An account with this CPF already exists.',
       });
     }
   }
@@ -107,7 +107,7 @@ export class RegisterUnitUseCase {
     if (existing) {
       throw new ConflictException({
         code: 'CNPJ_ALREADY_EXISTS',
-        message: 'Já existe um açougue cadastrado com este CNPJ.',
+        message: 'A butcher shop with this CNPJ already exists.',
       });
     }
   }

@@ -8,7 +8,6 @@ export enum Weekday {
   SATURDAY = 'SATURDAY',
 }
 
-/** Index matches JS Date#getDay() (0 = Sunday .. 6 = Saturday). */
 export const WEEKDAY_ORDER: Weekday[] = [
   Weekday.SUNDAY,
   Weekday.MONDAY,

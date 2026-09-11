@@ -3,9 +3,8 @@ import { IsEmail, IsNotEmpty } from 'class-validator';
 
 export class ForgotPasswordDto {
   @ApiProperty({
-    description:
-      'Endereço de e-mail do usuário para o qual o link de redefinição de senha será enviado',
-    example: 'cliente@meatshop.com',
+    description: 'User email address where the password reset link will be sent',
+    example: 'customer@meatshop.com',
   })
   @IsEmail()
   @IsNotEmpty()

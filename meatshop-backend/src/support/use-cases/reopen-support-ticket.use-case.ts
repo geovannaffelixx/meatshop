@@ -16,10 +16,10 @@ export class ReopenSupportTicketUseCase {
 
   async execute(id: number, actor: User): Promise<SupportTicket> {
     const ticket = await this.tickets.findOne({ where: { id } });
-    if (!ticket) throw new NotFoundException('Chamado não encontrado');
+    if (!ticket) throw new NotFoundException('Support ticket not found');
     this.access.assertCanView(ticket, actor);
     if (ticket.status !== SupportTicketStatus.CLOSED) {
-      throw new BadRequestException('Somente chamados encerrados podem ser reabertos');
+      throw new BadRequestException('Only closed support tickets can be reopened');
     }
     ticket.status = SupportTicketStatus.WAITING_SUPPORT;
     ticket.closed_at = null;

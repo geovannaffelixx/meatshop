@@ -20,8 +20,10 @@ describe('RegisterDeliveryPersonUseCase', () => {
     jest.mocked(repository.findOne).mockResolvedValue(null);
   });
 
-  it('ativa o entregador autônomo sem criar vínculo artificial com unidade', async () => {
-    const result = await useCase.execute({ vehicle: DeliveryMode.MOTORCYCLE }, { id: 7 } as User);
+  it('activates an independent delivery person without creating an artificial unit membership', async () => {
+    const result = await useCase.execute({ vehicle: DeliveryMode.MOTORCYCLE }, {
+      id: 7,
+    } as User);
 
     expect(result).toMatchObject({
       user_id: 7,
@@ -30,11 +32,13 @@ describe('RegisterDeliveryPersonUseCase', () => {
     });
   });
 
-  it('retorna o cadastro existente ao retomar um fluxo parcialmente concluído', async () => {
+  it('returns the existing record when resuming a partially completed flow', async () => {
     const existing = { id: 12, user_id: 7 } as DeliveryPerson;
     jest.mocked(repository.findOne).mockResolvedValue(existing);
 
-    const result = await useCase.execute({ vehicle: DeliveryMode.MOTORCYCLE }, { id: 7 } as User);
+    const result = await useCase.execute({ vehicle: DeliveryMode.MOTORCYCLE }, {
+      id: 7,
+    } as User);
 
     expect(result).toBe(existing);
     expect(repository.create).not.toHaveBeenCalled();

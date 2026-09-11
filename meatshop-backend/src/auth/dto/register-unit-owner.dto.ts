@@ -2,22 +2,22 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsNotEmpty, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 export class RegisterUnitOwnerDto {
-  @ApiProperty({ description: 'Nome completo do dono da unidade', example: 'João da Silva' })
+  @ApiProperty({ description: 'Unit owner full name', example: 'John Smith' })
   @IsNotEmpty()
   @IsString()
   @MaxLength(100)
   name: string;
 
   @ApiProperty({
-    description: 'Endereço de e-mail do dono da unidade',
-    example: 'dono@meatshop.com',
+    description: 'Unit owner email address',
+    example: 'owner@meatshop.com',
   })
   @IsEmail()
   @IsNotEmpty()
   email: string;
 
   @ApiProperty({
-    description: 'CPF do dono da unidade (somente números ou com máscara)',
+    description: 'Unit owner CPF (digits only or formatted)',
     example: '12345678900',
   })
   @IsNotEmpty()
@@ -28,7 +28,7 @@ export class RegisterUnitOwnerDto {
 
   @ApiProperty({
     description:
-      'Senha (mínimo 8 caracteres, deve conter maiúscula, minúscula, número e caractere especial)',
+      'Password (minimum 8 characters, including uppercase, lowercase, number, and special character)',
     example: 'Senha123!',
   })
   @IsNotEmpty()

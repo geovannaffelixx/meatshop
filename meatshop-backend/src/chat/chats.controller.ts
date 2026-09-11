@@ -12,13 +12,15 @@ export class ChatsController {
   constructor(private readonly inbox: ChatInboxService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Lista as conversas autorizadas do usuário autenticado' })
+  @ApiOperation({
+    summary: 'Lists the authenticated user authorized conversations',
+  })
   list(@CurrentUser() user: User, @Query() query: ListChatsDto) {
     return this.inbox.list(user, query);
   }
 
   @Get('unread-count')
-  @ApiOperation({ summary: 'Retorna o total de mensagens não lidas' })
+  @ApiOperation({ summary: 'Returns the total number of unread messages' })
   unreadCount(@CurrentUser() user: User) {
     return this.inbox.unreadCount(user);
   }

@@ -4,7 +4,7 @@ import { JoinChatRoomDto } from './join-chat-room.dto';
 
 export class ChatTypingDto extends JoinChatRoomDto {
   @ApiProperty({
-    description: 'Indica se o participante está digitando',
+    description: 'Indicates whether the participant is typing',
     example: true,
   })
   @IsBoolean()

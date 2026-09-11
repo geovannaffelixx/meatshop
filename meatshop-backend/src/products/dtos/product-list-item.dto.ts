@@ -3,10 +3,10 @@ import { Product } from '../entities/product.entity';
 import { Stock } from '../entities/stock.entity';
 
 export class ProductListItemDto {
-  @ApiProperty({ description: 'Id do produto', example: 1 })
+  @ApiProperty({ description: 'Product ID', example: 1 })
   id: number;
 
-  @ApiProperty({ description: 'Nome do produto', example: 'Picanha' })
+  @ApiProperty({ description: 'Product name', example: 'Picanha' })
   name: string;
 
   @ApiProperty() description: string;
@@ -15,34 +15,44 @@ export class ProductListItemDto {
 
   @ApiPropertyOptional({ nullable: true }) unit_name: string | null;
 
-  @ApiProperty({ description: 'Id da categoria do produto', example: 3 })
+  @ApiProperty({ description: 'Product category ID', example: 3 })
   category_id: number;
 
   @ApiPropertyOptional({
-    description: 'Nome da categoria do produto',
-    example: 'Bovinos',
+    description: 'Product category name',
+    example: 'Beefs',
     nullable: true,
   })
   category_name: string | null;
 
-  @ApiPropertyOptional({ description: 'Marca do produto', example: 'Friboi', nullable: true })
+  @ApiPropertyOptional({
+    description: 'Product brand',
+    example: 'Friboi',
+    nullable: true,
+  })
   brand: string | null;
 
   @ApiPropertyOptional({ nullable: true }) image_url: string | null;
 
-  @ApiProperty({ description: 'Unidade de medida do produto', example: 'KG' })
+  @ApiProperty({ description: 'Product unit of measure', example: 'KG' })
   unit_of_measure: string;
 
-  @ApiProperty({ description: 'Preço de venda do produto', example: 89.9 })
+  @ApiProperty({ description: 'Product sale price', example: 89.9 })
   price: number;
 
-  @ApiProperty({ description: 'Indica se o produto está ativo', example: true })
+  @ApiProperty({
+    description: 'Indicates whether the product is active',
+    example: true,
+  })
   active: boolean;
 
-  @ApiProperty({ description: 'Quantidade em estoque', example: 25 })
+  @ApiProperty({ description: 'Stock quantity', example: 25 })
   stock_quantity: number;
 
-  @ApiProperty({ description: 'Quantidade mínima antes do alerta de estoque baixo', example: 5 })
+  @ApiProperty({
+    description: 'Minimum quantity before a low-stock alert',
+    example: 5,
+  })
   stock_min_quantity: number;
 
   static fromEntity(product: Product, stock: Stock | null): ProductListItemDto {

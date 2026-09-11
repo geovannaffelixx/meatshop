@@ -1,6 +1,6 @@
-/* global beforeEach, jest */
 import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
+import { beforeEach, jest } from '@jest/globals';
 import type { Repository } from 'typeorm';
 import { Order } from '../entities/order.entity';
 import { DeliveryCodeService } from './delivery-code.service';
@@ -17,7 +17,9 @@ describe('DeliveryCodeService', () => {
   } as unknown as ConfigService;
   const service = new DeliveryCodeService(config, repository);
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
   function createOrder(id = 10): Order {
     return Object.assign(new Order(), {

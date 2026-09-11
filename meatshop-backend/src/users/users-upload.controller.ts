@@ -26,14 +26,13 @@ import { User } from './entities/user.entity';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { MediaStorageService } from '../storage/media-storage.service';
 
-// Valida o tipo de arquivo
 function imageFileFilter(
   _req: Express.Request,
   file: Express.Multer.File,
   cb: (error: Error | null, acceptFile: boolean) => void,
 ) {
   if (!file.mimetype.match(/^image\/(png|jpe?g|webp|gif)$/)) {
-    return cb(new BadRequestException('Tipo de imagem inválido'), false);
+    return cb(new BadRequestException('Invalid image type'), false);
   }
   cb(null, true);
 }
@@ -49,7 +48,7 @@ export class UsersUploadController {
   @Post('me/avatar')
   @ApiBearerAuth('access-token')
   @ApiOperation({
-    summary: 'Envia ou substitui o avatar do usuário autenticado',
+    summary: 'Uploads or replaces the authenticated user avatar',
   })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
@@ -68,10 +67,10 @@ export class UsersUploadController {
 
   @Delete('me/avatar')
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Remove o avatar do usuário autenticado' })
+  @ApiOperation({ summary: 'Removes the authenticated user avatar' })
   async deleteCurrentAvatar(@CurrentUser('id') userId: number) {
     const user = await this.users.findOne({ where: { id: userId } });
-    if (!user) throw new BadRequestException('Usuário não encontrado');
+    if (!user) throw new BadRequestException('User not found');
     await this.storage.delete(user.avatar_url);
     user.avatar_url = null;
     await this.users.save(user);
@@ -80,7 +79,7 @@ export class UsersUploadController {
 
   @Post(':id/logo')
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Envia ou atualiza a logo/avatar do usuário' })
+  @ApiOperation({ summary: 'Uploads or updates the user logo/avatar' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -92,18 +91,18 @@ export class UsersUploadController {
   })
   @ApiResponse({
     status: 201,
-    description: 'Imagem atualizada com sucesso',
+    description: 'Image updated successfully',
   })
-  @ApiResponse({ status: 400, description: 'Arquivo inválido ou não enviado' })
+  @ApiResponse({ status: 400, description: 'Invalid file or no file provided' })
   @ApiResponse({
     status: 403,
-    description: 'Sem permissão para alterar este usuário',
+    description: 'Permission denied to modify this user',
   })
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
       fileFilter: imageFileFilter,
-      limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+      limits: { fileSize: 2 * 1024 * 1024 },
     }),
   )
   async uploadLogo(
@@ -113,16 +112,16 @@ export class UsersUploadController {
   ) {
     const isSelf = String(authUserId) === String(paramId);
     if (!isSelf) {
-      throw new ForbiddenException('Sem permissão para alterar este usuário');
+      throw new ForbiddenException('Permission denied to modify this user');
     }
 
     return this.persistAvatar(Number(paramId), file);
   }
 
   private async persistAvatar(userId: number, file: Express.Multer.File | undefined) {
-    if (!file) throw new BadRequestException('Arquivo não enviado');
+    if (!file) throw new BadRequestException('File not provided');
     const user = await this.users.findOne({ where: { id: userId } });
-    if (!user) throw new BadRequestException('Usuário não encontrado');
+    if (!user) throw new BadRequestException('User not found');
     const publicUrl = await this.storage.upload(file, 'avatars');
     await this.storage.delete(user.avatar_url);
 
@@ -132,7 +131,7 @@ export class UsersUploadController {
     return {
       ok: true,
       avatar_url: publicUrl,
-      message: 'Imagem atualizada com sucesso',
+      message: 'Image updated successfully',
     };
   }
 }

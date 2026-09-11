@@ -14,11 +14,6 @@ const SENSITIVE_KEYS = [
 const PERSONAL_KEYS = ['cpf', 'cnpj', 'email', 'phone', 'telephone'];
 const MAX_STRING_LENGTH = 500;
 
-/**
- * Remove recursivamente campos sensíveis de um payload antes de persistir em
- * AuditLog. Nunca deve deixar senha/token chegar ao banco (regra inegociável
- * de segurança do projeto).
- */
 export function sanitizePayload(value: unknown, depth = 0): unknown {
   if (typeof value === 'string') {
     return value.length > MAX_STRING_LENGTH

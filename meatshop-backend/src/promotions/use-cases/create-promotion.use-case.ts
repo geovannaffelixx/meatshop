@@ -24,7 +24,9 @@ export class CreatePromotionUseCase {
   ) {}
 
   async execute(dto: CreatePromotionDto, currentUser: User): Promise<Promotion> {
-    const unit = await this.unitRepository.findOne({ where: { id: dto.unit_id } });
+    const unit = await this.unitRepository.findOne({
+      where: { id: dto.unit_id },
+    });
     if (!unit) {
       throw new NotFoundException('Unit not found');
     }
@@ -51,7 +53,9 @@ export class CreatePromotionUseCase {
   }
 
   private async ensureProductBelongsToUnit(productId: number, unitId: number): Promise<void> {
-    const product = await this.productRepository.findOne({ where: { id: productId } });
+    const product = await this.productRepository.findOne({
+      where: { id: productId },
+    });
     if (!product || product.unit_id !== unitId) {
       throw new NotFoundException('Product not found for this unit');
     }

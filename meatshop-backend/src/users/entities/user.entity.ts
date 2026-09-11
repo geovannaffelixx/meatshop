@@ -37,7 +37,6 @@ export class User {
   @Column({ type: 'boolean', default: true })
   is_active: boolean;
 
-  // Flags for account security (RNE-003)
   @Column({ type: 'int', default: 0 })
   failed_login_attempts: number;
 

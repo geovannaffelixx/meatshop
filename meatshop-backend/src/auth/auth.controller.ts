@@ -54,15 +54,15 @@ export class AuthController {
   ) {}
 
   @ApiOperation({
-    summary: 'Troca um Firebase ID Token por uma sessão MeatShop',
+    summary: 'Exchanges a Firebase ID token for a MeatShop session',
   })
   @ApiResponse({
     status: 200,
-    description: 'Sessão MeatShop emitida com sucesso',
+    description: 'MeatShop session issued successfully',
   })
   @ApiResponse({
     status: 409,
-    description: 'Primeiro vínculo exige a senha da conta local',
+    description: 'The first link requires the local account password',
   })
   @Public()
   @Post('firebase/exchange')
@@ -79,13 +79,13 @@ export class AuthController {
     return this.firebaseExchangeUseCase.execute(token, dto.password);
   }
 
-  @ApiOperation({ summary: 'Registra um novo usuário' })
-  @ApiResponse({ status: 201, description: 'Usuário criado com sucesso' })
+  @ApiOperation({ summary: 'Registers a new user' })
+  @ApiResponse({ status: 201, description: 'User created successfully' })
   @ApiResponse({
     status: 409,
-    description: 'Já existe um usuário com este e-mail ou CPF',
+    description: 'A user with this email or CPF already exists',
   })
-  @ApiResponse({ status: 400, description: 'Dados de entrada inválidos' })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
   @Public()
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
@@ -94,18 +94,17 @@ export class AuthController {
   }
 
   @ApiOperation({
-    summary:
-      'Registra o dono de uma unidade (açougue) e a própria unidade, já autenticando em seguida',
+    summary: 'Registers a butcher shop owner and unit, then authenticates the owner',
   })
   @ApiResponse({
     status: 201,
-    description: 'Unidade e dono criados com sucesso, já autenticado',
+    description: 'Unit and owner created successfully and authenticated',
   })
   @ApiResponse({
     status: 409,
-    description: 'Já existe um usuário com este e-mail/CPF, ou uma unidade com este CNPJ',
+    description: 'A user with this email or CPF, or a unit with this CNPJ, already exists',
   })
-  @ApiResponse({ status: 400, description: 'Dados de entrada inválidos' })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
   @Public()
   @Post('register-unit')
   @HttpCode(HttpStatus.CREATED)
@@ -116,10 +115,10 @@ export class AuthController {
   }
 
   @ApiOperation({
-    summary: 'Autentica um usuário e retorna os tokens de acesso',
+    summary: 'Authenticates a user and returns access tokens',
   })
-  @ApiResponse({ status: 200, description: 'Login realizado com sucesso' })
-  @ApiResponse({ status: 401, description: 'Credenciais inválidas' })
+  @ApiResponse({ status: 200, description: 'Login completed successfully' })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
   @Public()
   @UseGuards(LocalAuthGuard)
   @Post('login')
@@ -131,10 +130,10 @@ export class AuthController {
   }
 
   @ApiOperation({
-    summary: 'Encerra a sessão do usuário invalidando o refresh token',
+    summary: 'Ends the user session by invalidating the refresh token',
   })
-  @ApiResponse({ status: 200, description: 'Logout realizado com sucesso' })
-  @ApiResponse({ status: 400, description: 'Refresh token inválido' })
+  @ApiResponse({ status: 200, description: 'Logout completed successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid refresh token' })
   @Public()
   @Post('logout')
   @HttpCode(HttpStatus.OK)
@@ -153,12 +152,12 @@ export class AuthController {
   }
 
   @ApiOperation({
-    summary: 'Renova o token de acesso a partir de um refresh token válido',
+    summary: 'Renews the access token using a valid refresh token',
   })
-  @ApiResponse({ status: 200, description: 'Tokens renovados com sucesso' })
+  @ApiResponse({ status: 200, description: 'Tokens renewed successfully' })
   @ApiResponse({
     status: 401,
-    description: 'Refresh token inválido ou expirado',
+    description: 'Invalid or expired refresh token',
   })
   @Public()
   @Post('refresh')
@@ -178,13 +177,13 @@ export class AuthController {
   }
 
   @ApiOperation({
-    summary: 'Envia um e-mail com o link de redefinição de senha',
+    summary: 'Sends an email with the password reset link',
   })
   @ApiResponse({
     status: 200,
-    description: 'Solicitação processada com sucesso',
+    description: 'Request processed successfully',
   })
-  @ApiResponse({ status: 400, description: 'E-mail inválido' })
+  @ApiResponse({ status: 400, description: 'Invalid email' })
   @Public()
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
@@ -193,10 +192,10 @@ export class AuthController {
   }
 
   @ApiOperation({
-    summary: 'Redefine a senha do usuário a partir de um token válido',
+    summary: 'Resets the user password using a valid token',
   })
-  @ApiResponse({ status: 200, description: 'Senha redefinida com sucesso' })
-  @ApiResponse({ status: 400, description: 'Token inválido ou expirado' })
+  @ApiResponse({ status: 200, description: 'Password reset successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired token' })
   @Public()
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
@@ -205,10 +204,10 @@ export class AuthController {
   }
 
   @ApiOperation({
-    summary: 'Verifica o e-mail do usuário a partir de um token de verificação',
+    summary: 'Verifies the user email using a verification token',
   })
-  @ApiResponse({ status: 200, description: 'E-mail verificado com sucesso' })
-  @ApiResponse({ status: 400, description: 'Token inválido ou expirado' })
+  @ApiResponse({ status: 200, description: 'Email verified successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired token' })
   @Public()
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
@@ -217,11 +216,11 @@ export class AuthController {
   }
 
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Altera a senha do usuário autenticado' })
-  @ApiResponse({ status: 200, description: 'Senha alterada com sucesso' })
+  @ApiOperation({ summary: 'Changes the authenticated user password' })
+  @ApiResponse({ status: 200, description: 'Password changed successfully' })
   @ApiResponse({
     status: 401,
-    description: 'Senha atual incorreta ou usuário não autenticado',
+    description: 'Incorrect current password or unauthenticated user',
   })
   @Post('change-password')
   @HttpCode(HttpStatus.OK)

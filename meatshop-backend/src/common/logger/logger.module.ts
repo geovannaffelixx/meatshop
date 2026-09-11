@@ -12,7 +12,7 @@ import { createAppLogger } from './logger.config';
     },
     {
       provide: AppLogger,
-      useFactory: (logger: winston.Logger) => new AppLogger(logger), // 👈 injeta a instância
+      useFactory: (logger: winston.Logger) => new AppLogger(logger),
       inject: ['Logger'],
     },
   ],

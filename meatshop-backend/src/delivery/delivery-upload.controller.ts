@@ -30,7 +30,7 @@ function imageFilter(
   callback: (error: Error | null, accept: boolean) => void,
 ): void {
   if (!extensions.has(file.mimetype)) {
-    callback(new BadRequestException('Envie somente imagens JPG, PNG ou WEBP.'), false);
+    callback(new BadRequestException('Upload only JPG, PNG, or WEBP images.'), false);
     return;
   }
   callback(null, true);
@@ -55,7 +55,9 @@ export class DeliveryUploadController {
   ) {}
 
   @Post(':id/photos')
-  @ApiOperation({ summary: 'Adiciona uma foto ao veículo do entregador autenticado' })
+  @ApiOperation({
+    summary: 'Adds a photo to the authenticated delivery person vehicle',
+  })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -69,9 +71,9 @@ export class DeliveryUploadController {
     @UploadedFile() file: Express.Multer.File | undefined,
     @CurrentUser() actor: User,
   ) {
-    if (!file) throw new BadRequestException('Arquivo não enviado.');
+    if (!file) throw new BadRequestException('File not provided.');
     if (!(await hasValidSignature(file))) {
-      throw new BadRequestException('Conteúdo de imagem inválido.');
+      throw new BadRequestException('Invalid image content.');
     }
     const url = await this.storage.upload(file, 'vehicles');
     const vehicle = await this.photos.add(id, url, actor);
@@ -82,7 +84,9 @@ export class DeliveryUploadController {
   }
 
   @Delete(':id/photos/:filename')
-  @ApiOperation({ summary: 'Remove uma foto do veículo do entregador autenticado' })
+  @ApiOperation({
+    summary: 'Removes a photo from the authenticated delivery person vehicle',
+  })
   remove(
     @Param('id', ParseIntPipe) id: number,
     @Param('filename') filename: string,

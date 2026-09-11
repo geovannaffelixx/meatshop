@@ -16,27 +16,30 @@ export class SalesController {
   ) {}
 
   @Public()
-  @ApiOperation({ summary: 'Lista as promoções (sales) ativas no momento' })
+  @ApiOperation({ summary: 'Lists currently active sales' })
   @ApiQuery({
     name: 'now',
     required: false,
-    description: 'Data de referência ISO 8601 (default: agora)',
+    description: 'ISO 8601 reference date (default: now)',
   })
-  @ApiResponse({ status: 200, description: 'Lista de sales ativas retornada com sucesso' })
+  @ApiResponse({
+    status: 200,
+    description: 'Active sales list returned successfully',
+  })
   @Get()
   async listActive(@Query('now') nowISO?: string) {
     const now = nowISO ? new Date(nowISO) : new Date();
 
     const rows = await this.saleRepo.find({
       where: [
-        // Ativas sem datas definidas
         { active: true, startsAt: undefined, endsAt: undefined },
-        // Ativas com apenas data final futura
         { active: true, startsAt: undefined, endsAt: MoreThanOrEqual(now) },
-        // Ativas com apenas data inicial passada
         { active: true, startsAt: LessThanOrEqual(now), endsAt: undefined },
-        // Ativas dentro de um intervalo de datas
-        { active: true, startsAt: LessThanOrEqual(now), endsAt: MoreThanOrEqual(now) },
+        {
+          active: true,
+          startsAt: LessThanOrEqual(now),
+          endsAt: MoreThanOrEqual(now),
+        },
       ],
       order: { updatedAt: 'DESC' },
       take: 20,
@@ -51,9 +54,14 @@ export class SalesController {
   }
 
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Cria uma nova sale (promoção de vitrine, restrito a SUPER_ADMIN)' })
-  @ApiResponse({ status: 201, description: 'Sale criada com sucesso' })
-  @ApiResponse({ status: 403, description: 'Sem permissão para criar promoções de vitrine' })
+  @ApiOperation({
+    summary: 'Creates a new storefront sale restricted to SUPER_ADMIN',
+  })
+  @ApiResponse({ status: 201, description: 'Sale created successfully' })
+  @ApiResponse({
+    status: 403,
+    description: 'Permission denied to create promotions de vitrine',
+  })
   @Roles(GlobalRole.SUPER_ADMIN)
   @Post()
   async create(

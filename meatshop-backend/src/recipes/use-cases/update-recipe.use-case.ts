@@ -39,7 +39,9 @@ export class UpdateRecipeUseCase {
     dto: UpdateRecipeDto,
     currentUser: User,
   ): Promise<RecipeDetailResponseDto> {
-    const recipe = await this.recipeRepository.findOne({ where: { id: recipeId } });
+    const recipe = await this.recipeRepository.findOne({
+      where: { id: recipeId },
+    });
     if (!recipe) {
       throw new NotFoundException('Recipe not found');
     }
@@ -125,7 +127,9 @@ export class UpdateRecipeUseCase {
   }
 
   private async assertProductsBelongToUnit(productIds: number[], unitId: number): Promise<void> {
-    const products = await this.productRepository.find({ where: { id: In(productIds) } });
+    const products = await this.productRepository.find({
+      where: { id: In(productIds) },
+    });
 
     if (products.length !== productIds.length || products.some((p) => p.unit_id !== unitId)) {
       throw new BadRequestException('All featured products must belong to the recipe unit');

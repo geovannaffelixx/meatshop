@@ -19,7 +19,9 @@ import { Coupon } from './coupon.entity';
 export class CouponRedemption {
   @PrimaryGeneratedColumn() id: number;
   @Column() coupon_id: number;
-  @ManyToOne(() => Coupon, (coupon) => coupon.redemptions, { onDelete: 'RESTRICT' })
+  @ManyToOne(() => Coupon, (coupon) => coupon.redemptions, {
+    onDelete: 'RESTRICT',
+  })
   @JoinColumn({ name: 'coupon_id' })
   coupon: Coupon;
 
@@ -39,7 +41,11 @@ export class CouponRedemption {
   unit: Unit;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 }) discount_amount: number;
-  @Column({ type: 'enum', enum: CouponRedemptionStatus, default: CouponRedemptionStatus.REDEEMED })
+  @Column({
+    type: 'enum',
+    enum: CouponRedemptionStatus,
+    default: CouponRedemptionStatus.REDEEMED,
+  })
   status: CouponRedemptionStatus;
 
   @CreateDateColumn() redeemed_at: Date;

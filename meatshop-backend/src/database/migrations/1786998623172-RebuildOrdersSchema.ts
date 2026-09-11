@@ -25,7 +25,7 @@ export class RebuildOrdersSchema1786998623172 implements MigrationInterface {
       `CREATE TYPE "orders_payment_status_enum" AS ENUM('PENDING', 'PAID', 'REJECTED', 'REFUNDED', 'CANCELLED')`,
     );
     await queryRunner.query(
-      `CREATE TYPE "payments_method_enum" AS ENUM('Pix', 'Crédito', 'Débito', 'Dinheiro', 'Boleto', 'Saldo MP')`,
+      `CREATE TYPE "payments_method_enum" AS ENUM('Pix', 'Credit', 'Debit', 'Cash', 'Bank Slip', 'Mercado Pago Balance')`,
     );
 
     await queryRunner.query(`

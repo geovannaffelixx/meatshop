@@ -5,7 +5,7 @@ export function setupSwagger(app: INestApplication): void {
   const config = new DocumentBuilder()
     .setTitle('MeatShop API')
     .setDescription(
-      'API do MeatShop — plataforma de delivery e gestão para açougues (auth, unidades, catálogo, carrinho, promoções, pedidos e entregas).',
+      'MeatShop API - delivery and management platform for butcher shops, units, catalog, cart, promotions, orders, and deliveries.',
     )
     .setVersion('1.0')
     .addBearerAuth(

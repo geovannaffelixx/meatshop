@@ -15,7 +15,7 @@ describe('ListPublicUnitsUseCase', () => {
       name,
       latitude,
       longitude,
-      city: 'São Paulo',
+      city: 'Sao Paulo',
       state: 'SP',
       zip_code: '01001000',
       street: null,
@@ -43,7 +43,11 @@ describe('ListPublicUnitsUseCase', () => {
   it('requires latitude and longitude together', async () => {
     const repository = { find: jest.fn() } as unknown as Repository<Unit>;
     await expect(
-      new ListPublicUnitsUseCase(repository, reviews).execute({ page: 1, limit: 20, lat: -23.5 }),
+      new ListPublicUnitsUseCase(repository, reviews).execute({
+        page: 1,
+        limit: 20,
+        lat: -23.5,
+      }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 

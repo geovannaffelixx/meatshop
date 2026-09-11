@@ -11,7 +11,9 @@ export class GetReviewUseCase {
   ) {}
 
   async execute(reviewId: number): Promise<Review> {
-    const review = await this.reviewRepository.findOne({ where: { id: reviewId } });
+    const review = await this.reviewRepository.findOne({
+      where: { id: reviewId },
+    });
     if (!review) {
       throw new NotFoundException('Review not found');
     }

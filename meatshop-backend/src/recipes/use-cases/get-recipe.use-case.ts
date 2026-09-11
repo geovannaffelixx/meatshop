@@ -21,7 +21,9 @@ export class GetRecipeUseCase {
   ) {}
 
   async execute(recipeId: number): Promise<RecipeDetailResponseDto> {
-    const recipe = await this.recipeRepository.findOne({ where: { id: recipeId } });
+    const recipe = await this.recipeRepository.findOne({
+      where: { id: recipeId },
+    });
     if (!recipe) {
       throw new NotFoundException('Recipe not found');
     }

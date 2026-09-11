@@ -9,7 +9,8 @@ import { SupportTicket } from '../entities/support-ticket.entity';
 @Injectable()
 export class SearchSupportTicketsUseCase {
   constructor(
-    @InjectRepository(SupportTicket) private readonly tickets: Repository<SupportTicket>,
+    @InjectRepository(SupportTicket)
+    private readonly tickets: Repository<SupportTicket>,
   ) {}
 
   async execute(query: ListSupportTicketsQueryDto, actor: User) {
@@ -28,9 +29,13 @@ export class SearchSupportTicketsUseCase {
     }
     if (query.status) builder.andWhere('ticket.status = :status', { status: query.status });
     if (query.category)
-      builder.andWhere('ticket.category = :category', { category: query.category });
+      builder.andWhere('ticket.category = :category', {
+        category: query.category,
+      });
     if (query.priority)
-      builder.andWhere('ticket.priority = :priority', { priority: query.priority });
+      builder.andWhere('ticket.priority = :priority', {
+        priority: query.priority,
+      });
     const [data, total] = await builder.getManyAndCount();
     return { data, total, page, limit };
   }

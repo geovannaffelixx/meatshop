@@ -37,14 +37,14 @@ type Expense = {
   cpfCnpj: string
   supplierId: string
   supplierName: string
-  type: "Compras" | "Serviços" | "Outros"
+  type: "Purchases" | "Services" | "Other"
   amount: number
   discount: number
   paidAmount: number
   postedAt?: string
   paidAt?: string
   notes?: string
-  paymentMethod: "Pix" | "Crédito" | "Débito" | "Dinheiro" | "Boleto"
+  paymentMethod: "Pix" | "Credit" | "Debit" | "Cash" | "Bank Slip"
 }
 
 type RevenuePoint = { day: number; value: number }
@@ -73,7 +73,7 @@ const EMPTY_FORM = {
   supplierId: "",
   cpfCnpj: "",
   supplierName: "",
-  type: "Compras" as Expense["type"],
+  type: "Purchases" as Expense["type"],
   amount: "",
   discount: "",
   paidAmount: "",
@@ -196,7 +196,7 @@ export function FinanceScreen() {
     setExpenseTotal(parseFloat(summary.expensesTotal?.toString().replace(",", ".")) || 0)
     setPayments(
       (summary.payments ?? []).map((p) => ({
-        name: p.name === "Saldo MP" ? "Mercado Pago" : p.name,
+        name: p.name === "Mercado Pago Balance" ? "Mercado Pago" : p.name,
         value: roundMoney(parseFloat(p.value?.toString().replace(",", ".")) || 0),
       })),
     )
@@ -503,9 +503,9 @@ export function FinanceScreen() {
                             onChange={handleFormChange}
                             className="w-full border rounded-md px-3 py-2 text-gray-800"
                           >
-                            <option>Compras</option>
-                            <option>Serviços</option>
-                            <option>Outros</option>
+                            <option value="Purchases">Compras</option>
+                            <option value="Services">Serviços</option>
+                            <option value="Other">Outros</option>
                           </select>
                         </div>
 
@@ -544,10 +544,10 @@ export function FinanceScreen() {
                               className="w-full border rounded-md px-3 py-1.5 text-gray-800"
                             >
                               <option>Pix</option>
-                              <option>Crédito</option>
-                              <option>Débito</option>
-                              <option>Dinheiro</option>
-                              <option>Boleto</option>
+                              <option value="Credit">Crédito</option>
+                              <option value="Debit">Débito</option>
+                              <option value="Cash">Dinheiro</option>
+                              <option value="Bank Slip">Boleto</option>
                             </select>
                           </div>
                         </div>

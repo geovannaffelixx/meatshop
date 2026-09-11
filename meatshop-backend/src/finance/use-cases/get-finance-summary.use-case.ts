@@ -40,7 +40,11 @@ export class GetFinanceSummaryUseCase {
     const expenses = await this.expenseRepository.find({
       where: [
         { unit_id: unitId, paidAt: Like(`${year}-${mm}-%`) },
-        { unit_id: unitId, paidAt: IsNull(), postedAt: Like(`${year}-${mm}-%`) },
+        {
+          unit_id: unitId,
+          paidAt: IsNull(),
+          postedAt: Like(`${year}-${mm}-%`),
+        },
       ],
     });
     const expensesTotal = expenses.reduce((s, e) => s + Number(e.paidAmount ?? 0), 0);
@@ -51,16 +55,22 @@ export class GetFinanceSummaryUseCase {
       .addSelect('p.method', 'payment_method')
       .where('o.status = :st', { st: OrderStatus.DELIVERED })
       .andWhere('o.unit_id = :unitId', { unitId })
-      .andWhere('o.order_date >= :start AND o.order_date < :end', { start, end })
+      .andWhere('o.order_date >= :start AND o.order_date < :end', {
+        start,
+        end,
+      })
       .getRawAndEntities();
 
     const paymentsMap = new Map<string, number>();
     orders.forEach((o, i) => {
-      const key = raw[i]?.payment_method ?? 'Outros';
+      const key = raw[i]?.payment_method ?? 'Other';
       paymentsMap.set(key, (paymentsMap.get(key) ?? 0) + Number(o.total_amount ?? 0));
     });
 
-    const payments = Array.from(paymentsMap.entries()).map(([name, value]) => ({ name, value }));
+    const payments = Array.from(paymentsMap.entries()).map(([name, value]) => ({
+      name,
+      value,
+    }));
     const { revenueTotal } = await this.getMonthlyRevenueUseCase.forUnit(unitId, query.month);
 
     return { revenueTotal, expensesTotal, payments };

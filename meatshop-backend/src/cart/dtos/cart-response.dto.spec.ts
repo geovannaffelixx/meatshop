@@ -11,7 +11,7 @@ describe('CartResponseDto', () => {
       unit_price: price,
       product: {
         id,
-        name: `Produto ${id}`,
+        name: `Product ${id}`,
         image_url: null,
         unit_of_measure: 'kg',
         unit_id: unitId,
@@ -22,7 +22,7 @@ describe('CartResponseDto', () => {
   it('keeps products from different units in one cart and groups the response', () => {
     const response = CartResponseDto.fromEntity(
       { id: 5 } as Cart,
-      [item(10, 1, 'Unidade A', 20), item(20, 2, 'Unidade B', 30)],
+      [item(10, 1, 'Unit A', 20), item(20, 2, 'Unit B', 30)],
       new Map([
         [10, 5],
         [20, 8],

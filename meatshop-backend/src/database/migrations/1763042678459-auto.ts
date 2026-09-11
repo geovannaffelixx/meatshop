@@ -27,11 +27,11 @@ export class Auto1763042678459 implements MigrationInterface {
         `);
     await queryRunner.query(`
             ALTER TABLE "orders"
-            ADD "desconto" numeric(10, 2) NOT NULL DEFAULT '0'
+            ADD "discount" numeric(10, 2) NOT NULL DEFAULT '0'
         `);
     await queryRunner.query(`
             ALTER TABLE "orders"
-            ADD "valor_pago" numeric(10, 2) NOT NULL DEFAULT '0'
+            ADD "paid_amount" numeric(10, 2) NOT NULL DEFAULT '0'
         `);
     await queryRunner.query(`
             ALTER TABLE "orders"
@@ -43,7 +43,7 @@ export class Auto1763042678459 implements MigrationInterface {
         `);
     await queryRunner.query(`
             ALTER TABLE "orders"
-            ADD "observacoes" text
+            ADD "notes" text
         `);
     await queryRunner.query(`
             ALTER TABLE "orders"
@@ -54,18 +54,18 @@ export class Auto1763042678459 implements MigrationInterface {
             ADD "atualizado_em" TIMESTAMP NOT NULL DEFAULT now()
         `);
     await queryRunner.query(`
-            ALTER TABLE "orders" DROP COLUMN "cliente"
+            ALTER TABLE "orders" DROP COLUMN "customer"
         `);
     await queryRunner.query(`
             ALTER TABLE "orders"
-            ADD "cliente" character varying(150) NOT NULL
+            ADD "customer" character varying(150) NOT NULL
         `);
     await queryRunner.query(`
             ALTER TYPE "public"."orders_paymentmethod_enum"
             RENAME TO "orders_paymentmethod_enum_old"
         `);
     await queryRunner.query(`
-            CREATE TYPE "public"."orders_paymentmethod_enum" AS ENUM('Pix', 'Crédito', 'Débito', 'Dinheiro')
+            CREATE TYPE "public"."orders_paymentmethod_enum" AS ENUM('Pix', 'Credit', 'Debit', 'Cash')
         `);
     await queryRunner.query(`
             ALTER TABLE "orders"
@@ -78,7 +78,7 @@ export class Auto1763042678459 implements MigrationInterface {
 
   async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
-            CREATE TYPE "public"."orders_paymentmethod_enum_old" AS ENUM('Pix', 'Crédito', 'Débito', 'Dinheiro', 'Boleto')
+            CREATE TYPE "public"."orders_paymentmethod_enum_old" AS ENUM('Pix', 'Credit', 'Debit', 'Cash', 'Bank Slip')
         `);
     await queryRunner.query(`
             ALTER TABLE "orders"
@@ -92,11 +92,11 @@ export class Auto1763042678459 implements MigrationInterface {
             RENAME TO "orders_paymentmethod_enum"
         `);
     await queryRunner.query(`
-            ALTER TABLE "orders" DROP COLUMN "cliente"
+            ALTER TABLE "orders" DROP COLUMN "customer"
         `);
     await queryRunner.query(`
             ALTER TABLE "orders"
-            ADD "cliente" character varying NOT NULL
+            ADD "customer" character varying NOT NULL
         `);
     await queryRunner.query(`
             ALTER TABLE "orders" DROP COLUMN "atualizado_em"
@@ -105,7 +105,7 @@ export class Auto1763042678459 implements MigrationInterface {
             ALTER TABLE "orders" DROP COLUMN "criado_em"
         `);
     await queryRunner.query(`
-            ALTER TABLE "orders" DROP COLUMN "observacoes"
+            ALTER TABLE "orders" DROP COLUMN "notes"
         `);
     await queryRunner.query(`
             ALTER TABLE "orders" DROP COLUMN "data_entrega"
@@ -114,10 +114,10 @@ export class Auto1763042678459 implements MigrationInterface {
             ALTER TABLE "orders" DROP COLUMN "data_agendada"
         `);
     await queryRunner.query(`
-            ALTER TABLE "orders" DROP COLUMN "valor_pago"
+            ALTER TABLE "orders" DROP COLUMN "paid_amount"
         `);
     await queryRunner.query(`
-            ALTER TABLE "orders" DROP COLUMN "desconto"
+            ALTER TABLE "orders" DROP COLUMN "discount"
         `);
     await queryRunner.query(`
             ALTER TABLE "orders" DROP COLUMN "cpf_cnpj"

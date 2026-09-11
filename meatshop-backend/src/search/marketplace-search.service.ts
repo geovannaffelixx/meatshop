@@ -13,7 +13,8 @@ import { MarketplaceSearchDto } from './dtos/marketplace-search.dto';
 export class MarketplaceSearchService {
   constructor(
     @InjectRepository(Unit) private readonly units: Repository<Unit>,
-    @InjectRepository(Category) private readonly categories: Repository<Category>,
+    @InjectRepository(Category)
+    private readonly categories: Repository<Category>,
     @InjectRepository(Product) private readonly products: Repository<Product>,
   ) {}
 
@@ -35,9 +36,13 @@ export class MarketplaceSearchService {
       .where('category.active = :active', { active: true })
       .andWhere('LOWER(category.name) LIKE :term', { term });
     if (filters.unit_id)
-      categoryQuery.andWhere('category.unit_id = :unitId', { unitId: filters.unit_id });
+      categoryQuery.andWhere('category.unit_id = :unitId', {
+        unitId: filters.unit_id,
+      });
     if (filters.category_id)
-      categoryQuery.andWhere('category.id = :categoryId', { categoryId: filters.category_id });
+      categoryQuery.andWhere('category.id = :categoryId', {
+        categoryId: filters.category_id,
+      });
     const productQuery = this.products
       .createQueryBuilder('product')
       .innerJoinAndSelect('product.unit', 'unit')
@@ -50,15 +55,21 @@ export class MarketplaceSearchService {
       .where('product.active = :active', { active: true })
       .andWhere('LOWER(product.name) LIKE :term', { term });
     if (filters.unit_id)
-      productQuery.andWhere('product.unit_id = :unitId', { unitId: filters.unit_id });
+      productQuery.andWhere('product.unit_id = :unitId', {
+        unitId: filters.unit_id,
+      });
     if (filters.category_id)
       productQuery.andWhere('product.category_id = :categoryId', {
         categoryId: filters.category_id,
       });
     if (filters.min_price !== undefined)
-      productQuery.andWhere('product.price >= :minPrice', { minPrice: filters.min_price });
+      productQuery.andWhere('product.price >= :minPrice', {
+        minPrice: filters.min_price,
+      });
     if (filters.max_price !== undefined)
-      productQuery.andWhere('product.price <= :maxPrice', { maxPrice: filters.max_price });
+      productQuery.andWhere('product.price <= :maxPrice', {
+        maxPrice: filters.max_price,
+      });
 
     const [units, categories, productResult] = await Promise.all([
       unitQuery.orderBy('unit.name', 'ASC').getMany(),
@@ -73,7 +84,10 @@ export class MarketplaceSearchService {
       stocks.set(Number(row.product_id), stock);
     }
     const combined = [
-      ...units.map((unit) => ({ type: 'UNIT', unit: PublicUnitDto.fromEntity(unit) })),
+      ...units.map((unit) => ({
+        type: 'UNIT',
+        unit: PublicUnitDto.fromEntity(unit),
+      })),
       ...categories.map((category) => ({ type: 'CATEGORY', category })),
       ...productResult.entities.map((product) => ({
         type: 'PRODUCT',

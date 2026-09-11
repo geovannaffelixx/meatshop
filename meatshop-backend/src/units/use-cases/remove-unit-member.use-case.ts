@@ -10,7 +10,8 @@ import { UnitAuthorizationService } from '../services/unit-authorization.service
 @Injectable()
 export class RemoveUnitMemberUseCase {
   constructor(
-    @InjectRepository(UserUnit) private readonly membershipRepository: Repository<UserUnit>,
+    @InjectRepository(UserUnit)
+    private readonly membershipRepository: Repository<UserUnit>,
     private readonly authorization: UnitAuthorizationService,
   ) {}
 

@@ -41,7 +41,7 @@ export class QuoteCartUseCase {
     if (items.length === 0) {
       throw new BadRequestException({
         code: 'EMPTY_CART',
-        message: 'O carrinho está vazio.',
+        message: 'The cart is empty.',
       });
     }
     let address: Address | null = null;

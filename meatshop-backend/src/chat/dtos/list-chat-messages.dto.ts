@@ -12,14 +12,22 @@ export class ListChatMessagesDto {
   @IsEnum(ChatParticipantType)
   participant_type: ChatParticipantType;
 
-  @ApiPropertyOptional({ description: 'Página (1-based)', example: 1, default: 1 })
+  @ApiPropertyOptional({
+    description: 'Page (1-based)',
+    example: 1,
+    default: 1,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
   page?: number;
 
-  @ApiPropertyOptional({ description: 'Itens por página (1 a 100)', example: 50, default: 50 })
+  @ApiPropertyOptional({
+    description: 'Items per page (1 to 100)',
+    example: 50,
+    default: 50,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()

@@ -20,7 +20,9 @@ export class ListManagedUnitsUseCase {
       return [];
     }
 
-    const units = await this.unitRepository.find({ where: { id: In(unitIds) } });
+    const units = await this.unitRepository.find({
+      where: { id: In(unitIds) },
+    });
     return units.map((unit) => ManagedUnitDto.fromEntity(unit));
   }
 }

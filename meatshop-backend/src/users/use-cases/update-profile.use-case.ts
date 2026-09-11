@@ -23,7 +23,7 @@ export class UpdateProfileUseCase {
   async execute(userId: number, dto: UpdateProfileDto): Promise<UserResponseDto> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
+      throw new NotFoundException('User not found');
     }
 
     if (dto.name) {
@@ -87,7 +87,7 @@ export class UpdateProfileUseCase {
     if (existing) {
       throw new ConflictException({
         code: 'EMAIL_ALREADY_EXISTS',
-        message: 'Já existe uma conta cadastrada com este e-mail.',
+        message: 'An account with this email already exists.',
       });
     }
   }

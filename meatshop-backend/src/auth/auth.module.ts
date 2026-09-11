@@ -49,16 +49,13 @@ import { FirebaseExchangeUseCase } from './use-cases/firebase-exchange.use-case'
   controllers: [AuthController],
   providers: [
     AuthService,
-    // Strategies
     JwtStrategy,
     LocalStrategy,
-    // Guards
     JwtAuthGuard,
     LocalAuthGuard,
     RolesGuard,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
-    // Use Cases
     RegisterUseCase,
     RegisterUnitUseCase,
     LoginUseCase,

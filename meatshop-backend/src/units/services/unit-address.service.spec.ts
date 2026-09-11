@@ -1,6 +1,6 @@
-/* global beforeEach, afterEach, jest */
 import { BadGatewayException, BadRequestException } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
+import { afterEach, beforeEach, jest } from '@jest/globals';
 import { UnitAddressService } from './unit-address.service';
 
 describe('UnitAddressService', () => {
@@ -9,16 +9,20 @@ describe('UnitAddressService', () => {
   } as unknown as ConfigService;
   const service = new UnitAddressService(config);
 
-  beforeEach(() => jest.restoreAllMocks());
-  afterEach(() => jest.restoreAllMocks());
+  beforeEach(() => {
+    jest.restoreAllMocks();
+  });
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   it('normalizes the CEP and returns address with valid coordinates', async () => {
     jest.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(
         JSON.stringify({
-          street: 'Rua Exemplo',
-          neighborhood: 'Centro',
-          city: 'Anápolis',
+          street: 'Example Street',
+          neighborhood: 'Downtown',
+          city: 'Goiania',
           state: 'GO',
           location: {
             coordinates: {
@@ -33,9 +37,9 @@ describe('UnitAddressService', () => {
 
     await expect(service.lookupByCep('75113-300')).resolves.toEqual({
       zip_code: '75113-300',
-      street: 'Rua Exemplo',
-      neighborhood: 'Centro',
-      city: 'Anápolis',
+      street: 'Example Street',
+      neighborhood: 'Downtown',
+      city: 'Goiania',
       state: 'GO',
       latitude: -16.3199,
       longitude: -48.9395386,
@@ -51,7 +55,7 @@ describe('UnitAddressService', () => {
 
   it('rejects a response without coordinates', async () => {
     jest.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ city: 'Anápolis', state: 'GO', location: {} }), {
+      new Response(JSON.stringify({ city: 'Goiania', state: 'GO', location: {} }), {
         status: 200,
       }),
     );

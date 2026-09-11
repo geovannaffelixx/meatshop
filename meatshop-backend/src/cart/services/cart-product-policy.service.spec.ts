@@ -11,7 +11,7 @@ describe('CartProductPolicyService', () => {
     active: true,
     price: 39.9,
     category: { active: true },
-    unit: { id: 1, name: 'Unidade A' },
+    unit: { id: 1, name: 'Unit A' },
   } as Product;
 
   it('accepts fractional quantities within current stock', async () => {

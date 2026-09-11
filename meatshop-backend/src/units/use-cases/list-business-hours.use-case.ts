@@ -21,7 +21,9 @@ export class ListBusinessHoursUseCase {
       throw new NotFoundException('Unit not found');
     }
 
-    const hours = await this.businessHoursRepository.find({ where: { unit_id: unitId } });
+    const hours = await this.businessHoursRepository.find({
+      where: { unit_id: unitId },
+    });
     return BusinessHoursResponseDto.fromEntities(sortByWeekday(hours));
   }
 }

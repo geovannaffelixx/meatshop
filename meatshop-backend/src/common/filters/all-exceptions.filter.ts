@@ -27,23 +27,23 @@ type PostgresDriverError = { code?: string; constraint?: string };
 const UNIQUE_CONSTRAINT_ERRORS: Record<string, ErrorDetails> = {
   UQ_users_email: {
     code: 'EMAIL_ALREADY_EXISTS',
-    message: 'Já existe uma conta cadastrada com este e-mail.',
+    message: 'An account with this email already exists.',
   },
   UQ_users_cpf: {
     code: 'CPF_ALREADY_EXISTS',
-    message: 'Já existe uma conta cadastrada com este CPF.',
+    message: 'An account with this CPF already exists.',
   },
   UQ_users_firebase_uid: {
     code: 'FIREBASE_IDENTITY_ALREADY_LINKED',
-    message: 'Esta identidade Firebase já está vinculada a outra conta.',
+    message: 'This Firebase identity is already linked to another account.',
   },
   UQ_users_phone: {
     code: 'PHONE_ALREADY_EXISTS',
-    message: 'Já existe uma conta cadastrada com este telefone.',
+    message: 'An account with this phone number already exists.',
   },
   UQ_units_cnpj: {
     code: 'CNPJ_ALREADY_EXISTS',
-    message: 'Já existe um açougue cadastrado com este CNPJ.',
+    message: 'A butcher shop with this CNPJ already exists.',
   },
 };
 
@@ -88,7 +88,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       action: info.action,
       entity: info.entity,
       entityId: info.entityId,
-      description: `${info.description} falhou: ${details.code ?? status}`,
+      description: `${info.description} failed: ${details.code ?? status}`,
       outcome: AuditOutcome.FAILURE,
       statusCode: status,
       newData: { error_code: details.code, validation: details.message },
@@ -106,7 +106,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
           status: HttpStatus.CONFLICT,
           details: UNIQUE_CONSTRAINT_ERRORS[driverError.constraint ?? ''] ?? {
             code: 'RESOURCE_ALREADY_EXISTS',
-            message: 'Já existe um cadastro com estas informações.',
+            message: 'A record with this information already exists.',
           },
         };
       }
@@ -133,7 +133,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       status: HttpStatus.INTERNAL_SERVER_ERROR,
       details: {
         code: 'INTERNAL_ERROR',
-        message: 'Não foi possível concluir a operação. Tente novamente em instantes.',
+        message: 'The operation could not be completed. Try again shortly.',
       },
     };
   }

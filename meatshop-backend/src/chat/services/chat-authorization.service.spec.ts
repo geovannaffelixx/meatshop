@@ -46,7 +46,7 @@ describe('ChatAuthorizationService', () => {
     } as DeliveryPerson);
   });
 
-  it('conecta o cliente ao administrador no canal da unidade', async () => {
+  it('connects the customer to the administrator in the unit channel', async () => {
     await expect(
       service.assertCanParticipate(order, ChatParticipantType.UNIT, {
         id: 1,
@@ -54,7 +54,7 @@ describe('ChatAuthorizationService', () => {
     ).resolves.toEqual({ senderId: 1, receiverId: 3 });
   });
 
-  it('permite que um funcionário ativo represente a unidade com a própria identidade', async () => {
+  it('allows an active employee to represent the unit with their own identity', async () => {
     jest.mocked(userUnitRepository.findOne).mockResolvedValue({
       user_id: 5,
       unit_id: 2,
@@ -69,7 +69,7 @@ describe('ChatAuthorizationService', () => {
     ).resolves.toEqual({ senderId: 5, receiverId: 1 });
   });
 
-  it('impede que um entregador se apresente como equipe da unidade', async () => {
+  it('prevents a delivery person from impersonating unit staff', async () => {
     jest.mocked(userUnitRepository.findOne).mockResolvedValue({
       user_id: 4,
       unit_id: 2,
@@ -84,7 +84,7 @@ describe('ChatAuthorizationService', () => {
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
-  it('conecta somente o cliente e o entregador atribuído no canal de entrega', async () => {
+  it('connects only the customer and assigned delivery person in the delivery channel', async () => {
     await expect(
       service.assertCanParticipate(order, ChatParticipantType.DELIVERY_PERSON, {
         id: 4,
@@ -92,7 +92,7 @@ describe('ChatAuthorizationService', () => {
     ).resolves.toEqual({ senderId: 4, receiverId: 1 });
   });
 
-  it('fecha o envio quando o pedido termina, mantendo a leitura disponível', async () => {
+  it('disables sending when the order ends while keeping messages readable', async () => {
     const deliveredOrder = { ...order, status: OrderStatus.DELIVERED } as Order;
     await expect(
       service.resolveChannelForSending(deliveredOrder, ChatParticipantType.UNIT, { id: 1 } as User),

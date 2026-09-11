@@ -2,49 +2,55 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Order } from '../entities/order.entity';
 
 export class OrderListItemDto {
-  @ApiProperty({ description: 'Id do pedido', example: 1001 })
+  @ApiProperty({ description: 'Order ID', example: 1001 })
   id: number;
 
-  @ApiProperty({ description: 'Id do cliente que fez o pedido', example: 15 })
+  @ApiProperty({
+    description: 'ID of the customer who placed the order',
+    example: 15,
+  })
   client_id: number;
 
   @ApiPropertyOptional({
-    description: 'Nome do cliente que fez o pedido',
-    example: 'João da Silva',
+    description: 'Name of the customer who placed the order',
+    example: 'John Smith',
     nullable: true,
   })
   client_name: string | null;
 
-  @ApiProperty({ description: 'Id da unidade responsável pelo pedido', example: 3 })
+  @ApiProperty({
+    description: 'ID of the unit responsible for the order',
+    example: 3,
+  })
   unit_id: number;
 
   @ApiProperty({
-    description: 'Data e hora em que o pedido foi criado',
+    description: 'Order creation date and time',
     example: '2026-08-17T12:00:00.000Z',
   })
   order_date: Date;
 
-  @ApiProperty({ description: 'Status atual do pedido', example: 'PENDING' })
+  @ApiProperty({ description: 'Current order status', example: 'PENDING' })
   status: string;
 
   @ApiPropertyOptional({
-    description: 'Status atual da entrega do pedido, quando aplicável',
+    description: 'Current order delivery status, when applicable',
     example: 'ON_THE_WAY',
     nullable: true,
   })
   delivery_status: string | null;
 
-  @ApiProperty({ description: 'Tipo de entrega do pedido', example: 'DELIVERY' })
+  @ApiProperty({ description: 'Order delivery type', example: 'DELIVERY' })
   delivery_type: string;
 
-  @ApiProperty({ description: 'Status atual do pagamento do pedido', example: 'PAID' })
+  @ApiProperty({ description: 'Current order payment status', example: 'PAID' })
   payment_status: string;
 
-  @ApiProperty({ description: 'Valor total do pedido', example: 129.9 })
+  @ApiProperty({ description: 'Total order amount', example: 129.9 })
   total_amount: number;
 
   @ApiPropertyOptional({
-    description: 'Data e hora agendada para a entrega do pedido, quando agendado',
+    description: 'Scheduled order delivery date and time, when scheduled',
     example: '2026-08-20T18:00:00.000Z',
     nullable: true,
   })

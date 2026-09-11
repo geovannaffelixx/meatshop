@@ -62,7 +62,7 @@ export class CreateUnitUseCase {
     if (existing) {
       throw new ConflictException({
         code: 'CNPJ_ALREADY_EXISTS',
-        message: 'Já existe um açougue cadastrado com este CNPJ.',
+        message: 'A butcher shop with this CNPJ already exists.',
       });
     }
   }

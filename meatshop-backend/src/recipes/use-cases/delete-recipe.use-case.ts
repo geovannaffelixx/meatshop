@@ -17,7 +17,9 @@ export class DeleteRecipeUseCase {
   ) {}
 
   async execute(recipeId: number, currentUser: User): Promise<void> {
-    const recipe = await this.recipeRepository.findOne({ where: { id: recipeId } });
+    const recipe = await this.recipeRepository.findOne({
+      where: { id: recipeId },
+    });
     if (!recipe) {
       throw new NotFoundException('Recipe not found');
     }

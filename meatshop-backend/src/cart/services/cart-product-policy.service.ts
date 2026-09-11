@@ -21,7 +21,7 @@ export class CartProductPolicyService {
     if (!product || !product.active || !product.category?.active) {
       throw new NotFoundException({
         code: 'PRODUCT_NOT_AVAILABLE',
-        message: 'Produto indisponível para compra.',
+        message: 'Product is unavailable for purchase.',
       });
     }
     const stock = await this.stocks.findOne({
@@ -31,7 +31,7 @@ export class CartProductPolicyService {
     if (desiredQuantity > available) {
       throw new BadRequestException({
         code: 'INSUFFICIENT_STOCK',
-        message: 'Estoque insuficiente para a quantidade solicitada.',
+        message: 'Insufficient stock for the requested quantity.',
         details: [{ product_id: productId, available }],
       });
     }

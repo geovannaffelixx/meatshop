@@ -4,11 +4,6 @@ export class FixPaymentsStatusEnumType1786999643168 implements MigrationInterfac
   name = 'FixPaymentsStatusEnumType1786999643168';
 
   async up(queryRunner: QueryRunner): Promise<void> {
-    // "payments"."status" e "orders"."payment_status" compartilhavam o mesmo
-    // tipo Postgres ("orders_payment_status_enum"), mas a convenção de nomes
-    // do TypeORM espera um tipo próprio por coluna. Isso fazia o `synchronize`
-    // tentar "corrigir" o tipo a cada boot e falhar (o tipo antigo continuava
-    // em uso pela tabela "orders"). Aqui separamos definitivamente os tipos.
     await queryRunner.query(
       `CREATE TYPE "payments_status_enum" AS ENUM('PENDING', 'PAID', 'REJECTED', 'REFUNDED', 'CANCELLED')`,
     );

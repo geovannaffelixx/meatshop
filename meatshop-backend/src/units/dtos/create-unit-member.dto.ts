@@ -21,7 +21,7 @@ export class CreateUnitMemberDto {
   @MaxLength(100)
   name: string;
 
-  @ApiProperty({ example: 'maria@exemplo.com' })
+  @ApiProperty({ example: 'mary@example.com' })
   @IsEmail()
   email: string;
 

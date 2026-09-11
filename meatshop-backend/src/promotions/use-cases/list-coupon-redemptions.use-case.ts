@@ -8,7 +8,8 @@ import { GetCouponUseCase } from './get-coupon.use-case';
 @Injectable()
 export class ListCouponRedemptionsUseCase {
   constructor(
-    @InjectRepository(CouponRedemption) private readonly redemptions: Repository<CouponRedemption>,
+    @InjectRepository(CouponRedemption)
+    private readonly redemptions: Repository<CouponRedemption>,
     private readonly getCoupon: GetCouponUseCase,
   ) {}
 

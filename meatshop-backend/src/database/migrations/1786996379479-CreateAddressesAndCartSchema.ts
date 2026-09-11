@@ -4,7 +4,6 @@ export class CreateAddressesAndCartSchema1786996379479 implements MigrationInter
   name = 'CreateAddressesAndCartSchema1786996379479';
 
   async up(queryRunner: QueryRunner): Promise<void> {
-    // ── addresses ────────────────────────────────────────────────────────
     await queryRunner.query(
       `CREATE TYPE "addresses_label_enum" AS ENUM('Casa', 'Trabalho', 'Outro')`,
     );
@@ -30,7 +29,6 @@ export class CreateAddressesAndCartSchema1786996379479 implements MigrationInter
             REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION
         `);
 
-    // ── cart ─────────────────────────────────────────────────────────────
     await queryRunner.query(`
             CREATE TABLE "cart" (
                 "id" SERIAL NOT NULL,
@@ -46,7 +44,6 @@ export class CreateAddressesAndCartSchema1786996379479 implements MigrationInter
             REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION
         `);
 
-    // ── cart_items ───────────────────────────────────────────────────────
     await queryRunner.query(`
             CREATE TABLE "cart_items" (
                 "id" SERIAL NOT NULL,

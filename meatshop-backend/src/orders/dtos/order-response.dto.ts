@@ -4,26 +4,26 @@ import { OrderItem } from '../entities/order-item.entity';
 import { Payment } from '../entities/payment.entity';
 
 export class OrderItemResponseDto {
-  @ApiProperty({ description: 'Id do item do pedido', example: 1 })
+  @ApiProperty({ description: 'Order item ID', example: 1 })
   id: number;
 
-  @ApiProperty({ description: 'Id do produto', example: 42 })
+  @ApiProperty({ description: 'Product ID', example: 42 })
   product_id: number;
 
-  @ApiProperty({ description: 'Nome do produto', example: 'Picanha Bovina' })
+  @ApiProperty({ description: 'Product name', example: 'Beef Picanha' })
   product_name: string;
 
-  @ApiProperty({ description: 'Unidade de medida', example: 'kg' })
+  @ApiProperty({ description: 'Unit of measure', example: 'kg' })
   unit_of_measure: string;
 
-  @ApiPropertyOptional({ description: 'Imagem do produto', nullable: true })
+  @ApiPropertyOptional({ description: 'Product image', nullable: true })
   product_image_url: string | null;
 
-  @ApiProperty({ description: 'Quantidade do produto no pedido', example: 2 })
+  @ApiProperty({ description: 'Product quantity in the order', example: 2 })
   quantity: number;
 
   @ApiProperty({
-    description: 'Preço unitário do produto no momento do pedido',
+    description: 'Product unit price at the time of the order',
     example: 59.9,
   })
   unit_price: number;
@@ -42,155 +42,157 @@ export class OrderItemResponseDto {
 }
 
 export class OrderResponseDto {
-  @ApiProperty({ description: 'Id do pedido', example: 1001 })
+  @ApiProperty({ description: 'Order ID', example: 1001 })
   id: number;
 
-  @ApiProperty({ description: 'Id do cliente que fez o pedido', example: 15 })
+  @ApiProperty({
+    description: 'ID of the customer who placed the order',
+    example: 15,
+  })
   client_id: number;
 
   @ApiPropertyOptional({
-    description: 'Nome do cliente que fez o pedido',
-    example: 'João da Silva',
+    description: 'Name of the customer who placed the order',
+    example: 'John Smith',
     nullable: true,
   })
   client_name: string | null;
 
   @ApiProperty({
-    description: 'Id da unidade responsável pelo pedido',
+    description: 'ID of the unit responsible for the order',
     example: 3,
   })
   unit_id: number;
 
-  @ApiPropertyOptional({ description: 'Nome da unidade', nullable: true })
+  @ApiPropertyOptional({ description: 'Unit name', nullable: true })
   unit_name: string | null;
 
-  @ApiPropertyOptional({ description: 'Logo da unidade', nullable: true })
+  @ApiPropertyOptional({ description: 'Logo da unit', nullable: true })
   unit_logo_url: string | null;
 
   @ApiPropertyOptional({
-    description: 'Id do entregador responsável pelo pedido, quando já atribuído',
+    description: 'ID of the delivery person responsible for the order, when assigned',
     example: 7,
     nullable: true,
   })
   delivery_person_id: number | null;
 
   @ApiProperty({
-    description: 'Data e hora em que o pedido foi criado',
+    description: 'Order creation date and time',
     example: '2026-08-17T12:00:00.000Z',
   })
   order_date: Date;
 
-  @ApiProperty({ description: 'Status atual do pedido', example: 'PENDING' })
+  @ApiProperty({ description: 'Current order status', example: 'PENDING' })
   status: string;
 
   @ApiPropertyOptional({
-    description: 'Status atual da entrega do pedido, quando aplicável',
+    description: 'Current order delivery status, when applicable',
     example: 'ON_THE_WAY',
     nullable: true,
   })
   delivery_status: string | null;
 
   @ApiPropertyOptional({
-    description: 'Etapa atual da entrega do pedido, quando aplicável',
+    description: 'Current order delivery stage, when applicable',
     example: 'DELIVERING',
     nullable: true,
   })
   delivery_step: string | null;
 
   @ApiProperty({
-    description: 'Valor total do pedido, incluindo taxas e descontos',
+    description: 'Total order amount including fees and discounts',
     example: 129.9,
   })
   total_amount: number;
 
   @ApiProperty({
-    description: 'Subtotal do pedido, somando os itens sem taxas ou descontos',
+    description: 'Order subtotal including items without fees or discounts',
     example: 119.9,
   })
   subtotal: number;
 
   @ApiProperty({
-    description: 'Valor de desconto aplicado ao pedido',
+    description: 'Discount amount applied to the order',
     example: 10,
   })
   discount_amount: number;
 
   @ApiProperty({
-    description: 'Valor da taxa de entrega do pedido',
+    description: 'Order delivery fee',
     example: 8,
   })
   delivery_fee: number;
 
   @ApiPropertyOptional({
-    description: 'Id do endereço de entrega utilizado no pedido, quando aplicável',
+    description: 'ID of the delivery address used for the order, when applicable',
     example: 12,
     nullable: true,
   })
   address_id: number | null;
 
   @ApiPropertyOptional({
-    description: 'Id do cupom de desconto aplicado ao pedido, quando houver',
+    description: 'ID of the discount coupon applied to the order, when available',
     example: 5,
     nullable: true,
   })
   coupon_id: number | null;
 
   @ApiProperty({
-    description: 'Tipo de entrega do pedido',
+    description: 'Order delivery type',
     example: 'DELIVERY',
   })
   delivery_type: string;
 
   @ApiProperty({
-    description: 'Status atual do pagamento do pedido',
+    description: 'Current order payment status',
     example: 'PAID',
   })
   payment_status: string;
 
   @ApiProperty({
-    description: 'Indica se o pedido possui data de entrega agendada',
+    description: 'Indicates whether the order has a scheduled delivery date',
     example: false,
   })
   is_scheduled: boolean;
 
   @ApiPropertyOptional({
-    description: 'Data e hora agendada para a entrega do pedido, quando agendado',
+    description: 'Scheduled order delivery date and time, when scheduled',
     example: '2026-08-20T18:00:00.000Z',
     nullable: true,
   })
   scheduled_delivery_date: Date | null;
 
   @ApiPropertyOptional({
-    description: 'Motivo do cancelamento do pedido, quando cancelado',
-    example: 'Cliente desistiu da compra',
+    description: 'Order cancellation reason, when canceled',
+    example: 'Customer desistiu da compra',
     nullable: true,
   })
   cancellation_reason: string | null;
 
   @ApiPropertyOptional({
-    description: 'Data e hora em que o pedido foi cancelado, quando aplicável',
+    description: 'Date and time when the order was canceled, when applicable',
     example: '2026-08-18T09:30:00.000Z',
     nullable: true,
   })
   cancelled_at: Date | null;
 
   @ApiPropertyOptional({
-    description:
-      'Quem realizou o cancelamento do pedido (cliente, unidade ou sistema), quando aplicável',
+    description: 'Who canceled the order (customer, unit, or system), when applicable',
     example: 'CLIENT',
     nullable: true,
   })
   cancelled_by: string | null;
 
   @ApiProperty({
-    description: 'Itens que compõem o pedido',
+    description: 'Items included in the order',
     type: () => OrderItemResponseDto,
     isArray: true,
   })
   items: OrderItemResponseDto[];
 
   @ApiPropertyOptional({
-    description: 'Informações de pagamento associadas ao pedido, quando existentes',
+    description: 'Payment information associated with the order, when available',
     example: {
       method: 'Pix',
       status: 'PAID',
@@ -205,7 +207,7 @@ export class OrderResponseDto {
   } | null;
 
   @ApiPropertyOptional({
-    description: 'Código visível somente ao cliente dono do pedido enquanto válido',
+    description: 'Code visible only to the customer who owns the order while valid',
     nullable: true,
   })
   delivery_code: string | null;

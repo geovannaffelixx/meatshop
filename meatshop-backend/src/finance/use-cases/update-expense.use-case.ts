@@ -26,7 +26,9 @@ export class UpdateExpenseUseCase {
       throw new NotFoundException('Expense not found');
     }
 
-    const unit = await this.unitRepository.findOne({ where: { id: expense.unit_id } });
+    const unit = await this.unitRepository.findOne({
+      where: { id: expense.unit_id },
+    });
     if (unit) {
       await this.unitAuthorizationService.assertHasPermission(
         currentUser,
@@ -38,12 +40,12 @@ export class UpdateExpenseUseCase {
     Object.assign(expense, dto);
     const updated = await this.expenseRepository.save(expense);
 
-    this.logger.warn('Despesa atualizada', {
+    this.logger.warn('Expense updated', {
       id,
       unitId: updated.unit_id,
-      fornecedor: updated.supplierName,
-      novoValor: updated.amount,
-      metodo: updated.paymentMethod,
+      supplierName: updated.supplierName,
+      newAmount: updated.amount,
+      paymentMethod: updated.paymentMethod,
     });
 
     return updated;

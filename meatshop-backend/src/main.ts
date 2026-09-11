@@ -39,10 +39,10 @@ async function bootstrap() {
   try {
     metricsService = app.get(MetricsService);
     if (metricsService) {
-      appLogger.info('MetricsService registrado com sucesso');
+      appLogger.info('MetricsService registered successfully');
     }
   } catch {
-    appLogger.warn('MetricsService não encontrado — métricas desativadas');
+    appLogger.warn('MetricsService not found - metrics disabled');
   }
   const httpLogger = new HttpLoggerMiddleware(appLogger, metricsService);
   app.use((req: Request, res: Response, next: NextFunction) => {
@@ -64,14 +64,14 @@ async function bootstrap() {
     origin: getAllowedOrigins(process.env),
     credentials: true,
   });
-  appLogger.info('CORS e CookieParser configurados com sucesso');
+  appLogger.info('CORS and CookieParser configured successfully');
 
   const swaggerEnabled =
     process.env.SWAGGER_ENABLED === 'true' || process.env.NODE_ENV !== 'production';
 
   if (swaggerEnabled) {
     setupSwagger(app);
-    appLogger.info('Swagger disponível em /docs');
+    appLogger.info('Swagger available at /docs');
   }
 
   const port = Number(process.env.PORT ?? 3001);

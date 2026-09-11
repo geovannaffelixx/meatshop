@@ -29,7 +29,7 @@ export class DeleteAddressUseCase {
     if (isUsedByOrder) {
       throw new ConflictException({
         code: 'ADDRESS_IN_USE',
-        message: 'Este endereço está vinculado ao histórico de pedidos e não pode ser excluído.',
+        message: 'This address is linked to the order history and cannot be deleted.',
       });
     }
 

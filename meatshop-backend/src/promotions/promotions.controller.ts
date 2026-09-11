@@ -26,42 +26,51 @@ export class PromotionsController {
   ) {}
 
   @ApiOperation({
-    summary: 'Lista promoções, opcionalmente filtradas por unidade, produto ou status',
+    summary: 'Lists promotions with optional unit, product, or status filters',
   })
-  @ApiResponse({ status: 200, description: 'Lista de promoções retornada com sucesso' })
+  @ApiResponse({
+    status: 200,
+    description: 'Promotion list returned successfully',
+  })
   @Public()
   @Get()
   list(@Query() filters: FilterPromotionsDto) {
     return this.listPromotionsUseCase.execute(filters);
   }
 
-  @ApiOperation({ summary: 'Obtém os detalhes de uma promoção pelo identificador' })
-  @ApiParam({ name: 'id', description: 'Identificador da promoção', example: 1 })
-  @ApiResponse({ status: 200, description: 'Promoção retornada com sucesso' })
-  @ApiResponse({ status: 404, description: 'Promoção não encontrada' })
+  @ApiOperation({ summary: 'Gets promotion details by identifier' })
+  @ApiParam({ name: 'id', description: 'Promotion identifier', example: 1 })
+  @ApiResponse({ status: 200, description: 'Promotion returned successfully' })
+  @ApiResponse({ status: 404, description: 'Promotion not found' })
   @Public()
   @Get(':id')
   getOne(@Param('id', ParseIntPipe) id: number) {
     return this.getPromotionUseCase.execute(id);
   }
 
-  @ApiOperation({ summary: 'Cria uma nova promoção' })
+  @ApiOperation({ summary: 'Creates a new promotion' })
   @ApiBearerAuth('access-token')
-  @ApiResponse({ status: 201, description: 'Promoção criada com sucesso' })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  @ApiResponse({ status: 403, description: 'Sem permissão para criar promoções' })
+  @ApiResponse({ status: 201, description: 'Promotion created successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid data' })
+  @ApiResponse({
+    status: 403,
+    description: 'Permission denied to create promotions',
+  })
   @Post()
   create(@Body() dto: CreatePromotionDto, @CurrentUser() currentUser: User) {
     return this.createPromotionUseCase.execute(dto, currentUser);
   }
 
-  @ApiOperation({ summary: 'Atualiza uma promoção existente' })
+  @ApiOperation({ summary: 'Updates an existing promotion' })
   @ApiBearerAuth('access-token')
-  @ApiParam({ name: 'id', description: 'Identificador da promoção', example: 1 })
-  @ApiResponse({ status: 200, description: 'Promoção atualizada com sucesso' })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  @ApiResponse({ status: 403, description: 'Sem permissão para atualizar promoções' })
-  @ApiResponse({ status: 404, description: 'Promoção não encontrada' })
+  @ApiParam({ name: 'id', description: 'Promotion identifier', example: 1 })
+  @ApiResponse({ status: 200, description: 'Promotion updated successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid data' })
+  @ApiResponse({
+    status: 403,
+    description: 'Permission denied to update promotions',
+  })
+  @ApiResponse({ status: 404, description: 'Promotion not found' })
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -71,23 +80,32 @@ export class PromotionsController {
     return this.updatePromotionUseCase.execute(id, dto, currentUser);
   }
 
-  @ApiOperation({ summary: 'Ativa uma promoção' })
+  @ApiOperation({ summary: 'Activates a promotion' })
   @ApiBearerAuth('access-token')
-  @ApiParam({ name: 'id', description: 'Identificador da promoção', example: 1 })
-  @ApiResponse({ status: 200, description: 'Promoção ativada com sucesso' })
-  @ApiResponse({ status: 403, description: 'Sem permissão para ativar promoções' })
-  @ApiResponse({ status: 404, description: 'Promoção não encontrada' })
+  @ApiParam({ name: 'id', description: 'Promotion identifier', example: 1 })
+  @ApiResponse({ status: 200, description: 'Promotion activated successfully' })
+  @ApiResponse({
+    status: 403,
+    description: 'Permission denied to activate promotions',
+  })
+  @ApiResponse({ status: 404, description: 'Promotion not found' })
   @Patch(':id/activate')
   activate(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
     return this.activatePromotionUseCase.execute(id, currentUser);
   }
 
-  @ApiOperation({ summary: 'Desativa uma promoção' })
+  @ApiOperation({ summary: 'Deactivates a promotion' })
   @ApiBearerAuth('access-token')
-  @ApiParam({ name: 'id', description: 'Identificador da promoção', example: 1 })
-  @ApiResponse({ status: 200, description: 'Promoção desativada com sucesso' })
-  @ApiResponse({ status: 403, description: 'Sem permissão para desativar promoções' })
-  @ApiResponse({ status: 404, description: 'Promoção não encontrada' })
+  @ApiParam({ name: 'id', description: 'Promotion identifier', example: 1 })
+  @ApiResponse({
+    status: 200,
+    description: 'Promotion deactivated successfully',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Permission denied to deactivate promotions',
+  })
+  @ApiResponse({ status: 404, description: 'Promotion not found' })
   @Patch(':id/deactivate')
   deactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
     return this.deactivatePromotionUseCase.execute(id, currentUser);

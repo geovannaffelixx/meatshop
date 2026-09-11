@@ -10,8 +10,6 @@ export class AddUnitDeliveryPersonChatChannel1787233400830 implements MigrationI
   }
 
   async down(queryRunner: QueryRunner): Promise<void> {
-    // Postgres cannot drop a single enum value directly; recreate the type without it.
-    // Messages already using this channel are removed, since there is no equivalent value to fall back to.
     await queryRunner.query(
       `DELETE FROM "chat_messages" WHERE "participant_type" = 'UNIT_DELIVERY_PERSON'`,
     );

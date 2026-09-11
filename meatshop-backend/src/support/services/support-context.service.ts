@@ -11,24 +11,29 @@ import { User } from '../../users/entities/user.entity';
 export class SupportContextService {
   constructor(
     @InjectRepository(Order) private readonly orders: Repository<Order>,
-    @InjectRepository(UserUnit) private readonly memberships: Repository<UserUnit>,
+    @InjectRepository(UserUnit)
+    private readonly memberships: Repository<UserUnit>,
   ) {}
 
   async validate(user: User, unitId?: number, orderId?: number): Promise<void> {
     if (user.global_role === GlobalRole.SUPER_ADMIN) return;
 
     const order = orderId ? await this.orders.findOne({ where: { id: orderId } }) : null;
-    if (orderId && !order) throw new NotFoundException('Pedido não encontrado');
+    if (orderId && !order) throw new NotFoundException('Order not found');
     if (order && unitId && order.unit_id !== unitId) {
-      throw new ForbiddenException('O pedido não pertence à unidade informada');
+      throw new ForbiddenException('The order does not belong to the specified unit');
     }
     if (order?.client_id === user.id) return;
 
     const contextualUnitId = unitId ?? order?.unit_id;
     if (!contextualUnitId) return;
     const membership = await this.memberships.findOne({
-      where: { user_id: user.id, unit_id: contextualUnitId, status: UserUnitStatus.ACTIVE },
+      where: {
+        user_id: user.id,
+        unit_id: contextualUnitId,
+        status: UserUnitStatus.ACTIVE,
+      },
     });
-    if (!membership) throw new ForbiddenException('Você não possui acesso a este contexto');
+    if (!membership) throw new ForbiddenException('You do not have access to this context');
   }
 }

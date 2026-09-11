@@ -13,11 +13,15 @@ export class ValidateCouponUseCase {
   ) {}
 
   async execute(code: string, user: User, unitId: number, subtotal: number) {
-    const coupon = await this.dataSource
-      .getRepository(Coupon)
-      .findOne({ where: { code: code.toUpperCase().trim() }, relations: { allowed_units: true } });
+    const coupon = await this.dataSource.getRepository(Coupon).findOne({
+      where: { code: code.toUpperCase().trim() },
+      relations: { allowed_units: true },
+    });
     if (!coupon)
-      throw new BadRequestException({ code: 'COUPON_NOT_FOUND', message: 'Cupom não encontrado.' });
+      throw new BadRequestException({
+        code: 'COUPON_NOT_FOUND',
+        message: 'Coupon not found.',
+      });
     const discountAmount = await this.dataSource.transaction((manager) =>
       this.policy.validate(coupon, { userId: user.id, unitId, subtotal }, manager),
     );

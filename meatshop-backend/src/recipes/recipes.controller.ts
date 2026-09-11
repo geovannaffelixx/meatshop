@@ -37,9 +37,12 @@ export class RecipesController {
 
   @Public()
   @ApiOperation({
-    summary: 'Lista receitas (resumo), com filtros por unidade, tag, status e receita da semana',
+    summary: 'Lists recipe summaries with unit, tag, status, and recipe-of-the-week filters',
   })
-  @ApiResponse({ status: 200, description: 'Lista de receitas retornada com sucesso' })
+  @ApiResponse({
+    status: 200,
+    description: 'Recipe list returned successfully',
+  })
   @Get()
   list(@Query() filters: FilterRecipesDto) {
     return this.listRecipesUseCase.execute(filters);
@@ -47,10 +50,10 @@ export class RecipesController {
 
   @Public()
   @ApiOperation({
-    summary: 'Busca uma receita completa (passos, ingredientes e produtos em destaque)',
+    summary: 'Gets a complete recipe with steps, ingredients, and featured products',
   })
-  @ApiResponse({ status: 200, description: 'Receita encontrada com sucesso' })
-  @ApiResponse({ status: 404, description: 'Receita não encontrada' })
+  @ApiResponse({ status: 200, description: 'Recipe found successfully' })
+  @ApiResponse({ status: 404, description: 'Recipe not found' })
   @Get(':id')
   getOne(@Param('id', ParseIntPipe) id: number) {
     return this.getRecipeUseCase.execute(id);
@@ -58,12 +61,15 @@ export class RecipesController {
 
   @ApiBearerAuth('access-token')
   @ApiOperation({
-    summary: 'Cria uma nova receita com passos, ingredientes e produtos em destaque',
+    summary: 'Creates a recipe with steps, ingredients, and featured products',
   })
-  @ApiResponse({ status: 201, description: 'Receita criada com sucesso' })
-  @ApiResponse({ status: 400, description: 'Produto em destaque não pertence à unidade' })
-  @ApiResponse({ status: 403, description: 'Usuário não é administrador da unidade' })
-  @ApiResponse({ status: 404, description: 'Unidade não encontrada' })
+  @ApiResponse({ status: 201, description: 'Recipe created successfully' })
+  @ApiResponse({
+    status: 400,
+    description: 'Product em destaque does not belong to the unit',
+  })
+  @ApiResponse({ status: 403, description: 'User is not a unit administrator' })
+  @ApiResponse({ status: 404, description: 'Unit not found' })
   @Post()
   create(@Body() dto: CreateRecipeDto, @CurrentUser() currentUser: User) {
     return this.createRecipeUseCase.execute(dto, currentUser);
@@ -71,13 +77,15 @@ export class RecipesController {
 
   @ApiBearerAuth('access-token')
   @ApiOperation({
-    summary:
-      'Atualiza uma receita. Se steps/ingredients/products forem enviados, substituem os existentes',
+    summary: 'Updates a recipe. Provided steps, ingredients, or products replace existing values',
   })
-  @ApiResponse({ status: 200, description: 'Receita atualizada com sucesso' })
-  @ApiResponse({ status: 400, description: 'Produto em destaque não pertence à unidade' })
-  @ApiResponse({ status: 403, description: 'Usuário não é administrador da unidade' })
-  @ApiResponse({ status: 404, description: 'Receita não encontrada' })
+  @ApiResponse({ status: 200, description: 'Recipe updated successfully' })
+  @ApiResponse({
+    status: 400,
+    description: 'Product em destaque does not belong to the unit',
+  })
+  @ApiResponse({ status: 403, description: 'User is not a unit administrator' })
+  @ApiResponse({ status: 404, description: 'Recipe not found' })
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -88,10 +96,10 @@ export class RecipesController {
   }
 
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Remove permanentemente uma receita' })
-  @ApiResponse({ status: 204, description: 'Receita removida com sucesso' })
-  @ApiResponse({ status: 403, description: 'Usuário não é administrador da unidade' })
-  @ApiResponse({ status: 404, description: 'Receita não encontrada' })
+  @ApiOperation({ summary: 'Permanently deletes a recipe' })
+  @ApiResponse({ status: 204, description: 'Recipe deleted successfully' })
+  @ApiResponse({ status: 403, description: 'User is not a unit administrator' })
+  @ApiResponse({ status: 404, description: 'Recipe not found' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {

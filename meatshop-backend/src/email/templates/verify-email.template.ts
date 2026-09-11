@@ -2,12 +2,12 @@ import type { EmailTemplate } from '../interfaces/email-template.interface';
 
 export function verifyEmailTemplate(userName: string, verificationUrl: string): EmailTemplate {
   return {
-    subject: 'Confirme sua conta MeatShop',
+    subject: 'Confirm your MeatShop account',
 
     text: `
-Olá ${userName},
+Hello ${userName},
 
-Confirme sua conta usando o link abaixo:
+Confirm your account using the link below:
 
 ${verificationUrl}
     `,
@@ -25,14 +25,14 @@ ${verificationUrl}
 >
   <h2>Bem-vindo ao MeatShop 🥩</h2>
 
-  <p>Olá <strong>${userName}</strong>,</p>
+  <p>Hello <strong>${userName}</strong>,</p>
 
   <p>
-    Obrigado por criar sua conta.
+    Thank you for creating your account.
   </p>
 
   <p>
-    Confirme seu e-mail clicando no botão abaixo.
+    Confirm your email by clicking the button below.
   </p>
 
   <a
@@ -51,8 +51,8 @@ ${verificationUrl}
   </a>
 
   <p style="margin-top: 24px;">
-    Se você não criou esta conta,
-    basta ignorar este e-mail.
+    If you did not create this account,
+    just ignore this email.
   </p>
 </div>
     `,

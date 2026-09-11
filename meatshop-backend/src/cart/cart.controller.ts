@@ -23,10 +23,10 @@ export class CartController {
     private readonly clearCartUseCase: ClearCartUseCase,
   ) {}
 
-  @ApiOperation({ summary: 'Obtém o carrinho do usuário autenticado' })
+  @ApiOperation({ summary: 'Gets the authenticated user cart' })
   @ApiResponse({
     status: 200,
-    description: 'Carrinho retornado com sucesso',
+    description: 'Cart returned successfully',
     type: CartResponseDto,
   })
   @Get()
@@ -34,28 +34,32 @@ export class CartController {
     return this.getCartUseCase.execute(currentUser);
   }
 
-  @ApiOperation({ summary: 'Adiciona um item ao carrinho do usuário autenticado' })
+  @ApiOperation({ summary: 'Adds an item to the authenticated user cart' })
   @ApiResponse({
     status: 201,
-    description: 'Item adicionado ao carrinho com sucesso',
+    description: 'Item added to cart successfully',
     type: CartResponseDto,
   })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  @ApiResponse({ status: 404, description: 'Produto não encontrado' })
+  @ApiResponse({ status: 400, description: 'Invalid data' })
+  @ApiResponse({ status: 404, description: 'Product not found' })
   @Post('items')
   addItem(@Body() dto: AddCartItemDto, @CurrentUser() currentUser: User) {
     return this.addItemToCartUseCase.execute(dto, currentUser);
   }
 
-  @ApiOperation({ summary: 'Atualiza a quantidade de um item do carrinho' })
-  @ApiParam({ name: 'itemId', description: 'Identificador do item do carrinho', example: 10 })
+  @ApiOperation({ summary: 'Updates a cart item quantity' })
+  @ApiParam({
+    name: 'itemId',
+    description: 'Cart item identifier',
+    example: 10,
+  })
   @ApiResponse({
     status: 200,
-    description: 'Item do carrinho atualizado com sucesso',
+    description: 'Cart item updated successfully',
     type: CartResponseDto,
   })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  @ApiResponse({ status: 404, description: 'Item do carrinho não encontrado' })
+  @ApiResponse({ status: 400, description: 'Invalid data' })
+  @ApiResponse({ status: 404, description: 'Cart item not found' })
   @Patch('items/:itemId')
   updateItem(
     @Param('itemId', ParseIntPipe) itemId: number,
@@ -65,23 +69,29 @@ export class CartController {
     return this.updateCartItemUseCase.execute(itemId, dto, currentUser);
   }
 
-  @ApiOperation({ summary: 'Remove um item do carrinho' })
-  @ApiParam({ name: 'itemId', description: 'Identificador do item do carrinho', example: 10 })
+  @ApiOperation({ summary: 'Removes a cart item' })
+  @ApiParam({
+    name: 'itemId',
+    description: 'Cart item identifier',
+    example: 10,
+  })
   @ApiResponse({
     status: 200,
-    description: 'Item removido do carrinho com sucesso',
+    description: 'Cart item removed successfully',
     type: CartResponseDto,
   })
-  @ApiResponse({ status: 404, description: 'Item do carrinho não encontrado' })
+  @ApiResponse({ status: 404, description: 'Cart item not found' })
   @Delete('items/:itemId')
   removeItem(@Param('itemId', ParseIntPipe) itemId: number, @CurrentUser() currentUser: User) {
     return this.removeCartItemUseCase.execute(itemId, currentUser);
   }
 
-  @ApiOperation({ summary: 'Remove todos os itens do carrinho do usuário autenticado' })
+  @ApiOperation({
+    summary: 'Removes all items from the authenticated user cart',
+  })
   @ApiResponse({
     status: 200,
-    description: 'Carrinho esvaziado com sucesso',
+    description: 'Cart cleared successfully',
     type: CartResponseDto,
   })
   @Delete()

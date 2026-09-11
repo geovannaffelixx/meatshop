@@ -6,7 +6,7 @@ export class PanelMembershipDto {
   @ApiProperty({ example: 3 })
   unit_id: number;
 
-  @ApiProperty({ example: 'Master Carnes' })
+  @ApiProperty({ example: 'Master Meats' })
   unit_name: string;
 
   @ApiProperty({

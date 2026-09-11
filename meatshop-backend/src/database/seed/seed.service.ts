@@ -67,7 +67,7 @@ export class SeedService implements OnApplicationBootstrap {
     const passwordHash = await bcrypt.hash(process.env.SEED_PASSWORD ?? 'MeatshopDev123!', 12);
     const admin = await this.ensureUser(
       'admin@meatshop.local',
-      'Administrador MeatShop',
+      'MeatShop Administrator',
       '52998224725',
       '62999990001',
       passwordHash,
@@ -77,7 +77,7 @@ export class SeedService implements OnApplicationBootstrap {
     );
     const owner = await this.ensureUser(
       'owner@meatshop.local',
-      'Proprietário Demonstração',
+      'Demo Owner',
       '16899535009',
       '62999990002',
       passwordHash,
@@ -87,7 +87,7 @@ export class SeedService implements OnApplicationBootstrap {
     );
     const client = await this.ensureUser(
       'client@meatshop.local',
-      'Cliente Demonstração',
+      'Demo Customer',
       '11144477735',
       '62999990003',
       passwordHash,
@@ -97,7 +97,7 @@ export class SeedService implements OnApplicationBootstrap {
     );
     const courier = await this.ensureUser(
       'delivery@meatshop.local',
-      'Entregador Demonstração',
+      'Demo Delivery Person',
       '12345678909',
       '62999990004',
       passwordHash,
@@ -107,7 +107,7 @@ export class SeedService implements OnApplicationBootstrap {
     );
     const pendingCourier = await this.ensureUser(
       'delivery.pending@meatshop.local',
-      'Entregador Pendente',
+      'Pending Delivery Person',
       '98765432100',
       '62999990005',
       passwordHash,
@@ -120,12 +120,12 @@ export class SeedService implements OnApplicationBootstrap {
     await this.ensureMembership(owner.id, unit.id, LocalRole.OWNER);
     await this.ensureMembership(admin.id, unit.id, LocalRole.MANAGER);
     await this.ensureHours(unit.id);
-    const beef = await this.ensureCategory(unit.id, 'Bovinos');
+    const beef = await this.ensureCategory(unit.id, 'Beefs');
     const poultry = await this.ensureCategory(unit.id, 'Aves');
-    const sellable = await this.ensureProduct(unit.id, beef.id, 'Alcatra bovina', 49.9, true, 25);
-    await this.ensureProduct(unit.id, beef.id, 'Produto sem estoque', 35, true, 0);
-    await this.ensureProduct(unit.id, poultry.id, 'Peito de frango', 22.9, true, 18);
-    await this.ensureProduct(unit.id, poultry.id, 'Produto inativo', 15, false, 10);
+    const sellable = await this.ensureProduct(unit.id, beef.id, 'Top sirloin', 49.9, true, 25);
+    await this.ensureProduct(unit.id, beef.id, 'Out-of-stock product', 35, true, 0);
+    await this.ensureProduct(unit.id, poultry.id, 'Chicken breast', 22.9, true, 18);
+    await this.ensureProduct(unit.id, poultry.id, 'Inactive product', 15, false, 10);
     await this.ensurePromotion(unit.id, sellable.id, owner.id);
     await this.ensureCoupons(unit.id, owner.id);
     await this.ensureCourier(courier.id, DeliveryPersonStatus.ACTIVE, 'DEV3A00');
@@ -177,11 +177,11 @@ export class SeedService implements OnApplicationBootstrap {
     await this.addresses.save(
       this.addresses.create({
         user_id: userId,
-        street: 'Rua de Desenvolvimento',
+        street: 'Development Street',
         number: '100',
         complement: null,
-        neighborhood: 'Centro',
-        city: 'Goiânia',
+        neighborhood: 'Downtown',
+        city: 'Goiania',
         state: 'GO',
         zip_code: '74000000',
         label: AddressLabel.HOME,
@@ -199,15 +199,15 @@ export class SeedService implements OnApplicationBootstrap {
     if (existing) return existing;
     return this.units.save(
       this.units.create({
-        name: 'Açougue Demonstração',
+        name: 'Demo Butcher Shop',
         cnpj: '11222333000181',
-        city: 'Goiânia',
+        city: 'Goiania',
         zip_code: '74000000',
         state: 'GO',
         street: 'Avenida de Desenvolvimento',
         number: '200',
         complement: null,
-        neighborhood: 'Centro',
+        neighborhood: 'Downtown',
         latitude: -16.6869,
         longitude: -49.2648,
         image_url: null,
@@ -264,7 +264,7 @@ export class SeedService implements OnApplicationBootstrap {
         this.categories.create({
           unit_id: unitId,
           name,
-          description: 'Dados sintéticos',
+          description: 'Synthetic data',
           active: true,
         }),
       )
@@ -287,7 +287,7 @@ export class SeedService implements OnApplicationBootstrap {
         unit_id: unitId,
         category_id: categoryId,
         name,
-        description: 'Produto sintético para homologação',
+        description: 'Synthetic product for acceptance testing',
         price,
         unit_of_measure: 'kg',
         active,
@@ -325,7 +325,7 @@ export class SeedService implements OnApplicationBootstrap {
         product_id: productId,
         created_by: createdBy,
         title: 'Oferta de desenvolvimento',
-        description: 'Promoção sintética vigente',
+        description: 'Active synthetic promotion',
         discount_percentage: 10,
         promotional_price: null,
         starts_at: new Date(now - 86400000),
@@ -345,8 +345,8 @@ export class SeedService implements OnApplicationBootstrap {
       await this.coupons.save(
         this.coupons.create({
           code: item.code,
-          name: `Cupom ${item.code}`,
-          description: 'Cupom sintético',
+          name: `Coupon ${item.code}`,
+          description: 'Synthetic coupon',
           type: CouponType.UNIT,
           unit_id: unitId,
           discount_type: CouponDiscountType.PERCENTAGE,

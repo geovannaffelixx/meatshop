@@ -18,7 +18,11 @@ describe('AppCheckMiddleware', () => {
       { verifyAppCheckToken: jest.fn() } as never,
     );
     await middleware.use(
-      { header: () => undefined, path: '/health', originalUrl: '/health' } as never,
+      {
+        header: () => undefined,
+        path: '/health',
+        originalUrl: '/health',
+      } as never,
       {} as never,
       next,
     );

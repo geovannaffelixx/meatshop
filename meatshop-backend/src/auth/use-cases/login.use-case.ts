@@ -28,7 +28,6 @@ export class LoginUseCase {
     private readonly configService: ConfigService,
   ) {}
 
-  /** Used by LocalStrategy to validate credentials only */
   async validateCredentials(email: string, password: string): Promise<User | null> {
     const user = await this.userRepository.findOne({
       where: { email: email.toLowerCase().trim() },
@@ -52,7 +51,6 @@ export class LoginUseCase {
     return user;
   }
 
-  /** Called after credentials are validated — generates and persists tokens */
   async execute(user: User): Promise<IAuthTokens> {
     if (!user.is_active) {
       throw new UnauthorizedException('Account disabled');
@@ -64,8 +62,6 @@ export class LoginUseCase {
 
     return { access_token: accessToken, refresh_token: refreshToken };
   }
-
-  // ─── Private helpers ────────────────────────────────────────────────────────
 
   private assertAccountNotLocked(user: User): void {
     if (user.locked_until && user.locked_until > new Date()) {

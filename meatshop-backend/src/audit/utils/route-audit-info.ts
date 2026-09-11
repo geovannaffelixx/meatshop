@@ -36,14 +36,6 @@ export function isExcludedPath(path: string): boolean {
   return EXCLUDED_PREFIXES.some((prefix) => path.startsWith(prefix));
 }
 
-/**
- * Deriva ação/entidade/id a partir do padrão de rota (ex: "/products/:id" →
- * entity="products"). É uma heurística genérica — cobre a grande maioria das
- * rotas REST do padrão "/recurso/:id/acao", mas pode nomear a entidade de
- * forma imprecisa em rotas muito aninhadas (ex: "/delivery/:id/approve").
- * Isso é aceitável: o objetivo é rastreamento máximo automático, não 100%
- * de precisão em cada rota.
- */
 export function resolveRouteAuditInfo(
   method: string,
   routePath: string,

@@ -33,15 +33,17 @@ export class OrdersController {
     private readonly repeatOrderUseCase: RepeatOrderUseCase,
   ) {}
 
-  @ApiOperation({ summary: 'Cria um novo pedido para o cliente autenticado' })
+  @ApiOperation({
+    summary: 'Creates a new order for the authenticated customer',
+  })
   @ApiResponse({
     status: 201,
-    description: 'Checkout criado com sucesso',
+    description: 'Checkout created successfully',
     type: CheckoutResponseDto,
   })
   @ApiResponse({
     status: 400,
-    description: 'Dados inválidos ou estoque insuficiente para os itens do pedido',
+    description: 'Invalid data or insufficient stock for order items',
   })
   @Post()
   create(
@@ -53,11 +55,11 @@ export class OrdersController {
   }
 
   @ApiOperation({
-    summary: 'Lista o histórico de pedidos do usuário autenticado',
+    summary: 'Lists the authenticated user order history',
   })
   @ApiResponse({
     status: 200,
-    description: 'Histórico de pedidos retornado com sucesso',
+    description: 'Order history returned successfully',
     type: OrderListItemDto,
     isArray: true,
   })
@@ -67,59 +69,59 @@ export class OrdersController {
     return orders.map((order) => OrderListItemDto.fromEntity(order));
   }
 
-  @ApiOperation({ summary: 'Busca os detalhes de um pedido específico' })
+  @ApiOperation({ summary: 'Gets the details of a specific order' })
   @ApiResponse({
     status: 200,
-    description: 'Pedido encontrado com sucesso',
+    description: 'Order found successfully',
     type: OrderResponseDto,
   })
   @ApiResponse({
     status: 403,
-    description: 'Usuário não tem permissão para acessar este pedido',
+    description: 'User is not allowed to access this order',
   })
-  @ApiResponse({ status: 404, description: 'Pedido não encontrado' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
   @Get(':id')
   getOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
     return this.getOrderUseCase.execute(id, currentUser);
   }
 
   @ApiOperation({
-    summary: 'Confirma o pedido, avançando seu status no fluxo de preparo',
+    summary: 'Confirms the order and advances its preparation status',
   })
   @ApiResponse({
     status: 200,
-    description: 'Pedido confirmado com sucesso',
+    description: 'Order confirmed successfully',
     type: OrderResponseDto,
   })
   @ApiResponse({
     status: 400,
-    description: 'Transição de status inválida para o estado atual do pedido',
+    description: 'Invalid status transition for the current order state',
   })
   @ApiResponse({
     status: 403,
-    description: 'Usuário não tem permissão para confirmar este pedido',
+    description: 'User is not allowed to confirm this order',
   })
-  @ApiResponse({ status: 404, description: 'Pedido não encontrado' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
   @Patch(':id/confirm')
   confirm(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
     return this.confirmOrderUseCase.execute(id, currentUser);
   }
 
-  @ApiOperation({ summary: 'Atualiza o status do pedido' })
+  @ApiOperation({ summary: 'Updates the order status' })
   @ApiResponse({
     status: 200,
-    description: 'Status do pedido atualizado com sucesso',
+    description: 'Order status updated successfully',
     type: OrderResponseDto,
   })
   @ApiResponse({
     status: 400,
-    description: 'Transição de status inválida para o estado atual do pedido',
+    description: 'Invalid status transition for the current order state',
   })
   @ApiResponse({
     status: 403,
-    description: 'Usuário não tem permissão para atualizar o status deste pedido',
+    description: 'User is not allowed to update this order status',
   })
-  @ApiResponse({ status: 404, description: 'Pedido não encontrado' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
   @Patch(':id/status')
   updateStatus(
     @Param('id', ParseIntPipe) id: number,
@@ -129,21 +131,21 @@ export class OrdersController {
     return this.updateOrderStatusUseCase.execute(id, dto, currentUser);
   }
 
-  @ApiOperation({ summary: 'Cancela o pedido e restaura o estoque dos itens' })
+  @ApiOperation({ summary: 'Cancels the order and restores item stock' })
   @ApiResponse({
     status: 200,
-    description: 'Pedido cancelado com sucesso',
+    description: 'Order canceled successfully',
     type: OrderResponseDto,
   })
   @ApiResponse({
     status: 400,
-    description: 'Pedido não pode ser cancelado no status atual',
+    description: 'Order cannot be canceled in its current status',
   })
   @ApiResponse({
     status: 403,
-    description: 'Usuário não tem permissão para cancelar este pedido',
+    description: 'User is not allowed to cancel this order',
   })
-  @ApiResponse({ status: 404, description: 'Pedido não encontrado' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
   @Patch(':id/cancel')
   cancel(
     @Param('id', ParseIntPipe) id: number,
@@ -154,22 +156,22 @@ export class OrdersController {
   }
 
   @ApiOperation({
-    summary: 'Agenda ou reagenda a data e hora de entrega do pedido',
+    summary: 'Schedules or reschedules the order delivery date and time',
   })
   @ApiResponse({
     status: 200,
-    description: 'Pedido agendado com sucesso',
+    description: 'Order scheduled successfully',
     type: OrderResponseDto,
   })
   @ApiResponse({
     status: 400,
-    description: 'Data de agendamento inválida ou pedido não pode ser agendado no status atual',
+    description: 'Invalid schedule date or the order cannot be scheduled in its current status',
   })
   @ApiResponse({
     status: 403,
-    description: 'Usuário não tem permissão para agendar este pedido',
+    description: 'User is not allowed to schedule this order',
   })
-  @ApiResponse({ status: 404, description: 'Pedido não encontrado' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
   @Patch(':id/schedule')
   schedule(
     @Param('id', ParseIntPipe) id: number,
@@ -180,22 +182,22 @@ export class OrdersController {
   }
 
   @ApiOperation({
-    summary: 'Repete um pedido anterior, criando um novo pedido com os mesmos itens',
+    summary: 'Repeats a previous order by creating a new order with the same items',
   })
   @ApiResponse({
     status: 201,
-    description: 'Novo pedido criado a partir do pedido anterior',
+    description: 'New order created from the previous order',
     type: OrderResponseDto,
   })
   @ApiResponse({
     status: 400,
-    description: 'Estoque insuficiente para repetir o pedido',
+    description: 'Insufficient stock to repeat the order',
   })
   @ApiResponse({
     status: 403,
-    description: 'Usuário não tem permissão para repetir este pedido',
+    description: 'User is not allowed to repeat this order',
   })
-  @ApiResponse({ status: 404, description: 'Pedido não encontrado' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
   @Post(':id/repeat')
   repeat(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
     return this.repeatOrderUseCase.execute(id, currentUser);

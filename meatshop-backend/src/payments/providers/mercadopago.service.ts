@@ -63,7 +63,7 @@ export class MercadoPagoService {
     const items = params.items.map((item) => {
       const amount = Number(item.amount);
       if (!Number.isFinite(amount) || amount <= 0) {
-        throw new BadRequestException('Valor do pedido inválido para pagamento.');
+        throw new BadRequestException('Invalid order amount for payment.');
       }
       return {
         id: String(item.orderId),
@@ -73,7 +73,7 @@ export class MercadoPagoService {
         currency_id: 'BRL',
       };
     });
-    if (items.length === 0) throw new BadRequestException('Checkout sem pedidos.');
+    if (items.length === 0) throw new BadRequestException('Checkout has no orders.');
 
     const frontendUrl = (this.config.get<string>('FRONTEND_URL') || 'http://localhost:3000')
       .trim()
@@ -105,7 +105,7 @@ export class MercadoPagoService {
       const preferenceId = response.id;
       const checkoutUrl = response.init_point ?? response.sandbox_init_point;
       if (!preferenceId || !checkoutUrl) {
-        throw new BadRequestException('Falha ao criar preferência no Mercado Pago.');
+        throw new BadRequestException('Failed to create the Mercado Pago preference.');
       }
       this.logger.log(`Mercado Pago preference created for checkout ${params.checkoutId}`);
       return { preferenceId, checkoutUrl };
@@ -115,7 +115,7 @@ export class MercadoPagoService {
         error instanceof Error ? error.stack : undefined,
       );
       if (error instanceof BadRequestException) throw error;
-      throw new ServiceUnavailableException('Mercado Pago indisponível. Tente novamente.');
+      throw new ServiceUnavailableException('Mercado Pago is unavailable. Try again.');
     }
   }
 
@@ -140,7 +140,7 @@ export class MercadoPagoService {
       const response = await new Customer(this.ensureClient()).create({
         body: { email, first_name: name },
       });
-      if (!response.id) throw new BadRequestException('Falha ao criar cliente no Mercado Pago.');
+      if (!response.id) throw new BadRequestException('Failed to create a Mercado Pago customer.');
       return response.id;
     } catch (error) {
       this.logger.error(
@@ -148,7 +148,7 @@ export class MercadoPagoService {
         error instanceof Error ? error.stack : undefined,
       );
       if (error instanceof BadRequestException) throw error;
-      throw new ServiceUnavailableException('Mercado Pago indisponível. Tente novamente.');
+      throw new ServiceUnavailableException('Mercado Pago is unavailable. Try again.');
     }
   }
 
@@ -159,7 +159,7 @@ export class MercadoPagoService {
         body: { token: cardTokenId },
       });
       if (!response.id || !response.last_four_digits) {
-        throw new BadRequestException('Token de cartão inválido ou expirado.');
+        throw new BadRequestException('Invalid or expired card token.');
       }
       return {
         cardId: response.id,
@@ -175,7 +175,7 @@ export class MercadoPagoService {
         error instanceof Error ? error.stack : undefined,
       );
       if (error instanceof BadRequestException) throw error;
-      throw new BadRequestException('Não foi possível salvar o cartão.');
+      throw new BadRequestException('Could not save the card.');
     }
   }
 
@@ -190,7 +190,7 @@ export class MercadoPagoService {
         'Mercado Pago removeCard error',
         error instanceof Error ? error.stack : undefined,
       );
-      throw new ServiceUnavailableException('Não foi possível remover o cartão.');
+      throw new ServiceUnavailableException('Could not remove the card.');
     }
   }
 
@@ -198,17 +198,17 @@ export class MercadoPagoService {
     if (!paymentTypeId) return undefined;
     const type = paymentTypeId.toLowerCase();
     if (type === 'pix') return PaymentMethod.PIX;
-    if (type === 'credit_card') return PaymentMethod.CREDITO;
-    if (type === 'debit_card') return PaymentMethod.DEBITO;
-    if (type === 'ticket' || type.includes('bol')) return PaymentMethod.BOLETO;
-    if (type === 'account_money') return PaymentMethod.SALDO_MP;
+    if (type === 'credit_card') return PaymentMethod.CREDIT;
+    if (type === 'debit_card') return PaymentMethod.DEBIT;
+    if (type === 'ticket' || type.includes('bol')) return PaymentMethod.BANK_SLIP;
+    if (type === 'account_money') return PaymentMethod.MERCADO_PAGO_BALANCE;
     return undefined;
   }
 
   private ensureClient(): MercadoPagoConfig {
     if (!this.client) {
       throw new ServiceUnavailableException(
-        'Mercado Pago não configurado: defina MP_ACCESS_TOKEN no ambiente.',
+        'Mercado Pago is not configured: set MP_ACCESS_TOKEN in the environment.',
       );
     }
     return this.client;

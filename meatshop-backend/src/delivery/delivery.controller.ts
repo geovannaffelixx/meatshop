@@ -71,7 +71,7 @@ export class DeliveryController {
   }
 
   @ApiOperation({
-    summary: 'Retorna ao cliente o perfil público do entregador atribuído',
+    summary: 'Returns the assigned delivery person public profile to the customer',
   })
   @Get(':id/public-profile')
   publicProfile(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
@@ -147,7 +147,7 @@ export class DeliveryController {
   }
 
   @ApiOperation({
-    summary: 'Lista a operação de entregas ativa de uma unidade',
+    summary: 'Lists the active delivery operation for a unit',
   })
   @Get('units/:unitId/live')
   listLiveDeliveries(
@@ -157,7 +157,7 @@ export class DeliveryController {
     return this.listLiveDeliveriesUseCase.execute(unitId, currentUser);
   }
 
-  @ApiOperation({ summary: 'Lista os entregadores vinculados à unidade' })
+  @ApiOperation({ summary: 'Lists delivery people linked to the unit' })
   @Get('units/:unitId/people')
   listDeliveryPeople(
     @Param('unitId', ParseIntPipe) unitId: number,
@@ -166,7 +166,7 @@ export class DeliveryController {
     return this.listUnitDeliveryPeopleUseCase.execute(unitId, currentUser);
   }
 
-  @ApiOperation({ summary: 'Aprova um entregador vinculado à unidade' })
+  @ApiOperation({ summary: 'Approves a delivery person linked to the unit' })
   @Patch('units/:unitId/people/:deliveryPersonId/approve')
   approveUnitDeliveryPerson(
     @Param('unitId', ParseIntPipe) unitId: number,
@@ -176,7 +176,7 @@ export class DeliveryController {
     return this.approveUnitDeliveryPersonUseCase.execute(unitId, deliveryPersonId, currentUser);
   }
 
-  @ApiOperation({ summary: 'Atribui um entregador ao pedido' })
+  @ApiOperation({ summary: 'Assigns a delivery person to the order' })
   @Post('units/:unitId/orders/:orderId/assign')
   assignDeliveryPerson(
     @Param('unitId', ParseIntPipe) unitId: number,
@@ -187,7 +187,9 @@ export class DeliveryController {
     return this.assignDeliveryPersonUseCase.execute(unitId, orderId, dto, currentUser);
   }
 
-  @ApiOperation({ summary: 'Remove o entregador do pedido antes da retirada' })
+  @ApiOperation({
+    summary: 'Removes the delivery person from the order before pickup',
+  })
   @Delete('units/:unitId/orders/:orderId/assignment')
   unassignDeliveryPerson(
     @Param('unitId', ParseIntPipe) unitId: number,
@@ -198,7 +200,7 @@ export class DeliveryController {
   }
 
   @ApiOperation({
-    summary: 'Valida o código do entregador e libera a retirada',
+    summary: 'Validates the delivery person code and releases pickup',
   })
   @Post('units/:unitId/orders/:orderId/verify-pickup')
   verifyPickup(
@@ -210,90 +212,97 @@ export class DeliveryController {
     return this.verifyPickupCodeUseCase.execute(unitId, orderId, dto, currentUser);
   }
 
-  @ApiOperation({ summary: 'Registra o usuário autenticado como entregador' })
+  @ApiOperation({
+    summary: 'Registers the authenticated user as a delivery person',
+  })
   @ApiResponse({
     status: 201,
-    description: 'Entregador registrado com sucesso',
+    description: 'Delivery person registered successfully',
   })
   @ApiResponse({
     status: 400,
-    description: 'Usuário já está registrado como entregador',
+    description: 'User is already registered as a delivery person',
   })
   @Post('register')
   register(@Body() dto: CreateDeliveryPersonDto, @CurrentUser() currentUser: User) {
     return this.registerDeliveryPersonUseCase.execute(dto, currentUser);
   }
 
-  @ApiOperation({ summary: 'Aprova o cadastro de um entregador' })
-  @ApiResponse({ status: 200, description: 'Entregador aprovado com sucesso' })
+  @ApiOperation({ summary: 'Approves a delivery person registration' })
+  @ApiResponse({
+    status: 200,
+    description: 'Delivery person approved successfully',
+  })
   @ApiResponse({
     status: 403,
-    description: 'Usuário não tem permissão para aprovar entregadores',
+    description: 'User is not allowed to approve delivery people',
   })
-  @ApiResponse({ status: 404, description: 'Entregador não encontrado' })
+  @ApiResponse({ status: 404, description: 'Delivery person not found' })
   @Patch(':id/approve')
   approve(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
     return this.approveDeliveryPersonUseCase.execute(id, currentUser);
   }
 
   @ApiOperation({
-    summary: 'Cadastra um novo veículo para o entregador autenticado',
+    summary: 'Registers a new vehicle for the authenticated delivery person',
   })
-  @ApiResponse({ status: 201, description: 'Veículo cadastrado com sucesso' })
-  @ApiResponse({ status: 400, description: 'Dados do veículo inválidos' })
+  @ApiResponse({ status: 201, description: 'Vehicle registered successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid vehicle data' })
   @ApiResponse({
     status: 403,
-    description: 'Usuário não tem permissão para cadastrar veículos',
+    description: 'User is not allowed to register vehicles',
   })
   @Post('vehicles')
   createVehicle(@Body() dto: CreateVehicleDto, @CurrentUser() currentUser: User) {
     return this.createVehicleUseCase.execute(dto, currentUser);
   }
 
-  @ApiOperation({ summary: 'Define o veículo ativo do entregador autenticado' })
-  @ApiResponse({ status: 200, description: 'Veículo ativado com sucesso' })
+  @ApiOperation({
+    summary: 'Sets the authenticated delivery person active vehicle',
+  })
+  @ApiResponse({ status: 200, description: 'Vehicle activated successfully' })
   @ApiResponse({
     status: 403,
-    description: 'Usuário não tem permissão para ativar este veículo',
+    description: 'User is not allowed to activate this vehicle',
   })
-  @ApiResponse({ status: 404, description: 'Veículo não encontrado' })
+  @ApiResponse({ status: 404, description: 'Vehicle not found' })
   @Patch('vehicles/:id/activate')
   activateVehicle(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
     return this.setActiveVehicleUseCase.execute(id, currentUser);
   }
 
   @ApiOperation({
-    summary: 'Aceita um pedido para entrega, vinculando-o ao entregador autenticado',
+    summary: 'Accepts an order for delivery and assigns it to the authenticated delivery person',
   })
-  @ApiResponse({ status: 200, description: 'Pedido aceito com sucesso' })
+  @ApiResponse({ status: 200, description: 'Order accepted successfully' })
   @ApiResponse({
     status: 400,
-    description: 'Pedido não está disponível para aceite',
+    description: 'Order is not available for acceptance',
   })
   @ApiResponse({
     status: 403,
-    description: 'Usuário não tem permissão para aceitar entregas',
+    description: 'User is not allowed to accept deliveries',
   })
-  @ApiResponse({ status: 404, description: 'Pedido não encontrado' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
   @Post('orders/:orderId/accept')
   acceptOrder(@Param('orderId', ParseIntPipe) orderId: number, @CurrentUser() currentUser: User) {
     return this.acceptDeliveryUseCase.execute(orderId, currentUser);
   }
 
-  @ApiOperation({ summary: 'Atualiza o status da entrega do pedido' })
+  @ApiOperation({ summary: 'Updates the order delivery status' })
   @ApiResponse({
     status: 200,
-    description: 'Status da entrega atualizado com sucesso',
+    description: 'Delivery status updated successfully',
   })
   @ApiResponse({
     status: 400,
-    description: 'Transição de status de entrega inválida',
+    description: 'Invalid delivery status transition',
   })
   @ApiResponse({
     status: 403,
-    description: 'Usuário não tem permissão para atualizar esta entrega',
+    description: 'User is not allowed to update this delivery',
   })
-  @ApiResponse({ status: 404, description: 'Pedido não encontrado' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
   @Patch('orders/:orderId/status')
   updateStatus(
     @Param('orderId', ParseIntPipe) orderId: number,
@@ -303,17 +312,17 @@ export class DeliveryController {
     return this.updateDeliveryStatusUseCase.execute(orderId, dto, currentUser);
   }
 
-  @ApiOperation({ summary: 'Finaliza a entrega do pedido' })
-  @ApiResponse({ status: 200, description: 'Entrega finalizada com sucesso' })
+  @ApiOperation({ summary: 'Completes the order delivery' })
+  @ApiResponse({ status: 200, description: 'Delivery completed successfully' })
   @ApiResponse({
     status: 400,
-    description: 'Entrega não pode ser finalizada no status atual',
+    description: 'Delivery cannot be completed in its current status',
   })
   @ApiResponse({
     status: 403,
-    description: 'Usuário não tem permissão para finalizar esta entrega',
+    description: 'User is not allowed to complete this delivery',
   })
-  @ApiResponse({ status: 404, description: 'Pedido não encontrado' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
   @Post('orders/:orderId/finish')
   finish(
     @Param('orderId', ParseIntPipe) orderId: number,
@@ -324,7 +333,7 @@ export class DeliveryController {
   }
 
   @ApiOperation({
-    summary: 'Gera novamente o código que o cliente informa na entrega',
+    summary: 'Regenerates the code provided by the customer at delivery',
   })
   @Post('orders/:orderId/delivery-code/regenerate')
   regenerateCustomerCode(
@@ -335,7 +344,7 @@ export class DeliveryController {
   }
 
   @ApiOperation({
-    summary: 'Gera novamente o código usado pelo entregador na retirada',
+    summary: 'Regenerates the code used by the delivery person at pickup',
   })
   @Post('orders/:orderId/pickup-code/regenerate')
   regeneratePickupCode(
@@ -346,17 +355,17 @@ export class DeliveryController {
   }
 
   @ApiOperation({
-    summary: 'Atualiza a localização atual do entregador durante a entrega do pedido',
+    summary: 'Updates the delivery person current location during order delivery',
   })
   @ApiResponse({
     status: 201,
-    description: 'Localização atualizada com sucesso',
+    description: 'Location updated successfully',
   })
   @ApiResponse({
     status: 403,
-    description: 'Usuário não tem permissão para atualizar a localização desta entrega',
+    description: 'User is not allowed to update this delivery location',
   })
-  @ApiResponse({ status: 404, description: 'Pedido não encontrado' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
   @Post('orders/:orderId/location')
   updateLocation(
     @Param('orderId', ParseIntPipe) orderId: number,
@@ -367,17 +376,17 @@ export class DeliveryController {
   }
 
   @ApiOperation({
-    summary: 'Consulta o acompanhamento (tracking) da entrega do pedido',
+    summary: 'Gets order delivery tracking',
   })
   @ApiResponse({
     status: 200,
-    description: 'Informações de rastreamento retornadas com sucesso',
+    description: 'Tracking information returned successfully',
   })
   @ApiResponse({
     status: 403,
-    description: 'Usuário não tem permissão para acompanhar esta entrega',
+    description: 'User is not allowed to track this delivery',
   })
-  @ApiResponse({ status: 404, description: 'Pedido não encontrado' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
   @Get('orders/:orderId/tracking')
   getTracking(@Param('orderId', ParseIntPipe) orderId: number, @CurrentUser() currentUser: User) {
     return this.getDeliveryTrackingUseCase.execute(orderId, currentUser);

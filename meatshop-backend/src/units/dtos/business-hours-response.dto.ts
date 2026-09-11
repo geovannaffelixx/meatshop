@@ -3,19 +3,32 @@ import { BusinessHours } from '../entities/business-hours.entity';
 import { Weekday } from '../enums/weekday.enum';
 
 export class BusinessHoursResponseDto {
-  @ApiProperty({ description: 'Id do registro de horário', example: 1 })
+  @ApiProperty({ description: 'Business hours record ID', example: 1 })
   id: number;
 
-  @ApiProperty({ description: 'Dia da semana', enum: Weekday, example: Weekday.MONDAY })
+  @ApiProperty({
+    description: 'Day of the week',
+    enum: Weekday,
+    example: Weekday.MONDAY,
+  })
   weekday: Weekday;
 
-  @ApiProperty({ description: 'Indica se a unidade abre neste dia', example: true })
+  @ApiProperty({
+    description: 'Indicates whether the unit opens on this day',
+    example: true,
+  })
   is_open: boolean;
 
-  @ApiPropertyOptional({ description: 'Horário de abertura (HH:mm)', example: '08:00' })
+  @ApiPropertyOptional({
+    description: 'Opening time (HH:mm)',
+    example: '08:00',
+  })
   opening_time: string | null;
 
-  @ApiPropertyOptional({ description: 'Horário de fechamento (HH:mm)', example: '18:00' })
+  @ApiPropertyOptional({
+    description: 'Closing time (HH:mm)',
+    example: '18:00',
+  })
   closing_time: string | null;
 
   static fromEntity(entity: BusinessHours): BusinessHoursResponseDto {

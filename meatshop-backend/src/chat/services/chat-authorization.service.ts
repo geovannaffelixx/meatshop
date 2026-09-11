@@ -34,7 +34,6 @@ export class ChatAuthorizationService {
     private readonly userUnitRepository: Repository<UserUnit>,
   ) {}
 
-  /** Read access: identity check only. Closed orders can still have their history read. */
   async assertCanParticipate(
     order: Order,
     participantType: ChatParticipantType,
@@ -74,7 +73,6 @@ export class ChatAuthorizationService {
     throw new ForbiddenException('You are not a participant of this conversation');
   }
 
-  /** Write access: identity check plus the order must not be in a terminal status. */
   async resolveChannelForSending(
     order: Order,
     participantType: ChatParticipantType,

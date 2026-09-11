@@ -3,7 +3,7 @@ import { IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validato
 
 export class CreateDeliveryReviewDto {
   @ApiProperty({
-    description: 'Nota da avaliação do entregador, de 1 a 5',
+    description: 'Delivery person rating from 1 to 5',
     example: 5,
     minimum: 1,
     maximum: 5,
@@ -14,8 +14,8 @@ export class CreateDeliveryReviewDto {
   rating: number;
 
   @ApiPropertyOptional({
-    description: 'Comentário sobre a entrega',
-    example: 'Entregador muito educado e pontual',
+    description: 'Delivery review comment',
+    example: 'Delivery Person muito educado e pontual',
   })
   @IsOptional()
   @IsString()

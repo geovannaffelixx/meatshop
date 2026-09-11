@@ -32,13 +32,13 @@ export class SendSupportMessageUseCase {
 
   async execute(ticketId: number, text: string | undefined, files: SupportUpload[], actor: User) {
     const ticket = await this.tickets.findOne({ where: { id: ticketId } });
-    if (!ticket) throw new NotFoundException('Chamado não encontrado');
+    if (!ticket) throw new NotFoundException('Support ticket not found');
     this.access.assertCanView(ticket, actor);
     if (ticket.status === SupportTicketStatus.CLOSED) {
-      throw new BadRequestException('Um chamado encerrado não pode receber mensagens');
+      throw new BadRequestException('A closed support ticket cannot receive messages');
     }
     if (!text?.trim() && files.length === 0) {
-      throw new BadRequestException('Informe uma mensagem ou envie ao menos uma imagem');
+      throw new BadRequestException('Provide a message or upload at least one image');
     }
 
     const message = await this.persist(ticket, text?.trim() || null, files, actor);
@@ -98,8 +98,8 @@ export class SendSupportMessageUseCase {
         this.sendNotification.execute({
           user_id: userId,
           unit_id: isAdmin ? (ticket.unit_id ?? undefined) : undefined,
-          title: isAdmin ? 'Resposta do suporte MeatShop' : 'Nova mensagem de suporte',
-          message: `Chamado #${ticket.id}: ${ticket.subject}`,
+          title: isAdmin ? 'MeatShop support response' : 'New support message',
+          message: `Support ticket #${ticket.id}: ${ticket.subject}`,
           action_url: `/support/${ticket.id}`,
           type: NotificationType.SYSTEM,
         }),

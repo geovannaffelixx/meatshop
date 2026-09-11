@@ -34,7 +34,12 @@ export class CreateCouponDto {
   @MaxLength(120)
   name: string;
 
-  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(1000) description?: string;
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  description?: string;
+
   @ApiProperty({ enum: CouponType }) @IsEnum(CouponType) type: CouponType;
   @ApiPropertyOptional()
   @ValidateIf((dto) => dto.type === CouponType.UNIT)
@@ -54,7 +59,12 @@ export class CreateCouponDto {
   @IsEnum(CouponDiscountType)
   discount_type: CouponDiscountType;
 
-  @ApiProperty({ example: 10 }) @Type(() => Number) @IsNumber() @Min(0.01) discount_amount: number;
+  @ApiProperty({ example: 10 })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0.01)
+  discount_amount: number;
+
   @ApiPropertyOptional()
   @IsOptional()
   @Type(() => Number)
@@ -85,5 +95,8 @@ export class CreateCouponDto {
   @Min(1)
   usage_limit_per_user?: number;
 
-  @ApiPropertyOptional({ default: true }) @IsOptional() @IsBoolean() active?: boolean;
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  active?: boolean;
 }

@@ -32,40 +32,56 @@ export class SupportController {
     private readonly reopenSupportTicketUseCase: ReopenSupportTicketUseCase,
   ) {}
 
-  @ApiOperation({ summary: 'Abre um novo chamado de suporte' })
-  @ApiResponse({ status: 201, description: 'Chamado criado com sucesso' })
+  @ApiOperation({ summary: 'Opens a new support ticket' })
+  @ApiResponse({
+    status: 201,
+    description: 'Support ticket created successfully',
+  })
   @Post()
   create(@Body() dto: CreateSupportTicketDto, @CurrentUser() currentUser: User) {
     return this.createSupportTicketUseCase.execute(dto, currentUser);
   }
 
   @ApiOperation({
-    summary: 'Lista os chamados de suporte (o usuário vê os próprios; SUPER_ADMIN vê todos)',
+    summary: 'Lists support tickets (users see their own; SUPER_ADMIN sees all)',
   })
-  @ApiResponse({ status: 200, description: 'Lista de chamados retornada com sucesso' })
+  @ApiResponse({
+    status: 200,
+    description: 'Support ticket list returned successfully',
+  })
   @Get()
   list(@CurrentUser() currentUser: User) {
     return this.listSupportTicketsUseCase.execute(currentUser);
   }
 
-  @ApiOperation({ summary: 'Consulta paginada e filtrada de chamados' })
+  @ApiOperation({
+    summary: 'Gets a paginated and filtered support ticket list',
+  })
   @Get('search')
   search(@Query() query: ListSupportTicketsQueryDto, @CurrentUser() currentUser: User) {
     return this.searchSupportTicketsUseCase.execute(query, currentUser);
   }
 
-  @ApiOperation({ summary: 'Busca um chamado de suporte pelo identificador' })
-  @ApiResponse({ status: 200, description: 'Chamado encontrado com sucesso' })
-  @ApiResponse({ status: 404, description: 'Chamado não encontrado' })
+  @ApiOperation({ summary: 'Gets a support ticket by identifier' })
+  @ApiResponse({
+    status: 200,
+    description: 'Support ticket found successfully',
+  })
+  @ApiResponse({ status: 404, description: 'Support ticket not found' })
   @Get(':id')
   getOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
     return this.getSupportTicketUseCase.execute(id, currentUser);
   }
 
-  @ApiOperation({ summary: 'Edita o assunto/descrição de um chamado ainda aberto' })
-  @ApiResponse({ status: 200, description: 'Chamado atualizado com sucesso' })
-  @ApiResponse({ status: 400, description: 'Chamado não está mais aberto' })
-  @ApiResponse({ status: 404, description: 'Chamado não encontrado' })
+  @ApiOperation({
+    summary: 'Edits the subject or description of an open support ticket',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Support ticket updated successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Support ticket is no longer open' })
+  @ApiResponse({ status: 404, description: 'Support ticket not found' })
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -75,11 +91,19 @@ export class SupportController {
     return this.updateSupportTicketUseCase.execute(id, dto, currentUser);
   }
 
-  @ApiOperation({ summary: 'Responde um chamado de suporte (restrito a SUPER_ADMIN)' })
-  @ApiResponse({ status: 200, description: 'Chamado respondido com sucesso' })
-  @ApiResponse({ status: 400, description: 'Chamado já está encerrado' })
-  @ApiResponse({ status: 403, description: 'Sem permissão para responder chamados' })
-  @ApiResponse({ status: 404, description: 'Chamado não encontrado' })
+  @ApiOperation({
+    summary: 'Answers a support ticket, restricted to SUPER_ADMIN',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Support ticket answered successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Support ticket is already closed' })
+  @ApiResponse({
+    status: 403,
+    description: 'Permission denied to answer support tickets',
+  })
+  @ApiResponse({ status: 404, description: 'Support ticket not found' })
   @Roles(GlobalRole.SUPER_ADMIN)
   @Patch(':id/answer')
   answer(
@@ -90,17 +114,23 @@ export class SupportController {
     return this.answerSupportTicketUseCase.execute(id, dto, currentUser);
   }
 
-  @ApiOperation({ summary: 'Encerra um chamado de suporte' })
-  @ApiResponse({ status: 200, description: 'Chamado encerrado com sucesso' })
-  @ApiResponse({ status: 400, description: 'Chamado já está encerrado' })
-  @ApiResponse({ status: 403, description: 'Sem permissão para encerrar este chamado' })
-  @ApiResponse({ status: 404, description: 'Chamado não encontrado' })
+  @ApiOperation({ summary: 'Closes a support ticket' })
+  @ApiResponse({
+    status: 200,
+    description: 'Support ticket closed successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Support ticket is already closed' })
+  @ApiResponse({
+    status: 403,
+    description: 'Permission denied to close this support ticket',
+  })
+  @ApiResponse({ status: 404, description: 'Support ticket not found' })
   @Patch(':id/close')
   close(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
     return this.closeSupportTicketUseCase.execute(id, currentUser);
   }
 
-  @ApiOperation({ summary: 'Reabre um chamado encerrado' })
+  @ApiOperation({ summary: 'Reopens a closed support ticket' })
   @Patch(':id/reopen')
   reopen(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
     return this.reopenSupportTicketUseCase.execute(id, currentUser);

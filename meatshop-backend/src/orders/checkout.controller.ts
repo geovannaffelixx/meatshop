@@ -12,7 +12,7 @@ import { QuoteCartUseCase } from './use-cases/quote-cart.use-case';
 export class CheckoutController {
   constructor(private readonly quoteCartUseCase: QuoteCartUseCase) {}
 
-  @ApiOperation({ summary: 'Calcula a prévia oficial do checkout por unidade' })
+  @ApiOperation({ summary: 'Calculates the official checkout quote by unit' })
   @ApiResponse({ status: 201, type: CheckoutQuoteResponseDto })
   @Post('quote')
   quote(@Body() dto: CreateOrderDto, @CurrentUser() currentUser: User) {

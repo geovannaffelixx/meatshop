@@ -18,48 +18,59 @@ import { CreateRecipeProductDto } from './create-recipe-product.dto';
 import { CreateRecipeStepDto } from './create-recipe-step.dto';
 
 export class CreateRecipeDto {
-  @ApiProperty({ description: 'Id da unidade que está publicando a receita', example: 1 })
+  @ApiProperty({
+    description: 'ID of the unit publishing the recipe',
+    example: 1,
+  })
   @IsInt()
   unit_id: number;
 
-  @ApiProperty({ description: 'Título da receita', example: 'Picanha na Brasa' })
+  @ApiProperty({ description: 'Recipe title', example: 'Grilled Picanha' })
   @IsNotEmpty()
   @IsString()
   @MaxLength(150)
   title: string;
 
   @ApiProperty({
-    description: 'Descrição/chamada da receita',
+    description: 'Recipe description or tagline',
     example:
-      'A rainha do churrasco brasileiro. Com a técnica certa, você garante uma crosta perfeita por fora e suculência total por dentro.',
+      'The queen of Brazilian barbecue. With the right technique, you get a perfect crust and a juicy center.',
   })
   @IsNotEmpty()
   @IsString()
   description: string;
 
-  @ApiPropertyOptional({ description: 'URL da imagem de capa da receita' })
+  @ApiPropertyOptional({ description: 'Recipe cover image URL' })
   @IsOptional()
   @IsUrl()
   image_url?: string;
 
-  @ApiPropertyOptional({ description: 'URL do vídeo da receita (ex: YouTube)' })
+  @ApiPropertyOptional({
+    description: 'Recipe video URL (for example, YouTube)',
+  })
   @IsOptional()
   @IsUrl()
   video_url?: string;
 
-  @ApiPropertyOptional({ description: 'Tag/categoria de exibição da receita', example: 'Bovino' })
+  @ApiPropertyOptional({
+    description: 'Recipe display tag/category',
+    example: 'Beef',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(50)
   tag?: string;
 
-  @ApiPropertyOptional({ description: 'Se a receita está visível no app', example: true })
+  @ApiPropertyOptional({
+    description: 'Whether the recipe is visible in the app',
+    example: true,
+  })
   @IsOptional()
   @IsBoolean()
   active?: boolean;
 
   @ApiPropertyOptional({
-    description: 'Ordem de exibição entre as receitas da unidade',
+    description: 'Display order among unit recipes',
     example: 1,
   })
   @IsOptional()
@@ -67,14 +78,14 @@ export class CreateRecipeDto {
   display_order?: number;
 
   @ApiPropertyOptional({
-    description: 'Data de início da semana em que a receita é destacada como "receita da semana"',
+    description: 'Start date of the week when the recipe is featured as recipe of the week',
   })
   @IsOptional()
   @IsDateString()
   week_start?: string;
 
   @ApiProperty({
-    description: 'Passos do modo de preparo, em ordem',
+    description: 'Preparation steps in sequence',
     type: () => CreateRecipeStepDto,
     isArray: true,
   })
@@ -85,7 +96,7 @@ export class CreateRecipeDto {
   steps: CreateRecipeStepDto[];
 
   @ApiProperty({
-    description: 'Ingredientes da receita',
+    description: 'Recipe ingredients',
     type: () => CreateRecipeIngredientDto,
     isArray: true,
   })
@@ -96,7 +107,7 @@ export class CreateRecipeDto {
   ingredients: CreateRecipeIngredientDto[];
 
   @ApiPropertyOptional({
-    description: 'Produtos do catálogo em destaque na receita',
+    description: 'Catalog products featured in the recipe',
     type: () => CreateRecipeProductDto,
     isArray: true,
   })

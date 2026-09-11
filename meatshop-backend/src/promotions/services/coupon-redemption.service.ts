@@ -27,7 +27,10 @@ export class CouponRedemptionService {
       .where('coupon.code = :code', { code: code.toUpperCase().trim() })
       .getOne();
     if (!coupon)
-      throw new BadRequestException({ code: 'COUPON_NOT_FOUND', message: 'Cupom não encontrado.' });
+      throw new BadRequestException({
+        code: 'COUPON_NOT_FOUND',
+        message: 'Coupon not found.',
+      });
     const discountAmount = await this.policy.validate(coupon, context, manager);
     return { coupon, discountAmount };
   }

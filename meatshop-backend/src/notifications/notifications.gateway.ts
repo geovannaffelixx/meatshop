@@ -30,7 +30,9 @@ export class NotificationsGateway implements OnGatewayConnection {
   async handleConnection(client: Socket): Promise<void> {
     try {
       const payload = await this.jwtService.verifyAsync<{ sub: number }>(this.extractToken(client));
-      const user = await this.userRepository.findOne({ where: { id: payload.sub } });
+      const user = await this.userRepository.findOne({
+        where: { id: payload.sub },
+      });
       if (!user?.is_active) throw new Error('User not found or inactive');
 
       client.data.userId = user.id;

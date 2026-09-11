@@ -3,37 +3,46 @@ import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength } from 'clas
 import { NotificationType } from '../enums/notification-type.enum';
 
 export class CreateNotificationDto {
-  @ApiProperty({ description: 'Id do usuário que receberá a notificação', example: 5 })
+  @ApiProperty({
+    description: 'ID of the user who will receive the notification',
+    example: 5,
+  })
   @IsInt()
   user_id: number;
 
-  @ApiPropertyOptional({ description: 'Unidade relacionada ao evento', example: 3 })
+  @ApiPropertyOptional({ description: 'Unit related to the event', example: 3 })
   @IsOptional()
   @IsInt()
   unit_id?: number;
 
-  @ApiPropertyOptional({ description: 'Título curto exibido no alerta', example: 'Novo pedido' })
+  @ApiPropertyOptional({
+    description: 'Short title displayed in the alert',
+    example: 'New order',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(120)
   title?: string;
 
   @ApiProperty({
-    description: 'Texto da notificação',
-    example: 'Nova promoção disponível na sua unidade favorita!',
+    description: 'Notification text',
+    example: 'New promotion available at your favorite unit!',
   })
   @IsNotEmpty()
   @IsString()
   message: string;
 
-  @ApiPropertyOptional({ description: 'Rota interna aberta ao clicar', example: '/orders/42' })
+  @ApiPropertyOptional({
+    description: 'Rota interna aberta ao clicar',
+    example: '/orders/42',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(255)
   action_url?: string;
 
   @ApiProperty({
-    description: 'Tipo da notificação',
+    description: 'Notification type',
     enum: NotificationType,
     example: NotificationType.SYSTEM,
   })

@@ -5,7 +5,7 @@ import { UnitScopedQueryDto } from './unit-scoped-query.dto';
 
 export class RankedListQueryDto extends UnitScopedQueryDto {
   @ApiPropertyOptional({
-    description: 'Quantidade máxima de itens a retornar (1 a 50)',
+    description: 'Maximum number of items to return (1 to 50)',
     example: 10,
     default: 10,
   })

@@ -17,7 +17,6 @@ export class BusinessHoursValidator {
       where: { unit_id: unitId, weekday },
     });
 
-    // No hours configured for this unit/day yet — don't block scheduling.
     if (!hours) {
       return;
     }

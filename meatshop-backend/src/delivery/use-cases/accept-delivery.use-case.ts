@@ -100,7 +100,7 @@ export class AcceptDeliveryUseCase {
     await this.notifications.notifyDeliveryPersonOfPickupCode(order, currentUser.id, pickupCode);
     await this.notifications.notifyUnitOfDeliveryAssignment(
       order,
-      currentUser.name ?? 'Entregador',
+      currentUser.name ?? 'Delivery Person',
     );
     if (deliveryCode) {
       await this.notifications.notifyCustomerOfDeliveryCode(order, deliveryCode);

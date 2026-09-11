@@ -10,8 +10,8 @@ import {
 } from 'typeorm';
 import { Unit } from '../../units/entities/unit.entity';
 
-export type ExpenseType = 'Compras' | 'Serviços' | 'Outros';
-export type PaymentMethod = 'Pix' | 'Crédito' | 'Débito' | 'Dinheiro' | 'Boleto';
+export type ExpenseType = 'Purchases' | 'Services' | 'Other';
+export type PaymentMethod = 'Pix' | 'Credit' | 'Debit' | 'Cash' | 'Bank Slip';
 
 @Entity('expenses')
 export class Expense {

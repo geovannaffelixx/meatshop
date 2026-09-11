@@ -4,7 +4,7 @@ import { LocalRole } from '../../common/enums/local-role.enum';
 
 export class CreateUserUnitDto {
   @ApiProperty({
-    description: 'ID do usuario a ser adicionado como membro da unidade',
+    description: 'ID of the user to add as a unit member',
     example: 1,
   })
   @IsNotEmpty()
@@ -12,7 +12,7 @@ export class CreateUserUnitDto {
   user_id: number;
 
   @ApiProperty({
-    description: 'Papel (role) do usuario dentro da unidade',
+    description: 'Papel (role) do user dentro da unit',
     enum: LocalRole,
     example: LocalRole.OPERATOR,
   })

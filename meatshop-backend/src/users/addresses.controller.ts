@@ -25,34 +25,34 @@ export class AddressesController {
   ) {}
 
   @Get()
-  @ApiOperation({ summary: 'Lista os endereços do usuário autenticado' })
+  @ApiOperation({ summary: 'Lists the authenticated user addresses' })
   @ApiResponse({
     status: 200,
-    description: 'Lista de endereços retornada com sucesso',
+    description: 'Address list returned successfully',
   })
   list(@CurrentUser() currentUser: User) {
     return this.listAddressesUseCase.execute(currentUser.id);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Obtém um endereço específico do usuário' })
-  @ApiResponse({ status: 200, description: 'Endereço encontrado com sucesso' })
-  @ApiResponse({ status: 404, description: 'Endereço não encontrado' })
+  @ApiOperation({ summary: 'Gets a specific user address' })
+  @ApiResponse({ status: 200, description: 'Address found successfully' })
+  @ApiResponse({ status: 404, description: 'Address not found' })
   getOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
     return this.getAddressUseCase.execute(id, currentUser.id);
   }
 
   @Post()
-  @ApiOperation({ summary: 'Cria um novo endereço para o usuário autenticado' })
-  @ApiResponse({ status: 201, description: 'Endereço criado com sucesso' })
+  @ApiOperation({ summary: 'Creates a new address for the authenticated user' })
+  @ApiResponse({ status: 201, description: 'Address created successfully' })
   create(@Body() dto: CreateAddressDto, @CurrentUser() currentUser: User) {
     return this.createAddressUseCase.execute(dto, currentUser);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Atualiza um endereço existente do usuário' })
-  @ApiResponse({ status: 200, description: 'Endereço atualizado com sucesso' })
-  @ApiResponse({ status: 404, description: 'Endereço não encontrado' })
+  @ApiOperation({ summary: 'Updates an existing user address' })
+  @ApiResponse({ status: 200, description: 'Address updated successfully' })
+  @ApiResponse({ status: 404, description: 'Address not found' })
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateAddressDto,
@@ -62,20 +62,20 @@ export class AddressesController {
   }
 
   @Patch(':id/default')
-  @ApiOperation({ summary: 'Define um endereço como padrão do usuário' })
+  @ApiOperation({ summary: 'Sets an address as the user default' })
   @ApiResponse({
     status: 200,
-    description: 'Endereço definido como padrão com sucesso',
+    description: 'Address set as default successfully',
   })
-  @ApiResponse({ status: 404, description: 'Endereço não encontrado' })
+  @ApiResponse({ status: 404, description: 'Address not found' })
   setDefault(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
     return this.setDefaultAddressUseCase.execute(id, currentUser);
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Remove um endereço do usuário' })
-  @ApiResponse({ status: 200, description: 'Endereço removido com sucesso' })
-  @ApiResponse({ status: 404, description: 'Endereço não encontrado' })
+  @ApiOperation({ summary: 'Removes a user address' })
+  @ApiResponse({ status: 200, description: 'Address removed successfully' })
+  @ApiResponse({ status: 404, description: 'Address not found' })
   remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
     return this.deleteAddressUseCase.execute(id, currentUser);
   }

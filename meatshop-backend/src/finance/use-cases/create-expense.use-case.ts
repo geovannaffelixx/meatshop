@@ -21,7 +21,9 @@ export class CreateExpenseUseCase {
   ) {}
 
   async execute(dto: CreateExpenseDto, currentUser: User): Promise<Expense> {
-    const unit = await this.unitRepository.findOne({ where: { id: dto.unit_id } });
+    const unit = await this.unitRepository.findOne({
+      where: { id: dto.unit_id },
+    });
     if (!unit) {
       throw new NotFoundException('Unit not found');
     }
@@ -48,13 +50,13 @@ export class CreateExpenseUseCase {
 
     const saved = await this.expenseRepository.save(expense);
 
-    this.logger.info('Despesa criada', {
+    this.logger.info('Expense created', {
       id: saved.id,
       unitId: saved.unit_id,
-      fornecedor: saved.supplierName,
-      valor: saved.amount,
-      tipo: saved.type,
-      metodo: saved.paymentMethod,
+      supplierName: saved.supplierName,
+      amount: saved.amount,
+      type: saved.type,
+      paymentMethod: saved.paymentMethod,
     });
 
     return saved;

@@ -18,7 +18,9 @@ export class CreateUnitReviewUseCase {
   ) {}
 
   async execute(orderId: number, dto: CreateReviewDto, currentUser: User): Promise<Review> {
-    const order = await this.orderRepository.findOne({ where: { id: orderId } });
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+    });
     if (!order) {
       throw new NotFoundException('Order not found');
     }

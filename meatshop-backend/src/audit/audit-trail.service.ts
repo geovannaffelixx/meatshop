@@ -77,7 +77,7 @@ export class AuditTrailService {
       await this.record(event);
     } catch (error) {
       this.logger.error(
-        'Falha ao persistir evento de auditoria',
+        'Failed to persist audit event',
         error instanceof Error ? error.stack : undefined,
       );
     }

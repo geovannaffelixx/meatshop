@@ -13,7 +13,7 @@ import {
 
 export class CreateProductDto {
   @ApiProperty({
-    description: 'Nome do produto',
+    description: 'Product name',
     example: 'Picanha',
   })
   @IsNotEmpty()
@@ -22,15 +22,15 @@ export class CreateProductDto {
   name: string;
 
   @ApiProperty({
-    description: 'Descrição detalhada do produto',
-    example: 'Corte bovino nobre, ideal para churrasco',
+    description: 'Detailed product description',
+    example: 'Premium beef cut, ideal for barbecue',
   })
   @IsNotEmpty()
   @IsString()
   description: string;
 
   @ApiProperty({
-    description: 'Preço de venda do produto',
+    description: 'Product sale price',
     example: 89.9,
   })
   @IsNumber()
@@ -38,7 +38,7 @@ export class CreateProductDto {
   price: number;
 
   @ApiProperty({
-    description: 'Unidade de medida do produto',
+    description: 'Product unit of measure',
     example: 'KG',
   })
   @IsNotEmpty()
@@ -47,7 +47,7 @@ export class CreateProductDto {
   unit_of_measure: string;
 
   @ApiPropertyOptional({
-    description: 'Indica se o produto está ativo',
+    description: 'Indicates whether the product is active',
     example: true,
   })
   @IsOptional()
@@ -55,7 +55,7 @@ export class CreateProductDto {
   active?: boolean;
 
   @ApiProperty({
-    description: 'Identificador da unidade à qual o produto pertence',
+    description: 'Unit identifier that owns the product',
     example: 1,
   })
   @IsNotEmpty()
@@ -63,7 +63,7 @@ export class CreateProductDto {
   unit_id: number;
 
   @ApiProperty({
-    description: 'Identificador da categoria à qual o produto pertence',
+    description: 'Category identifier that owns the product',
     example: 3,
   })
   @IsNotEmpty()
@@ -71,7 +71,7 @@ export class CreateProductDto {
   category_id: number;
 
   @ApiPropertyOptional({
-    description: 'Marca do produto',
+    description: 'Product brand',
     example: 'Friboi',
   })
   @IsOptional()
@@ -80,8 +80,8 @@ export class CreateProductDto {
   brand?: string;
 
   @ApiPropertyOptional({
-    description: 'URL da imagem do produto',
-    example: 'https://cdn.example.com/produtos/picanha.jpg',
+    description: 'Product image URL',
+    example: 'https://cdn.example.com/products/picanha.jpg',
   })
   @IsOptional()
   @IsUrl()

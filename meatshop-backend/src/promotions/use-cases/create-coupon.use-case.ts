@@ -24,7 +24,7 @@ export class CreateCouponUseCase {
     if (await this.coupons.exists({ where: { code } })) {
       throw new ConflictException({
         code: 'COUPON_ALREADY_EXISTS',
-        message: 'Já existe um cupom com este código.',
+        message: 'A coupon with this code already exists.',
       });
     }
     return this.dataSource.transaction(async (manager) => {
@@ -34,7 +34,10 @@ export class CreateCouponUseCase {
       );
       await manager.save(
         CouponUnit,
-        (dto.allowed_unit_ids ?? []).map((unit_id) => ({ coupon_id: coupon.id, unit_id })),
+        (dto.allowed_unit_ids ?? []).map((unit_id) => ({
+          coupon_id: coupon.id,
+          unit_id,
+        })),
       );
       return manager.findOneOrFail(Coupon, {
         where: { id: coupon.id },

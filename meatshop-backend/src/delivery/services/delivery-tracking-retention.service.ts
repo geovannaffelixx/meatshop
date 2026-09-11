@@ -17,7 +17,9 @@ export class DeliveryTrackingRetentionService {
     config: ConfigService,
   ) {
     this.retentionDays = readPositiveInteger(
-      { DELIVERY_TRACKING_RETENTION_DAYS: config.get<string>('DELIVERY_TRACKING_RETENTION_DAYS') },
+      {
+        DELIVERY_TRACKING_RETENTION_DAYS: config.get<string>('DELIVERY_TRACKING_RETENTION_DAYS'),
+      },
       'DELIVERY_TRACKING_RETENTION_DAYS',
       30,
     );
@@ -26,7 +28,9 @@ export class DeliveryTrackingRetentionService {
   @Cron(CronExpression.EVERY_DAY_AT_3AM, { timeZone: 'America/Sao_Paulo' })
   async purgeExpired(): Promise<number> {
     const cutoff = new Date(Date.now() - this.retentionDays * 24 * 60 * 60 * 1000);
-    const result = await this.trackingRepository.delete({ created_at: LessThan(cutoff) });
+    const result = await this.trackingRepository.delete({
+      created_at: LessThan(cutoff),
+    });
     const removed = result.affected ?? 0;
     if (removed > 0) this.logger.log(`Purged ${removed} expired delivery tracking records`);
     return removed;

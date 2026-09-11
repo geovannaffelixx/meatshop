@@ -46,7 +46,9 @@ export class CancelOrderUseCase {
         throw new BadRequestException('Order can no longer be cancelled');
       }
 
-      const items = await manager.find(OrderItem, { where: { order_id: orderId } });
+      const items = await manager.find(OrderItem, {
+        where: { order_id: orderId },
+      });
       for (const item of items) {
         await manager.increment(Stock, { product_id: item.product_id }, 'quantity', item.quantity);
       }

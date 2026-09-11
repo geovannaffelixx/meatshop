@@ -4,7 +4,7 @@ import { VehicleType } from '../enums/vehicle-type.enum';
 
 export class CreateVehicleDto {
   @ApiProperty({
-    description: 'Tipo do veículo cadastrado',
+    description: 'Registered vehicle type',
     enum: VehicleType,
     example: VehicleType.MOTORCYCLE,
   })
@@ -12,7 +12,7 @@ export class CreateVehicleDto {
   type: VehicleType;
 
   @ApiProperty({
-    description: 'Modelo do veículo',
+    description: 'Vehicle model',
     example: 'Honda CG 160',
     maxLength: 80,
   })
@@ -22,7 +22,7 @@ export class CreateVehicleDto {
   model: string;
 
   @ApiProperty({
-    description: 'Placa do veículo',
+    description: 'Vehicle license plate',
     example: 'ABC1D23',
     maxLength: 10,
   })
@@ -32,7 +32,7 @@ export class CreateVehicleDto {
   plate: string;
 
   @ApiProperty({
-    description: 'Cor do veículo',
+    description: 'Vehicle color',
     example: 'Preto',
     maxLength: 30,
   })
@@ -42,7 +42,7 @@ export class CreateVehicleDto {
   color: string;
 
   @ApiProperty({
-    description: 'Ano de fabricação do veículo',
+    description: 'Vehicle manufacturing year',
     example: 2022,
     minimum: 1950,
     maximum: 2100,

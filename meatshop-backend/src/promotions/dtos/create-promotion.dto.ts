@@ -14,7 +14,7 @@ import {
 
 export class CreatePromotionDto {
   @ApiProperty({
-    description: 'Identificador da unidade à qual a promoção pertence',
+    description: 'Unit identifier that owns the promotion',
     example: 1,
   })
   @IsNotEmpty()
@@ -22,7 +22,7 @@ export class CreatePromotionDto {
   unit_id: number;
 
   @ApiProperty({
-    description: 'Identificador do produto em promoção',
+    description: 'Promoted product identifier',
     example: 42,
   })
   @IsNotEmpty()
@@ -30,8 +30,8 @@ export class CreatePromotionDto {
   product_id: number;
 
   @ApiProperty({
-    description: 'Título da promoção',
-    example: 'Picanha em promoção',
+    description: 'Promotion title',
+    example: 'Picanha promotion',
   })
   @IsNotEmpty()
   @IsString()
@@ -39,8 +39,8 @@ export class CreatePromotionDto {
   title: string;
 
   @ApiPropertyOptional({
-    description: 'Descrição detalhada da promoção',
-    example: 'Picanha bovina com 20% de desconto durante o fim de semana',
+    description: 'Detailed promotion description',
+    example: 'Beef picanha with a 20% weekend discount',
   })
   @IsOptional()
   @IsString()
@@ -48,29 +48,32 @@ export class CreatePromotionDto {
 
   @ApiPropertyOptional({
     description:
-      'Percentual de desconto aplicado ao produto (obrigatório caso promotional_price não seja informado)',
+      'Discount percentage applied to the product (required when promotional_price is not provided)',
     example: 20,
   })
   @ValidateIf((dto) => dto.promotional_price === undefined)
-  @IsNotEmpty({ message: 'Either discount_percentage or promotional_price is required' })
+  @IsNotEmpty({
+    message: 'Either discount_percentage or promotional_price is required',
+  })
   @IsNumber()
   @Min(0)
   @Max(100)
   discount_percentage?: number;
 
   @ApiPropertyOptional({
-    description:
-      'Preço promocional do produto (obrigatório caso discount_percentage não seja informado)',
+    description: 'Product promotional price (required when discount_percentage is not provided)',
     example: 47.92,
   })
   @ValidateIf((dto) => dto.discount_percentage === undefined)
-  @IsNotEmpty({ message: 'Either discount_percentage or promotional_price is required' })
+  @IsNotEmpty({
+    message: 'Either discount_percentage or promotional_price is required',
+  })
   @IsNumber()
   @Min(0)
   promotional_price?: number;
 
   @ApiProperty({
-    description: 'Data e hora de início da promoção (ISO 8601)',
+    description: 'Promotion start date and time (ISO 8601)',
     example: '2026-08-20T00:00:00.000Z',
   })
   @IsNotEmpty()
@@ -78,7 +81,7 @@ export class CreatePromotionDto {
   starts_at: string;
 
   @ApiProperty({
-    description: 'Data e hora de término da promoção (ISO 8601)',
+    description: 'Promotion end date and time (ISO 8601)',
     example: '2026-08-25T23:59:59.000Z',
   })
   @IsNotEmpty()

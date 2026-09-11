@@ -25,7 +25,6 @@ export class ForgotPasswordUseCase {
       where: { email: email.toLowerCase().trim() },
     });
 
-    // Always return the same message to prevent email enumeration
     if (!user) {
       return this.genericResponse();
     }

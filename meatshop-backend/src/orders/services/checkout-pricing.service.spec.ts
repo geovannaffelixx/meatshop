@@ -1,12 +1,12 @@
 import { BadRequestException } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
+import { jest } from '@jest/globals';
 import type { CartItem } from '../../cart/entities/cart-item.entity';
 import type { Unit } from '../../units/entities/unit.entity';
 import type { Address } from '../../users/entities/address.entity';
 import { DeliveryType } from '../enums/delivery-type.enum';
 import { CheckoutPricingService } from './checkout-pricing.service';
 
-/* global jest */
 describe('CheckoutPricingService', () => {
   const config = {
     get: jest.fn((_name: string, fallback: string) => (fallback === '0' ? '8.50' : fallback)),

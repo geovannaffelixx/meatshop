@@ -43,7 +43,7 @@ describe('CreateUnitMemberUseCase', () => {
 
   const dto = {
     name: 'Maria Silva',
-    email: 'maria@example.com',
+    email: 'mary@example.com',
     cpf: '12345678901',
     password: 'SenhaTemporaria123!',
     local_role: LocalRole.OPERATOR as const,
@@ -54,7 +54,10 @@ describe('CreateUnitMemberUseCase', () => {
   });
 
   it('creates an operator and membership in one transaction', async () => {
-    const result = await useCase.execute(10, dto, { id: 1, global_role: GlobalRole.USER } as never);
+    const result = await useCase.execute(10, dto, {
+      id: 1,
+      global_role: GlobalRole.USER,
+    } as never);
     expect(authorization.assertHasPermission).toHaveBeenCalled();
     expect(dataSource.transaction).toHaveBeenCalledTimes(1);
     expect(firebase.createPasswordUser).toHaveBeenCalledWith({

@@ -6,7 +6,6 @@ export class AddUnitIdToExpenses1787064315013 implements MigrationInterface {
   async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`ALTER TABLE "expenses" ADD "unit_id" integer`);
 
-    // Backfill pre-existing expenses (created before unit scoping existed) to the first unit.
     await queryRunner.query(`
             UPDATE "expenses"
             SET "unit_id" = (SELECT "id" FROM "units" ORDER BY "id" ASC LIMIT 1)

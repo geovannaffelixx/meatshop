@@ -3,7 +3,9 @@ import { getAllowedOrigins, readPositiveInteger, validateEnvironment } from './r
 describe('runtime config', () => {
   it('normalizes and deduplicates configured origins', () => {
     expect(
-      getAllowedOrigins({ CORS_ORIGINS: 'https://app.example.com/, https://app.example.com' }),
+      getAllowedOrigins({
+        CORS_ORIGINS: 'https://app.example.com/, https://app.example.com',
+      }),
     ).toEqual(['https://app.example.com']);
   });
 

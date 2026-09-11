@@ -4,7 +4,6 @@ export class CreateReviewsSchema1787000271284 implements MigrationInterface {
   name = 'CreateReviewsSchema1787000271284';
 
   async up(queryRunner: QueryRunner): Promise<void> {
-    // ── reviews (unidade e/ou produto) ──────────────────────────────────
     await queryRunner.query(`
             CREATE TABLE "reviews" (
                 "id" SERIAL NOT NULL,
@@ -48,7 +47,6 @@ export class CreateReviewsSchema1787000271284 implements MigrationInterface {
             WHERE "product_id" IS NULL
         `);
 
-    // ── delivery_reviews ─────────────────────────────────────────────────
     await queryRunner.query(`
             CREATE TABLE "delivery_reviews" (
                 "id" SERIAL NOT NULL,

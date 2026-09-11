@@ -61,7 +61,7 @@ export class MediaStorageService {
         { folder: `meatshop/${folder}`, resource_type: 'image' },
         (error, result: UploadApiResponse | undefined) => {
           if (error || !result) {
-            reject(new ServiceUnavailableException('Não foi possível armazenar a imagem'));
+            reject(new ServiceUnavailableException('Could not store the image'));
             return;
           }
           resolve(result.secure_url);

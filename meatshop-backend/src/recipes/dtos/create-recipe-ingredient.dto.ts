@@ -2,13 +2,13 @@ import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CreateRecipeIngredientDto {
-  @ApiProperty({ description: 'Nome do ingrediente', example: 'Picanha bovina' })
+  @ApiProperty({ description: 'Ingredient name', example: 'Beef picanha' })
   @IsNotEmpty()
   @IsString()
   @MaxLength(150)
   name: string;
 
-  @ApiProperty({ description: 'Quantidade do ingrediente', example: '1 kg' })
+  @ApiProperty({ description: 'Ingredient quantity', example: '1 kg' })
   @IsNotEmpty()
   @IsString()
   @MaxLength(50)
@@ -16,7 +16,7 @@ export class CreateRecipeIngredientDto {
 
   @ApiPropertyOptional({
     description: 'Dica sobre esse ingrediente',
-    example: 'Prefira peças com gordura uniforme de até 1 cm.',
+    example: 'Choose cuts with an even fat layer up to 1 cm thick.',
   })
   @IsOptional()
   @IsString()

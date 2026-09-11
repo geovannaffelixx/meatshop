@@ -4,7 +4,7 @@ import { IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
 
 export class FilterPromotionsDto {
   @ApiPropertyOptional({
-    description: 'Filtra promoções pela unidade',
+    description: 'Filters promotions by unit',
     example: 1,
   })
   @IsOptional()
@@ -13,7 +13,7 @@ export class FilterPromotionsDto {
   unit_id?: number;
 
   @ApiPropertyOptional({
-    description: 'Filtra promoções pelo produto',
+    description: 'Filters promotions by product',
     example: 42,
   })
   @IsOptional()
@@ -22,7 +22,7 @@ export class FilterPromotionsDto {
   product_id?: number;
 
   @ApiPropertyOptional({
-    description: 'Filtra promoções pelo status de ativação',
+    description: 'Filters promotions by activation status',
     example: 'true',
   })
   @IsOptional()
@@ -30,7 +30,13 @@ export class FilterPromotionsDto {
   active?: 'true' | 'false';
 
   @ApiPropertyOptional() @IsOptional() @IsIn(['true']) marketplace?: 'true';
-  @ApiPropertyOptional({ default: 1 }) @IsOptional() @Type(() => Number) @IsInt() @Min(1) page = 1;
+  @ApiPropertyOptional({ default: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page = 1;
+
   @ApiPropertyOptional({ default: 10, maximum: 50 })
   @IsOptional()
   @Type(() => Number)

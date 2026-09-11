@@ -20,12 +20,12 @@ export class UsersController {
 
   @Get('me')
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Obtém o perfil do usuário autenticado' })
+  @ApiOperation({ summary: 'Gets the authenticated user profile' })
   @ApiResponse({
     status: 200,
-    description: 'Perfil do usuário retornado com sucesso',
+    description: 'User profile returned successfully',
   })
-  @ApiResponse({ status: 401, description: 'Não autenticado' })
+  @ApiResponse({ status: 401, description: 'Unauthenticated' })
   async me(@CurrentUser() currentUser: User) {
     const user = await this.getUserProfileUseCase.execute(currentUser.id);
     const panel = await this.getPanelContextUseCase.execute(currentUser);
@@ -35,11 +35,11 @@ export class UsersController {
   @Patch('me')
   @ApiBearerAuth('access-token')
   @ApiOperation({
-    summary: 'Atualiza o nome e/ou e-mail do usuário autenticado',
+    summary: 'Updates the authenticated user name and/or email',
   })
-  @ApiResponse({ status: 200, description: 'Perfil atualizado com sucesso' })
-  @ApiResponse({ status: 401, description: 'Não autenticado' })
-  @ApiResponse({ status: 409, description: 'E-mail já cadastrado' })
+  @ApiResponse({ status: 200, description: 'Profile updated successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthenticated' })
+  @ApiResponse({ status: 409, description: 'Email already registered' })
   async updateMe(@CurrentUser() currentUser: User, @Body() dto: UpdateProfileDto) {
     const user = await this.updateProfileUseCase.execute(currentUser.id, dto);
     return { ok: true, user };
@@ -49,11 +49,11 @@ export class UsersController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth('access-token')
   @ApiOperation({
-    summary: 'Exclui e anonimiza a conta do usuário autenticado',
+    summary: 'Deletes and anonymizes the authenticated user account',
   })
   @ApiResponse({
     status: 204,
-    description: 'Conta excluída e dados pessoais anonimizados',
+    description: 'Account deleted and personal data anonymized',
   })
   async deleteMe(@CurrentUser() currentUser: User): Promise<void> {
     await this.deleteAccountUseCase.execute(currentUser.id);

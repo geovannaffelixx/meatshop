@@ -3,7 +3,7 @@ import { IsNotEmpty, IsString, Matches, MaxLength, MinLength } from 'class-valid
 
 export class ChangePasswordDto {
   @ApiProperty({
-    description: 'Senha atual do usuário',
+    description: 'User current password',
     example: 'Senha123!',
   })
   @IsNotEmpty()
@@ -12,7 +12,7 @@ export class ChangePasswordDto {
 
   @ApiProperty({
     description:
-      'Nova senha do usuário (mínimo 8 caracteres, deve conter maiúscula, minúscula, número e caractere especial)',
+      'User new password (minimum 8 characters, including uppercase, lowercase, number, and special character)',
     example: 'NovaSenha123!',
   })
   @IsNotEmpty()

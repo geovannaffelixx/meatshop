@@ -5,16 +5,23 @@ import { Weekday } from '../enums/weekday.enum';
 const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 export class BusinessHoursDayDto {
-  @ApiProperty({ description: 'Dia da semana', enum: Weekday, example: Weekday.MONDAY })
+  @ApiProperty({
+    description: 'Day of the week',
+    enum: Weekday,
+    example: Weekday.MONDAY,
+  })
   @IsEnum(Weekday)
   weekday: Weekday;
 
-  @ApiProperty({ description: 'Indica se a unidade abre neste dia', example: true })
+  @ApiProperty({
+    description: 'Indicates whether the unit opens on this day',
+    example: true,
+  })
   @IsBoolean()
   is_open: boolean;
 
   @ApiPropertyOptional({
-    description: 'Horário de abertura (HH:mm). Obrigatório quando is_open é true',
+    description: 'Opening time (HH:mm). Required when is_open is true',
     example: '08:00',
   })
   @ValidateIf((dto) => dto.is_open)
@@ -22,7 +29,7 @@ export class BusinessHoursDayDto {
   opening_time?: string;
 
   @ApiPropertyOptional({
-    description: 'Horário de fechamento (HH:mm). Obrigatório quando is_open é true',
+    description: 'Closing time (HH:mm). Required when is_open is true',
     example: '18:00',
   })
   @ValidateIf((dto) => dto.is_open)

@@ -3,7 +3,7 @@ import { IsNumber, IsOptional, Min } from 'class-validator';
 
 export class UpdateStockDto {
   @ApiProperty({
-    description: 'Nova quantidade em estoque do produto',
+    description: 'New product stock quantity',
     example: 50,
   })
   @IsNumber({ maxDecimalPlaces: 3 })
@@ -11,8 +11,7 @@ export class UpdateStockDto {
   quantity: number;
 
   @ApiPropertyOptional({
-    description:
-      'Quantidade mínima em estoque a partir da qual o produto passa a aparecer nos alertas de estoque baixo',
+    description: 'Minimum stock quantity that triggers low-stock alerts',
     example: 10,
   })
   @IsOptional()

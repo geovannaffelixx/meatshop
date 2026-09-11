@@ -19,7 +19,9 @@ export class SupportMessage {
   @Column()
   ticket_id: number;
 
-  @ManyToOne(() => SupportTicket, (ticket) => ticket.messages, { onDelete: 'CASCADE' })
+  @ManyToOne(() => SupportTicket, (ticket) => ticket.messages, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'ticket_id' })
   ticket: SupportTicket;
 

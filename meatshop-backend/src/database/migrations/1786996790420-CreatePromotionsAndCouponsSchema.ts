@@ -4,7 +4,6 @@ export class CreatePromotionsAndCouponsSchema1786996790420 implements MigrationI
   name = 'CreatePromotionsAndCouponsSchema1786996790420';
 
   async up(queryRunner: QueryRunner): Promise<void> {
-    // ── promotions ───────────────────────────────────────────────────────
     await queryRunner.query(`
             CREATE TABLE "promotions" (
                 "id" SERIAL NOT NULL,
@@ -32,7 +31,6 @@ export class CreatePromotionsAndCouponsSchema1786996790420 implements MigrationI
             REFERENCES "products"("id") ON DELETE CASCADE ON UPDATE NO ACTION
         `);
 
-    // ── coupons ──────────────────────────────────────────────────────────
     await queryRunner.query(`
             CREATE TABLE "coupons" (
                 "id" SERIAL NOT NULL,

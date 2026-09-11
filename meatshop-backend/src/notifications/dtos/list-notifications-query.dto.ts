@@ -4,7 +4,7 @@ import { IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
 
 export class ListNotificationsQueryDto {
   @ApiPropertyOptional({
-    description: 'Filtra pela unidade ativa e notificações globais',
+    description: 'Filters by active unit and global notifications',
     example: 3,
   })
   @IsOptional()
@@ -14,21 +14,29 @@ export class ListNotificationsQueryDto {
   unit_id?: number;
 
   @ApiPropertyOptional({
-    description: 'Filtra por lidas (true) ou não lidas (false)',
+    description: 'Filters by read (true) or unread (false)',
     example: 'false',
   })
   @IsOptional()
   @IsIn(['true', 'false'])
   read?: 'true' | 'false';
 
-  @ApiPropertyOptional({ description: 'Página (1-based)', example: 1, default: 1 })
+  @ApiPropertyOptional({
+    description: 'Page (1-based)',
+    example: 1,
+    default: 1,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
   page?: number;
 
-  @ApiPropertyOptional({ description: 'Itens por página (1 a 100)', example: 20, default: 20 })
+  @ApiPropertyOptional({
+    description: 'Items per page (1 to 100)',
+    example: 20,
+    default: 20,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()

@@ -21,7 +21,7 @@ export class GetAuditLogUseCase {
     if (!log)
       throw new NotFoundException({
         code: 'AUDIT_LOG_NOT_FOUND',
-        message: 'Evento de auditoria não encontrado.',
+        message: 'Audit event not found.',
       });
     return log;
   }

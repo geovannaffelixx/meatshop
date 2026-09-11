@@ -31,7 +31,7 @@ function imageFilter(
   callback: (error: Error | null, accept: boolean) => void,
 ) {
   if (!allowedMimeTypes.has(file.mimetype)) {
-    callback(new BadRequestException('Envie somente imagens JPG, PNG, WEBP ou GIF'), false);
+    callback(new BadRequestException('Upload only JPG, PNG, WEBP, or GIF images'), false);
     return;
   }
   callback(null, true);
@@ -57,7 +57,9 @@ export class SupportUploadController {
   ) {}
 
   @Post(':id/messages')
-  @ApiOperation({ summary: 'Envia uma mensagem com até quatro imagens no chamado' })
+  @ApiOperation({
+    summary: 'Sends a message with up to four images in the support ticket',
+  })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -83,7 +85,7 @@ export class SupportUploadController {
   ) {
     const signatures = await Promise.all(files.map(hasValidImageSignature));
     if (signatures.some((valid) => !valid)) {
-      throw new BadRequestException('Uma das imagens possui conteúdo inválido');
+      throw new BadRequestException('One of the images has invalid content');
     }
     const uploads = await Promise.all(
       files.map(async (file) => ({

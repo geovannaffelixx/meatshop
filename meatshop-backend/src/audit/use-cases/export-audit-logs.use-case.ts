@@ -15,9 +15,9 @@ export class ExportAuditLogsUseCase {
       'acao',
       'entidade',
       'entidade_id',
-      'usuario',
-      'unidade',
-      'descricao',
+      'user',
+      'unit',
+      'description',
       'correlacao',
     ];
     return [header, ...logs.map((log) => this.toRow(log))]

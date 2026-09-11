@@ -4,7 +4,7 @@ import { DeliveryMode } from '../enums/delivery-mode.enum';
 
 export class CreateDeliveryPersonDto {
   @ApiProperty({
-    description: 'Modalidade de veículo utilizada pelo entregador',
+    description: 'Vehicle category used by the delivery person',
     enum: DeliveryMode,
     example: DeliveryMode.MOTORCYCLE,
   })

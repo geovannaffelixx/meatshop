@@ -71,7 +71,9 @@ export class ListProductsUseCase {
       .where('product.active = :active', { active: true });
     if (filters.unitId) query.andWhere('product.unit_id = :unitId', { unitId: filters.unitId });
     if (filters.categoryId)
-      query.andWhere('product.category_id = :categoryId', { categoryId: filters.categoryId });
+      query.andWhere('product.category_id = :categoryId', {
+        categoryId: filters.categoryId,
+      });
     const total = await query.getCount();
     const { entities, raw } = await query
       .orderBy('product.name', 'ASC')

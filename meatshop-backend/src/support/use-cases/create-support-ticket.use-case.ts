@@ -59,8 +59,8 @@ export class CreateSupportTicketUseCase {
       admins.map(({ id }) =>
         this.sendNotification.execute({
           user_id: id,
-          title: 'Novo chamado de suporte',
-          message: `Chamado #${ticket.id}: ${ticket.subject}`,
+          title: 'New support ticket',
+          message: `Support ticket #${ticket.id}: ${ticket.subject}`,
           action_url: `/support/${ticket.id}`,
           type: NotificationType.SYSTEM,
         }),

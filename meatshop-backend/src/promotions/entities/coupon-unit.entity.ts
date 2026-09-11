@@ -6,7 +6,9 @@ import { Coupon } from './coupon.entity';
 export class CouponUnit {
   @PrimaryColumn() coupon_id: number;
   @PrimaryColumn() unit_id: number;
-  @ManyToOne(() => Coupon, (coupon) => coupon.allowed_units, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Coupon, (coupon) => coupon.allowed_units, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'coupon_id' })
   coupon: Coupon;
 

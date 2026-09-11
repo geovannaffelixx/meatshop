@@ -21,8 +21,11 @@ export class CategoriesController {
   ) {}
 
   @Public()
-  @ApiOperation({ summary: 'Lista as categorias, opcionalmente filtradas por unidade' })
-  @ApiResponse({ status: 200, description: 'Lista de categorias retornada com sucesso' })
+  @ApiOperation({ summary: 'Lists categories with an optional unit filter' })
+  @ApiResponse({
+    status: 200,
+    description: 'Category list returned successfully',
+  })
   @Get()
   list(@Query('unit_id') unitId?: string, @Query('active') active?: string) {
     return this.listCategoriesUseCase.execute(
@@ -32,30 +35,36 @@ export class CategoriesController {
   }
 
   @Public()
-  @ApiOperation({ summary: 'Busca uma categoria pelo identificador' })
-  @ApiResponse({ status: 200, description: 'Categoria encontrada com sucesso' })
-  @ApiResponse({ status: 404, description: 'Categoria não encontrada' })
+  @ApiOperation({ summary: 'Gets a category by identifier' })
+  @ApiResponse({ status: 200, description: 'Category found successfully' })
+  @ApiResponse({ status: 404, description: 'Category not found' })
   @Get(':id')
   getOne(@Param('id', ParseIntPipe) id: number) {
     return this.getCategoryUseCase.execute(id);
   }
 
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Cria uma nova categoria' })
-  @ApiResponse({ status: 201, description: 'Categoria criada com sucesso' })
-  @ApiResponse({ status: 403, description: 'Usuário não é administrador da unit' })
-  @ApiResponse({ status: 409, description: 'Categoria não pertence à unit informada' })
+  @ApiOperation({ summary: 'Creates a new category' })
+  @ApiResponse({ status: 201, description: 'Category created successfully' })
+  @ApiResponse({ status: 403, description: 'User is not a unit administrator' })
+  @ApiResponse({
+    status: 409,
+    description: 'Category does not belong to the specified unit',
+  })
   @Post()
   create(@Body() dto: CreateCategoryDto, @CurrentUser() currentUser: User) {
     return this.createCategoryUseCase.execute(dto, currentUser);
   }
 
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Atualiza uma categoria existente' })
-  @ApiResponse({ status: 200, description: 'Categoria atualizada com sucesso' })
-  @ApiResponse({ status: 403, description: 'Usuário não é administrador da unit' })
-  @ApiResponse({ status: 404, description: 'Categoria não encontrada' })
-  @ApiResponse({ status: 409, description: 'Categoria não pertence à unit informada' })
+  @ApiOperation({ summary: 'Updates an existing category' })
+  @ApiResponse({ status: 200, description: 'Category updated successfully' })
+  @ApiResponse({ status: 403, description: 'User is not a unit administrator' })
+  @ApiResponse({ status: 404, description: 'Category not found' })
+  @ApiResponse({
+    status: 409,
+    description: 'Category does not belong to the specified unit',
+  })
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,

@@ -233,7 +233,7 @@ export class DeliveryMobileService {
       id: String(order.id),
       delivery_person_id: String(person.id),
       order_id: String(order.id),
-      label: `Pedido #${order.id}`,
+      label: `Order #${order.id}`,
       amount: Number(order.delivery_fee),
       created_at: order.updated_at,
     }));
@@ -340,9 +340,9 @@ export class DeliveryMobileService {
     return {
       id: order.id,
       client_id: String(order.client_id),
-      client_name: order.client?.name ?? 'Cliente',
+      client_name: order.client?.name ?? 'Customer',
       unit_id: String(order.unit_id),
-      unit_name: unit?.name ?? 'Unidade',
+      unit_name: unit?.name ?? 'Unit',
       items: items
         .map((item) => `${Number(item.quantity)}x ${item.product?.name ?? 'Item'}`)
         .join(', '),

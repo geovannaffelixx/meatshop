@@ -6,7 +6,7 @@ export class AddPaymentEnumToOrders1762184229240 implements MigrationInterface {
   async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`ALTER TABLE "orders" DROP COLUMN "paymentMethod"`);
     await queryRunner.query(
-      `CREATE TYPE "public"."orders_paymentmethod_enum" AS ENUM('Pix', 'Crédito', 'Débito', 'Dinheiro', 'Boleto')`,
+      `CREATE TYPE "public"."orders_paymentmethod_enum" AS ENUM('Pix', 'Credit', 'Debit', 'Cash', 'Bank Slip')`,
     );
     await queryRunner.query(
       `ALTER TABLE "orders" ADD "paymentMethod" "public"."orders_paymentmethod_enum"`,

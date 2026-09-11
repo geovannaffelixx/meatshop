@@ -4,11 +4,9 @@ export class RebuildAuthAndUnitsSchema1786366218996 implements MigrationInterfac
   name = 'RebuildAuthAndUnitsSchema1786366218996';
 
   async up(queryRunner: QueryRunner): Promise<void> {
-    // ── Drop old, dessynchronized tables ────────────────────────────────
     await queryRunner.query(`DROP TABLE IF EXISTS "refresh_tokens" CASCADE`);
     await queryRunner.query(`DROP TABLE IF EXISTS "users" CASCADE`);
 
-    // ── Enum types ───────────────────────────────────────────────────────
     await queryRunner.query(`CREATE TYPE "users_global_role_enum" AS ENUM('SUPER_ADMIN', 'USER')`);
     await queryRunner.query(
       `CREATE TYPE "users_app_profile_enum" AS ENUM('CLIENT', 'DELIVERY', 'BOTH')`,
@@ -18,7 +16,6 @@ export class RebuildAuthAndUnitsSchema1786366218996 implements MigrationInterfac
     );
     await queryRunner.query(`CREATE TYPE "user_units_status_enum" AS ENUM('ACTIVE', 'INACTIVE')`);
 
-    // ── users ────────────────────────────────────────────────────────────
     await queryRunner.query(`
             CREATE TABLE "users" (
                 "id" SERIAL NOT NULL,
@@ -41,7 +38,6 @@ export class RebuildAuthAndUnitsSchema1786366218996 implements MigrationInterfac
             )
         `);
 
-    // ── refresh_tokens ───────────────────────────────────────────────────
     await queryRunner.query(`
             CREATE TABLE "refresh_tokens" (
                 "id" SERIAL NOT NULL,
@@ -59,7 +55,6 @@ export class RebuildAuthAndUnitsSchema1786366218996 implements MigrationInterfac
             REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION
         `);
 
-    // ── units ────────────────────────────────────────────────────────────
     await queryRunner.query(`
             CREATE TABLE "units" (
                 "id" SERIAL NOT NULL,
@@ -80,7 +75,6 @@ export class RebuildAuthAndUnitsSchema1786366218996 implements MigrationInterfac
             REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE NO ACTION
         `);
 
-    // ── user_units ───────────────────────────────────────────────────────
     await queryRunner.query(`
             CREATE TABLE "user_units" (
                 "id" SERIAL NOT NULL,

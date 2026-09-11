@@ -32,7 +32,9 @@ export class UnitAuthorizationService {
     userId: number,
     permission: UnitPermission = UnitPermission.VIEW_DASHBOARD,
   ): Promise<number[]> {
-    const ownedUnits = await this.unitRepository.find({ where: { admin_id: userId } });
+    const ownedUnits = await this.unitRepository.find({
+      where: { admin_id: userId },
+    });
     const memberships = await this.userUnitRepository.find({
       where: { user_id: userId, status: UserUnitStatus.ACTIVE },
     });
@@ -76,13 +78,6 @@ export class UnitAuthorizationService {
     return memberships.filter(({ local_role }) => this.permissionPolicy.canAccessPanel(local_role));
   }
 
-  /**
-   * Resolves which single unit a management/report endpoint should be scoped to.
-   * A SUPER_ADMIN must always specify `requestedUnitId` explicitly (there is no
-   * "whole platform" report — mixing every unit's finances is never meaningful).
-   * A unit admin/staff member with exactly one managed unit gets it as a default;
-   * with more than one, they must specify which one.
-   */
   async resolveRequiredUnitId(
     currentUser: User,
     requestedUnitId?: number,

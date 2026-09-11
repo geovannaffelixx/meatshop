@@ -42,7 +42,12 @@ export class GetDeliveryPerformanceUseCase {
 
     const cancellationRate = counts.totalCount > 0 ? counts.cancelledCount / counts.totalCount : 0;
 
-    return { averageDeliveryMinutes, cancellationRate, ...counts, byDeliveryPerson };
+    return {
+      averageDeliveryMinutes,
+      cancellationRate,
+      ...counts,
+      byDeliveryPerson,
+    };
   }
 
   private async getAverageDeliveryMinutes(unitId: number): Promise<number | null> {
@@ -61,20 +66,30 @@ export class GetDeliveryPerformanceUseCase {
     return row?.avg_minutes ? Number(row.avg_minutes) : null;
   }
 
-  private async getStatusCounts(
-    unitId: number,
-  ): Promise<{ deliveredCount: number; cancelledCount: number; totalCount: number }> {
+  private async getStatusCounts(unitId: number): Promise<{
+    deliveredCount: number;
+    cancelledCount: number;
+    totalCount: number;
+  }> {
     const [deliveredCount, cancelledCount, totalCount] = await Promise.all([
-      this.orderRepository.count({ where: { unit_id: unitId, status: OrderStatus.DELIVERED } }),
-      this.orderRepository.count({ where: { unit_id: unitId, status: OrderStatus.CANCELLED } }),
+      this.orderRepository.count({
+        where: { unit_id: unitId, status: OrderStatus.DELIVERED },
+      }),
+      this.orderRepository.count({
+        where: { unit_id: unitId, status: OrderStatus.CANCELLED },
+      }),
       this.orderRepository.count({ where: { unit_id: unitId } }),
     ]);
     return { deliveredCount, cancelledCount, totalCount };
   }
 
-  private async getDeliveriesByPerson(
-    unitId: number,
-  ): Promise<{ delivery_person_id: number; delivery_person_name: string; deliveries: number }[]> {
+  private async getDeliveriesByPerson(unitId: number): Promise<
+    {
+      delivery_person_id: number;
+      delivery_person_name: string;
+      deliveries: number;
+    }[]
+  > {
     const rows = await this.orderRepository
       .createQueryBuilder('order')
       .innerJoin('order.delivery_person', 'dp')

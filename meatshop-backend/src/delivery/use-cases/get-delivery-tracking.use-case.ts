@@ -18,7 +18,9 @@ export class GetDeliveryTrackingUseCase {
   ) {}
 
   async execute(orderId: number, currentUser: User): Promise<DeliveryTracking[]> {
-    const order = await this.orderRepository.findOne({ where: { id: orderId } });
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+    });
     if (!order) {
       throw new NotFoundException('Order not found');
     }

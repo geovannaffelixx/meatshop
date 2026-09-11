@@ -4,8 +4,8 @@ import { AddressLabel } from '../../common/enums/address-label.enum';
 
 export class CreateAddressDto {
   @ApiProperty({
-    description: 'Nome da rua ou avenida',
-    example: 'Rua das Flores',
+    description: 'Street or avenue name',
+    example: 'Flower Street',
   })
   @IsNotEmpty()
   @IsString()
@@ -13,7 +13,7 @@ export class CreateAddressDto {
   street: string;
 
   @ApiProperty({
-    description: 'Número do imóvel',
+    description: 'Property number',
     example: '123',
   })
   @IsNotEmpty()
@@ -22,7 +22,7 @@ export class CreateAddressDto {
   number: string;
 
   @ApiPropertyOptional({
-    description: 'Complemento do endereço',
+    description: 'Address details',
     example: 'Apto 45',
   })
   @IsOptional()
@@ -31,8 +31,8 @@ export class CreateAddressDto {
   complement?: string;
 
   @ApiProperty({
-    description: 'Bairro do endereço',
-    example: 'Centro',
+    description: 'Address district',
+    example: 'Downtown',
   })
   @IsNotEmpty()
   @IsString()
@@ -40,8 +40,8 @@ export class CreateAddressDto {
   neighborhood: string;
 
   @ApiProperty({
-    description: 'Cidade do endereço',
-    example: 'São Paulo',
+    description: 'Address city',
+    example: 'Sao Paulo',
   })
   @IsNotEmpty()
   @IsString()
@@ -49,7 +49,7 @@ export class CreateAddressDto {
   city: string;
 
   @ApiProperty({
-    description: 'Sigla do estado (UF)',
+    description: 'State code',
     example: 'SP',
   })
   @IsNotEmpty()
@@ -58,7 +58,7 @@ export class CreateAddressDto {
   state: string;
 
   @ApiProperty({
-    description: 'CEP do endereço',
+    description: 'Address postal code',
     example: '01310-100',
   })
   @IsNotEmpty()
@@ -67,7 +67,7 @@ export class CreateAddressDto {
   zip_code: string;
 
   @ApiProperty({
-    description: 'Rótulo/categoria do endereço',
+    description: 'Address label/category',
     example: AddressLabel.HOME,
     enum: AddressLabel,
   })
@@ -75,7 +75,7 @@ export class CreateAddressDto {
   label: AddressLabel;
 
   @ApiPropertyOptional({
-    description: 'Indica se este é o endereço padrão do usuário',
+    description: 'Indicates whether this is the user default address',
     example: true,
   })
   @IsOptional()

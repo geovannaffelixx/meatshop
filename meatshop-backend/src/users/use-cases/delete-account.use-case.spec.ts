@@ -18,7 +18,7 @@ describe('DeleteAccountUseCase', () => {
   const firebase = { deleteUser: jest.fn(async () => undefined) };
   const useCase = new DeleteAccountUseCase(dataSource, firebase as never);
 
-  it('revoga sessões e anonimiza dados pessoais preservando histórico operacional', async () => {
+  it('revokes sessions and anonymizes personal data while preserving operational history', async () => {
     jest.mocked(manager.findOne).mockResolvedValue({ id: 12, firebase_uid: 'firebase-12' } as User);
     await useCase.execute(12);
 
@@ -41,7 +41,7 @@ describe('DeleteAccountUseCase', () => {
     );
   });
 
-  it('falha sem alterar dados quando a conta não existe', async () => {
+  it('fails without changing data when the account does not exist', async () => {
     jest.mocked(manager.findOne).mockResolvedValue(null);
     await expect(useCase.execute(99)).rejects.toBeInstanceOf(NotFoundException);
   });

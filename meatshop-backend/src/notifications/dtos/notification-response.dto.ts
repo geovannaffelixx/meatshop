@@ -3,32 +3,41 @@ import { Notification } from '../entities/notification.entity';
 import { NotificationType } from '../enums/notification-type.enum';
 
 export class NotificationResponseDto {
-  @ApiProperty({ description: 'Id da notificação', example: 1 })
+  @ApiProperty({ description: 'Notification ID', example: 1 })
   id: number;
 
-  @ApiProperty({ description: 'Título da notificação', example: 'Novo pedido' })
+  @ApiProperty({ description: 'Notification title', example: 'New order' })
   title: string;
 
-  @ApiProperty({ description: 'Texto da notificação', example: 'Seu pedido #42 foi confirmado' })
+  @ApiProperty({
+    description: 'Notification text',
+    example: 'Your order #42 was confirmed',
+  })
   message: string;
 
-  @ApiProperty({ nullable: true, description: 'Unidade relacionada' })
+  @ApiProperty({ nullable: true, description: 'Related unit' })
   unit_id: number | null;
 
   @ApiProperty({ nullable: true, description: 'Rota interna relacionada' })
   action_url: string | null;
 
   @ApiProperty({
-    description: 'Tipo da notificação',
+    description: 'Notification type',
     enum: NotificationType,
     example: NotificationType.ORDER,
   })
   type: NotificationType;
 
-  @ApiProperty({ description: 'Indica se a notificação já foi lida', example: false })
+  @ApiProperty({
+    description: 'Indicates whether the notification has been read',
+    example: false,
+  })
   read: boolean;
 
-  @ApiProperty({ description: 'Data de criação', example: '2026-08-18T12:00:00.000Z' })
+  @ApiProperty({
+    description: 'Creation date',
+    example: '2026-08-18T12:00:00.000Z',
+  })
   created_at: Date;
 
   static fromEntity(entity: Notification): NotificationResponseDto {

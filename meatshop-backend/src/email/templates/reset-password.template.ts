@@ -2,16 +2,16 @@ import type { EmailTemplate } from '../interfaces/email-template.interface';
 
 export function resetPasswordTemplate(userName: string, resetUrl: string): EmailTemplate {
   return {
-    subject: 'Redefinição de senha - MeatShop',
+    subject: 'Password reset - MeatShop',
 
     text: `
-Olá ${userName},
+Hello ${userName},
 
-Recebemos uma solicitação para redefinir a sua senha. Use o link abaixo para continuar:
+We received a request to reset your password. Use the link below to continue:
 
 ${resetUrl}
 
-Se você não solicitou isso, ignore este e-mail.
+If you did not request this, ignore this email.
     `,
 
     html: `
@@ -25,12 +25,12 @@ Se você não solicitou isso, ignore este e-mail.
     border-radius: 12px;
   "
 >
-  <h2>Redefinição de senha 🔒</h2>
+  <h2>Password reset</h2>
 
-  <p>Olá <strong>${userName}</strong>,</p>
+  <p>Hello <strong>${userName}</strong>,</p>
 
   <p>
-    Recebemos uma solicitação para redefinir a sua senha.
+    We received a request to reset your password.
   </p>
 
   <a
@@ -45,12 +45,12 @@ Se você não solicitou isso, ignore este e-mail.
       margin-top: 16px;
     "
   >
-    Redefinir senha
+    Reset password
   </a>
 
   <p style="margin-top: 24px;">
-    Se você não solicitou isso,
-    basta ignorar este e-mail.
+    If you did not request this,
+    just ignore this email.
   </p>
 </div>
     `,

@@ -26,7 +26,7 @@ describe('ChatInboxService', () => {
     unit_id: 3,
     status: OrderStatus.CONFIRMED,
     client: { id: 7, name: 'Ana', avatar_url: null },
-    unit: { id: 3, admin_id: 8, name: 'Unidade Centro' },
+    unit: { id: 3, admin_id: 8, name: 'Downtown Unit' },
     delivery_person: null,
   } as Order;
 
@@ -43,14 +43,14 @@ describe('ChatInboxService', () => {
         sender_id: 9,
         receiver_id: 7,
         participant_type: ChatParticipantType.UNIT,
-        message: 'Pedido pronto',
+        message: 'Order ready',
         sent_at: new Date('2026-09-03T12:00:00.000Z'),
         read_at: null,
       } as Chat,
     ]);
   });
 
-  it('lista apenas a conversa autorizada e identifica a unidade como interlocutora', async () => {
+  it('lists only the authorized conversation and identifies the unit as the participant', async () => {
     const result = await service.list(client, { page: 1, limit: 20 });
 
     expect(result.total).toBe(1);
@@ -58,11 +58,11 @@ describe('ChatInboxService', () => {
       id: '42:UNIT',
       order_id: 42,
       unread_count: 1,
-      participant: { id: 8, name: 'Unidade Centro' },
+      participant: { id: 8, name: 'Downtown Unit' },
     });
   });
 
-  it('conta não lidas sobre todas as conversas, sem limite da página da caixa', async () => {
+  it('counts unread messages across all conversations without inbox page limits', async () => {
     const result = await service.unreadCount(client);
     expect(result).toEqual({ count: 1 });
   });

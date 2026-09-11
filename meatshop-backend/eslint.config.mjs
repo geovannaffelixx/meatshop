@@ -35,7 +35,6 @@ export default [
     },
 
     rules: {
-      /* Regras TypeScript gerais */
       "no-unused-vars": "off",
       "@typescript-eslint/no-unused-vars": [
         "error",
@@ -50,7 +49,6 @@ export default [
         { accessibility: "no-public" },
       ],
 
-      /* Regras de estilo NestJS idiomáticas */
       "class-methods-use-this": "off",
       "max-classes-per-file": ["error", 5],
       "lines-between-class-members": ["error", "always", { exceptAfterSingleLine: true }],
@@ -61,7 +59,6 @@ export default [
         { selector: "variable", format: ["camelCase", "UPPER_CASE", "PascalCase"] },
       ],
 
-      /* Prettier */
       "prettier/prettier": [
         "error",
         {

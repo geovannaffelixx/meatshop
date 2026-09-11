@@ -3,8 +3,9 @@ import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
 
 export class AnswerSupportTicketDto {
   @ApiProperty({
-    description: 'Resposta da equipe de suporte para o chamado',
-    example: 'Identificamos o atraso e seu pedido já está a caminho, chegará em até 20 minutos.',
+    description: 'Support team response to the ticket',
+    example:
+      'We identified the delay and your order is on the way. It will arrive within 20 minutes.',
   })
   @IsNotEmpty()
   @IsString()

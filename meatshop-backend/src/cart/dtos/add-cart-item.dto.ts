@@ -3,7 +3,7 @@ import { IsInt, IsNotEmpty, IsNumber, Min } from 'class-validator';
 
 export class AddCartItemDto {
   @ApiProperty({
-    description: 'Identificador do produto a ser adicionado ao carrinho',
+    description: 'Product identifier to add to the cart',
     example: 42,
   })
   @IsNotEmpty()
@@ -11,7 +11,7 @@ export class AddCartItemDto {
   product_id: number;
 
   @ApiProperty({
-    description: 'Quantidade do produto a ser adicionada ao carrinho',
+    description: 'Product quantity to add to the cart',
     example: 2,
   })
   @IsNumber({ maxDecimalPlaces: 3 })

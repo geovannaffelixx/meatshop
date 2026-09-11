@@ -40,23 +40,26 @@ export class NotificationsController {
     private readonly sendNotificationUseCase: SendNotificationUseCase,
   ) {}
 
-  @ApiOperation({ summary: 'Lista as notificações do usuário autenticado' })
-  @ApiResponse({ status: 200, description: 'Lista de notificações retornada com sucesso' })
+  @ApiOperation({ summary: 'Lists the authenticated user notifications' })
+  @ApiResponse({
+    status: 200,
+    description: 'Notification list returned successfully',
+  })
   @Get()
   list(@Query() query: ListNotificationsQueryDto, @CurrentUser() currentUser: User) {
     return this.listNotificationsUseCase.execute(query, currentUser);
   }
 
-  @ApiOperation({ summary: 'Marca uma notificação como lida' })
-  @ApiResponse({ status: 200, description: 'Notificação marcada como lida' })
-  @ApiResponse({ status: 404, description: 'Notificação não encontrada' })
+  @ApiOperation({ summary: 'Marks a notification as read' })
+  @ApiResponse({ status: 200, description: 'Notification marked as read' })
+  @ApiResponse({ status: 404, description: 'Notification not found' })
   @Patch(':id/read')
   markAsRead(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
     return this.markAsReadUseCase.execute(id, currentUser);
   }
 
-  @ApiOperation({ summary: 'Marca todas as notificações do usuário como lidas' })
-  @ApiResponse({ status: 204, description: 'Notificações marcadas como lidas' })
+  @ApiOperation({ summary: 'Marks all user notifications as read' })
+  @ApiResponse({ status: 204, description: 'Notifications marked as read' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Patch('read-all')
   markAllAsRead(
@@ -67,17 +70,19 @@ export class NotificationsController {
   }
 
   @ApiOperation({
-    summary: 'Registra (ou atualiza o dono de) um token FCM para receber push notifications',
+    summary: 'Registers or updates ownership of an FCM token for push notifications',
   })
-  @ApiResponse({ status: 204, description: 'Token registrado com sucesso' })
+  @ApiResponse({ status: 204, description: 'Token registered successfully' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('device-tokens')
   registerDeviceToken(@Body() dto: RegisterDeviceTokenDto, @CurrentUser() currentUser: User) {
     return this.registerDeviceTokenUseCase.execute(dto, currentUser);
   }
 
-  @ApiOperation({ summary: 'Remove um token FCM do usuário autenticado (ex: ao fazer logout)' })
-  @ApiResponse({ status: 204, description: 'Token removido com sucesso' })
+  @ApiOperation({
+    summary: 'Removes an FCM token from the authenticated user, for example on logout',
+  })
+  @ApiResponse({ status: 204, description: 'Token removed successfully' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete('device-tokens')
   unregisterDeviceToken(@Body() dto: UnregisterDeviceTokenDto, @CurrentUser() currentUser: User) {
@@ -85,10 +90,13 @@ export class NotificationsController {
   }
 
   @ApiOperation({
-    summary: 'Envia uma notificação manual para um usuário (restrito a SUPER_ADMIN)',
+    summary: 'Sends a manual notification to a user, restricted to SUPER_ADMIN',
   })
-  @ApiResponse({ status: 201, description: 'Notificação enviada com sucesso' })
-  @ApiResponse({ status: 403, description: 'Sem permissão para enviar notificações' })
+  @ApiResponse({ status: 201, description: 'Notification sent successfully' })
+  @ApiResponse({
+    status: 403,
+    description: 'Permission denied to send notifications',
+  })
   @Roles(GlobalRole.SUPER_ADMIN)
   @Post()
   send(@Body() dto: CreateNotificationDto) {

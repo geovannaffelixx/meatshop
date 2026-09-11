@@ -100,7 +100,7 @@ export class ListLiveDeliveriesUseCase {
           scheduledDeliveryDate: order.scheduled_delivery_date,
           client: {
             id: order.client_id,
-            name: order.client?.name ?? 'Cliente',
+            name: order.client?.name ?? 'Customer',
           },
           destination: address
             ? {
@@ -116,7 +116,7 @@ export class ListLiveDeliveriesUseCase {
           deliveryPerson: order.delivery_person
             ? {
                 id: order.delivery_person.id,
-                name: order.delivery_person.user?.name ?? 'Entregador',
+                name: order.delivery_person.user?.name ?? 'Delivery Person',
                 rating:
                   order.delivery_person.average_rating === null
                     ? null

@@ -36,7 +36,9 @@ export class FirebaseService {
         error instanceof Error ? error.stack : undefined,
       );
       if (config.get<string>('NODE_ENV') === 'production') {
-        throw new Error('Firebase Admin initialization failed', { cause: error });
+        throw new Error('Firebase Admin initialization failed', {
+          cause: error,
+        });
       }
       this.app = null;
     }
@@ -52,9 +54,6 @@ export class FirebaseService {
   async verifyIdToken(idToken: string): Promise<DecodedIdToken> {
     const app = this.getApp();
     try {
-      // Firebase Admin v14 pulls an ESM-only JOSE dependency. Loading Auth
-      // lazily keeps CommonJS/Jest startup compatible while preserving the
-      // native ESM loader in production.
       const { getAuth } = (await Function('return import("firebase-admin/auth")')()) as {
         getAuth(app: App): Auth;
       };

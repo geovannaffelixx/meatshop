@@ -122,7 +122,7 @@ export class AssignDeliveryPersonUseCase {
       ),
       this.notifications.notifyUnitOfDeliveryAssignment(
         order,
-        deliveryPerson.user?.name ?? 'Entregador',
+        deliveryPerson.user?.name ?? 'Delivery Person',
       ),
       ...(deliveryCode
         ? [this.notifications.notifyCustomerOfDeliveryCode(order, deliveryCode)]

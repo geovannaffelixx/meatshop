@@ -27,50 +27,80 @@ export class DashboardController {
 
   @ApiOperation({
     summary:
-      'Retorna a visão geral do dashboard de uma unidade (receita do mês, gráfico semanal, pedidos recentes, alertas de estoque e produtos mais vendidos)',
+      'Returns the unit dashboard overview with monthly revenue, weekly chart, recent orders, stock alerts, and top-selling products',
   })
-  @ApiResponse({ status: 200, description: 'Dados do dashboard retornados com sucesso' })
-  @ApiResponse({ status: 403, description: 'Usuário não administra a unidade informada' })
+  @ApiResponse({
+    status: 200,
+    description: 'Dashboard data returned successfully',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'User does not manage the specified unit',
+  })
   @Get()
   getDashboard(@Query() query: UnitScopedQueryDto, @CurrentUser() currentUser: User) {
     return this.getAdminDashboardUseCase.execute(query, currentUser);
   }
 
   @ApiOperation({
-    summary: 'Retorna o número de pedidos e a receita por dia, além da contagem por status',
+    summary: 'Returns daily order count and revenue, plus totals by status',
   })
-  @ApiResponse({ status: 200, description: 'Gráfico de pedidos retornado com sucesso' })
-  @ApiResponse({ status: 403, description: 'Usuário não administra a unidade informada' })
+  @ApiResponse({
+    status: 200,
+    description: 'Order chart returned successfully',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'User does not manage the specified unit',
+  })
   @Get('orders-chart')
   getOrdersChart(@Query() query: OrdersChartQueryDto, @CurrentUser() currentUser: User) {
     return this.getOrdersChartUseCase.execute(query, currentUser);
   }
 
   @ApiOperation({
-    summary: 'Lista os produtos da unidade com estoque igual ou abaixo do mínimo definido',
+    summary: 'Lists unit products with stock at or below the configured minimum',
   })
-  @ApiResponse({ status: 200, description: 'Alertas de estoque retornados com sucesso' })
-  @ApiResponse({ status: 403, description: 'Usuário não administra a unidade informada' })
+  @ApiResponse({
+    status: 200,
+    description: 'Stock alerts returned successfully',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'User does not manage the specified unit',
+  })
   @Get('stock-alerts')
   getStockAlerts(@Query() query: UnitScopedQueryDto, @CurrentUser() currentUser: User) {
     return this.getStockAlertsUseCase.execute(query, currentUser);
   }
 
   @ApiOperation({
-    summary: 'Ranking dos produtos mais vendidos da unidade (com base em pedidos entregues)',
+    summary: 'Ranks the unit top-selling products based on delivered orders',
   })
-  @ApiResponse({ status: 200, description: 'Ranking de produtos retornado com sucesso' })
-  @ApiResponse({ status: 403, description: 'Usuário não administra a unidade informada' })
+  @ApiResponse({
+    status: 200,
+    description: 'Product ranking returned successfully',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'User does not manage the specified unit',
+  })
   @Get('top-products')
   getTopProducts(@Query() query: RankedListQueryDto, @CurrentUser() currentUser: User) {
     return this.getTopProductsUseCase.execute(query, currentUser);
   }
 
   @ApiOperation({
-    summary: 'Ranking dos clientes que mais compraram na unidade (com base em pedidos entregues)',
+    summary: 'Ranks the unit top customers based on delivered orders',
   })
-  @ApiResponse({ status: 200, description: 'Ranking de clientes retornado com sucesso' })
-  @ApiResponse({ status: 403, description: 'Usuário não administra a unidade informada' })
+  @ApiResponse({
+    status: 200,
+    description: 'Customer ranking returned successfully',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'User does not manage the specified unit',
+  })
   @Get('customer-insights')
   getCustomerInsights(@Query() query: RankedListQueryDto, @CurrentUser() currentUser: User) {
     return this.getCustomerInsightsUseCase.execute(query, currentUser);
@@ -78,10 +108,16 @@ export class DashboardController {
 
   @ApiOperation({
     summary:
-      'Indicadores de performance de entrega da unidade (tempo médio, taxa de cancelamento e entregas por entregador)',
+      'Unit delivery performance metrics including average time, cancellation rate, and deliveries per delivery person',
   })
-  @ApiResponse({ status: 200, description: 'Indicadores de entrega retornados com sucesso' })
-  @ApiResponse({ status: 403, description: 'Usuário não administra a unidade informada' })
+  @ApiResponse({
+    status: 200,
+    description: 'Delivery metrics returned successfully',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'User does not manage the specified unit',
+  })
   @Get('delivery-performance')
   getDeliveryPerformance(@Query() query: UnitScopedQueryDto, @CurrentUser() currentUser: User) {
     return this.getDeliveryPerformanceUseCase.execute(query, currentUser);

@@ -7,7 +7,6 @@ import * as path from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
-// Entidades
 import { User } from './users/entities/user.entity';
 import { Order } from './orders/entities/order.entity';
 import { Expense } from './finance/entities/expense.entity';
@@ -47,7 +46,6 @@ import { BusinessHours } from './units/entities/business-hours.entity';
 import { Unit } from './units/entities/unit.entity';
 import { UserUnit } from './units/entities/user-unit.entity';
 
-// Módulos
 import { LoggerModule } from './common/logger/logger.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { DashboardModule } from './dashboard/dashboard.module';
@@ -80,7 +78,6 @@ import { RateLimitMiddleware } from './common/middleware/rate-limit.middleware';
 import { StorageModule } from './storage/storage.module';
 @Module({
   imports: [
-    // Configuração global
     ConfigModule.forRoot({ isGlobal: true }),
     LoggerModule,
     MetricsModule,
@@ -90,13 +87,11 @@ import { StorageModule } from './storage/storage.module';
 
     EmailModule,
 
-    // Servir arquivos estáticos (uploads)
     ServeStaticModule.forRoot({
       rootPath: path.join(process.cwd(), 'uploads'),
       serveRoot: '/uploads',
     }),
 
-    // Configuração do banco de dados (Postgres/SQLite)
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
@@ -165,7 +160,6 @@ import { StorageModule } from './storage/storage.module';
       },
     }),
 
-    // Outros módulos
     FinanceModule,
     DashboardModule,
     AuthModule,

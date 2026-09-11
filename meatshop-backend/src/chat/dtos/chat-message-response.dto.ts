@@ -3,27 +3,27 @@ import { Chat } from '../entities/chat.entity';
 import { ChatParticipantType } from '../enums/chat-participant-type.enum';
 
 export class ChatMessageResponseDto {
-  @ApiProperty({ description: 'Id da mensagem', example: 1 })
+  @ApiProperty({ description: 'Message ID', example: 1 })
   id: number;
 
-  @ApiProperty({ description: 'Id do pedido relacionado', example: 42 })
+  @ApiProperty({ description: 'Order ID relacionado', example: 42 })
   order_id: number;
 
-  @ApiProperty({ description: 'Id de quem enviou a mensagem', example: 5 })
+  @ApiProperty({ description: 'Sender ID', example: 5 })
   sender_id: number;
 
-  @ApiProperty({ description: 'Id de quem recebe a mensagem', example: 9 })
+  @ApiProperty({ description: 'Receiver ID', example: 9 })
   receiver_id: number;
 
   @ApiProperty({
-    description: 'Nome de quem enviou a mensagem',
-    example: 'João da Silva',
+    description: 'Sender name',
+    example: 'John Smith',
   })
   sender_name: string;
 
   @ApiProperty({
-    description: 'Nome de quem recebe a mensagem',
-    example: 'Açougue Central',
+    description: 'Receiver name',
+    example: 'Central Butcher Shop',
   })
   receiver_name: string;
 
@@ -35,8 +35,8 @@ export class ChatMessageResponseDto {
   participant_type: ChatParticipantType;
 
   @ApiProperty({
-    description: 'Texto da mensagem',
-    example: 'Meu pedido já saiu para entrega?',
+    description: 'Message text',
+    example: 'Is my order out for delivery?',
   })
   message: string;
 
@@ -47,7 +47,7 @@ export class ChatMessageResponseDto {
   sent_at: Date;
 
   @ApiProperty({
-    description: 'Data em que a mensagem foi lida pelo outro lado da conversa',
+    description: 'Date when the message was read by the other participant',
     nullable: true,
     example: '2026-08-20T12:01:00.000Z',
   })
@@ -59,8 +59,8 @@ export class ChatMessageResponseDto {
     dto.order_id = entity.order_id;
     dto.sender_id = entity.sender_id;
     dto.receiver_id = entity.receiver_id;
-    dto.sender_name = entity.sender?.name ?? `Usuário #${entity.sender_id}`;
-    dto.receiver_name = entity.receiver?.name ?? `Usuário #${entity.receiver_id}`;
+    dto.sender_name = entity.sender?.name ?? `User #${entity.sender_id}`;
+    dto.receiver_name = entity.receiver?.name ?? `User #${entity.receiver_id}`;
     dto.participant_type = entity.participant_type;
     dto.message = entity.message;
     dto.sent_at = entity.sent_at;

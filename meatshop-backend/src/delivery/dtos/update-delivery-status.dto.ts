@@ -5,7 +5,7 @@ import { DeliveryStatus } from '../../orders/enums/delivery-status.enum';
 export class UpdateDeliveryStatusDto {
   @ApiProperty({
     description:
-      'Novo status da entrega. Atualmente somente a transição para ON_THE_WAY é permitida por este endpoint',
+      'New delivery status. Currently only the transition to ON_THE_WAY is allowed by this endpoint',
     enum: DeliveryStatus,
     example: DeliveryStatus.ON_THE_WAY,
   })

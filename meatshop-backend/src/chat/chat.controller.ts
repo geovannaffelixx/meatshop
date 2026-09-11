@@ -21,22 +21,21 @@ export class ChatController {
   ) {}
 
   @ApiOperation({
-    summary:
-      'Lista o histórico de mensagens de um pedido em um dos três canais privados disponíveis',
+    summary: 'Lists an order message history in one of the three available private channels',
   })
   @ApiResponse({
     status: 200,
-    description: 'Histórico de mensagens retornado com sucesso',
+    description: 'Message history returned successfully',
   })
   @ApiResponse({
     status: 400,
-    description: 'Nenhum entregador atribuído ao pedido ainda',
+    description: 'No delivery person has been assigned to the order yet',
   })
   @ApiResponse({
     status: 403,
-    description: 'Usuário não participa desta conversa',
+    description: 'User is not a participant in this conversation',
   })
-  @ApiResponse({ status: 404, description: 'Pedido não encontrado' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
   @Get()
   list(
     @Param('orderId', ParseIntPipe) orderId: number,
@@ -47,9 +46,9 @@ export class ChatController {
   }
 
   @ApiOperation({
-    summary: 'Envia uma mensagem e a publica em tempo real no canal',
+    summary: 'Sends a message and publishes it to the channel in real time',
   })
-  @ApiResponse({ status: 201, description: 'Mensagem enviada com sucesso' })
+  @ApiResponse({ status: 201, description: 'Message sent successfully' })
   @Post()
   async send(
     @Param('orderId', ParseIntPipe) orderId: number,
@@ -62,9 +61,12 @@ export class ChatController {
   }
 
   @ApiOperation({
-    summary: 'Marca como lidas as mensagens recebidas neste canal',
+    summary: 'Marks messages received in this channel as read',
   })
-  @ApiResponse({ status: 200, description: 'Leitura registrada com sucesso' })
+  @ApiResponse({
+    status: 200,
+    description: 'Read status recorded successfully',
+  })
   @Patch('read')
   async markRead(
     @Param('orderId', ParseIntPipe) orderId: number,

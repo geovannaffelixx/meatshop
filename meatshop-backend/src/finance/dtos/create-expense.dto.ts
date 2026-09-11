@@ -4,76 +4,91 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PaymentMethod } from '../entities/expense.entity';
 
 export class CreateExpenseDto {
-  @ApiProperty({ description: 'Identificador da unidade à qual a despesa pertence', example: 1 })
+  @ApiProperty({
+    description: 'Unit identifier that owns the expense',
+    example: 1,
+  })
   @Type(() => Number)
   @IsInt()
   unit_id!: number;
 
-  @ApiPropertyOptional({ description: 'Identificador do fornecedor', example: 'F001' })
+  @ApiPropertyOptional({ description: 'Supplier identifier', example: 'F001' })
   @IsOptional()
   @IsString()
   supplierId?: string;
 
-  @ApiPropertyOptional({ description: 'CPF ou CNPJ do fornecedor', example: '12345678000199' })
+  @ApiPropertyOptional({
+    description: 'Supplier CPF or CNPJ',
+    example: '12345678000199',
+  })
   @IsOptional()
   @IsString()
   @Length(11, 18)
   cpfCnpj?: string;
 
-  @ApiProperty({ description: 'Nome do fornecedor', example: 'Distribuidora de Carnes LTDA' })
+  @ApiProperty({
+    description: 'Supplier name',
+    example: 'Meat Distributor Ltd.',
+  })
   @IsString()
   @IsNotEmpty()
   supplierName!: string;
 
   @ApiProperty({
-    description: 'Tipo da despesa',
-    enum: ['Compras', 'Serviços', 'Outros'],
-    example: 'Compras',
+    description: 'Expense type',
+    enum: ['Purchases', 'Services', 'Other'],
+    example: 'Purchases',
   })
   @IsString()
-  @IsIn(['Compras', 'Serviços', 'Outros'])
-  type!: 'Compras' | 'Serviços' | 'Outros';
+  @IsIn(['Purchases', 'Services', 'Other'])
+  type!: 'Purchases' | 'Services' | 'Other';
 
-  @ApiProperty({ description: 'Valor total da despesa', example: 1500.5 })
+  @ApiProperty({ description: 'Total expense amount', example: 1500.5 })
   @Type(() => Number)
-  @IsNumber({}, { message: 'amount deve ser um número válido' })
+  @IsNumber({}, { message: 'amount must be a valid number' })
   amount!: number;
 
-  @ApiPropertyOptional({ description: 'Valor de desconto aplicado', example: 50 })
+  @ApiPropertyOptional({ description: 'Applied discount amount', example: 50 })
   @Type(() => Number)
   @IsOptional()
-  @IsNumber({}, { message: 'discount deve ser um número válido' })
+  @IsNumber({}, { message: 'discount must be a valid number' })
   discount?: number;
 
-  @ApiProperty({ description: 'Valor efetivamente pago', example: 1450.5 })
+  @ApiProperty({ description: 'Amount paid', example: 1450.5 })
   @Type(() => Number)
-  @IsNumber({}, { message: 'paidAmount deve ser um número válido' })
+  @IsNumber({}, { message: 'paidAmount must be a valid number' })
   paidAmount!: number;
 
-  @ApiPropertyOptional({ description: 'Data de lançamento (YYYY-MM-DD)', example: '2026-08-01' })
+  @ApiPropertyOptional({
+    description: 'Entry date (YYYY-MM-DD)',
+    example: '2026-08-01',
+  })
   @IsOptional()
   @IsString()
   postedAt?: string;
 
-  @ApiPropertyOptional({ description: 'Data de pagamento (YYYY-MM-DD)', example: '2026-08-05' })
+  @ApiPropertyOptional({
+    description: 'Payment date (YYYY-MM-DD)',
+    example: '2026-08-05',
+  })
   @IsOptional()
   @IsString()
   paidAt?: string;
 
   @ApiPropertyOptional({
-    description: 'Observações sobre a despesa',
-    example: 'Compra mensal de carnes',
+    description: 'Expense notes',
+    example: 'Monthly meat purchase',
   })
   @IsOptional()
   @IsString()
   notes?: string;
 
   @ApiProperty({
-    description: 'Forma de pagamento utilizada',
-    enum: ['Pix', 'Crédito', 'Débito', 'Dinheiro', 'Boleto'],
+    description: 'Payment method used',
+    enum: ['Pix', 'Credit', 'Debit', 'Cash', 'Bank Slip'],
     example: 'Pix',
   })
   @IsString()
-  @IsIn(['Pix', 'Crédito', 'Débito', 'Dinheiro', 'Boleto'])
+  @IsIn(['Pix', 'Credit', 'Debit', 'Cash', 'Bank Slip'])
   paymentMethod!: PaymentMethod;
 }

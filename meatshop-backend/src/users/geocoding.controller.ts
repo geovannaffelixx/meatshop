@@ -12,7 +12,9 @@ export class GeocodingController {
 
   @Public()
   @Post('resolve')
-  @ApiOperation({ summary: 'Resolve endereço e coordenadas a partir do CEP' })
+  @ApiOperation({
+    summary: 'Resolves an address and coordinates from a postal code',
+  })
   async resolve(@Body() dto: ResolveAddressDto) {
     const address = await this.addressService.lookupByCep(dto.zip_code);
     return {

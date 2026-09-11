@@ -21,11 +21,11 @@ export class DeleteAccountUseCase {
         { user_id: userId },
         {
           label: 'Outro',
-          street: 'Dado removido',
+          street: 'Data removed',
           number: '0',
           complement: null,
-          neighborhood: 'Dado removido',
-          city: 'Dado removido',
+          neighborhood: 'Data removed',
+          city: 'Data removed',
           state: 'NA',
           zip_code: '00000000',
           latitude: null,
@@ -36,7 +36,7 @@ export class DeleteAccountUseCase {
       await manager.delete('refresh_tokens', { user_id: userId });
       await manager.delete('user_device_tokens', { user_id: userId });
       await manager.update(User, userId, {
-        name: 'Usuário excluído',
+        name: 'Deleted user',
         email: `deleted-${userId}-${Date.now()}@deleted.invalid`,
         cpf: null,
         phone: null,

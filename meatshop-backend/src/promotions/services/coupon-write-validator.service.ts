@@ -23,28 +23,28 @@ export class CouponWriteValidatorService {
     allowExistingExpiration: boolean,
   ): void {
     if (new Date(expiresAt) <= new Date(startsAt))
-      this.fail('COUPON_INVALID_PERIOD', 'A data final deve ser posterior à data inicial.');
+      this.fail('COUPON_INVALID_PERIOD', 'The end date must be after the start date.');
     if (!allowExistingExpiration && new Date(expiresAt) <= new Date())
-      this.fail('COUPON_EXPIRATION_IN_PAST', 'A validade do cupom deve estar no futuro.');
+      this.fail('COUPON_EXPIRATION_IN_PAST', 'The coupon expiration date must be in the future.');
   }
 
   private validateDiscount(type: CouponDiscountType, amount: number, maximum?: number): void {
     if (type === CouponDiscountType.PERCENTAGE && amount > 100)
-      this.fail('COUPON_INVALID_PERCENTAGE', 'O percentual deve ser de no máximo 100%.');
+      this.fail('COUPON_INVALID_PERCENTAGE', 'The percentage must not exceed 100%.');
     if (type === CouponDiscountType.FIXED && maximum !== undefined)
       this.fail(
         'COUPON_MAXIMUM_NOT_ALLOWED',
-        'O teto de desconto só pode ser usado em cupons percentuais.',
+        'The discount cap can only be used for percentage coupons.',
       );
   }
 
   private validateScope(dto: CreateCouponDto): void {
     if (dto.type === CouponType.UNIT && !dto.unit_id)
-      this.fail('COUPON_UNIT_REQUIRED', 'Informe a unidade do cupom.');
+      this.fail('COUPON_UNIT_REQUIRED', 'Provide the coupon unit.');
     if (dto.type === CouponType.UNIT && dto.allowed_unit_ids?.length)
-      this.fail('COUPON_INVALID_SCOPE', 'Cupom de unidade não aceita unidades adicionais.');
+      this.fail('COUPON_INVALID_SCOPE', 'A unit coupon does not accept additional units.');
     if (dto.type === CouponType.PLATFORM && dto.unit_id)
-      this.fail('COUPON_INVALID_SCOPE', 'Cupom da plataforma não possui uma unidade proprietária.');
+      this.fail('COUPON_INVALID_SCOPE', 'A platform coupon does not have an owning unit.');
   }
 
   private async validateUnits(dto: CreateCouponDto): Promise<void> {
@@ -54,7 +54,7 @@ export class CouponWriteValidatorService {
     if (count !== ids.length)
       throw new NotFoundException({
         code: 'COUPON_UNIT_NOT_FOUND',
-        message: 'Uma ou mais unidades selecionadas não existem.',
+        message: 'One or more selected units do not exist.',
       });
   }
 

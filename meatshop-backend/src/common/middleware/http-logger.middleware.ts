@@ -43,7 +43,7 @@ export class HttpLoggerMiddleware implements NestMiddleware {
         this.metricsService?.incrementHttpRequests(req.method, route, statusCode);
         this.metricsService?.observeHttpLatency(req.method, route, durationMs, statusCode);
       } catch (error: unknown) {
-        logger.warn('Falha ao incrementar métricas', {
+        logger.warn('Failed to increment metrics', {
           error: error instanceof Error ? error.message : 'Unknown metrics error',
         });
       }

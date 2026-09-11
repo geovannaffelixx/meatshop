@@ -63,13 +63,13 @@ export class UnitsController {
   ) {}
 
   @Public()
-  @ApiOperation({ summary: 'Lista todas as unidades públicas do marketplace' })
+  @ApiOperation({ summary: 'Lists all public marketplace units' })
   @Get()
   listPublic(@Query() filters: FilterPublicUnitsDto) {
     return this.listPublicUnitsUseCase.execute(filters);
   }
 
-  @ApiOperation({ summary: 'Consulta endereço e coordenadas pelo CEP da unidade' })
+  @ApiOperation({ summary: 'Gets address and coordinates by unit postal code' })
   @Get(':unitId/address/cep/:cep')
   async lookupAddressByCep(
     @Param('unitId', ParseIntPipe) unitId: number,
@@ -84,37 +84,37 @@ export class UnitsController {
     return this.unitAddressService.lookupByCep(cep);
   }
 
-  @ApiOperation({ summary: 'Lista as unidades administradas ou geridas pelo usuário autenticado' })
-  @ApiResponse({ status: 200, description: 'Unidades retornadas com sucesso' })
+  @ApiOperation({ summary: 'Lists units managed by the authenticated user' })
+  @ApiResponse({ status: 200, description: 'Units returned successfully' })
   @Get('mine')
   listMine(@CurrentUser() currentUser: User) {
     return this.listManagedUnitsUseCase.execute(currentUser);
   }
 
-  @ApiOperation({ summary: 'Consulta os dados administrativos de uma unidade' })
+  @ApiOperation({ summary: 'Gets administrative data for a unit' })
   @Get(':id/settings')
   getSettings(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
     return this.getUnitSettingsUseCase.execute(id, currentUser);
   }
 
-  @ApiOperation({ summary: 'Cria uma nova unidade' })
-  @ApiResponse({ status: 201, description: 'Unidade criada com sucesso.' })
+  @ApiOperation({ summary: 'Creates a new unit' })
+  @ApiResponse({ status: 201, description: 'Unit created successfully.' })
   @ApiResponse({
     status: 409,
-    description: 'Ja existe uma unidade cadastrada com este CNPJ.',
+    description: 'A unit with this CNPJ already exists.',
   })
   @Post()
   create(@Body() dto: CreateUnitDto, @CurrentUser() currentUser: User) {
     return this.createUnitUseCase.execute(dto, currentUser);
   }
 
-  @ApiOperation({ summary: 'Atualiza os dados de uma unidade existente' })
-  @ApiResponse({ status: 200, description: 'Unidade atualizada com sucesso.' })
+  @ApiOperation({ summary: 'Updates administrative data for an existing unit' })
+  @ApiResponse({ status: 200, description: 'Unit updated successfully.' })
   @ApiResponse({
     status: 403,
-    description: 'Usuario atual nao e administrador desta unidade.',
+    description: 'Current user is not an administrator of this unit.',
   })
-  @ApiResponse({ status: 404, description: 'Unidade nao encontrada.' })
+  @ApiResponse({ status: 404, description: 'Unit not found.' })
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -124,22 +124,22 @@ export class UnitsController {
     return this.updateUnitUseCase.execute(id, dto, currentUser);
   }
 
-  @ApiOperation({ summary: 'Adiciona um usuario como membro de uma unidade' })
+  @ApiOperation({ summary: 'Adds a user as a unit member' })
   @ApiResponse({
     status: 201,
-    description: 'Usuario adicionado a unidade com sucesso.',
+    description: 'User added to the unit successfully.',
   })
   @ApiResponse({
     status: 403,
-    description: 'Usuario atual nao e administrador desta unidade.',
+    description: 'Current user is not an administrator of this unit.',
   })
   @ApiResponse({
     status: 404,
-    description: 'Unidade ou usuario nao encontrado.',
+    description: 'Unit or user not found.',
   })
   @ApiResponse({
     status: 409,
-    description: 'Usuario ja e membro desta unidade.',
+    description: 'User is already a member of this unit.',
   })
   @Post(':unitId/members')
   addMember(
@@ -150,9 +150,14 @@ export class UnitsController {
     return this.addUserToUnitUseCase.execute(unitId, dto, currentUser);
   }
 
-  @ApiOperation({ summary: 'Cria um usuário e concede acesso administrativo à unidade' })
-  @ApiResponse({ status: 201, description: 'Usuário criado e vinculado à unidade.' })
-  @ApiResponse({ status: 409, description: 'E-mail ou CPF já cadastrado.' })
+  @ApiOperation({
+    summary: 'Creates a user and grants administrative access to the unit',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'User created and linked to the unit.',
+  })
+  @ApiResponse({ status: 409, description: 'Email or CPF already registered.' })
   @Post(':unitId/members/create')
   createMember(
     @Param('unitId', ParseIntPipe) unitId: number,
@@ -162,13 +167,13 @@ export class UnitsController {
     return this.createUnitMemberUseCase.execute(unitId, dto, currentUser);
   }
 
-  @ApiOperation({ summary: 'Lista os membros administrativos de uma unidade' })
+  @ApiOperation({ summary: 'Lists administrative members of a unit' })
   @Get(':unitId/members')
   listMembers(@Param('unitId', ParseIntPipe) unitId: number, @CurrentUser() currentUser: User) {
     return this.listUnitMembersUseCase.execute(unitId, currentUser);
   }
 
-  @ApiOperation({ summary: 'Altera o papel ou status de um membro da unidade' })
+  @ApiOperation({ summary: 'Changes the role or status of a unit member' })
   @Patch(':unitId/members/:membershipId')
   updateMember(
     @Param('unitId', ParseIntPipe) unitId: number,
@@ -179,7 +184,7 @@ export class UnitsController {
     return this.updateUnitMemberUseCase.execute(unitId, membershipId, dto, currentUser);
   }
 
-  @ApiOperation({ summary: 'Remove o acesso de um membro à unidade' })
+  @ApiOperation({ summary: 'Removes a member access to the unit' })
   @Delete(':unitId/members/:membershipId')
   @HttpCode(HttpStatus.NO_CONTENT)
   removeMember(
@@ -191,16 +196,19 @@ export class UnitsController {
   }
 
   @Public()
-  @ApiOperation({ summary: 'Lista o horário de funcionamento de uma unidade' })
-  @ApiResponse({ status: 200, description: 'Horário de funcionamento retornado com sucesso' })
-  @ApiResponse({ status: 404, description: 'Unidade não encontrada' })
+  @ApiOperation({ summary: 'Lists unit business hours' })
+  @ApiResponse({
+    status: 200,
+    description: 'Business hours returned successfully',
+  })
+  @ApiResponse({ status: 404, description: 'Unit not found' })
   @Get(':unitId/business-hours')
   listBusinessHours(@Param('unitId', ParseIntPipe) unitId: number) {
     return this.listBusinessHoursUseCase.execute(unitId);
   }
 
   @Public()
-  @ApiOperation({ summary: 'Obtém os detalhes públicos de uma unidade' })
+  @ApiOperation({ summary: 'Gets public unit details' })
   @Get(':id')
   getPublic(@Param('id', ParseIntPipe) id: number) {
     return this.getPublicUnitUseCase.execute(id);
@@ -208,15 +216,21 @@ export class UnitsController {
 
   @ApiOperation({
     summary:
-      'Define o horário de funcionamento de uma unidade. Dias informados substituem o horário existente; dias não informados permanecem inalterados',
+      'Sets unit business hours. Provided days replace existing hours; omitted days remain unchanged',
   })
-  @ApiResponse({ status: 200, description: 'Horário de funcionamento atualizado com sucesso' })
+  @ApiResponse({
+    status: 200,
+    description: 'Business hours updated successfully',
+  })
   @ApiResponse({
     status: 400,
-    description: 'Horário de abertura posterior ou igual ao de fechamento',
+    description: 'Opening time posterior ou igual ao de fechamento',
   })
-  @ApiResponse({ status: 403, description: 'Usuário não é administrador desta unidade' })
-  @ApiResponse({ status: 404, description: 'Unidade não encontrada' })
+  @ApiResponse({
+    status: 403,
+    description: 'User is not an administrator of this unit',
+  })
+  @ApiResponse({ status: 404, description: 'Unit not found' })
   @Put(':unitId/business-hours')
   setBusinessHours(
     @Param('unitId', ParseIntPipe) unitId: number,

@@ -39,7 +39,10 @@ export class GetMonthlyRevenueUseCase {
       .select(["TO_CHAR(o.order_date, 'DD') AS day", 'SUM(o.total_amount) AS total'])
       .where('o.status = :st', { st: OrderStatus.DELIVERED })
       .andWhere('o.unit_id = :unitId', { unitId })
-      .andWhere('o.order_date >= :start AND o.order_date < :end', { start, end })
+      .andWhere('o.order_date >= :start AND o.order_date < :end', {
+        start,
+        end,
+      })
       .groupBy("TO_CHAR(o.order_date, 'DD')")
       .getRawMany<{ day: string; total: string }>();
 

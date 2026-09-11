@@ -11,20 +11,25 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Public()
-  @ApiOperation({ summary: 'Retorna informações básicas da API' })
-  @ApiResponse({ status: 200, description: 'Informações da API retornadas com sucesso' })
+  @ApiOperation({ summary: 'Returns basic API information' })
+  @ApiResponse({
+    status: 200,
+    description: 'API information returned successfully',
+  })
   @Get()
   root() {
-    this.logger.log('Endpoint / chamado');
+    this.logger.log('Endpoint / called');
     return this.appService.getInfo();
   }
 
   @Public()
-  @ApiOperation({ summary: 'Health check da aplicação (usado por CI/monitoramento)' })
-  @ApiResponse({ status: 200, description: 'Aplicação está saudável' })
+  @ApiOperation({
+    summary: 'Application health check used by CI and monitoring',
+  })
+  @ApiResponse({ status: 200, description: 'Application is healthy' })
   @Get('health')
   health() {
-    this.logger.log('Endpoint /health chamado');
+    this.logger.log('Endpoint /health called');
     return this.appService.getHealth();
   }
 }

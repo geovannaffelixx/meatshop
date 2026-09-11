@@ -3,21 +3,21 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateLocationDto {
   @ApiProperty({
-    description: 'Latitude atual do entregador',
+    description: 'Current delivery person latitude',
     example: -23.55052,
   })
   @IsLatitude()
   latitude: number;
 
   @ApiProperty({
-    description: 'Longitude atual do entregador',
+    description: 'Current delivery person longitude',
     example: -46.633308,
   })
   @IsLongitude()
   longitude: number;
 
   @ApiProperty({
-    description: 'Precisão estimada em metros',
+    description: 'Estimated accuracy in meters',
     required: false,
     example: 12.5,
   })

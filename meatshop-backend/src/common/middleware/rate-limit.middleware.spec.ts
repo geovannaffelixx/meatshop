@@ -5,7 +5,10 @@ import { RateLimitMiddleware } from './rate-limit.middleware';
 
 describe('RateLimitMiddleware', () => {
   it('rejects requests after the configured limit', () => {
-    const config = new ConfigService({ RATE_LIMIT_WINDOW_MS: '60000', RATE_LIMIT_MAX: '2' });
+    const config = new ConfigService({
+      RATE_LIMIT_WINDOW_MS: '60000',
+      RATE_LIMIT_MAX: '2',
+    });
     const middleware = new RateLimitMiddleware(config);
     const request = { ip: '127.0.0.1', socket: {} } as Request;
     const json = jest.fn();
@@ -23,7 +26,10 @@ describe('RateLimitMiddleware', () => {
   });
 
   it('keeps the client tracking map within its memory bound', () => {
-    const config = new ConfigService({ RATE_LIMIT_WINDOW_MS: '60000', RATE_LIMIT_MAX: '2' });
+    const config = new ConfigService({
+      RATE_LIMIT_WINDOW_MS: '60000',
+      RATE_LIMIT_MAX: '2',
+    });
     const middleware = new RateLimitMiddleware(config);
     const response = {
       setHeader: jest.fn(),

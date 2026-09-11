@@ -3,7 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class ScheduleOrderDto {
   @ApiProperty({
-    description: 'Nova data e hora agendada para a entrega do pedido',
+    description: 'New scheduled order delivery date and time',
     example: '2026-08-20T18:00:00.000Z',
   })
   @IsNotEmpty()

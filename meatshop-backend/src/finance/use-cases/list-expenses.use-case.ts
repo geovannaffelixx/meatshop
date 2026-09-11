@@ -28,7 +28,11 @@ export class ListExpensesUseCase {
     return this.expenseRepository.find({
       where: [
         { unit_id: unitId, paidAt: Like(`${year}-${mm}-%`) },
-        { unit_id: unitId, paidAt: IsNull(), postedAt: Like(`${year}-${mm}-%`) },
+        {
+          unit_id: unitId,
+          paidAt: IsNull(),
+          postedAt: Like(`${year}-${mm}-%`),
+        },
       ],
       order: { paidAt: 'DESC', id: 'DESC' },
     });

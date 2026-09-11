@@ -62,7 +62,7 @@ export class SendMessageUseCase {
     await this.sendNotificationUseCase
       .execute({
         user_id: channel.receiverId,
-        message: `Nova mensagem sobre o pedido #${orderId}: ${dto.message}`,
+        message: `New message about order #${orderId}: ${dto.message}`,
         type: NotificationType.ORDER,
       })
       .catch((error) =>

@@ -3,8 +3,8 @@ import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength } from 'c
 
 export class CreateCategoryDto {
   @ApiProperty({
-    description: 'Nome da categoria',
-    example: 'Carnes Bovinas',
+    description: 'Category name',
+    example: 'Beef',
   })
   @IsNotEmpty()
   @IsString()
@@ -12,7 +12,7 @@ export class CreateCategoryDto {
   name: string;
 
   @ApiPropertyOptional({
-    description: 'Descrição detalhada da categoria',
+    description: 'Detailed category description',
     example: 'Cortes bovinos frescos e resfriados',
   })
   @IsOptional()
@@ -21,7 +21,7 @@ export class CreateCategoryDto {
   description?: string;
 
   @ApiPropertyOptional({
-    description: 'Indica se a categoria está ativa',
+    description: 'Indicates whether the category is active',
     example: true,
   })
   @IsOptional()
@@ -29,7 +29,7 @@ export class CreateCategoryDto {
   active?: boolean;
 
   @ApiProperty({
-    description: 'Identificador da unidade à qual a categoria pertence',
+    description: 'Unit identifier to which the category belongs',
     example: 1,
   })
   @IsNotEmpty()

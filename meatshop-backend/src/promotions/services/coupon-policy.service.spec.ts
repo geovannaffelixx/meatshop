@@ -1,4 +1,4 @@
-/* global jest */
+import { jest } from '@jest/globals';
 import type { Coupon } from '../entities/coupon.entity';
 import { CouponDiscountType } from '../enums/coupon-discount-type.enum';
 import { CouponType } from '../enums/coupon-type.enum';
@@ -6,7 +6,7 @@ import { CouponPolicyService } from './coupon-policy.service';
 
 describe('CouponPolicyService', () => {
   const service = new CouponPolicyService();
-  const manager = { count: jest.fn().mockResolvedValue(0) } as never;
+  const manager = { count: jest.fn(async () => 0) } as never;
   const base = {
     id: 1,
     active: true,
@@ -23,29 +23,33 @@ describe('CouponPolicyService', () => {
     usage_limit_per_user: 1,
   } as unknown as Coupon;
 
-  it('calcula percentual com teto', async () => {
+  it('calculates a percentage discount with a cap', async () => {
     await expect(
       service.validate(base, { userId: 1, unitId: 2, subtotal: 100 }, manager),
     ).resolves.toBe(15);
   });
 
-  it('recusa pedido abaixo do mínimo', async () => {
+  it('rejects an order below the minimum', async () => {
     await expect(
       service.validate(base, { userId: 1, unitId: 2, subtotal: 40 }, manager),
-    ).rejects.toMatchObject({ response: { code: 'COUPON_MINIMUM_NOT_REACHED' } });
+    ).rejects.toMatchObject({
+      response: { code: 'COUPON_MINIMUM_NOT_REACHED' },
+    });
   });
 
-  it('recusa unidade fora do escopo selecionado', async () => {
+  it('rejects a unit outside the selected scope', async () => {
     const coupon = { ...base, allowed_units: [{ unit_id: 3 }] } as Coupon;
     await expect(
       service.validate(coupon, { userId: 1, unitId: 2, subtotal: 100 }, manager),
     ).rejects.toMatchObject({ response: { code: 'COUPON_NOT_APPLICABLE' } });
   });
 
-  it('recusa limite total esgotado', async () => {
+  it('rejects an exhausted total usage limit', async () => {
     const coupon = { ...base, current_usage_count: 10 } as Coupon;
     await expect(
       service.validate(coupon, { userId: 1, unitId: 2, subtotal: 100 }, manager),
-    ).rejects.toMatchObject({ response: { code: 'COUPON_USAGE_LIMIT_REACHED' } });
+    ).rejects.toMatchObject({
+      response: { code: 'COUPON_USAGE_LIMIT_REACHED' },
+    });
   });
 });

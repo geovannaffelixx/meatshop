@@ -3,8 +3,8 @@ import { IsNotEmpty, IsOptional, IsString, Matches, MaxLength, MinLength } from 
 
 export class CreateUnitDto {
   @ApiProperty({
-    description: 'Nome da unidade',
-    example: 'Loja Centro',
+    description: 'Unit name',
+    example: 'Downtown Store',
   })
   @IsNotEmpty()
   @IsString()
@@ -13,7 +13,7 @@ export class CreateUnitDto {
   name: string;
 
   @ApiProperty({
-    description: 'CNPJ da unidade, contendo exatamente 14 digitos numericos',
+    description: 'Unit CNPJ containing exactly 14 digits',
     example: '12345678000199',
   })
   @IsNotEmpty()
@@ -22,7 +22,7 @@ export class CreateUnitDto {
   cnpj: string;
 
   @ApiProperty({
-    description: 'Cidade onde a unidade esta localizada',
+    description: 'City where the unit is located',
     example: 'Goiania',
   })
   @IsNotEmpty()
@@ -31,7 +31,7 @@ export class CreateUnitDto {
   city: string;
 
   @ApiProperty({
-    description: 'CEP da unidade',
+    description: 'Unit postal code',
     example: '74000-000',
   })
   @IsNotEmpty()
@@ -40,7 +40,7 @@ export class CreateUnitDto {
   zip_code: string;
 
   @ApiProperty({
-    description: 'UF (sigla do estado) com 2 letras maiusculas',
+    description: 'State code with 2 uppercase letters',
     example: 'GO',
   })
   @IsNotEmpty()
@@ -48,7 +48,7 @@ export class CreateUnitDto {
   @Matches(/^[A-Z]{2}$/, { message: 'state must be a 2-letter uppercase UF' })
   state: string;
 
-  @ApiProperty({ required: false, example: 'Rua das Flores' })
+  @ApiProperty({ required: false, example: 'Flower Street' })
   @IsOptional()
   @IsString()
   @MaxLength(150)
@@ -66,7 +66,7 @@ export class CreateUnitDto {
   @MaxLength(100)
   complement?: string;
 
-  @ApiProperty({ required: false, example: 'Centro' })
+  @ApiProperty({ required: false, example: 'Downtown' })
   @IsOptional()
   @IsString()
   @MaxLength(80)

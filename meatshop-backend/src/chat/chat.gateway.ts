@@ -169,7 +169,7 @@ export class ChatGateway implements OnGatewayConnection {
       action: 'CHAT_MESSAGE_SENT',
       entity: 'chats',
       entityId: String(orderId),
-      description: `Envio de mensagem no chat do pedido ${outcome === AuditOutcome.SUCCESS ? 'realizado' : 'falhou'}`,
+      description: `Order chat message delivery ${outcome === AuditOutcome.SUCCESS ? 'completed' : 'failed'}`,
       outcome,
       userId: user?.id ?? null,
       actorType: user ? 'USER' : 'ANONYMOUS',

@@ -26,9 +26,12 @@ export class ProductsController {
   @Public()
   @ApiOperation({
     summary:
-      'Lista os produtos, com filtros opcionais por unidade, categoria e status. Inclui nome da categoria e quantidade em estoque.',
+      'Lists products with optional unit, category, and status filters. Includes category name and stock quantity.',
   })
-  @ApiResponse({ status: 200, description: 'Lista de produtos retornada com sucesso' })
+  @ApiResponse({
+    status: 200,
+    description: 'Product list returned successfully',
+  })
   @Get()
   list(
     @Query('unit_id') unitId?: string,
@@ -49,31 +52,37 @@ export class ProductsController {
   }
 
   @Public()
-  @ApiOperation({ summary: 'Busca um produto pelo identificador' })
-  @ApiResponse({ status: 200, description: 'Produto encontrado com sucesso' })
-  @ApiResponse({ status: 404, description: 'Produto não encontrado' })
+  @ApiOperation({ summary: 'Gets a product by identifier' })
+  @ApiResponse({ status: 200, description: 'Product found successfully' })
+  @ApiResponse({ status: 404, description: 'Product not found' })
   @Get(':id')
   getOne(@Param('id', ParseIntPipe) id: number) {
     return this.getProductUseCase.execute(id);
   }
 
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Cria um novo produto' })
-  @ApiResponse({ status: 201, description: 'Produto criado com sucesso' })
-  @ApiResponse({ status: 403, description: 'Usuário não é administrador da unit' })
-  @ApiResponse({ status: 404, description: 'Categoria informada não encontrada' })
-  @ApiResponse({ status: 409, description: 'Categoria não pertence à unit informada' })
+  @ApiOperation({ summary: 'Creates a new product' })
+  @ApiResponse({ status: 201, description: 'Product created successfully' })
+  @ApiResponse({ status: 403, description: 'User is not a unit administrator' })
+  @ApiResponse({ status: 404, description: 'Specified category not found' })
+  @ApiResponse({
+    status: 409,
+    description: 'Category does not belong to the specified unit',
+  })
   @Post()
   create(@Body() dto: CreateProductDto, @CurrentUser() currentUser: User) {
     return this.createProductUseCase.execute(dto, currentUser);
   }
 
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Atualiza um produto existente' })
-  @ApiResponse({ status: 200, description: 'Produto atualizado com sucesso' })
-  @ApiResponse({ status: 403, description: 'Usuário não é administrador da unit' })
-  @ApiResponse({ status: 404, description: 'Produto não encontrado' })
-  @ApiResponse({ status: 409, description: 'Categoria não pertence à unit informada' })
+  @ApiOperation({ summary: 'Updates an existing product' })
+  @ApiResponse({ status: 200, description: 'Product updated successfully' })
+  @ApiResponse({ status: 403, description: 'User is not a unit administrator' })
+  @ApiResponse({ status: 404, description: 'Product not found' })
+  @ApiResponse({
+    status: 409,
+    description: 'Category does not belong to the specified unit',
+  })
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -84,10 +93,10 @@ export class ProductsController {
   }
 
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Atualiza a quantidade em estoque de um produto' })
-  @ApiResponse({ status: 200, description: 'Estoque atualizado com sucesso' })
-  @ApiResponse({ status: 403, description: 'Usuário não é administrador da unit' })
-  @ApiResponse({ status: 404, description: 'Produto não encontrado' })
+  @ApiOperation({ summary: 'Updates a product stock quantity' })
+  @ApiResponse({ status: 200, description: 'Stock updated successfully' })
+  @ApiResponse({ status: 403, description: 'User is not a unit administrator' })
+  @ApiResponse({ status: 404, description: 'Product not found' })
   @Patch(':id/stock')
   updateStock(
     @Param('id', ParseIntPipe) id: number,

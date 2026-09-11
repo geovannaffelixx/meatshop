@@ -1,7 +1,7 @@
 import { isExcludedPath, resolveRouteAuditInfo, tableNameFor } from './route-audit-info';
 
 describe('route audit info', () => {
-  it('identifica ações semânticas críticas', () => {
+  it('identifies critical semantic actions', () => {
     expect(resolveRouteAuditInfo('POST', '/auth/login', {}).action).toBe('LOGIN');
     expect(resolveRouteAuditInfo('PATCH', '/orders/:id/cancel', { id: '8' })).toMatchObject({
       action: 'ORDER_CANCELLED',
@@ -9,7 +9,7 @@ describe('route audit info', () => {
     });
   });
 
-  it('audita autenticação e restringe tabelas consultáveis', () => {
+  it('audits authentication and restricts queryable tables', () => {
     expect(isExcludedPath('/auth/login')).toBe(false);
     expect(tableNameFor('users; DROP TABLE users')).toBeNull();
     expect(tableNameFor('products')).toBe('products');

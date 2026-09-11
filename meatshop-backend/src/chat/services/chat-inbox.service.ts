@@ -140,16 +140,16 @@ export class ChatInboxService {
 
   private opponentName(order: Order, type: ChatParticipantType, userId: number): string {
     if (type === ChatParticipantType.UNIT) {
-      return order.client_id === userId ? order.unit.name : (order.client.name ?? 'Cliente');
+      return order.client_id === userId ? order.unit.name : (order.client.name ?? 'Customer');
     }
     if (type === ChatParticipantType.DELIVERY_PERSON) {
       return order.client_id === userId
-        ? (order.delivery_person?.user?.name ?? 'Entregador')
-        : (order.client.name ?? 'Cliente');
+        ? (order.delivery_person?.user?.name ?? 'Delivery Person')
+        : (order.client.name ?? 'Customer');
     }
     return order.delivery_person?.user_id === userId
       ? order.unit.name
-      : (order.delivery_person?.user?.name ?? 'Entregador');
+      : (order.delivery_person?.user?.name ?? 'Delivery Person');
   }
 
   private opponent(
@@ -170,12 +170,12 @@ export class ChatInboxService {
       (type === ChatParticipantType.UNIT_DELIVERY_PERSON && !isDelivery)
     ) {
       return {
-        name: order.delivery_person?.user?.name ?? 'Entregador',
+        name: order.delivery_person?.user?.name ?? 'Delivery Person',
         avatarUrl: order.delivery_person?.user?.avatar_url ?? null,
       };
     }
     return {
-      name: order.client.name ?? 'Cliente',
+      name: order.client.name ?? 'Customer',
       avatarUrl: order.client.avatar_url ?? null,
     };
   }

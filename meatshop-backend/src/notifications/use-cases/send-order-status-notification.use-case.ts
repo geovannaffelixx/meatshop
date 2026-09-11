@@ -12,13 +12,13 @@ import { NotificationType } from '../enums/notification-type.enum';
 import { SendNotificationUseCase } from './send-notification.use-case';
 
 const STATUS_MESSAGES: Record<OrderStatus, string> = {
-  [OrderStatus.PENDING]: 'está aguardando confirmação',
+  [OrderStatus.PENDING]: 'is awaiting confirmation',
   [OrderStatus.CONFIRMED]: 'foi confirmado',
-  [OrderStatus.PREPARING]: 'está sendo preparado',
-  [OrderStatus.READY]: 'está pronto',
-  [OrderStatus.OUT_FOR_DELIVERY]: 'saiu para entrega',
-  [OrderStatus.DELIVERED]: 'foi entregue',
-  [OrderStatus.CANCELLED]: 'foi cancelado',
+  [OrderStatus.PREPARING]: 'is being prepared',
+  [OrderStatus.READY]: 'is ready',
+  [OrderStatus.OUT_FOR_DELIVERY]: 'is out for delivery',
+  [OrderStatus.DELIVERED]: 'was delivered',
+  [OrderStatus.CANCELLED]: 'was canceled',
 };
 
 @Injectable()
@@ -52,8 +52,8 @@ export class SendOrderStatusNotificationUseCase {
         this.sendNotificationUseCase.execute({
           user_id,
           unit_id: unit.id,
-          title: 'Novo pedido',
-          message: `Pedido #${order.id} recebido, no valor de R$ ${Number(order.total_amount).toFixed(2)}`,
+          title: 'New order',
+          message: `Order #${order.id} received, totaling BRL ${Number(order.total_amount).toFixed(2)}`,
           action_url: `/orders/${order.id}`,
           type: NotificationType.ORDER,
         }),
@@ -65,8 +65,8 @@ export class SendOrderStatusNotificationUseCase {
     await this.sendNotificationUseCase.execute({
       user_id: order.client_id,
       unit_id: order.unit_id,
-      title: 'Atualização do pedido',
-      message: `Seu pedido #${order.id} ${STATUS_MESSAGES[order.status]}`,
+      title: 'Order update',
+      message: `Your order #${order.id} ${STATUS_MESSAGES[order.status]}`,
       action_url: `/orders/${order.id}`,
       type: NotificationType.ORDER,
     });
@@ -76,8 +76,8 @@ export class SendOrderStatusNotificationUseCase {
     await this.sendNotificationUseCase.execute({
       user_id: order.client_id,
       unit_id: order.unit_id,
-      title: 'Código de confirmação da entrega',
-      message: `O código de confirmação do pedido #${order.id} está disponível somente na tela protegida do pedido.`,
+      title: 'Delivery confirmation code',
+      message: `The confirmation code for order #${order.id} is available only on the protected order screen.`,
       action_url: `/orders/${order.id}`,
       type: NotificationType.DELIVERY,
     });
@@ -91,8 +91,8 @@ export class SendOrderStatusNotificationUseCase {
     await this.sendNotificationUseCase.execute({
       user_id: deliveryUserId,
       unit_id: order.unit_id,
-      title: 'Código para retirar o pedido',
-      message: `O código de retirada do pedido #${order.id} está disponível somente na tela protegida da entrega.`,
+      title: 'Order pickup code',
+      message: `The pickup code for order #${order.id} is available only on the protected delivery screen.`,
       action_url: `/orders/${order.id}`,
       type: NotificationType.DELIVERY,
     });
@@ -111,8 +111,8 @@ export class SendOrderStatusNotificationUseCase {
         this.sendNotificationUseCase.execute({
           user_id,
           unit_id: order.unit_id,
-          title: 'Entregador atribuído',
-          message: `${deliveryPersonName} vai retirar o pedido #${order.id}. Valide o código antes de liberar.`,
+          title: 'Delivery person assigned',
+          message: `${deliveryPersonName} will pick up order #${order.id}. Validate the code before releasing the order.`,
           action_url: '/deliveries',
           type: NotificationType.DELIVERY,
         }),

@@ -17,7 +17,9 @@ export class ConfirmOrderUseCase {
   ) {}
 
   async execute(orderId: number, actor: User | null): Promise<Order> {
-    const order = await this.orderRepository.findOne({ where: { id: orderId } });
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+    });
     if (!order) {
       throw new NotFoundException('Order not found');
     }

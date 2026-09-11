@@ -18,7 +18,10 @@ export class GetCouponUseCase {
       relations: { unit: true, allowed_units: { unit: true }, creator: true },
     });
     if (!coupon)
-      throw new NotFoundException({ code: 'COUPON_NOT_FOUND', message: 'Cupom não encontrado.' });
+      throw new NotFoundException({
+        code: 'COUPON_NOT_FOUND',
+        message: 'Coupon not found.',
+      });
     await this.access.assertCanManage(coupon, actor);
     return coupon;
   }

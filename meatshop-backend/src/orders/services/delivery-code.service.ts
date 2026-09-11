@@ -79,7 +79,7 @@ export class DeliveryCodeService {
       throw new HttpException(
         {
           code: 'DELIVERY_CODE_LOCKED',
-          message: 'Muitas tentativas. Aguarde 15 minutos para tentar novamente.',
+          message: 'Too many attempts. Wait 15 minutes before trying again.',
         },
         429,
       );
@@ -87,7 +87,7 @@ export class DeliveryCodeService {
     if (fields.expiresAt <= now) {
       throw new BadRequestException({
         code: 'DELIVERY_CODE_EXPIRED',
-        message: 'O código expirou. Solicite um novo código.',
+        message: 'The code expired. Request a new code.',
       });
     }
 
@@ -98,7 +98,7 @@ export class DeliveryCodeService {
       await this.orderRepository.save(order);
       throw new UnauthorizedException({
         code: 'INVALID_DELIVERY_CODE',
-        message: 'Código de segurança inválido.',
+        message: 'Invalid security code.',
       });
     }
 

@@ -27,7 +27,10 @@ export class UpdateCouponUseCase {
       relations: { allowed_units: true },
     });
     if (!coupon)
-      throw new NotFoundException({ code: 'COUPON_NOT_FOUND', message: 'Cupom não encontrado.' });
+      throw new NotFoundException({
+        code: 'COUPON_NOT_FOUND',
+        message: 'Coupon not found.',
+      });
     await this.access.assertCanManage(coupon, actor);
     this.assertActorCanChangeScope(coupon, dto, actor);
     this.assertImmutableScope(coupon, dto);
@@ -58,7 +61,7 @@ export class UpdateCouponUseCase {
     ) {
       throw new BadRequestException({
         code: 'COUPON_SCOPE_IMMUTABLE',
-        message: 'O escopo de um cupom já utilizado não pode ser alterado.',
+        message: 'The scope of a previously used coupon cannot be changed.',
       });
     }
   }
@@ -72,7 +75,7 @@ export class UpdateCouponUseCase {
     ) {
       throw new BadRequestException({
         code: 'COUPON_SCOPE_FORBIDDEN',
-        message: 'O escopo do cupom só pode ser alterado pela administração MeatShop.',
+        message: 'Only MeatShop administrators can change the coupon scope.',
       });
     }
   }

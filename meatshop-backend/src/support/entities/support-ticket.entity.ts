@@ -55,10 +55,18 @@ export class SupportTicket {
   @Column({ type: 'text' })
   description: string;
 
-  @Column({ type: 'enum', enum: SupportTicketCategory, default: SupportTicketCategory.OTHER })
+  @Column({
+    type: 'enum',
+    enum: SupportTicketCategory,
+    default: SupportTicketCategory.OTHER,
+  })
   category: SupportTicketCategory;
 
-  @Column({ type: 'enum', enum: SupportTicketPriority, default: SupportTicketPriority.NORMAL })
+  @Column({
+    type: 'enum',
+    enum: SupportTicketPriority,
+    default: SupportTicketPriority.NORMAL,
+  })
   priority: SupportTicketPriority;
 
   @Column({

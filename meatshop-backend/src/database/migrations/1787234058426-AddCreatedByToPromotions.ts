@@ -6,7 +6,6 @@ export class AddCreatedByToPromotions1787234058426 implements MigrationInterface
   async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`ALTER TABLE "promotions" ADD "created_by" integer`);
 
-    // Backfill any pre-existing promotions (created before this column existed) to their unit's admin.
     await queryRunner.query(`
             UPDATE "promotions" p
             SET "created_by" = u."admin_id"

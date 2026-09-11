@@ -12,8 +12,8 @@ import { AppProfile } from '../../common/enums/app-profile.enum';
 
 export class RegisterDto {
   @ApiProperty({
-    description: 'Nome completo do usuário',
-    example: 'João da Silva',
+    description: 'User full name',
+    example: 'John Smith',
   })
   @IsNotEmpty()
   @IsString()
@@ -21,15 +21,15 @@ export class RegisterDto {
   name: string;
 
   @ApiProperty({
-    description: 'Endereço de e-mail do usuário',
-    example: 'cliente@meatshop.com',
+    description: 'User email address',
+    example: 'customer@meatshop.com',
   })
   @IsEmail()
   @IsNotEmpty()
   email: string;
 
   @ApiProperty({
-    description: 'CPF do usuário (somente números ou com máscara)',
+    description: 'User CPF (digits only or formatted)',
     example: '12345678900',
   })
   @IsNotEmpty()
@@ -40,7 +40,7 @@ export class RegisterDto {
 
   @ApiProperty({
     description:
-      'Senha do usuário (mínimo 8 caracteres, deve conter maiúscula, minúscula, número e caractere especial)',
+      'User password (minimum 8 characters, including uppercase, lowercase, number, and special character)',
     example: 'Senha123!',
   })
   @IsNotEmpty()
@@ -53,7 +53,7 @@ export class RegisterDto {
   password: string;
 
   @ApiProperty({
-    description: 'Perfil de acesso do usuário na aplicação',
+    description: 'User access role in the application',
     example: AppProfile.CLIENT,
     enum: AppProfile,
   })

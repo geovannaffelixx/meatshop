@@ -2,39 +2,42 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Review } from '../entities/review.entity';
 
 export class ReviewListItemDto {
-  @ApiProperty({ description: 'Identificador da avaliação', example: 1 })
+  @ApiProperty({ description: 'Review identifier', example: 1 })
   id: number;
 
-  @ApiProperty({ description: 'Identificador do pedido avaliado', example: 10 })
+  @ApiProperty({ description: 'Order identifier avaliado', example: 10 })
   order_id: number;
 
-  @ApiProperty({ description: 'Identificador da unidade avaliada', example: 1 })
+  @ApiProperty({ description: 'Unit identifier avaliada', example: 1 })
   unit_id: number;
 
-  @ApiProperty({ description: 'Nome do cliente que avaliou', example: 'João da Silva' })
+  @ApiProperty({
+    description: 'Name of the customer who submitted the review',
+    example: 'John Smith',
+  })
   client_name: string;
 
   @ApiPropertyOptional({
-    description: 'Identificador do produto avaliado. Nulo quando a avaliação é sobre a unidade',
+    description: 'Reviewed product identifier. Null when the review is for the unit',
     example: 42,
     nullable: true,
   })
   product_id: number | null;
 
   @ApiPropertyOptional({
-    description: 'Nome do produto avaliado. Nulo quando a avaliação é sobre a unidade',
+    description: 'Reviewed product name. Null when the review is for the unit',
     example: 'Picanha',
     nullable: true,
   })
   product_name: string | null;
 
-  @ApiProperty({ description: 'Nota da avaliação, de 1 a 5', example: 5 })
+  @ApiProperty({ description: 'Review rating from 1 to 5', example: 5 })
   rating: number;
 
-  @ApiPropertyOptional({ description: 'Comentário da avaliação', nullable: true })
+  @ApiPropertyOptional({ description: 'Review comment', nullable: true })
   comment: string | null;
 
-  @ApiProperty({ description: 'Data da avaliação' })
+  @ApiProperty({ description: 'Review date' })
   created_at: Date;
 
   static fromEntity(review: Review): ReviewListItemDto {
@@ -42,7 +45,7 @@ export class ReviewListItemDto {
     dto.id = review.id;
     dto.order_id = review.order_id;
     dto.unit_id = review.unit_id;
-    dto.client_name = review.client?.name ?? 'Cliente';
+    dto.client_name = review.client?.name ?? 'Customer';
     dto.product_id = review.product_id;
     dto.product_name = review.product?.name ?? null;
     dto.rating = review.rating;

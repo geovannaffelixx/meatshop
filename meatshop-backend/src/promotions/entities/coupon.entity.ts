@@ -27,12 +27,16 @@ export class Coupon {
   @JoinColumn({ name: 'unit_id' })
   unit: Unit | null;
 
-  @Column({ type: 'enum', enum: CouponDiscountType }) discount_type: CouponDiscountType;
-  @Column({ type: 'decimal', precision: 10, scale: 2 }) discount_amount: number;
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true }) maximum_discount:
-    number | null;
+  @Column({ type: 'enum', enum: CouponDiscountType })
+  discount_type: CouponDiscountType;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 }) minimum_order_value: number;
+  @Column({ type: 'decimal', precision: 10, scale: 2 }) discount_amount: number;
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  maximum_discount: number | null;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  minimum_order_value: number;
+
   @Column({ type: 'timestamp' }) starts_at: Date;
   @Column({ type: 'timestamp' }) expires_at: Date;
   @Column({ type: 'int', nullable: true }) total_usage_limit: number | null;
@@ -44,8 +48,12 @@ export class Coupon {
   @JoinColumn({ name: 'created_by' })
   creator: User;
 
-  @OneToMany(() => CouponUnit, (item) => item.coupon) allowed_units: CouponUnit[];
-  @OneToMany(() => CouponRedemption, (item) => item.coupon) redemptions: CouponRedemption[];
+  @OneToMany(() => CouponUnit, (item) => item.coupon)
+  allowed_units: CouponUnit[];
+
+  @OneToMany(() => CouponRedemption, (item) => item.coupon)
+  redemptions: CouponRedemption[];
+
   @CreateDateColumn() created_at: Date;
   @UpdateDateColumn() updated_at: Date;
 }

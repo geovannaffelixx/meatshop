@@ -21,22 +21,22 @@ export class AuditController {
     private readonly exportLogs: ExportAuditLogsUseCase,
   ) {}
 
-  @ApiOperation({ summary: 'Resumo global da auditoria' })
+  @ApiOperation({ summary: 'Global audit summary' })
   @Get('summary')
   summary() {
     return this.getSummary.execute();
   }
 
-  @ApiOperation({ summary: 'Exporta até 10.000 eventos filtrados em CSV' })
+  @ApiOperation({ summary: 'Exports up to 10,000 filtered events as CSV' })
   @Get('export')
   async export(@Query() filters: FilterAuditLogDto, @Res() response: Response): Promise<void> {
     const csv = await this.exportLogs.execute(filters);
     response.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    response.setHeader('Content-Disposition', `attachment; filename="auditoria-${Date.now()}.csv"`);
+    response.setHeader('Content-Disposition', `attachment; filename=auditoria-${Date.now()}.csv`);
     response.send(`\uFEFF${csv}`);
   }
 
-  @ApiOperation({ summary: 'Lista eventos de auditoria com filtros' })
+  @ApiOperation({ summary: 'Lists audit events with filters' })
   @Get()
   list(@Query() filters: FilterAuditLogDto) {
     return this.listLogs.execute(filters);

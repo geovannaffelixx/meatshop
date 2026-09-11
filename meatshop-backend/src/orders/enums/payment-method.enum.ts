@@ -1,8 +1,8 @@
 export enum PaymentMethod {
   PIX = 'Pix',
-  CREDITO = 'Crédito',
-  DEBITO = 'Débito',
-  DINHEIRO = 'Dinheiro',
-  BOLETO = 'Boleto',
-  SALDO_MP = 'Saldo MP',
+  CREDIT = 'Credit',
+  DEBIT = 'Debit',
+  CASH = 'Cash',
+  BANK_SLIP = 'Bank Slip',
+  MERCADO_PAGO_BALANCE = 'Mercado Pago Balance',
 }

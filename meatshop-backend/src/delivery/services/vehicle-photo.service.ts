@@ -21,7 +21,7 @@ export class VehiclePhotoService {
     const vehicle = await this.ownedVehicle(vehicleId, actor);
     const current = vehicle.photo_urls ?? [];
     if (current.length >= MAX_PHOTOS) {
-      throw new BadRequestException(`O veículo aceita no máximo ${MAX_PHOTOS} fotos.`);
+      throw new BadRequestException(`The vehicle accepts at most ${MAX_PHOTOS} photos.`);
     }
     vehicle.photo_urls = [...current, url];
     return this.vehicles.save(vehicle);
@@ -32,7 +32,7 @@ export class VehiclePhotoService {
     const url = (vehicle.photo_urls ?? []).find(
       (item) => path.basename(item) === path.basename(filename),
     );
-    if (!url) throw new NotFoundException('Foto não encontrada.');
+    if (!url) throw new NotFoundException('Photo not found.');
     vehicle.photo_urls = vehicle.photo_urls.filter((item) => item !== url);
     const saved = await this.vehicles.save(vehicle);
     await this.storage.delete(url);
@@ -44,7 +44,7 @@ export class VehiclePhotoService {
     const vehicle = await this.vehicles.findOne({
       where: { id: vehicleId, delivery_person_id: person.id, is_enabled: true },
     });
-    if (!vehicle) throw new NotFoundException('Veículo não encontrado.');
+    if (!vehicle) throw new NotFoundException('Vehicle not found.');
     return vehicle;
   }
 }

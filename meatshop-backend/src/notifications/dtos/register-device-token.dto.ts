@@ -3,7 +3,7 @@ import { IsIn, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validat
 
 export class RegisterDeviceTokenDto {
   @ApiProperty({
-    description: 'Token FCM (Firebase Cloud Messaging) do navegador/dispositivo do usuário',
+    description: 'User browser or device FCM token',
     example: 'dQw4w9WgXcQ:APA91bF...',
   })
   @IsNotEmpty()
@@ -21,7 +21,7 @@ export class RegisterDeviceTokenDto {
   @IsIn(['ANDROID', 'IOS', 'WEB'])
   platform?: 'ANDROID' | 'IOS' | 'WEB';
 
-  @ApiProperty({ required: false, description: 'Versão pública do aplicativo' })
+  @ApiProperty({ required: false, description: 'Public application version' })
   @IsOptional()
   @IsString()
   @MaxLength(30)

@@ -10,7 +10,7 @@ export class SearchController {
   constructor(private readonly search: MarketplaceSearchService) {}
   @Public()
   @Get()
-  @ApiOperation({ summary: 'Busca pública combinada no marketplace' })
+  @ApiOperation({ summary: 'Combined public marketplace search' })
   execute(@Query() filters: MarketplaceSearchDto) {
     return this.search.execute(filters);
   }

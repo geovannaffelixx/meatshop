@@ -35,7 +35,7 @@ const MAX_FILES_PER_UPLOAD = 10;
 
 function imageFileFilter(_req: any, file: Express.Multer.File, cb: any) {
   if (!file.mimetype.match(/^image\/(png|jpe?g|webp|gif)$/)) {
-    return cb(new BadRequestException('Tipo de imagem inválido'), false);
+    return cb(new BadRequestException('Invalid image type'), false);
   }
   cb(null, true);
 }
@@ -45,14 +45,17 @@ function imageFileFilter(_req: any, file: Express.Multer.File, cb: any) {
 export class ProductsUploadController {
   constructor(
     @InjectRepository(Product) private readonly products: Repository<Product>,
-    @InjectRepository(ProductImage) private readonly productImages: Repository<ProductImage>,
+    @InjectRepository(ProductImage)
+    private readonly productImages: Repository<ProductImage>,
     private readonly unitAuthorizationService: UnitAuthorizationService,
     private readonly storage: MediaStorageService,
   ) {}
 
   @Post(':id/images')
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Envia uma ou mais imagens para a galeria do produto' })
+  @ApiOperation({
+    summary: 'Uploads one or more images to the product gallery',
+  })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -65,15 +68,18 @@ export class ProductsUploadController {
       },
     },
   })
-  @ApiResponse({ status: 201, description: 'Imagens enviadas com sucesso' })
-  @ApiResponse({ status: 400, description: 'Nenhum arquivo válido enviado' })
-  @ApiResponse({ status: 403, description: 'Usuário não administra a unidade do produto' })
-  @ApiResponse({ status: 404, description: 'Produto não encontrado' })
+  @ApiResponse({ status: 201, description: 'Images uploaded successfully' })
+  @ApiResponse({ status: 400, description: 'No valid file provided' })
+  @ApiResponse({
+    status: 403,
+    description: 'User does not manage the product unit',
+  })
+  @ApiResponse({ status: 404, description: 'Product not found' })
   @UseInterceptors(
     FilesInterceptor('files', MAX_FILES_PER_UPLOAD, {
       storage: memoryStorage(),
       fileFilter: imageFileFilter,
-      limits: { fileSize: 2 * 1024 * 1024 }, // 2MB por arquivo
+      limits: { fileSize: 2 * 1024 * 1024 },
     }),
   )
   async uploadImages(
@@ -82,11 +88,11 @@ export class ProductsUploadController {
     @CurrentUser() currentUser: User,
   ) {
     if (!files || files.length === 0) {
-      throw new BadRequestException('Nenhum arquivo enviado');
+      throw new BadRequestException('No file provided');
     }
 
     const product = await this.products.findOne({ where: { id } });
-    if (!product) throw new NotFoundException('Produto não encontrado');
+    if (!product) throw new NotFoundException('Product not found');
 
     await this.unitAuthorizationService.assertHasPermission(
       currentUser,
@@ -117,20 +123,25 @@ export class ProductsUploadController {
 
   @Delete(':id/images/:imageId')
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Remove uma imagem da galeria do produto' })
-  @ApiResponse({ status: 200, description: 'Imagem removida com sucesso' })
-  @ApiResponse({ status: 403, description: 'Usuário não administra a unidade do produto' })
-  @ApiResponse({ status: 404, description: 'Imagem não encontrada' })
+  @ApiOperation({ summary: 'Removes an image from the product gallery' })
+  @ApiResponse({ status: 200, description: 'Image removed successfully' })
+  @ApiResponse({
+    status: 403,
+    description: 'User does not manage the product unit',
+  })
+  @ApiResponse({ status: 404, description: 'Image not found' })
   async deleteImage(
     @Param('id', ParseIntPipe) id: number,
     @Param('imageId', ParseIntPipe) imageId: number,
     @CurrentUser() currentUser: User,
   ) {
-    const image = await this.productImages.findOne({ where: { id: imageId, product_id: id } });
-    if (!image) throw new NotFoundException('Imagem não encontrada');
+    const image = await this.productImages.findOne({
+      where: { id: imageId, product_id: id },
+    });
+    if (!image) throw new NotFoundException('Image not found');
 
     const product = await this.products.findOne({ where: { id } });
-    if (!product) throw new NotFoundException('Produto não encontrado');
+    if (!product) throw new NotFoundException('Product not found');
 
     await this.unitAuthorizationService.assertHasPermission(
       currentUser,
@@ -142,11 +153,9 @@ export class ProductsUploadController {
     await this.syncCoverImage(id);
 
     await this.storage.delete(image.image_url);
-    // Arquivo já pode ter sido removido; a linha do banco é a fonte da verdade.
     return { ok: true };
   }
 
-  /** Mantém `Product.image_url` (capa, usada por telas/consumidores fora da galeria) sincronizada com a primeira imagem. */
   private async syncCoverImage(productId: number): Promise<void> {
     const [firstImage] = await this.productImages.find({
       where: { product_id: productId },

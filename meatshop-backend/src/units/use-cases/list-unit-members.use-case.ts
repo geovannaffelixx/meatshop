@@ -11,7 +11,8 @@ import { UnitAuthorizationService } from '../services/unit-authorization.service
 export class ListUnitMembersUseCase {
   constructor(
     @InjectRepository(Unit) private readonly unitRepository: Repository<Unit>,
-    @InjectRepository(UserUnit) private readonly membershipRepository: Repository<UserUnit>,
+    @InjectRepository(UserUnit)
+    private readonly membershipRepository: Repository<UserUnit>,
     private readonly authorization: UnitAuthorizationService,
   ) {}
 

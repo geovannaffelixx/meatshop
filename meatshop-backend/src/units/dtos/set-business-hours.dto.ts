@@ -6,7 +6,7 @@ import { BusinessHoursDayDto } from './business-hours-day.dto';
 export class SetBusinessHoursDto {
   @ApiProperty({
     description:
-      'Horários da unidade. Cada dia informado substitui o horário existente para aquele dia; dias não informados permanecem inalterados.',
+      'Unit business hours. Each provided day replaces its existing hours; omitted days remain unchanged.',
     type: [BusinessHoursDayDto],
   })
   @ValidateNested({ each: true })

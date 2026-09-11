@@ -68,13 +68,13 @@ export class SendNotificationUseCase {
   private safePushBody(type: Notification['type']): string {
     switch (type) {
       case 'ORDER':
-        return 'Consulte a atualização do seu pedido no aplicativo.';
+        return 'Check your order update in the application.';
       case 'DELIVERY':
-        return 'Consulte a atualização da entrega no aplicativo.';
+        return 'Check the delivery update in the application.';
       case 'PROMOTION':
-        return 'Uma nova oferta está disponível no MeatShop.';
+        return 'A new offer is available on MeatShop.';
       default:
-        return 'Você recebeu uma nova atualização no MeatShop.';
+        return 'You received a new MeatShop update.';
     }
   }
 }

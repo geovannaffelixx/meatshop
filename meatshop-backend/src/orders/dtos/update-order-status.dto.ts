@@ -4,7 +4,7 @@ import { OrderStatus } from '../enums/order-status.enum';
 
 export class UpdateOrderStatusDto {
   @ApiProperty({
-    description: 'Novo status do pedido',
+    description: 'New order status',
     enum: OrderStatus,
     example: OrderStatus.PREPARING,
   })

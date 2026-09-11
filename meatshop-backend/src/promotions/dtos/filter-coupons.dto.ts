@@ -5,9 +5,24 @@ import { CouponType } from '../enums/coupon-type.enum';
 
 export class FilterCouponsDto {
   @ApiPropertyOptional() @IsOptional() @IsString() search?: string;
-  @ApiPropertyOptional({ enum: CouponType }) @IsOptional() @IsEnum(CouponType) type?: CouponType;
-  @ApiPropertyOptional() @IsOptional() @Type(() => Number) @IsInt() @Min(1) unit_id?: number;
-  @ApiPropertyOptional() @IsOptional() @Type(() => Boolean) @IsBoolean() active?: boolean;
+  @ApiPropertyOptional({ enum: CouponType })
+  @IsOptional()
+  @IsEnum(CouponType)
+  type?: CouponType;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  unit_id?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  active?: boolean;
+
   @ApiPropertyOptional({ default: 1 })
   @IsOptional()
   @Type(() => Number)

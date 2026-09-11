@@ -19,7 +19,7 @@ describe('App Smoke Test', () => {
     await app?.close();
   });
 
-  it('A aplicação deve inicializar sem erros', async () => {
+  it('initializes the application without errors', async () => {
     expect(app).toBeDefined();
   });
 });

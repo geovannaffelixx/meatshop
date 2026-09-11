@@ -25,7 +25,9 @@ export class DeleteExpenseUseCase {
       throw new NotFoundException('Expense not found');
     }
 
-    const unit = await this.unitRepository.findOne({ where: { id: expense.unit_id } });
+    const unit = await this.unitRepository.findOne({
+      where: { id: expense.unit_id },
+    });
     if (unit) {
       await this.unitAuthorizationService.assertHasPermission(
         currentUser,
@@ -35,6 +37,6 @@ export class DeleteExpenseUseCase {
     }
 
     await this.expenseRepository.remove(expense);
-    this.logger.warn('Despesa removida', { id, unitId: expense.unit_id });
+    this.logger.warn('Expense deleted', { id, unitId: expense.unit_id });
   }
 }

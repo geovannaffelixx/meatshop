@@ -4,10 +4,8 @@ export class RebuildCatalogSchema1786995793765 implements MigrationInterface {
   name = 'RebuildCatalogSchema1786995793765';
 
   async up(queryRunner: QueryRunner): Promise<void> {
-    // ── Drop old, DER-divergent products table ──────────────────────────
     await queryRunner.query(`DROP TABLE IF EXISTS "products" CASCADE`);
 
-    // ── categories ───────────────────────────────────────────────────────
     await queryRunner.query(`
             CREATE TABLE "categories" (
                 "id" SERIAL NOT NULL,
@@ -24,7 +22,6 @@ export class RebuildCatalogSchema1786995793765 implements MigrationInterface {
             REFERENCES "units"("id") ON DELETE CASCADE ON UPDATE NO ACTION
         `);
 
-    // ── products ─────────────────────────────────────────────────────────
     await queryRunner.query(`
             CREATE TABLE "products" (
                 "id" SERIAL NOT NULL,
@@ -51,7 +48,6 @@ export class RebuildCatalogSchema1786995793765 implements MigrationInterface {
             REFERENCES "categories"("id") ON DELETE RESTRICT ON UPDATE NO ACTION
         `);
 
-    // ── stock ────────────────────────────────────────────────────────────
     await queryRunner.query(`
             CREATE TABLE "stock" (
                 "id" SERIAL NOT NULL,

@@ -36,7 +36,9 @@ export class CreateRecipeUseCase {
   ) {}
 
   async execute(dto: CreateRecipeDto, currentUser: User): Promise<RecipeDetailResponseDto> {
-    const unit = await this.unitRepository.findOne({ where: { id: dto.unit_id } });
+    const unit = await this.unitRepository.findOne({
+      where: { id: dto.unit_id },
+    });
     if (!unit) {
       throw new NotFoundException('Unit not found');
     }
@@ -89,7 +91,10 @@ export class CreateRecipeUseCase {
 
   private async persistIngredients(recipeId: number, dto: CreateRecipeDto): Promise<void> {
     const ingredients = dto.ingredients.map((ingredient) =>
-      this.recipeIngredientRepository.create({ ...ingredient, recipe_id: recipeId }),
+      this.recipeIngredientRepository.create({
+        ...ingredient,
+        recipe_id: recipeId,
+      }),
     );
     await this.recipeIngredientRepository.save(ingredients);
   }
@@ -104,7 +109,9 @@ export class CreateRecipeUseCase {
   }
 
   private async assertProductsBelongToUnit(productIds: number[], unitId: number): Promise<void> {
-    const products = await this.productRepository.find({ where: { id: In(productIds) } });
+    const products = await this.productRepository.find({
+      where: { id: In(productIds) },
+    });
 
     if (products.length !== productIds.length || products.some((p) => p.unit_id !== unitId)) {
       throw new BadRequestException('All featured products must belong to the recipe unit');

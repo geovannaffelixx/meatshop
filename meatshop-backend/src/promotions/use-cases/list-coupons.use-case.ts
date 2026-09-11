@@ -21,7 +21,7 @@ export class ListCouponsUseCase {
       if (!filters.unit_id)
         throw new BadRequestException({
           code: 'COUPON_UNIT_REQUIRED',
-          message: 'Informe a unidade para consultar os cupons.',
+          message: 'Provide the unit to query coupons.',
         });
       await this.authorization.assertHasPermission(
         actor,
@@ -75,7 +75,12 @@ export class ListCouponsUseCase {
       .getManyAndCount();
     return {
       data,
-      meta: { page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) },
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+      },
     };
   }
 }

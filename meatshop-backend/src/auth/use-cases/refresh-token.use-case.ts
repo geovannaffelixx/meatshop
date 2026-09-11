@@ -31,7 +31,6 @@ export class RefreshTokenUseCase {
 
     this.assertTokenIsValid(stored);
 
-    // Token rotation: revoke old, issue new
     stored!.revoked = true;
     await this.refreshTokenRepository.save(stored!);
 
@@ -46,8 +45,6 @@ export class RefreshTokenUseCase {
 
     return { access_token: accessToken, refresh_token: newRefreshToken };
   }
-
-  // ─── Private helpers ────────────────────────────────────────────────────────
 
   private assertTokenIsValid(token: RefreshTokenEntity | null): void {
     if (!token) {

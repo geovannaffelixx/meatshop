@@ -16,9 +16,11 @@ export class GetProductUseCase {
     private readonly productImageRepository: Repository<ProductImage>,
   ) {}
 
-  async execute(
-    productId: number,
-  ): Promise<{ product: Product; stock: Stock | null; images: ProductImage[] }> {
+  async execute(productId: number): Promise<{
+    product: Product;
+    stock: Stock | null;
+    images: ProductImage[];
+  }> {
     const product = await this.productRepository.findOne({
       where: { id: productId },
     });

@@ -34,7 +34,9 @@ export class SetBusinessHoursUseCase {
     dto.days.forEach((day) => this.assertValidTimeRange(day));
     await Promise.all(dto.days.map((day) => this.upsertDay(unitId, day)));
 
-    const updated = await this.businessHoursRepository.find({ where: { unit_id: unitId } });
+    const updated = await this.businessHoursRepository.find({
+      where: { unit_id: unitId },
+    });
     return BusinessHoursResponseDto.fromEntities(sortByWeekday(updated));
   }
 
@@ -50,7 +52,11 @@ export class SetBusinessHoursUseCase {
     });
 
     const entity =
-      existing ?? this.businessHoursRepository.create({ unit_id: unitId, weekday: day.weekday });
+      existing ??
+      this.businessHoursRepository.create({
+        unit_id: unitId,
+        weekday: day.weekday,
+      });
 
     entity.is_open = day.is_open;
     entity.opening_time = day.is_open ? day.opening_time! : null;

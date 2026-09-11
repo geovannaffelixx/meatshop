@@ -5,38 +5,38 @@ import { User } from '../entities/user.entity';
 
 export class UserResponseDto {
   @ApiProperty({
-    description: 'Identificador único do usuário',
+    description: 'Unique user identifier',
     example: 1,
   })
   id: number;
 
   @ApiProperty({
-    description: 'Nome completo do usuário',
-    example: 'João da Silva',
+    description: 'User full name',
+    example: 'John Smith',
   })
   name: string | null;
 
   @ApiProperty({
-    description: 'Endereço de e-mail do usuário',
-    example: 'joao.silva@example.com',
+    description: 'User email address',
+    example: 'john.smith@example.com',
   })
   email: string;
 
   @ApiProperty({
-    description: 'CPF do usuário',
+    description: 'User CPF',
     example: '123.456.789-00',
   })
   cpf: string | null;
 
   @ApiProperty({
-    description: 'Papel global do usuário no sistema',
+    description: 'User global role in the system',
     example: GlobalRole.USER,
     enum: GlobalRole,
   })
   global_role: GlobalRole;
 
   @ApiProperty({
-    description: 'Perfil de uso do aplicativo pelo usuário',
+    description: 'User application usage profile',
     example: AppProfile.CLIENT,
     enum: AppProfile,
   })
@@ -49,13 +49,13 @@ export class UserResponseDto {
   profile_complete: boolean;
 
   @ApiProperty({
-    description: 'Data de criação do usuário',
+    description: 'User creation date',
     example: '2024-01-15T10:30:00.000Z',
   })
   created_at: Date;
 
   @ApiProperty({
-    description: 'URL da foto de perfil do usuário',
+    description: 'User profile picture URL',
     example: '/uploads/avatars/1700000000000-foto.jpg',
     nullable: true,
   })

@@ -31,7 +31,7 @@ import { MediaStorageService } from '../storage/media-storage.service';
 
 function imageFileFilter(_req: any, file: Express.Multer.File, cb: any) {
   if (!file.mimetype.match(/^image\/(png|jpe?g|webp|gif)$/)) {
-    return cb(new BadRequestException('Tipo de imagem inválido'), false);
+    return cb(new BadRequestException('Invalid image type'), false);
   }
   cb(null, true);
 }
@@ -47,20 +47,26 @@ export class RecipesUploadController {
 
   @Post(':id/image')
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Envia ou atualiza a foto de capa da receita' })
+  @ApiOperation({ summary: 'Uploads or updates the recipe cover image' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
-    schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } },
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
   })
-  @ApiResponse({ status: 201, description: 'Imagem atualizada com sucesso' })
-  @ApiResponse({ status: 400, description: 'Arquivo inválido ou não enviado' })
-  @ApiResponse({ status: 403, description: 'Usuário não administra a unidade da receita' })
-  @ApiResponse({ status: 404, description: 'Receita não encontrada' })
+  @ApiResponse({ status: 201, description: 'Image updated successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid file or no file provided' })
+  @ApiResponse({
+    status: 403,
+    description: 'User does not manage the recipe unit',
+  })
+  @ApiResponse({ status: 404, description: 'Recipe not found' })
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
       fileFilter: imageFileFilter,
-      limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+      limits: { fileSize: 2 * 1024 * 1024 },
     }),
   )
   async uploadImage(
@@ -68,10 +74,10 @@ export class RecipesUploadController {
     @UploadedFile() file: Express.Multer.File,
     @CurrentUser() currentUser: User,
   ) {
-    if (!file) throw new BadRequestException('Arquivo não enviado');
+    if (!file) throw new BadRequestException('File not provided');
 
     const recipe = await this.recipes.findOne({ where: { id } });
-    if (!recipe) throw new NotFoundException('Receita não encontrada');
+    if (!recipe) throw new NotFoundException('Recipe not found');
 
     await this.unitAuthorizationService.assertHasPermission(
       currentUser,

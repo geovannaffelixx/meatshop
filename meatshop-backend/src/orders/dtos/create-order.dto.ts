@@ -27,7 +27,7 @@ export class UnitCouponDto {
 
 export class CreateOrderDto {
   @ApiProperty({
-    description: 'Tipo de entrega do pedido',
+    description: 'Order delivery type',
     enum: DeliveryType,
     example: DeliveryType.DELIVERY,
   })
@@ -35,7 +35,7 @@ export class CreateOrderDto {
   delivery_type: DeliveryType;
 
   @ApiPropertyOptional({
-    description: 'Id do endereço de entrega. Obrigatório quando delivery_type é DELIVERY',
+    description: 'Delivery address ID. Required when delivery_type is DELIVERY',
     example: 12,
   })
   @ValidateIf((dto) => dto.delivery_type === DeliveryType.DELIVERY)
@@ -43,7 +43,7 @@ export class CreateOrderDto {
   address_id?: number;
 
   @ApiPropertyOptional({
-    description: 'Código do cupom de desconto a ser aplicado no pedido',
+    description: 'Discount coupon code to apply to the order',
     example: 'PROMO10',
   })
   @IsOptional()
@@ -51,7 +51,7 @@ export class CreateOrderDto {
   coupon_code?: string;
 
   @ApiPropertyOptional({
-    description: 'Cupons por unidade para carrinhos multiunidade',
+    description: 'Coupons by unit for multi-unit carts',
     type: UnitCouponDto,
     isArray: true,
   })
@@ -62,7 +62,7 @@ export class CreateOrderDto {
   coupon_codes?: UnitCouponDto[];
 
   @ApiPropertyOptional({
-    description: 'Data e hora agendada para a entrega do pedido',
+    description: 'Scheduled order delivery date and time',
     example: '2026-08-20T18:00:00.000Z',
   })
   @IsOptional()
@@ -71,7 +71,7 @@ export class CreateOrderDto {
 
   @ApiPropertyOptional({
     enum: PaymentMethod,
-    description: 'Método escolhido pelo cliente',
+    description: 'Payment method selected by the customer',
   })
   @IsOptional()
   @IsEnum(PaymentMethod)

@@ -3,25 +3,30 @@ import { Type } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, IsString } from 'class-validator';
 
 export class FilterRecipesDto {
-  @ApiPropertyOptional({ description: 'Filtra receitas de uma unidade', example: 1 })
+  @ApiPropertyOptional({ description: 'Filters recipes by unit', example: 1 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   unit_id?: number;
 
-  @ApiPropertyOptional({ description: 'Filtra por tag/categoria', example: 'Bovino' })
+  @ApiPropertyOptional({
+    description: 'Filters by tag or category',
+    example: 'Beef',
+  })
   @IsOptional()
   @IsString()
   tag?: string;
 
-  @ApiPropertyOptional({ description: 'Filtra por status de ativação', example: 'true' })
+  @ApiPropertyOptional({
+    description: 'Filters by activation status',
+    example: 'true',
+  })
   @IsOptional()
   @IsIn(['true', 'false'])
   active?: 'true' | 'false';
 
   @ApiPropertyOptional({
-    description:
-      'Se true, ordena pela receita da semana mais recente primeiro (week_start <= agora)',
+    description: 'When true, sorts by the most recent recipe of the week first (week_start <= now)',
     example: 'true',
   })
   @IsOptional()

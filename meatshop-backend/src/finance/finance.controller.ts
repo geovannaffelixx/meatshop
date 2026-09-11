@@ -36,47 +36,70 @@ export class FinanceController {
   ) {}
 
   @ApiOperation({
-    summary: 'Retorna a receita diária de um mês (pedidos entregues) de uma unidade',
+    summary: 'Returns daily revenue for a month from delivered orders for a unit',
   })
-  @ApiResponse({ status: 200, description: 'Receita mensal retornada com sucesso' })
-  @ApiResponse({ status: 403, description: 'Usuário não administra a unidade informada' })
+  @ApiResponse({
+    status: 200,
+    description: 'Monthly revenue returned successfully',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'User does not manage the specified unit',
+  })
   @Get('revenue')
   revenue(@Query() query: FinanceReportQueryDto, @CurrentUser() currentUser: User) {
     return this.getMonthlyRevenueUseCase.execute(query, currentUser);
   }
 
   @ApiOperation({
-    summary:
-      'Retorna o resumo financeiro do mês (receitas, despesas e formas de pagamento) de uma unidade',
+    summary: 'Returns a unit monthly financial summary with revenue, expenses, and payment methods',
   })
-  @ApiResponse({ status: 200, description: 'Resumo financeiro retornado com sucesso' })
-  @ApiResponse({ status: 403, description: 'Usuário não administra a unidade informada' })
+  @ApiResponse({
+    status: 200,
+    description: 'Financial summary returned successfully',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'User does not manage the specified unit',
+  })
   @Get('summary')
   summary(@Query() query: FinanceReportQueryDto, @CurrentUser() currentUser: User) {
     return this.getFinanceSummaryUseCase.execute(query, currentUser);
   }
 
-  @ApiOperation({ summary: 'Lista as despesas registradas em um mês para uma unidade' })
-  @ApiResponse({ status: 200, description: 'Lista de despesas retornada com sucesso' })
-  @ApiResponse({ status: 403, description: 'Usuário não administra a unidade informada' })
+  @ApiOperation({ summary: 'Lists expenses recorded for a unit in a month' })
+  @ApiResponse({
+    status: 200,
+    description: 'Expense list returned successfully',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'User does not manage the specified unit',
+  })
   @Get('expenses')
   expenses(@Query() query: FinanceReportQueryDto, @CurrentUser() currentUser: User) {
     return this.listExpensesUseCase.execute(query, currentUser);
   }
 
-  @ApiOperation({ summary: 'Registra uma nova despesa para uma unidade' })
-  @ApiResponse({ status: 201, description: 'Despesa criada com sucesso' })
-  @ApiResponse({ status: 403, description: 'Usuário não administra a unidade informada' })
-  @ApiResponse({ status: 404, description: 'Unidade não encontrada' })
+  @ApiOperation({ summary: 'Creates a new expense for a unit' })
+  @ApiResponse({ status: 201, description: 'Expense created successfully' })
+  @ApiResponse({
+    status: 403,
+    description: 'User does not manage the specified unit',
+  })
+  @ApiResponse({ status: 404, description: 'Unit not found' })
   @Post('expenses')
   create(@Body() dto: CreateExpenseDto, @CurrentUser() currentUser: User) {
     return this.createExpenseUseCase.execute(dto, currentUser);
   }
 
-  @ApiOperation({ summary: 'Atualiza uma despesa existente' })
-  @ApiResponse({ status: 200, description: 'Despesa atualizada com sucesso' })
-  @ApiResponse({ status: 403, description: 'Usuário não administra a unidade da despesa' })
-  @ApiResponse({ status: 404, description: 'Despesa não encontrada' })
+  @ApiOperation({ summary: 'Updates an existing expense' })
+  @ApiResponse({ status: 200, description: 'Expense updated successfully' })
+  @ApiResponse({
+    status: 403,
+    description: 'User does not manage the expense unit',
+  })
+  @ApiResponse({ status: 404, description: 'Expense not found' })
   @Put('expenses/:id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -86,10 +109,13 @@ export class FinanceController {
     return this.updateExpenseUseCase.execute(id, dto, currentUser);
   }
 
-  @ApiOperation({ summary: 'Remove uma despesa' })
-  @ApiResponse({ status: 200, description: 'Despesa removida com sucesso' })
-  @ApiResponse({ status: 403, description: 'Usuário não administra a unidade da despesa' })
-  @ApiResponse({ status: 404, description: 'Despesa não encontrada' })
+  @ApiOperation({ summary: 'Deletes an expense' })
+  @ApiResponse({ status: 200, description: 'Expense deleted successfully' })
+  @ApiResponse({
+    status: 403,
+    description: 'User does not manage the expense unit',
+  })
+  @ApiResponse({ status: 404, description: 'Expense not found' })
   @Delete('expenses/:id')
   async delete(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
     await this.deleteExpenseUseCase.execute(id, currentUser);

@@ -212,7 +212,7 @@ export class CreateOrderUseCase {
     if (items.length === 0) {
       throw new BadRequestException({
         code: 'EMPTY_CART',
-        message: 'O carrinho está vazio.',
+        message: 'The cart is empty.',
       });
     }
     const unavailable = items.filter(
@@ -221,7 +221,7 @@ export class CreateOrderUseCase {
     if (unavailable.length > 0) {
       throw new BadRequestException({
         code: 'PRODUCT_UNAVAILABLE',
-        message: `Produtos indisponíveis: ${unavailable.map((item) => item.product.name).join(', ')}.`,
+        message: `Unavailable products: ${unavailable.map((item) => item.product.name).join(', ')}.`,
       });
     }
   }
@@ -242,7 +242,7 @@ export class CreateOrderUseCase {
     if (insufficient.length > 0) {
       throw new BadRequestException({
         code: 'INSUFFICIENT_STOCK',
-        message: `Estoque insuficiente: ${insufficient.map((item) => item.product.name).join(', ')}.`,
+        message: `Insufficient stock: ${insufficient.map((item) => item.product.name).join(', ')}.`,
       });
     }
   }
@@ -333,7 +333,7 @@ export class CreateOrderUseCase {
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)) {
       throw new BadRequestException({
         code: 'INVALID_IDEMPOTENCY_KEY',
-        message: 'Idempotency-Key deve ser um UUID v4 válido.',
+        message: 'Idempotency-Key must be a valid UUID v4.',
       });
     }
   }

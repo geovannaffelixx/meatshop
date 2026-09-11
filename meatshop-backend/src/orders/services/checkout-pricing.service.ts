@@ -34,7 +34,7 @@ export class CheckoutPricingService {
     if (dto.coupon_code && grouped.size > 1) {
       throw new BadRequestException({
         code: 'COUPON_UNIT_REQUIRED',
-        message: 'Em carrinhos com mais de uma unidade, informe o cupom por unidade.',
+        message: 'For carts with more than one unit, provide the coupon for each unit.',
       });
     }
 
@@ -43,7 +43,7 @@ export class CheckoutPricingService {
       if (!grouped.has(unitId)) {
         throw new BadRequestException({
           code: 'COUPON_UNIT_NOT_IN_CART',
-          message: `A unidade ${unitId} não pertence ao carrinho atual.`,
+          message: `A unit ${unitId} does not belong to the current cart.`,
         });
       }
     }
