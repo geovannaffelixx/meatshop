@@ -10,6 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/aler
 import { LockIcon } from "lucide-react";
 import Link from "next/link";
 import { apiPost } from "@/shared/lib/api";
+import { RequiredMark } from "@/shared/components/ui/required-mark";
 
 function isPasswordValid(password: string) {
   return (
@@ -83,7 +84,7 @@ function ResetPasswordFormContent() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <label htmlFor="new-password" className="block text-sm font-medium text-slate-700">
-              Nova senha
+              Nova senha<RequiredMark />
             <PasswordInput
               id="new-password"
               placeholder="Nova senha"
@@ -91,11 +92,12 @@ function ResetPasswordFormContent() {
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="new-password"
               className="mt-1"
+              required
             />
             </label>
 
             <label htmlFor="new-password-confirmation" className="block text-sm font-medium text-slate-700">
-              Confirme a nova senha
+              Confirme a nova senha<RequiredMark />
             <PasswordInput
               id="new-password-confirmation"
               placeholder="Confirmar nova senha"
@@ -103,6 +105,7 @@ function ResetPasswordFormContent() {
               onChange={(e) => setPasswordConfirmation(e.target.value)}
               autoComplete="new-password"
               className="mt-1"
+              required
             />
             </label>
 

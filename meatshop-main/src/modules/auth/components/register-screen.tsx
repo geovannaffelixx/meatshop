@@ -10,13 +10,14 @@ import { CheckCircle2, Image as ImageIcon, Search } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
 import { PasswordInput } from "@/shared/components/ui/password-input";
 import { Spinner } from "@/shared/components/ui/spinner";
+import { RequiredMark } from "@/shared/components/ui/required-mark";
 import { apiPost, API_URL } from "@/shared/lib/api";
 
 function RequiredLabel({ label, htmlFor, required = false }: { label: string; htmlFor: string; required?: boolean }) {
   return (
     <label htmlFor={htmlFor} className="font-medium text-sm text-gray-700">
       {label}
-      {required && <span className="text-red-500 ml-1">*</span>}
+      {required && <RequiredMark />}
     </label>
   );
 }
@@ -272,6 +273,8 @@ export function RegisterScreen() {
                   value={form.unitName}
                   onChange={handleChange("unitName")}
                   className={inputClass("unitName")}
+                  placeholder="Ex.: Açougue Central"
+                  required
                 />
                 <RequiredLabel htmlFor="unit-cnpj" label="CNPJ" required />
                 <Input
@@ -283,6 +286,8 @@ export function RegisterScreen() {
                     setForm((f) => ({ ...f, cnpj: value }));
                   }}
                   className={inputClass("cnpj")}
+                  placeholder="00.000.000/0000-00"
+                  required
                 />
 
                 <label className="flex items-center gap-2 cursor-pointer w-fit px-4 py-2 border rounded-lg bg-gray-50 hover:bg-gray-100 mt-2">
@@ -328,6 +333,7 @@ export function RegisterScreen() {
                     }}
                     className={inputClass("zipCode")}
                     placeholder="00000-000"
+                    required
                   />
                   <Button
                     type="button"
@@ -353,6 +359,8 @@ export function RegisterScreen() {
                   value={form.street}
                   onChange={handleChange("street")}
                   className={inputClass("street")}
+                  placeholder="Ex.: Avenida Paulista"
+                  required
                 />
                 <RequiredLabel htmlFor="unit-number" label="Número" />
                 <div className="flex items-center gap-2">
@@ -362,6 +370,7 @@ export function RegisterScreen() {
                     onChange={handleChange("number")}
                     disabled={withoutNumber}
                     className={`${inputClass("number")} ${withoutNumber ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                    placeholder="Ex.: 1000"
                   />
                   <label className="flex items-center gap-1 text-sm">
                     <input type="checkbox" checked={withoutNumber} onChange={handleWithoutNumberChange} />
@@ -369,29 +378,41 @@ export function RegisterScreen() {
                   </label>
                 </div>
                 <RequiredLabel htmlFor="unit-complement" label="Complemento" />
-                <Input id="unit-complement" value={form.complement} onChange={handleChange("complement")} />
+                <Input id="unit-complement" value={form.complement} onChange={handleChange("complement")} placeholder="Ex.: Loja 2" />
                 <RequiredLabel htmlFor="unit-neighborhood" label="Bairro" required />
                 <Input
                   id="unit-neighborhood"
                   value={form.neighborhood}
                   onChange={handleChange("neighborhood")}
                   className={inputClass("neighborhood")}
+                  placeholder="Ex.: Centro"
+                  required
                 />
-                <RequiredLabel htmlFor="unit-city" label="Cidade" required />
-                <Input
-                  id="unit-city"
-                  value={form.city}
-                  onChange={handleChange("city")}
-                  className={inputClass("city")}
-                />
-                <RequiredLabel htmlFor="unit-state" label="Estado (UF)" required />
-                <Input
-                  id="unit-state"
-                  value={form.state}
-                  maxLength={2}
-                  onChange={(e) => setForm((f) => ({ ...f, state: e.target.value }))}
-                  className={inputClass("state")}
-                />
+                <div className="grid grid-cols-[minmax(0,1fr)_6rem] gap-3">
+                  <div className="grid gap-1">
+                    <RequiredLabel htmlFor="unit-city" label="Cidade" required />
+                    <Input
+                      id="unit-city"
+                      value={form.city}
+                      onChange={handleChange("city")}
+                      className={inputClass("city")}
+                      placeholder="Ex.: Cuiabá"
+                      required
+                    />
+                  </div>
+                  <div className="grid gap-1">
+                    <RequiredLabel htmlFor="unit-state" label="UF" required />
+                    <Input
+                      id="unit-state"
+                      value={form.state}
+                      maxLength={2}
+                      onChange={(e) => setForm((f) => ({ ...f, state: e.target.value.toUpperCase() }))}
+                      className={inputClass("state")}
+                      placeholder="MT"
+                      required
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -405,6 +426,8 @@ export function RegisterScreen() {
                   value={form.ownerName}
                   onChange={handleChange("ownerName")}
                   className={inputClass("ownerName")}
+                  placeholder="Ex.: Maria da Silva"
+                  required
                 />
                 <RequiredLabel htmlFor="owner-email" label="E-mail" required />
                 <Input
@@ -414,6 +437,8 @@ export function RegisterScreen() {
                   value={form.email}
                   onChange={handleChange("email")}
                   className={inputClass("email")}
+                  placeholder="nome@empresa.com.br"
+                  required
                 />
                 <RequiredLabel htmlFor="owner-cpf" label="CPF" required />
                 <Input
@@ -425,6 +450,8 @@ export function RegisterScreen() {
                     setForm((f) => ({ ...f, cpf: value }));
                   }}
                   className={inputClass("cpf")}
+                  placeholder="000.000.000-00"
+                  required
                 />
                 <RequiredLabel htmlFor="owner-password" label="Senha" required />
                 <PasswordInput
@@ -433,6 +460,8 @@ export function RegisterScreen() {
                   onChange={handleChange("password")}
                   autoComplete="new-password"
                   className={inputClass("password")}
+                  placeholder="Digite uma senha segura"
+                  required
                 />
                 <RequiredLabel htmlFor="owner-password-confirmation" label="Confirme sua senha" required />
                 <PasswordInput
@@ -441,6 +470,8 @@ export function RegisterScreen() {
                   onChange={handleChange("confirmPassword")}
                   autoComplete="new-password"
                   className={inputClass("confirmPassword")}
+                  placeholder="Repita a senha"
+                  required
                 />
                 <p className="text-sm text-gray-500 mt-1">
                   Mínimo 8 caracteres, com maiúscula, minúscula, número e caractere especial.

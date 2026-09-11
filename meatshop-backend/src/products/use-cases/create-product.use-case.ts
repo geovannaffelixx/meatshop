@@ -41,7 +41,10 @@ export class CreateProductUseCase {
     );
     await this.ensureCategoryBelongsToUnit(dto.category_id, dto.unit_id);
 
-    const product = this.productRepository.create(dto);
+    const product = this.productRepository.create({
+      ...dto,
+      description: dto.description?.trim() || null,
+    });
     await this.productRepository.save(product);
 
     await this.stockRepository.save(

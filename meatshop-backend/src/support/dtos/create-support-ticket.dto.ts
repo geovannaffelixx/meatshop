@@ -43,12 +43,12 @@ export class CreateSupportTicketDto {
   @MaxLength(150)
   subject: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Detailed description of the problem or question',
     example: 'My order #123 is two hours late and I have not received an update.',
   })
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   @MaxLength(2000)
-  description: string;
+  description?: string;
 }

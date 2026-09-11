@@ -9,6 +9,7 @@ import { Spinner } from "@/shared/components/ui/spinner";
 import { MailIcon } from "lucide-react";
 import Link from "next/link";
 import { apiPost } from "@/shared/lib/api";
+import { RequiredMark } from "@/shared/components/ui/required-mark";
 
 export function ForgotPasswordScreen() {
   const [email, setEmail] = useState("");
@@ -58,15 +59,16 @@ export function ForgotPasswordScreen() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="recovery-email" className="block text-sm font-medium text-gray-700 mb-1">
-                E-mail
+                E-mail<RequiredMark />
               </label>
               <Input
                 id="recovery-email"
                 type="email"
-                placeholder="Digite seu e-mail"
+                placeholder="nome@empresa.com.br"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
+                required
               />
             </div>
 

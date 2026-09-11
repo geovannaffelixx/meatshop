@@ -8,6 +8,7 @@ import { Spinner } from "@/shared/components/ui/spinner"
 import { apiGet, apiPatch, apiPost, API_URL, resolveAssetUrl } from "@/shared/lib/api"
 import { toast } from "@/shared/lib/toast"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
+import { RequiredMark } from "@/shared/components/ui/required-mark"
 
 type StepDraft = { description: string; tip: string }
 type IngredientDraft = { name: string; quantity: string; tip: string }
@@ -18,7 +19,7 @@ type RecipeDetail = {
   id: number
   unit_id: number
   title: string
-  description: string
+  description: string | null
   image_url: string | null
   video_url: string | null
   tag: string | null
@@ -76,7 +77,7 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
     apiGet(`/recipes/${recipeId}`)
       .then((recipe: RecipeDetail) => {
         setTitle(recipe.title)
-        setDescription(recipe.description)
+        setDescription(recipe.description ?? "")
         setTag(recipe.tag ?? "")
         setVideoUrl(recipe.video_url ?? "")
         setActive(recipe.active)
@@ -127,7 +128,6 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
 
   const validate = (): string | null => {
     if (!title.trim()) return "Informe o título da receita."
-    if (!description.trim()) return "Informe a descrição da receita."
     if (steps.some((s) => !s.description.trim())) return "Preencha todos os passos do modo de preparo, ou remova os vazios."
     if (ingredients.some((i) => !i.name.trim() || !i.quantity.trim())) return "Preencha nome e quantidade de todos os ingredientes, ou remova os vazios."
     if (productDrafts.some((p) => !p.product_id || !p.call_to_action.trim())) return "Preencha o produto e a chamada de cada produto em destaque, ou remova os vazios."
@@ -151,7 +151,7 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
     try {
       const payload = {
         title: title.trim(),
-        description: description.trim(),
+        description: description.trim() || undefined,
         tag: tag.trim() || undefined,
         video_url: videoUrl.trim() || undefined,
         active,
@@ -252,13 +252,13 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
           <fieldset className="border border-gray-400 rounded-md px-3 py-2 md:col-span-2">
-            <legend className="text-gray-600 font-medium px-1 text-sm">Título</legend>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} className={fieldClass} />
+            <legend className="text-gray-600 font-medium px-1 text-sm">Título<RequiredMark /></legend>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} className={fieldClass} placeholder="Ex.: Picanha assada com ervas" required />
           </fieldset>
 
           <fieldset className="border border-gray-400 rounded-md px-3 py-2">
             <legend className="text-gray-600 font-medium px-1 text-sm">Tag / categoria</legend>
-            <input value={tag} onChange={(e) => setTag(e.target.value)} placeholder="Ex: Bovino, Suíno, Aves" className={fieldClass} />
+            <input value={tag} onChange={(e) => setTag(e.target.value)} placeholder="Ex.: Bovino, Suíno ou Aves" className={fieldClass} />
           </fieldset>
 
           <fieldset className="border border-gray-400 rounded-md px-3 py-2">
@@ -276,34 +276,37 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
 
           <fieldset className="border border-gray-400 rounded-md px-3 py-2">
             <legend className="text-gray-600 font-medium px-1 text-sm">Vídeo (link do YouTube, opcional)</legend>
-            <input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://..." className={fieldClass} />
+            <input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." className={fieldClass} />
           </fieldset>
 
           <fieldset className="border border-gray-400 rounded-md px-3 py-2 md:col-span-2">
-            <legend className="text-gray-600 font-medium px-1 text-sm">Descrição</legend>
+            <legend className="text-gray-600 font-medium px-1 text-sm">Descrição (opcional)</legend>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="resize-none bg-white/60 w-full h-[80px] p-3 text-sm border border-gray-300 rounded-md focus:outline-none"
+              placeholder="Ex.: Uma receita prática para o almoço de domingo."
             />
           </fieldset>
         </div>
 
         <fieldset className="border border-gray-400 rounded-md px-3 py-2 mb-3">
-          <legend className="text-gray-600 font-medium px-1 text-sm">Ingredientes</legend>
+          <legend className="text-gray-600 font-medium px-1 text-sm">Ingredientes<RequiredMark /></legend>
           <div className="space-y-2">
             {ingredients.map((ingredient, index) => (
               <div key={index} className="grid grid-cols-12 gap-2 items-center">
                 <input
                   value={ingredient.name}
                   onChange={(e) => setIngredients((prev) => prev.map((it, i) => (i === index ? { ...it, name: e.target.value } : it)))}
-                  placeholder="Ingrediente"
+                  placeholder="Ex.: Picanha"
+                  required
                   className={`${fieldClass} col-span-5`}
                 />
                 <input
                   value={ingredient.quantity}
                   onChange={(e) => setIngredients((prev) => prev.map((it, i) => (i === index ? { ...it, quantity: e.target.value } : it)))}
-                  placeholder="Quantidade"
+                  placeholder="Ex.: 1 kg"
+                  required
                   className={`${fieldClass} col-span-2`}
                 />
                 <input
@@ -334,7 +337,7 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
         </fieldset>
 
         <fieldset className="border border-gray-400 rounded-md px-3 py-2 mb-3">
-          <legend className="text-gray-600 font-medium px-1 text-sm">Modo de preparo</legend>
+          <legend className="text-gray-600 font-medium px-1 text-sm">Modo de preparo<RequiredMark /></legend>
           <div className="space-y-2">
             {steps.map((step, index) => (
               <div key={index} className="flex gap-2 items-start">
@@ -346,6 +349,7 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
                     placeholder="Descreva o passo"
                     rows={2}
                     className="resize-none w-full bg-white/60 rounded-md px-3 py-2 text-sm border border-gray-300 focus:outline-none"
+                    required
                   />
                   <input
                     value={step.tip}

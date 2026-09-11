@@ -21,13 +21,13 @@ export class CreateProductDto {
   @MaxLength(150)
   name: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Detailed product description',
     example: 'Premium beef cut, ideal for barbecue',
   })
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  description: string;
+  description?: string;
 
   @ApiProperty({
     description: 'Product sale price',

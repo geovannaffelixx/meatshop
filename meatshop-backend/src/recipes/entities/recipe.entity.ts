@@ -23,8 +23,8 @@ export class Recipe {
   @Column({ type: 'varchar', length: 150 })
   title: string;
 
-  @Column({ type: 'text' })
-  description: string;
+  @Column({ type: 'text', nullable: true })
+  description: string | null;
 
   @Column({ type: 'varchar', nullable: true })
   image_url: string | null;

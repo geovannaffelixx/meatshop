@@ -87,9 +87,6 @@ export class FirebaseExchangeUseCase {
     }
     user.firebase_uid = firebaseUid;
     user.email_verified = true;
-    user.profile_complete = Boolean(
-      user.name?.trim() && user.cpf?.trim() && user.phone?.trim() && user.app_profile,
-    );
     await this.users.save(user);
   }
 

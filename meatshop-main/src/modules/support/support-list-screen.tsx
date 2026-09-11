@@ -5,6 +5,7 @@ import { ImagePlus, LifeBuoy, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { apiGet, apiPost, apiUpload } from "@/shared/lib/api";
 import { Spinner } from "@/shared/components/ui/spinner";
+import { RequiredMark } from "@/shared/components/ui/required-mark";
 import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
@@ -200,7 +201,7 @@ export function SupportListScreen() {
             </DialogHeader>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="text-sm font-medium">
-                Categoria
+                Categoria<RequiredMark />
                 <select
                   value={form.category}
                   onChange={(event) =>
@@ -210,6 +211,7 @@ export function SupportListScreen() {
                     })
                   }
                   className="input mt-1"
+                  required
                 >
                   {Object.entries(categoryLabels).map(([value, label]) => (
                     <option key={value} value={value}>
@@ -239,7 +241,7 @@ export function SupportListScreen() {
               </label>
             </div>
             <label className="block text-sm font-medium">
-              Assunto
+              Assunto<RequiredMark />
               <Input
                 required
                 maxLength={150}
@@ -248,12 +250,12 @@ export function SupportListScreen() {
                   setForm({ ...form, subject: event.target.value })
                 }
                 className="mt-1"
+                placeholder="Ex.: Dúvida sobre um pedido"
               />
             </label>
             <label className="block text-sm font-medium">
-              Descrição
+              Descrição (opcional)
               <Textarea
-                required
                 maxLength={2000}
                 rows={6}
                 value={form.description}
@@ -261,6 +263,7 @@ export function SupportListScreen() {
                   setForm({ ...form, description: event.target.value })
                 }
                 className="mt-1"
+                placeholder="Ex.: Informe os detalhes que podem ajudar no atendimento."
               />
             </label>
             <label className="block text-sm font-medium">
@@ -273,6 +276,7 @@ export function SupportListScreen() {
                   setForm({ ...form, order_id: event.target.value })
                 }
                 className="mt-1"
+                placeholder="Ex.: 1234"
               />
             </label>
             <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 p-4 text-sm text-slate-600 hover:bg-slate-50">

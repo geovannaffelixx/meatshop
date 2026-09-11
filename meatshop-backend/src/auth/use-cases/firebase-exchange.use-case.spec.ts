@@ -108,6 +108,31 @@ describe('FirebaseExchangeUseCase', () => {
     expect(users.save).toHaveBeenCalledWith(localUser);
   });
 
+  it('preserves a completed panel profile when linking Firebase identity', async () => {
+    const passwordHash = await bcrypt.hash('correct-password', 4);
+    const localUser = {
+      id: 1,
+      name: 'Unit Owner',
+      email: identity.email,
+      cpf: '12345678901',
+      phone: null,
+      firebase_uid: null,
+      password_hash: passwordHash,
+      app_profile: null,
+      global_role: GlobalRole.USER,
+      profile_complete: true,
+      is_active: true,
+      locked_until: null,
+      created_at: new Date(),
+      avatar_url: null,
+    };
+    const { useCase } = fixture([localUser]);
+
+    await useCase.execute('firebase-token', 'correct-password');
+
+    expect(localUser.profile_complete).toBe(true);
+  });
+
   it('rejects an unverified Firebase email', async () => {
     const { useCase, firebase } = fixture();
     firebase.verifyIdToken.mockResolvedValueOnce({

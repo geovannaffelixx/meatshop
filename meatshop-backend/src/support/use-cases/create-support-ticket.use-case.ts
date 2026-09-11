@@ -31,20 +31,22 @@ export class CreateSupportTicketUseCase {
           unit_id: dto.unit_id ?? null,
           order_id: dto.order_id ?? null,
           subject: dto.subject.trim(),
-          description: dto.description.trim(),
+          description: dto.description?.trim() || null,
           category: dto.category,
           priority: dto.priority,
           last_message_at: new Date(),
         }),
       );
-      await manager.save(
-        SupportMessage,
-        manager.create(SupportMessage, {
-          ticket_id: created.id,
-          sender_id: currentUser.id,
-          message: dto.description.trim(),
-        }),
-      );
+      if (dto.description?.trim()) {
+        await manager.save(
+          SupportMessage,
+          manager.create(SupportMessage, {
+            ticket_id: created.id,
+            sender_id: currentUser.id,
+            message: dto.description.trim(),
+          }),
+        );
+      }
       return created;
     });
     await this.notifySupportTeam(ticket);

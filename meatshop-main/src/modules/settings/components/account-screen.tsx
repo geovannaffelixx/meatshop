@@ -7,6 +7,7 @@ import { PasswordInput } from "@/shared/components/ui/password-input";
 import { API_URL, apiPatch, apiPost } from "@/shared/lib/api";
 import { toast } from "@/shared/lib/toast";
 import { PageHeader } from "@/shared/components/page-header";
+import { RequiredMark } from "@/shared/components/ui/required-mark";
 
 function formatCpf(cpf: string) {
   const digits = cpf.replace(/\D/g, "");
@@ -153,22 +154,24 @@ function AccountForm() {
 
         <form onSubmit={submit} className="mt-6 grid gap-4 md:grid-cols-2">
           <label className="text-sm font-medium text-gray-700 md:col-span-2">
-            Nome completo
+            Nome completo<RequiredMark />
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
               className="mt-1 w-full rounded-md border px-3 py-2"
+              placeholder="Ex.: Maria da Silva"
               required
             />
           </label>
 
           <label className="text-sm font-medium text-gray-700">
-            E-mail
+            E-mail<RequiredMark />
             <input
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               className="mt-1 w-full rounded-md border px-3 py-2"
+              placeholder="nome@empresa.com.br"
               required
             />
             {emailChanged && (
@@ -210,32 +213,35 @@ function AccountForm() {
         </p>
         <form onSubmit={changePassword} className="mt-6 grid gap-4 md:grid-cols-2">
           <label className="text-sm font-medium text-gray-700 md:col-span-2">
-            Senha atual
+            Senha atual<RequiredMark />
             <PasswordInput
               value={currentPassword}
               onChange={(event) => setCurrentPassword(event.target.value)}
               autoComplete="current-password"
               className="mt-1 w-full"
+              placeholder="Digite sua senha atual"
               required
             />
           </label>
           <label className="text-sm font-medium text-gray-700">
-            Nova senha
+            Nova senha<RequiredMark />
             <PasswordInput
               value={newPassword}
               onChange={(event) => setNewPassword(event.target.value)}
               autoComplete="new-password"
               className="mt-1 w-full"
+              placeholder="Digite uma nova senha"
               required
             />
           </label>
           <label className="text-sm font-medium text-gray-700">
-            Confirmar nova senha
+            Confirmar nova senha<RequiredMark />
             <PasswordInput
               value={passwordConfirmation}
               onChange={(event) => setPasswordConfirmation(event.target.value)}
               autoComplete="new-password"
               className="mt-1 w-full"
+              placeholder="Repita a nova senha"
               required
             />
           </label>

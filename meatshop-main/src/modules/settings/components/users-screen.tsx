@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
 import { PasswordInput } from "@/shared/components/ui/password-input";
 import { Spinner } from "@/shared/components/ui/spinner";
+import { RequiredMark } from "@/shared/components/ui/required-mark";
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/shared/lib/api";
 import { toast } from "@/shared/lib/toast";
 import { Button } from "@/shared/components/ui/button";
@@ -124,7 +125,7 @@ function TeamManager() {
 
   const input = (key: keyof NewMember, label: string, type = "text") => (
     <label className="text-sm font-medium text-gray-700">
-      {label}
+      {label}<RequiredMark />
       {type === "password" ? (
         <PasswordInput
           value={form[key]}
@@ -132,6 +133,7 @@ function TeamManager() {
             setForm((current) => ({ ...current, [key]: event.target.value }))
           }
           className="mt-1 w-full"
+          placeholder="Digite uma senha temporária"
           required
         />
       ) : (
@@ -142,6 +144,7 @@ function TeamManager() {
             setForm((current) => ({ ...current, [key]: event.target.value }))
           }
           className="mt-1 w-full rounded-md border px-3 py-2"
+          placeholder={key === "name" ? "Ex.: João da Silva" : key === "email" ? "nome@empresa.com.br" : "000.000.000-00"}
           required
         />
       )}
@@ -166,7 +169,7 @@ function TeamManager() {
           {input("cpf", "CPF")}
           {input("password", "Senha temporária", "password")}
           <label className="text-sm font-medium text-gray-700">
-            Cargo
+            Cargo<RequiredMark />
             <select
               value={form.local_role}
               onChange={(event) =>
@@ -176,6 +179,7 @@ function TeamManager() {
                 }))
               }
               className="mt-1 w-full rounded-md border px-3 py-2"
+              required
             >
               <option value="OPERATOR">Operador</option>
               <option value="DELIVERY">Entregador</option>
@@ -184,7 +188,7 @@ function TeamManager() {
           </label>
           {form.local_role === "DELIVERY" && (
             <label className="text-sm font-medium text-gray-700">
-              Modalidade
+              Modalidade<RequiredMark />
               <select
                 value={form.vehicle}
                 onChange={(event) =>
@@ -194,6 +198,7 @@ function TeamManager() {
                   }))
                 }
                 className="mt-1 w-full rounded-md border px-3 py-2"
+                required
               >
                 <option value="MOTORCYCLE">Moto</option>
                 <option value="BIKE">Bicicleta</option>

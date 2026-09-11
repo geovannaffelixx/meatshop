@@ -12,6 +12,7 @@ import {
 } from "@/shared/components/ui/dialog"
 import { Input } from "@/shared/components/ui/input"
 import { Textarea } from "@/shared/components/ui/textarea"
+import { RequiredMark } from "@/shared/components/ui/required-mark"
 import { Spinner } from "@/shared/components/ui/spinner"
 import { Plus, Search, Tags } from "lucide-react"
 import { apiGet, apiPatch, apiPost } from "@/shared/lib/api"
@@ -187,19 +188,22 @@ export function CategoriesScreen() {
 
                   <div className="space-y-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Nome</label>
+                      <label className="text-sm font-medium text-gray-700">Nome<RequiredMark /></label>
                       <Input
                         value={form.name}
                         onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                        placeholder="Ex.: Cortes bovinos"
+                        required
                       />
                     </div>
 
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Descrição</label>
+                      <label className="text-sm font-medium text-gray-700">Descrição (opcional)</label>
                       <Textarea
                         value={form.description}
                         onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                         rows={3}
+                        placeholder="Ex.: Cortes selecionados de carne bovina."
                       />
                     </div>
 

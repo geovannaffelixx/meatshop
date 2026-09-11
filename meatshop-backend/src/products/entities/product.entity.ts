@@ -10,8 +10,8 @@ export class Product {
   @Column({ type: 'varchar', length: 150 })
   name: string;
 
-  @Column({ type: 'text' })
-  description: string;
+  @Column({ type: 'text', nullable: true })
+  description: string | null;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   price: number;

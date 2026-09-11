@@ -10,6 +10,7 @@ import { usePanelAccess } from "@/shared/providers/panel-access-provider";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Spinner } from "@/shared/components/ui/spinner";
+import { RequiredMark } from "@/shared/components/ui/required-mark";
 import {
   Dialog,
   DialogContent,
@@ -419,29 +420,31 @@ function CouponForm({
           </DialogHeader>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Código">
+            <Field label="Código" required>
               <Input
                 required
                 disabled={Boolean(editing)}
                 value={form.code}
                 onChange={(event) => update("code", event.target.value.toUpperCase())}
                 pattern="[A-Za-z0-9_-]+"
+                placeholder="Ex.: BEMVINDO10"
               />
             </Field>
-            <Field label="Nome">
-              <Input required value={form.name} onChange={(event) => update("name", event.target.value)} />
+            <Field label="Nome" required>
+              <Input required value={form.name} onChange={(event) => update("name", event.target.value)} placeholder="Ex.: Boas-vindas" />
             </Field>
-            <Field label="Descrição" className="sm:col-span-2">
+            <Field label="Descrição (opcional)" className="sm:col-span-2">
               <textarea
                 value={form.description}
                 onChange={(event) => update("description", event.target.value)}
                 rows={3}
                 className="input h-auto resize-y"
+                placeholder="Ex.: Desconto para a primeira compra."
               />
             </Field>
 
             {isAdmin && (
-              <Field label="Tipo">
+              <Field label="Tipo" required>
                 <select
                   value={form.type}
                   onChange={(event) => {
@@ -458,7 +461,7 @@ function CouponForm({
             )}
 
             {form.type === "UNIT" && (
-              <Field label="Unidade">
+              <Field label="Unidade" required>
                 <select
                   required
                   value={form.unit_id}
@@ -500,7 +503,7 @@ function CouponForm({
               </div>
             )}
 
-            <Field label="Modalidade">
+            <Field label="Modalidade" required>
               <select
                 value={form.discount_type}
                 onChange={(event) => {
@@ -513,7 +516,7 @@ function CouponForm({
                 <option value="FIXED">Valor fixo</option>
               </select>
             </Field>
-            <Field label={form.discount_type === "PERCENTAGE" ? "Desconto (%)" : "Desconto (R$)"}>
+            <Field label={form.discount_type === "PERCENTAGE" ? "Desconto (%)" : "Desconto (R$)"} required>
               <Input
                 required
                 type="number"
@@ -522,6 +525,7 @@ function CouponForm({
                 step="0.01"
                 value={form.discount_amount}
                 onChange={(event) => update("discount_amount", event.target.value)}
+                placeholder={form.discount_type === "PERCENTAGE" ? "Ex.: 10" : "Ex.: 15,00"}
               />
             </Field>
             {form.discount_type === "PERCENTAGE" && (
@@ -538,10 +542,10 @@ function CouponForm({
             <Field label="Limite por cliente">
               <Input type="number" min="1" value={form.usage_limit_per_user} onChange={(event) => update("usage_limit_per_user", event.target.value)} />
             </Field>
-            <Field label="Início">
+            <Field label="Início" required>
               <Input required type="datetime-local" value={form.starts_at} onChange={(event) => update("starts_at", event.target.value)} />
             </Field>
-            <Field label="Término">
+            <Field label="Término" required>
               <Input required type="datetime-local" value={form.expires_at} onChange={(event) => update("expires_at", event.target.value)} />
             </Field>
           </div>
@@ -567,15 +571,17 @@ function CouponForm({
 function Field({
   label,
   className = "",
+  required = false,
   children,
 }: {
   label: string;
   className?: string;
+  required?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <label className={`block text-sm font-medium text-slate-700 ${className}`}>
-      {label}
+      {label}{required && <RequiredMark />}
       <div className="mt-1">{children}</div>
     </label>
   );

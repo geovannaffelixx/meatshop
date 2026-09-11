@@ -52,8 +52,8 @@ export class SupportTicket {
   @Column({ type: 'varchar', length: 150 })
   subject: string;
 
-  @Column({ type: 'text' })
-  description: string;
+  @Column({ type: 'text', nullable: true })
+  description: string | null;
 
   @Column({
     type: 'enum',

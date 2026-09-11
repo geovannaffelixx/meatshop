@@ -12,6 +12,7 @@ import {
 } from "@/shared/components/ui/dialog"
 import { Input } from "@/shared/components/ui/input"
 import { Textarea } from "@/shared/components/ui/textarea"
+import { RequiredMark } from "@/shared/components/ui/required-mark"
 import { Spinner } from "@/shared/components/ui/spinner"
 import { Plus, Search } from "lucide-react"
 import { apiGet, apiPatch, apiPost } from "@/shared/lib/api"
@@ -273,12 +274,13 @@ export function PromotionsScreen() {
 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Produto</label>
+                    <label className="text-sm font-medium text-gray-700">Produto<RequiredMark /></label>
                     <select
                       value={form.product_id}
                       disabled={!!editingId}
                       onChange={(e) => setForm((f) => ({ ...f, product_id: Number(e.target.value) }))}
                       className="mt-1 w-full border rounded-md px-3 py-2 disabled:bg-gray-100 disabled:text-gray-500"
+                      required
                     >
                       <option value={0}>Selecione um produto</option>
                       {products.map((p) => (
@@ -290,25 +292,27 @@ export function PromotionsScreen() {
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Título</label>
+                    <label className="text-sm font-medium text-gray-700">Título<RequiredMark /></label>
                     <Input
                       value={form.title}
                       onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                       placeholder="Ex.: Picanha em promoção"
+                      required
                     />
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Descrição</label>
+                    <label className="text-sm font-medium text-gray-700">Descrição (opcional)</label>
                     <Textarea
                       value={form.description}
                       onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                       rows={3}
+                      placeholder="Ex.: Oferta válida enquanto durarem os estoques."
                     />
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-1 block">Tipo de desconto</label>
+                    <label className="text-sm font-medium text-gray-700 mb-1 block">Tipo de desconto<RequiredMark /></label>
                     <div className="flex gap-4 text-sm">
                       <label className="flex items-center gap-2">
                         <input
@@ -331,7 +335,7 @@ export function PromotionsScreen() {
 
                   {form.discountMode === "percentage" ? (
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Desconto (%)</label>
+                      <label className="text-sm font-medium text-gray-700">Desconto (%)<RequiredMark /></label>
                       <Input
                         type="number"
                         min={0}
@@ -339,36 +343,42 @@ export function PromotionsScreen() {
                         step="0.01"
                         value={form.discount_percentage}
                         onChange={(e) => setForm((f) => ({ ...f, discount_percentage: e.target.value }))}
+                        placeholder="Ex.: 20"
+                        required
                       />
                     </div>
                   ) : (
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Preço promocional (R$)</label>
+                      <label className="text-sm font-medium text-gray-700">Preço promocional (R$)<RequiredMark /></label>
                       <Input
                         type="number"
                         min={0}
                         step="0.01"
                         value={form.promotional_price}
                         onChange={(e) => setForm((f) => ({ ...f, promotional_price: e.target.value }))}
+                        placeholder="Ex.: 69,90"
+                        required
                       />
                     </div>
                   )}
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Início</label>
+                      <label className="text-sm font-medium text-gray-700">Início<RequiredMark /></label>
                       <Input
                         type="datetime-local"
                         value={form.starts_at}
                         onChange={(e) => setForm((f) => ({ ...f, starts_at: e.target.value }))}
+                        required
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Término</label>
+                      <label className="text-sm font-medium text-gray-700">Término<RequiredMark /></label>
                       <Input
                         type="datetime-local"
                         value={form.ends_at}
                         onChange={(e) => setForm((f) => ({ ...f, ends_at: e.target.value }))}
+                        required
                       />
                     </div>
                   </div>

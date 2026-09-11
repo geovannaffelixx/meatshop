@@ -80,7 +80,7 @@ export class RecipeSummaryResponseDto {
 }
 
 export class RecipeDetailResponseDto extends RecipeSummaryResponseDto {
-  description: string;
+  description: string | null;
   video_url: string | null;
   created_at: Date;
   steps: RecipeStepResponseDto[];

@@ -9,7 +9,7 @@ export class ProductListItemDto {
   @ApiProperty({ description: 'Product name', example: 'Picanha' })
   name: string;
 
-  @ApiProperty() description: string;
+  @ApiPropertyOptional({ nullable: true }) description: string | null;
 
   @ApiProperty() unit_id: number;
 

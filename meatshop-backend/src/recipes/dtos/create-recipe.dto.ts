@@ -31,14 +31,14 @@ export class CreateRecipeDto {
   @MaxLength(150)
   title: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Recipe description or tagline',
     example:
       'The queen of Brazilian barbecue. With the right technique, you get a perfect crust and a juicy center.',
   })
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  description: string;
+  description?: string;
 
   @ApiPropertyOptional({ description: 'Recipe cover image URL' })
   @IsOptional()

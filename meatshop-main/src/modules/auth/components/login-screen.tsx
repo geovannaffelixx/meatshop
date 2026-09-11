@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Input } from "@/shared/components/ui/input";
 import { PasswordInput } from "@/shared/components/ui/password-input";
 import { Spinner } from "@/shared/components/ui/spinner";
+import { RequiredMark } from "@/shared/components/ui/required-mark";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -70,12 +71,12 @@ export function LoginScreen() {
           <form onSubmit={handleSubmit} className="space-y-5" noValidate>
             <div>
               <label htmlFor="login-email" className="mb-1.5 block text-sm font-medium text-slate-700">
-                E-mail
+                E-mail<RequiredMark />
               </label>
               <Input
                 id="login-email"
                 type="email"
-                placeholder="Informe seu e-mail"
+                placeholder="nome@empresa.com.br"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
@@ -87,7 +88,7 @@ export function LoginScreen() {
             <div>
               <div className="mb-1.5 flex items-center justify-between">
                 <label htmlFor="login-password" className="text-sm font-medium text-slate-700">
-                  Senha
+                  Senha<RequiredMark />
                 </label>
                 <Link href="/forgot-password" className="text-sm font-semibold text-red-700 hover:underline">
                   Esqueceu sua senha?

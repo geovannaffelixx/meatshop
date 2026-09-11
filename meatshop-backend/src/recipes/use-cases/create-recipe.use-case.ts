@@ -71,7 +71,7 @@ export class CreateRecipeUseCase {
     const recipe = this.recipeRepository.create({
       unit_id: dto.unit_id,
       title: dto.title,
-      description: dto.description,
+      description: dto.description?.trim() || null,
       image_url: dto.image_url ?? null,
       video_url: dto.video_url ?? null,
       tag: dto.tag ?? null,

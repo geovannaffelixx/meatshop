@@ -13,6 +13,7 @@ import {
 } from "@/shared/components/ui/dialog"
 import { Input } from "@/shared/components/ui/input"
 import { Textarea } from "@/shared/components/ui/textarea"
+import { RequiredMark } from "@/shared/components/ui/required-mark"
 import { Spinner } from "@/shared/components/ui/spinner"
 import { Plus } from "lucide-react"
 import { FinanceSummary } from "./finance-summary"
@@ -482,26 +483,27 @@ export function FinanceScreen() {
 
                         <div className="md:col-span-3">
                           <label className="text-sm font-medium text-gray-700">ID Fornecedor</label>
-                          <Input name="supplierId" value={form.supplierId} onChange={handleFormChange} inputMode="numeric" />
+                          <Input name="supplierId" value={form.supplierId} onChange={handleFormChange} inputMode="numeric" placeholder="Ex.: 1024" />
                         </div>
 
                         <div className="md:col-span-3">
                           <label className="text-sm font-medium text-gray-700">CPF / CNPJ</label>
-                          <Input name="cpfCnpj" value={form.cpfCnpj} onChange={handleFormChange} />
+                          <Input name="cpfCnpj" value={form.cpfCnpj} onChange={handleFormChange} placeholder="000.000.000-00 ou 00.000.000/0000-00" />
                         </div>
 
                         <div className="md:col-span-4">
-                          <label className="text-sm font-medium text-gray-700">Fornecedor</label>
-                          <Input name="supplierName" value={form.supplierName} onChange={handleFormChange} />
+                          <label className="text-sm font-medium text-gray-700">Fornecedor<RequiredMark /></label>
+                          <Input name="supplierName" value={form.supplierName} onChange={handleFormChange} placeholder="Ex.: Distribuidora Central" required />
                         </div>
 
                         <div className="flex flex-col justify-end md:col-span-3">
-                          <label className="text-sm font-medium text-gray-700 mb-1">Tipo</label>
+                          <label className="text-sm font-medium text-gray-700 mb-1">Tipo<RequiredMark /></label>
                           <select
                             name="type"
                             value={form.type}
                             onChange={handleFormChange}
                             className="w-full border rounded-md px-3 py-2 text-gray-800"
+                            required
                           >
                             <option value="Purchases">Compras</option>
                             <option value="Services">Serviços</option>
@@ -510,13 +512,13 @@ export function FinanceScreen() {
                         </div>
 
                         <div className="md:col-span-3">
-                          <label className="text-sm font-medium text-gray-700 mb-1">Valor</label>
-                          <Input name="amount" value={form.amount} onChange={handleFormChange} inputMode="numeric" />
+                          <label className="text-sm font-medium text-gray-700 mb-1">Valor<RequiredMark /></label>
+                          <Input name="amount" value={form.amount} onChange={handleFormChange} inputMode="numeric" placeholder="Ex.: R$ 1.250,00" required />
                         </div>
 
                         <div className="md:col-span-3">
                           <label className="text-sm font-medium text-gray-700 mb-1">Desconto</label>
-                          <Input name="discount" value={form.discount} onChange={handleFormChange} inputMode="numeric" />
+                          <Input name="discount" value={form.discount} onChange={handleFormChange} inputMode="numeric" placeholder="Ex.: R$ 50,00" />
                         </div>
 
                         <div className="md:col-span-3">
@@ -554,7 +556,7 @@ export function FinanceScreen() {
 
                         <div className="md:col-span-12">
                           <label className="text-sm font-medium text-gray-700 mb-1">Observações</label>
-                          <Textarea name="notes" value={form.notes} onChange={handleFormChange} rows={3} />
+                          <Textarea name="notes" value={form.notes} onChange={handleFormChange} rows={3} placeholder="Ex.: Pagamento referente ao pedido mensal." />
                         </div>
 
                         <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end md:col-span-12">

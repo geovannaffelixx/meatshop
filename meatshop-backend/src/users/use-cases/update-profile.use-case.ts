@@ -53,9 +53,9 @@ export class UpdateProfileUseCase {
       user.app_profile = dto.app_profile;
     }
 
-    user.profile_complete = Boolean(
-      user.name?.trim() && user.cpf?.trim() && user.phone?.trim() && user.app_profile,
-    );
+    user.profile_complete =
+      user.profile_complete ||
+      Boolean(user.name?.trim() && user.cpf?.trim() && user.phone?.trim() && user.app_profile);
 
     await this.userRepository.save(user);
 

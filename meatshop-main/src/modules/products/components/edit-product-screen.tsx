@@ -7,11 +7,12 @@ import { ArrowLeft, ImagePlus, X } from "lucide-react"
 import { apiGet, apiPatch, apiDelete, API_URL, resolveAssetUrl } from "@/shared/lib/api"
 import { Spinner } from "@/shared/components/ui/spinner"
 import { toast } from "@/shared/lib/toast"
+import { RequiredMark } from "@/shared/components/ui/required-mark"
 
 type Product = {
   id: number
   name: string
-  description: string
+  description: string | null
   price: number
   unit_of_measure: string
   active: boolean
@@ -104,7 +105,7 @@ export function EditProductScreen() {
     try {
       await apiPatch(`/products/${product.id}`, {
         name: product.name,
-        description: product.description,
+        description: product.description?.trim() || null,
         price: product.price,
         unit_of_measure: product.unit_of_measure,
         active: product.active,
@@ -186,12 +187,13 @@ export function EditProductScreen() {
           </fieldset>
 
           <fieldset className="border-2 border-[#A0332C] rounded-md px-3 py-1">
-            <legend className="text-[#A0332C] font-semibold px-1 text-sm">Produto</legend>
+            <legend className="text-[#A0332C] font-semibold px-1 text-sm">Produto<RequiredMark /></legend>
             <input
               type="text"
               value={product.name}
               onChange={(e) => handleChange("name", e.target.value)}
               className="input"
+              placeholder="Ex.: Picanha bovina"
               required
             />
           </fieldset>
@@ -199,11 +201,12 @@ export function EditProductScreen() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
           <fieldset className="border border-gray-400 rounded-md px-3 py-2">
-            <legend className="text-gray-600 font-medium px-1 text-sm">Categoria</legend>
+            <legend className="text-gray-600 font-medium px-1 text-sm">Categoria<RequiredMark /></legend>
             <select
               value={product.category_id}
               onChange={(e) => handleChange("category_id", Number(e.target.value))}
               className="input"
+              required
             >
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -223,15 +226,17 @@ export function EditProductScreen() {
               value={product.brand ?? ""}
               onChange={(e) => handleChange("brand", e.target.value)}
               className="input"
+              placeholder="Ex.: Friboi"
             />
           </fieldset>
 
           <fieldset className="border border-gray-400 rounded-md px-3 py-2">
-            <legend className="text-gray-600 font-medium px-1 text-sm">Unidade de medida</legend>
+            <legend className="text-gray-600 font-medium px-1 text-sm">Unidade de medida<RequiredMark /></legend>
             <select
               value={product.unit_of_measure}
               onChange={(e) => handleChange("unit_of_measure", e.target.value)}
               className="input"
+              required
             >
               <option value="KG">Quilograma (kg)</option>
               <option value="G">Grama (g)</option>
@@ -258,6 +263,7 @@ export function EditProductScreen() {
                     setStock({ ...stock, quantity: Number(e.target.value) || 0 })
                   }
                   className="input"
+                  placeholder="Ex.: 25"
                 />
               </div>
               <div className="flex flex-col">
@@ -271,6 +277,7 @@ export function EditProductScreen() {
                     setStock({ ...stock, min_quantity: Number(e.target.value) || 0 })
                   }
                   className="input"
+                  placeholder="Ex.: 5"
                 />
               </div>
             </div>
@@ -279,7 +286,7 @@ export function EditProductScreen() {
           <fieldset className="border border-gray-400 rounded-md px-3 py-2">
             <legend className="text-gray-600 font-medium px-1 text-sm">Valor</legend>
             <div className="flex flex-col">
-              <label className="text-xs text-gray-600 mb-1">VALOR DO PRODUTO</label>
+              <label className="text-xs text-gray-600 mb-1">VALOR DO PRODUTO<RequiredMark /></label>
               <input
                 type="number"
                 min={0.01}
@@ -287,6 +294,8 @@ export function EditProductScreen() {
                 value={product.price}
                 onChange={(e) => handleChange("price", parseFloat(e.target.value) || 0)}
                 className="input"
+                placeholder="Ex.: 89,90"
+                required
               />
             </div>
           </fieldset>
@@ -295,12 +304,13 @@ export function EditProductScreen() {
         <div className="grid grid-cols-1">
           <fieldset className="border border-gray-400 rounded-md px-3 py-2">
             <legend className="text-gray-600 font-medium px-1 text-sm">
-              Descrição do produto
+              Descrição do produto (opcional)
             </legend>
             <textarea
-              value={product.description}
+              value={product.description ?? ""}
               onChange={(e) => handleChange("description", e.target.value)}
               className="input h-24 resize-none"
+              placeholder="Ex.: Corte bovino macio, ideal para churrasco."
             />
           </fieldset>
         </div>
