@@ -1,8 +1,17 @@
+import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsBoolean, IsEnum, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsLatitude, IsLongitude, IsNumber } from 'class-validator';
 import { AddressLabel } from '../../common/enums/address-label.enum';
 
 export class CreateAddressDto {
+  @Transform(({ obj, key }) => obj[key]) @IsOptional() @IsNumber() @IsLatitude() latitude?: number;
+  @Transform(({ obj, key }) => obj[key])
+  @IsOptional()
+  @IsNumber()
+  @IsLongitude()
+  longitude?: number;
+
   @ApiProperty({
     description: 'Street or avenue name',
     example: 'Flower Street',

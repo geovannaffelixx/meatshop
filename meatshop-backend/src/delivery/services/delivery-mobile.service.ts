@@ -112,7 +112,16 @@ export class DeliveryMobileService {
     }
     person.is_online = isOnline;
     person.availability_updated_at = new Date();
-    return this.access.deliveryPersonRepository.save(person);
+    const saved = await this.access.deliveryPersonRepository.save(person);
+    if (!isOnline)
+      await this.orders.update(
+        { delivery_person_id: person.id },
+        {
+          tracking_session_id: null,
+          tracking_revoked_at: new Date(),
+        },
+      );
+    return saved;
   }
 
   async listVehicles(user: User) {
@@ -335,7 +344,7 @@ export class DeliveryMobileService {
   }
 
   private mapOrder(order: Order, items: OrderItem[], includeDestination = true) {
-    const address = order.address;
+    const address = order.destination_snapshot ?? order.address;
     const unit = order.unit;
     return {
       id: order.id,
@@ -348,6 +357,8 @@ export class DeliveryMobileService {
         .join(', '),
       total_amount: Number(order.total_amount),
       delivery_fee: Number(order.delivery_fee),
+      status: order.status,
+      sharing_enabled: Boolean(order.tracking_consent_at && !order.tracking_revoked_at),
       delivery_status: order.delivery_status,
       delivery_step: order.delivery_step,
       unit_lat: unit?.latitude === null ? null : Number(unit?.latitude),
@@ -369,13 +380,13 @@ export class DeliveryMobileService {
   }
 
   private address(value: {
-    street: string | null;
-    number: string | null;
-    complement: string | null;
-    neighborhood: string | null;
-    city: string;
-    state: string;
-    zip_code: string;
+    street?: string | null;
+    number?: string | null;
+    complement?: string | null;
+    neighborhood?: string | null;
+    city?: string;
+    state?: string;
+    zip_code?: string;
   }) {
     return {
       street: value.street ?? '',

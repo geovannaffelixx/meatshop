@@ -1,223 +1,84 @@
 "use client";
+import { useEffect, useRef, useState } from 'react';
+import type { Map, Marker } from 'maplibre-gl';
+import { mapStyle, validPoint } from '@/shared/components/maps/map-style';
+import type { LiveDelivery, LiveDeliveriesSnapshot } from '../types';
 
-import { useEffect, useRef, useState } from "react";
-import type {
-  Map as MapLibreMap,
-  Marker as MapLibreMarker,
-  StyleSpecification,
-} from "maplibre-gl";
-import type { LiveDelivery, LiveDeliveriesSnapshot } from "../types";
-
-const DEFAULT_MAP_STYLE: StyleSpecification = {
-  version: 8,
-  sources: {
-    openStreetMap: {
-      type: "raster",
-      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-      tileSize: 256,
-      maxzoom: 19,
-      attribution: "© OpenStreetMap contributors",
-    },
-  },
-  layers: [
-    {
-      id: "openStreetMap",
-      type: "raster",
-      source: "openStreetMap",
-    },
-  ],
-};
-
-type DeliveriesMapProps = {
-  unit: LiveDeliveriesSnapshot["unit"];
-  deliveries: LiveDelivery[];
-  selectedOrderId: number | null;
-  onSelect: (orderId: number) => void;
-};
-
-export function DeliveriesMap({
-  unit,
-  deliveries,
-  selectedOrderId,
-  onSelect,
-}: DeliveriesMapProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<MapLibreMap | null>(null);
-  const markersRef = useRef<MapLibreMarker[]>([]);
-  const libraryRef = useRef<typeof import("maplibre-gl") | null>(null);
-  const hasFittedRef = useRef(false);
-  const [ready, setReady] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [retry, setRetry] = useState(0);
-
-  useEffect(() => {
-    let cancelled = false;
-    let initialized = false;
-    let timeoutId: number | undefined;
-
-    async function createMap() {
-      if (!containerRef.current || mapRef.current) return;
+export function DeliveriesMap({unit,deliveries,selectedOrderId,onSelect}:{
+  unit:LiveDeliveriesSnapshot['unit'];deliveries:LiveDelivery[];selectedOrderId:number|null;onSelect:(id:number)=>void;
+}) {
+  const host=useRef<HTMLDivElement>(null);
+  const map=useRef<Map|null>(null);
+  const library=useRef<typeof import('maplibre-gl')|null>(null);
+  const markers=useRef(new globalThis.Map<string,Marker>());
+  const fitted=useRef(false);
+  const [ready,setReady]=useState(false);
+  const [error,setError]=useState('');
+  const [retry,setRetry]=useState(0);
+  const [follow,setFollow]=useState(false);
+  useEffect(()=>{
+    let cancelled=false;
+    fitted.current=false;
+    const timeout=setTimeout(()=>{if(!cancelled)setError('O mapa demorou para carregar. Verifique a conexão e tente novamente.');},15000);
+    void import('maplibre-gl').then(lib=>{
+      if(cancelled||!host.current)return;
       setReady(false);
-      setError(null);
+      library.current=lib;
+      const instance=new lib.Map({container:host.current,style:mapStyle,
+        center:validPoint(unit.latitude,unit.longitude)?[unit.longitude!,unit.latitude!]:[-51.9,-14.2],
+        zoom:validPoint(unit.latitude,unit.longitude)?13:4});
+      map.current=instance;
+      instance.addControl(new lib.NavigationControl(),'top-right');
+      instance.on('load',()=>{clearTimeout(timeout);if(!cancelled){setReady(true);setError('');}});
+      instance.on('error',()=>{if(!cancelled)setError('Falha ao carregar o mapa. Verifique a conexão ou tente novamente.');});
+      instance.on('dragstart',()=>setFollow(false));
+    }).catch(()=>{if(!cancelled)setError('Mapa indisponível. Verifique o suporte a WebGL.');});
+    const currentMarkers=markers.current;
+    return ()=>{cancelled=true;clearTimeout(timeout);currentMarkers.forEach(m=>m.remove());currentMarkers.clear();map.current?.remove();map.current=null;};
+  },[unit.id,unit.latitude,unit.longitude,retry]);
 
-      try {
-        const maplibre = await import("maplibre-gl");
-        if (cancelled || !containerRef.current) return;
-
-        libraryRef.current = maplibre;
-        const center: [number, number] =
-          unit.latitude !== null && unit.longitude !== null
-            ? [unit.longitude, unit.latitude]
-            : [-46.6333, -23.5505];
-        const initialZoom = unit.latitude !== null ? 13 : 11;
-        const map = new maplibre.Map({
-          container: containerRef.current,
-          style:
-            process.env.NEXT_PUBLIC_MAP_STYLE_URL ||
-            DEFAULT_MAP_STYLE,
-          center,
-          zoom: initialZoom,
-          attributionControl: {},
-        });
-        const markReady = () => {
-          if (cancelled) return;
-          if (!initialized) map.jumpTo({ center, zoom: initialZoom });
-          initialized = true;
-          setReady(true);
-          setError(null);
-        };
-
-        map.addControl(new maplibre.NavigationControl(), "top-right");
-        map.once("styledata", markReady);
-        map.once("load", markReady);
-        mapRef.current = map;
-
-        timeoutId = window.setTimeout(() => {
-          if (!cancelled && !initialized) {
-            setError(
-              "Não foi possível carregar o provedor do mapa. Verifique sua conexão e tente novamente.",
-            );
-          }
-        }, 12_000);
-      } catch (cause) {
-        console.error("Falha ao inicializar o mapa de entregas", cause);
-        if (!cancelled) {
-          setError(
-            "O mapa não pôde ser iniciado neste navegador. Verifique se o WebGL está habilitado.",
-          );
-        }
+  useEffect(()=>{
+    const instance=map.current, lib=library.current;
+    if(!ready||!instance||!lib)return;
+    const wanted=new Set<string>();
+    const points:[number,number][]=[];
+    function put(key:string,lat:number|null,lng:number|null,label:string,color:string,orderId?:number){
+      if(!validPoint(lat,lng))return;
+      wanted.add(key);points.push([lng!,lat!]);
+      let marker=markers.current.get(key);
+      if(!marker){
+        const el=document.createElement('button');el.type='button';
+        el.className='rounded-full border-2 border-white px-2 py-1 text-xs font-bold text-white shadow-lg';
+        if(orderId)el.addEventListener('click',()=>onSelect(orderId));
+        marker=new lib!.Marker({element:el}).setLngLat([lng!,lat!]).addTo(instance!);
+        markers.current.set(key,marker);
       }
+      marker.setLngLat([lng!,lat!]);
+      const el=marker.getElement();el.textContent=label;el.title=label;el.style.backgroundColor=color;
     }
-
-    void createMap();
-    return () => {
-      cancelled = true;
-      if (timeoutId) window.clearTimeout(timeoutId);
-      markersRef.current.forEach((marker) => marker.remove());
-      markersRef.current = [];
-      mapRef.current?.remove();
-      mapRef.current = null;
-    };
-  }, [retry, unit.latitude, unit.longitude]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    const maplibre = libraryRef.current;
-    if (!ready || !map || !maplibre) return;
-
-    markersRef.current.forEach((marker) => marker.remove());
-    markersRef.current = [];
-    const coordinates: [number, number][] = [];
-
-    if (unit.latitude !== null && unit.longitude !== null) {
-      const element = document.createElement("div");
-      element.className =
-        "flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-red-700 text-sm font-bold text-white shadow-lg";
-      element.textContent = "A";
-      markersRef.current.push(
-        new maplibre.Marker({ element })
-          .setLngLat([unit.longitude, unit.latitude])
-          .setPopup(new maplibre.Popup({ offset: 18 }).setText(unit.name))
-          .addTo(map),
-      );
-      coordinates.push([unit.longitude, unit.latitude]);
+    put('unit',unit.latitude,unit.longitude,'Unidade','#b91c1c');
+    for(const delivery of deliveries){
+      if(delivery.destination)put('dest:'+delivery.orderId,delivery.destination.latitude,delivery.destination.longitude,
+        'Destino #'+delivery.orderId,'#15803d',delivery.orderId);
+      if(delivery.location)put('driver:'+delivery.orderId,delivery.location.latitude,delivery.location.longitude,
+        'Entregador #'+delivery.orderId,selectedOrderId===delivery.orderId?'#2563eb':'#334155',delivery.orderId);
     }
-
-    for (const delivery of deliveries) {
-      if (!delivery.location) continue;
-      const element = document.createElement("button");
-      element.type = "button";
-      element.className = [
-        "flex h-10 w-10 items-center justify-center rounded-full border-2 text-xs font-bold text-white shadow-xl transition-transform",
-        selectedOrderId === delivery.orderId
-          ? "scale-125 border-red-900 bg-red-600"
-          : "border-white bg-slate-800 hover:scale-110",
-      ].join(" ");
-      element.textContent = String(delivery.orderId);
-      element.title = `Pedido #${delivery.orderId}`;
-      element.addEventListener("click", () => onSelect(delivery.orderId));
-
-      markersRef.current.push(
-        new maplibre.Marker({ element })
-          .setLngLat([delivery.location.longitude, delivery.location.latitude])
-          .addTo(map),
-      );
-      coordinates.push([
-        delivery.location.longitude,
-        delivery.location.latitude,
-      ]);
+    markers.current.forEach((marker,key)=>{if(!wanted.has(key)){marker.remove();markers.current.delete(key);}});
+    if(!fitted.current&&points.length){
+      const bounds=new lib.LngLatBounds(points[0],points[0]);points.forEach(point=>bounds.extend(point));
+      instance.fitBounds(bounds,{padding:65,maxZoom:16,duration:300});fitted.current=true;
     }
-
-    if (!hasFittedRef.current && coordinates.length > 1) {
-      const bounds = new maplibre.LngLatBounds(coordinates[0], coordinates[0]);
-      coordinates.slice(1).forEach((coordinate) => bounds.extend(coordinate));
-      map.fitBounds(bounds, { padding: 70, maxZoom: 15, duration: 700 });
-      hasFittedRef.current = true;
-    }
-  }, [deliveries, onSelect, ready, selectedOrderId, unit]);
-
-  useEffect(() => {
-    const selected = deliveries.find(
-      (delivery) => delivery.orderId === selectedOrderId,
-    );
-    if (!selected?.location || !mapRef.current) return;
-    mapRef.current.easeTo({
-      center: [selected.location.longitude, selected.location.latitude],
-      zoom: Math.max(mapRef.current.getZoom(), 14),
-      duration: 500,
-    });
-  }, [deliveries, selectedOrderId]);
-
-  return (
-    <div className="relative h-[420px] overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 xl:h-[560px]">
-      <div
-        ref={containerRef}
-        className="h-full w-full"
-        aria-label="Mapa de entregas em tempo real"
-      />
-      {!ready && !error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-slate-100 text-sm text-slate-500">
-          Carregando mapa...
-        </div>
-      )}
-      {error && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-100 p-8 text-center">
-          <p className="max-w-md text-sm text-slate-600">{error}</p>
-          <button
-            type="button"
-            onClick={() => setRetry((current) => current + 1)}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
-          >
-            Tentar novamente
-          </button>
-        </div>
-      )}
-      {ready && (unit.latitude === null || unit.longitude === null) && (
-        <div className="absolute bottom-8 left-3 max-w-xs rounded-lg bg-white/95 px-3 py-2 text-xs text-slate-600 shadow-md">
-          Exibindo São Paulo como referência. Cadastre as coordenadas da unidade
-          para centralizar o mapa no açougue.
-        </div>
-      )}
-    </div>
-  );
+    const selected=deliveries.find(d=>d.orderId===selectedOrderId);
+    if(follow&&selected?.location)instance.easeTo({center:[selected.location.longitude,selected.location.latitude],duration:400});
+  },[ready,unit,deliveries,onSelect,selectedOrderId,follow]);
+  return <div className="relative h-[420px] overflow-hidden rounded-2xl border xl:h-[560px]">
+    <div ref={host} className="h-full w-full" aria-label="Mapa com unidade, destinos e entregadores" />
+    <button type="button" onClick={()=>setFollow(v=>!v)} className="absolute left-3 top-3 rounded bg-white p-2 text-sm shadow">
+      {follow?'Parar de seguir':'Seguir entregador selecionado'}
+    </button>
+    {!ready&&!error&&<p className="absolute bottom-3 left-3 bg-white p-2">Carregando mapa…</p>}
+    {error&&<div className="absolute bottom-3 left-3 right-3 rounded bg-white p-3 text-sm">{error}
+      <button type="button" className="ml-3 underline" onClick={()=>{setReady(false);setError('');setRetry(v=>v+1);}}>Tentar novamente</button>
+    </div>}
+  </div>;
 }

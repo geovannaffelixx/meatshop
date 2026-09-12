@@ -9,6 +9,7 @@ describe('DeleteAccountUseCase', () => {
     findOne: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
+    query: jest.fn(),
   } as unknown as EntityManager;
   const dataSource = {
     transaction: jest.fn(async (operation: (value: EntityManager) => Promise<void>) =>

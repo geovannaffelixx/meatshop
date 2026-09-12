@@ -33,7 +33,10 @@ export function isMutatingMethod(method: string): boolean {
 }
 
 export function isExcludedPath(path: string): boolean {
-  return EXCLUDED_PREFIXES.some((prefix) => path.startsWith(prefix));
+  return (
+    /\/delivery\/orders\/\d+\/location$/.test(path) ||
+    EXCLUDED_PREFIXES.some((prefix) => path.startsWith(prefix))
+  );
 }
 
 export function resolveRouteAuditInfo(

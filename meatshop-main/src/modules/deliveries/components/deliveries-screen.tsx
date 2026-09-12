@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { mergeSnapshot, newerPoint, pointTime } from '../location-state';
+import { refreshSession } from '@/shared/lib/api';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bike,
   CircleAlert,
@@ -58,7 +60,7 @@ function signalFor(delivery: LiveDelivery, now: number) {
       className: "bg-slate-100 text-slate-600",
     };
   }
-  const age = now - new Date(delivery.location.recordedAt).getTime();
+  const age = now - pointTime(delivery.location);
   if (age <= 30_000) {
     return { label: "Ao vivo", className: "bg-emerald-100 text-emerald-700" };
   }
@@ -87,7 +89,10 @@ export function DeliveriesScreen() {
     hasPermission,
     loading: accessLoading,
   } = usePanelAccess();
+  const latestUnit = useRef(unitId);
+  const requestVersion = useRef(0);
   const [snapshot, setSnapshot] = useState<LiveDeliveriesSnapshot | null>(null);
+  useEffect(() => { latestUnit.current = unitId; requestVersion.current++; setSnapshot(null); }, [unitId]);
   const [people, setPeople] = useState<UnitDeliveryPerson[]>([]);
   const [loading, setLoading] = useState(true);
   const [connected, setConnected] = useState(false);
@@ -112,7 +117,7 @@ export function DeliveriesScreen() {
         `/delivery/units/${unitId}/people`,
         silent ? { silent: true } : undefined,
       )) as UnitDeliveryPerson[];
-      setPeople(data);
+      if (latestUnit.current === unitId) setPeople(data);
     },
     [unitId],
   );
@@ -121,12 +126,14 @@ export function DeliveriesScreen() {
     async (silent = false) => {
       if (!unitId) return;
       if (!silent) setLoading(true);
+      const version = ++requestVersion.current;
       try {
         const data = (await apiGet(
           `/delivery/units/${unitId}/live`,
           silent ? { silent: true } : undefined,
         )) as LiveDeliveriesSnapshot;
-        setSnapshot(data);
+        if (latestUnit.current !== unitId || version !== requestVersion.current) return;
+        setSnapshot(current => mergeSnapshot(current, data));
         setSelectedOrderId((current) => {
           if (
             current &&
@@ -136,6 +143,8 @@ export function DeliveriesScreen() {
           }
           return data.deliveries[0]?.orderId ?? null;
         });
+      } catch {
+        // The API layer reports the error; retain the last snapshot with its age.
       } finally {
         if (!silent) setLoading(false);
       }
@@ -145,9 +154,9 @@ export function DeliveriesScreen() {
 
   useEffect(() => {
     if (!unitId) return;
-    void Promise.all([loadSnapshot(), loadPeople()]);
+    void Promise.all([loadSnapshot(), loadPeople()]).catch(() => undefined);
     const interval = window.setInterval(
-      () => void Promise.all([loadSnapshot(true), loadPeople(true)]),
+      () => void Promise.all([loadSnapshot(true), loadPeople(true)]).catch(() => undefined),
       30_000,
     );
     return () => window.clearInterval(interval);
@@ -165,9 +174,21 @@ export function DeliveriesScreen() {
       withCredentials: true,
     });
 
+    let disposed = false;
     socket.on("connect", () => {
-      socket.emit("delivery:subscribe", { unitId });
-      setConnected(true);
+      setConnected(false);
+      socket.timeout(10000).emit("delivery:subscribe", { unitId },
+        (error: Error | null, result: {unitId?:number}) => {
+          if(!disposed) setConnected(!error && result?.unitId===unitId);
+        });
+      void loadSnapshot(true);
+    });
+    socket.on("exception", () => setConnected(false));
+    socket.on("delivery:access.revoked", () => {setConnected(false);setSnapshot(null);});
+    socket.on("disconnect", (reason) => {
+      if(reason==='io server disconnect') void refreshSession().then(ok=>{
+        if(ok&&!disposed) socket.connect();
+      });
     });
     socket.on("disconnect", () => setConnected(false));
     socket.on("connect_error", () => setConnected(false));
@@ -181,11 +202,7 @@ export function DeliveriesScreen() {
             delivery.orderId === event.orderId
               ? {
                   ...delivery,
-                  location: {
-                    latitude: event.latitude,
-                    longitude: event.longitude,
-                    recordedAt: event.recordedAt,
-                  },
+                  location: newerPoint(delivery.location, event),
                 }
               : delivery,
           ),
@@ -195,6 +212,7 @@ export function DeliveriesScreen() {
     socket.on("delivery:status.updated", () => void loadSnapshot(true));
 
     return () => {
+      disposed = true;
       socket.disconnect();
     };
   }, [loadSnapshot, unitId]);

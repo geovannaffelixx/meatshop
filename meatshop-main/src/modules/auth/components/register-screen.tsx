@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { AddressPinPicker, type AddressPin } from '@/shared/components/maps/address-pin-picker';
 import { Input } from "@/shared/components/ui/input";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
@@ -107,6 +108,9 @@ export function RegisterScreen() {
   const [lookingUpCep, setLookingUpCep] = useState(false);
   const [cepResolved, setCepResolved] = useState(false);
   const router = useRouter();
+  const [pin,setPin]=useState<AddressPin|null>(null);
+  const [approximate,setApproximate]=useState<AddressPin|null>(null);
+  const cepVersion=useRef(0);
 
   const lookupCep = async () => {
     if (lookingUpCep) return;
@@ -118,6 +122,7 @@ export function RegisterScreen() {
       return;
     }
 
+    const version=++cepVersion.current;
     setLookingUpCep(true);
     setCepResolved(false);
     setMsg("");
@@ -126,6 +131,9 @@ export function RegisterScreen() {
       const address = await apiPost("/geocoding/resolve", {
         zip_code: cep,
       }) as CepLookup;
+      if(version!==cepVersion.current)return;
+      setPin(null);
+      setApproximate(address.latitude!=null&&address.longitude!=null?{latitude:Number(address.latitude),longitude:Number(address.longitude)}:null);
       setForm((current) => ({
         ...current,
         zipCode: address.zip_code,
@@ -152,6 +160,8 @@ export function RegisterScreen() {
   };
 
   const handleChange = (field: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    if(['street','number','neighborhood','city','state','zipCode'].includes(field))setPin(null);
+    if(field==='zipCode'){++cepVersion.current;setApproximate(null);}
     setForm((f) => ({ ...f, [field]: e.target.value }));
     setErrors((prev) => ({ ...prev, [field]: false }));
     if (field === "password" || field === "confirmPassword") setPasswordError("");
@@ -213,6 +223,7 @@ export function RegisterScreen() {
           password: form.password,
         },
         unit: {
+          ...(pin ?? {}),
           name: form.unitName,
           cnpj: form.cnpj.replace(/\D/g, ""),
           city: form.city,
@@ -322,6 +333,9 @@ export function RegisterScreen() {
                     value={form.zipCode}
                     onInput={(e) => {
                       const value = maskCEP(e.currentTarget.value);
+                      cepVersion.current++;
+                      setPin(null);
+                      setApproximate(null);
                       setCepResolved(false);
                       setForm((f) => ({ ...f, zipCode: value }));
                       setErrors((previous) => ({ ...previous, zipCode: false }));
@@ -346,6 +360,10 @@ export function RegisterScreen() {
                     {lookingUpCep ? <Spinner /> : <Search className="h-4 w-4" />}
                     {lookingUpCep ? "Buscando" : "Buscar"}
                   </Button>
+                </div>
+                <div className="space-y-2">
+                  <AddressPinPicker initial={pin??approximate} onConfirm={setPin} />
+                  <p className="text-sm text-gray-600">{pin?'Ponto confirmado.':'Ajuste o pino na entrada da unidade após preencher o endereço.'}</p>
                 </div>
                 {cepResolved && (
                   <p className="flex items-center gap-2 text-sm text-emerald-700">

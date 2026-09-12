@@ -21,6 +21,21 @@ import { PaymentStatus } from '../enums/payment-status.enum';
 
 @Entity('orders')
 export class Order {
+  @Column({ type: 'jsonb', nullable: true })
+  destination_snapshot: Partial<Address> | null;
+
+  @Column({ type: 'uuid', nullable: true, select: false })
+  tracking_session_id: string | null;
+
+  @Column({ type: 'int', nullable: true })
+  tracking_consent_user_id: number | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  tracking_consent_at: Date | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  tracking_revoked_at: Date | null;
+
   @PrimaryGeneratedColumn()
   id: number;
 
