@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { Order } from '@/entities/order.entity';
-import { MercadoPagoService } from '@/mercadopago/mercadopago.service';
+import { OrdersModule } from '@/orders/orders.module';
+import { MercadoPagoService } from '@/payments/providers/mercadopago.service';
 import { MercadoPagoController } from '@/mercadopago/mercadopago.controller';
 import { MercadoPagoWebhookController } from '@/mercadopago/mercadopago.webhook.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Order])],
+  imports: [OrdersModule],
   controllers: [MercadoPagoController, MercadoPagoWebhookController],
   providers: [MercadoPagoService],
+  exports: [MercadoPagoService],
 })
 export class MercadoPagoModule {}

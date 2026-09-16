@@ -1,0 +1,97 @@
+'use client';
+
+import { useState } from "react";
+import { Input } from "@/shared/components/ui/input";
+import { Button } from "@/shared/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
+import { Spinner } from "@/shared/components/ui/spinner";
+import { MailIcon } from "lucide-react";
+import Link from "next/link";
+import { apiPost } from "@/shared/lib/api";
+import { RequiredMark } from "@/shared/components/ui/required-mark";
+
+export function ForgotPasswordScreen() {
+  const [email, setEmail] = useState("");
+  const [msg, setMsg] = useState("");
+  const [alertType, setAlertType] = useState<"success" | "error" | "">("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMsg("");
+    setAlertType("");
+
+    if (!email.trim()) {
+      setMsg("Informe seu e-mail.");
+      setAlertType("error");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await apiPost("/auth/forgot-password", { email });
+
+      setMsg("Se este e-mail estiver cadastrado, você receberá um link para redefinir a senha.");
+      setAlertType("success");
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : "Erro ao solicitar redefinição de senha.");
+      setAlertType("error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 bg-[url('/backgroundClaro.png')] p-4">
+      <Card className="w-full max-w-md shadow-md">
+        <CardHeader className="flex flex-col items-center">
+          <MailIcon className="w-10 h-10 mb-2" />
+          <CardTitle className="text-xl font-bold text-center">
+            Esqueceu sua senha?
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <p className="text-center text-gray-600 text-sm">
+            Informe seu e-mail para receber o link de redefinição de senha.
+          </p>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="recovery-email" className="block text-sm font-medium text-gray-700 mb-1">
+                E-mail<RequiredMark />
+              </label>
+              <Input
+                id="recovery-email"
+                type="email"
+                placeholder="nome@empresa.com.br"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                required
+              />
+            </div>
+
+            <Button type="submit" disabled={submitting} className="w-full bg-[#BE2C1B] hover:bg-[#BE2C1B]/70">
+              {submitting && <Spinner />}
+              {submitting ? "Enviando..." : "Enviar link de redefinição"}
+            </Button>
+          </form>
+
+          <div className="text-center">
+            <Link href="/login" className="text-sm text-[#BE2C1B] hover:underline">
+              ← Voltar para login
+            </Link>
+          </div>
+
+          {msg && (
+            <Alert className="mt-4">
+              <AlertTitle>{alertType === "success" ? "Sucesso!" : "Erro"}</AlertTitle>
+              <AlertDescription>{msg}</AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

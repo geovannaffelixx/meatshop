@@ -16,14 +16,14 @@ export class MetricsService {
 
     this.httpRequestsTotal = new Counter({
       name: 'http_requests_total',
-      help: 'Número total de requisições HTTP recebidas',
+      help: 'Total number of HTTP requests received',
       labelNames: ['method', 'route', 'status_code'],
     });
     this.register.registerMetric(this.httpRequestsTotal);
 
     this.httpRequestDuration = new Histogram({
       name: 'http_request_duration_ms',
-      help: 'Duração das requisições HTTP em milissegundos',
+      help: 'HTTP request duration in milliseconds',
       labelNames: ['method', 'route', 'status_code'],
       buckets: [5, 10, 25, 50, 100, 250, 500, 1000, 2000, 5000],
     });

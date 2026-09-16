@@ -1,13 +1,9 @@
-# Explainable AI Module — Decision Tree + SHAP + LIME
-# - Trains a simple model
-# - Generates global + local explanations
-# - Saves artifacts into xai/docs/
 
 import os
 import numpy as np
 import pandas as pd
 import matplotlib
-matplotlib.use("Agg")  # write plots without opening a window
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from sklearn.model_selection import train_test_split
@@ -18,13 +14,11 @@ import shap
 from lime.lime_tabular import LimeTabularExplainer
 import dtreeviz
 
-# --- Paths
 BASE_DIR = os.path.dirname(__file__)
 DOCS_DIR = os.path.join(BASE_DIR, "docs")
 CSV_PATH = os.path.join(BASE_DIR, "orders.csv")
 os.makedirs(DOCS_DIR, exist_ok=True)
 
-# Criar dados aleatorios no orders.csv se estiver vazio ou não existir
 def generate_synthetic_orders(path: str, n: int = 500, seed: int = 42) -> None:
     rng = np.random.default_rng(seed)
     total_value = rng.normal(150, 60, n).clip(10, 600)
@@ -32,7 +26,6 @@ def generate_synthetic_orders(path: str, n: int = 500, seed: int = 42) -> None:
     items_count = rng.integers(1, 12, n)
     is_frequent_customer = rng.integers(0, 2, n)
 
-    # Regra simulada: menor valor + mais horas + mais itens + não frequente => maior cancelamento
     logit = (
         -1.2
         + (-0.01 * total_value)
@@ -59,7 +52,6 @@ def ensure_orders_csv() -> None:
 
 ensure_orders_csv()
 
-# Carregar dados do CSV
 data = pd.read_csv(CSV_PATH)
 required_cols = ["total_value", "delivery_hours", "items_count", "is_frequent_customer", "canceled"]
 missing = [c for c in required_cols if c not in data.columns]
@@ -73,11 +65,9 @@ X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.25, random_state=42, stratify=y
 )
 
-# Treinar arvore de decisão simples
 model = DecisionTreeClassifier(max_depth=7, random_state=42, class_weight="balanced")
 model.fit(X_train, y_train)
 
-# --- Evaluate
 y_pred = model.predict(X_test)
 print("\n=== Metrics ===")
 print(classification_report(y_test, y_pred, target_names=["not_canceled", "canceled"]))
@@ -104,7 +94,6 @@ plt.tight_layout()
 plt.savefig(os.path.join(DOCS_DIR, "decision_tree.png"), dpi=200)
 plt.close()
 
-# Visualização da arvore de decisão
 try:
     viz_model = dtreeviz.model(
         model,
@@ -115,7 +104,7 @@ try:
         class_names=["Delivered", "Canceled"]
     )
 
-    v = viz_model.view()  # Renderiza o SVG na memoria
+    v = viz_model.view()
     svg_path = os.path.join(DOCS_DIR, "decision_tree_viz.svg")
     v.save(svg_path)
     print(f"✅ Graphviz render complete:\n- {svg_path}")
@@ -123,17 +112,14 @@ try:
 except Exception as e:
     print(f"⚠️ Warning (Graphviz render): {e}")
 
-# SHAP explanations (global + local)
 explainer = shap.TreeExplainer(model)
 shap_values = explainer.shap_values(X_test)
 
-# Global summary
 shap.summary_plot(shap_values, X_test, show=False)
 plt.tight_layout()
 plt.savefig(os.path.join(DOCS_DIR, "shap_summary.png"), dpi=200, bbox_inches="tight")
 plt.close()
 
-# Force plot local
 try:
     idx = 0
     force = shap.force_plot(
@@ -146,7 +132,6 @@ try:
 except Exception as e:
     print(f"Warning (SHAP force plot): {e}")
 
-# LIME
 lime_explainer = LimeTabularExplainer(
     training_data=X_train.values,
     feature_names=X.columns.tolist(),
@@ -161,7 +146,6 @@ lime_exp = lime_explainer.explain_instance(
 )
 lime_exp.save_to_file(os.path.join(DOCS_DIR, "lime_example.html"))
 
-# Resumo resultados
 print("\n=== Files generated ===")
 for f in sorted(os.listdir(DOCS_DIR)):
     print(f"- {os.path.join('docs', f)}")

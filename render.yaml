@@ -1,0 +1,80 @@
+services:
+  - type: web
+    name: meatshop-api
+    runtime: docker
+    plan: free
+    branch: develop
+    autoDeployTrigger: checksPass
+    dockerfilePath: ./meatshop-backend/Dockerfile
+    dockerContext: ./meatshop-backend
+    dockerCommand: npm run start:render
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: DB_TYPE
+        value: postgres
+      - key: DB_HOST
+        fromDatabase: { name: meatshop-db, property: host }
+      - key: DB_PORT
+        fromDatabase: { name: meatshop-db, property: port }
+      - key: DB_USERNAME
+        fromDatabase: { name: meatshop-db, property: user }
+      - key: DB_PASSWORD
+        fromDatabase: { name: meatshop-db, property: password }
+      - key: DB_DATABASE
+        fromDatabase: { name: meatshop-db, property: database }
+      - key: DB_SYNCHRONIZE
+        value: "false"
+      - key: DB_SSL
+        value: "true"
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: COOKIE_SAMESITE
+        value: none
+      - key: TRUST_PROXY
+        value: "true"
+      - key: SWAGGER_ENABLED
+        value: "false"
+      - key: SEED_ENABLED
+        value: "false"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: DELIVERY_CODE_SECRET
+        generateValue: true
+      - key: DELIVERY_CODE_ENCRYPTION_KEY
+        generateValue: true
+      - key: FRONTEND_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: BACKEND_PUBLIC_URL
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM
+        sync: false
+      - key: FIREBASE_SERVICE_ACCOUNT
+        sync: false
+      - key: FIREBASE_APP_CHECK_ENFORCED
+        value: "true"
+      - key: PAYMENTS_ENABLED
+        value: "false"
+      - key: MP_ENV
+        value: sandbox
+
+databases:
+  - name: meatshop-db
+    plan: free
+    databaseName: meatshop
+    user: meatshop

@@ -5,7 +5,6 @@ import 'winston-daily-rotate-file';
 export function createAppLogger() {
   const logDir = path.resolve(process.cwd(), 'logs');
 
-  // Cores personalizadas por nível
   winston.addColors({
     info: 'bold blue',
     warn: 'yellow',
@@ -37,7 +36,6 @@ export function createAppLogger() {
     transports: [
       new winston.transports.Console({ format: consoleFormat }),
 
-      // Arquivo rotativo diário (JSON)
       new (winston.transports as any).DailyRotateFile({
         dirname: logDir,
         filename: 'app-%DATE%.log',

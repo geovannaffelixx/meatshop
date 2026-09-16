@@ -17,10 +17,10 @@ describe('Metrics Endpoint (e2e)', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
   });
 
-  it('/metrics (GET) deve conter métricas básicas', async () => {
+  it('/metrics (GET) contains basic metrics', async () => {
     const res = await request(app.getHttpServer()).get('/metrics');
     expect(res.status).toBe(200);
     expect(res.text).toContain('process_cpu_user_seconds_total');

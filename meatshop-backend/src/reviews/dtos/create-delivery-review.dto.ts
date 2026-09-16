@@ -1,0 +1,24 @@
+import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
+import { IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+
+export class CreateDeliveryReviewDto {
+  @ApiProperty({
+    description: 'Delivery person rating from 1 to 5',
+    example: 5,
+    minimum: 1,
+    maximum: 5,
+  })
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  rating: number;
+
+  @ApiPropertyOptional({
+    description: 'Delivery review comment',
+    example: 'Delivery Person muito educado e pontual',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  comment?: string;
+}

@@ -17,10 +17,10 @@ describe('Health Endpoint (e2e)', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
   });
 
-  it('/health (GET) deve responder 200', async () => {
+  it('/health (GET) responds with 200', async () => {
     const res = await request(app.getHttpServer()).get('/health');
     expect(res.status).toBe(200);
   });

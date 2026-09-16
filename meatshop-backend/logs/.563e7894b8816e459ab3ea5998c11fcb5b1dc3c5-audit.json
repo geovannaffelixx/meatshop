@@ -1,0 +1,20 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "C:\\Users\\CLIENT\\Documents\\Meatshop\\meatshop\\meatshop-backend\\logs\\.563e7894b8816e459ab3ea5998c11fcb5b1dc3c5-audit.json",
+    "files": [
+        {
+            "date": 1777943501647,
+            "name": "C:\\Users\\CLIENT\\Documents\\Meatshop\\meatshop\\meatshop-backend\\logs\\app-2026-05-04.log",
+            "hash": "20b3f4f34b67a0575e268c20c596d862c6fb7ebc05dad72f84d5e02699e33b24"
+        },
+        {
+            "date": 1778201352487,
+            "name": "C:\\Users\\CLIENT\\Documents\\Meatshop\\meatshop\\meatshop-backend\\logs\\app-2026-05-07.log",
+            "hash": "016ce332a9338035a2b1421a4fcb91d60d0ba266d64894342130968278bc5c3f"
+        }
+    ],
+    "hashType": "sha256"
+}
