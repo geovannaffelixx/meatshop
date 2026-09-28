@@ -62,7 +62,11 @@ export function validateEnvironment(environment: Environment): void {
     throw new Error('FIREBASE_APP_CHECK_ENFORCED must be true in production');
   }
   if (environment.PAYMENTS_ENABLED === 'true') {
-    assertRequired(environment, 'MP_ACCESS_TOKEN');
+    for (const key of ['MP_CLIENT_ID', 'MP_CLIENT_SECRET', 'MP_OAUTH_REDIRECT_URI'])
+      assertRequired(environment, key);
+    assertStrongSecret(environment, 'MP_CREDENTIAL_ENCRYPTION_KEY');
+    if (!environment.MP_OAUTH_REDIRECT_URI?.startsWith('https://'))
+      throw new Error('MP_OAUTH_REDIRECT_URI must use HTTPS');
     assertStrongSecret(environment, 'MP_WEBHOOK_SECRET');
     if (environment.MP_ENV !== 'production') throw new Error('MP_ENV must be production');
   }

@@ -1,3 +1,5 @@
+import { SellerAccountsService } from '../../payments/seller-accounts.service';
+import { isOfflinePayment } from '../../payments/payment-policy';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
@@ -29,9 +31,11 @@ export class QuoteCartUseCase {
     private readonly stock: StockAvailabilityValidator,
     private readonly businessHours: BusinessHoursValidator,
     private readonly dataSource: DataSource,
+    private readonly sellers: SellerAccountsService,
   ) {}
 
   async execute(dto: CreateOrderDto, user: User): Promise<CheckoutQuoteResponseDto> {
+    if (!dto.payment_method) throw new BadRequestException('Choose a payment method');
     const cart = await this.cartAccess.getOrCreateCart(user.id);
     const items = await this.cartItems.find({
       where: { cart_id: cart.id },
@@ -70,6 +74,7 @@ export class QuoteCartUseCase {
     const quoted = await this.dataSource.transaction(async (manager) => {
       const result = [];
       for (const group of groups) {
+        if (!isOfflinePayment(dto.payment_method)) await this.sellers.forUnit(group.unitId, true);
         const unit = await this.units.findOneByOrFail({ id: group.unitId });
         const prepared = await this.coupons.prepare(
           group.couponCode,

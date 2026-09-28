@@ -3,6 +3,8 @@ import {
   IsDateString,
   IsEnum,
   IsInt,
+  IsIn,
+  IsNumber,
   IsOptional,
   IsString,
   Min,
@@ -74,6 +76,22 @@ export class CreateOrderDto {
     description: 'Payment method selected by the customer',
   })
   @IsOptional()
-  @IsEnum(PaymentMethod)
+  @IsIn([
+    PaymentMethod.PIX,
+    PaymentMethod.CREDIT,
+    PaymentMethod.DEBIT,
+    PaymentMethod.CASH,
+    PaymentMethod.CARD_ON_DELIVERY,
+  ])
   payment_method?: PaymentMethod;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  change_for?: number;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  expected_total?: number;
 }

@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UnitPermission } from '../../common/enums/unit-permission.enum';
-import { OrderStatus } from '../../orders/enums/order-status.enum';
 import { Order } from '../../orders/entities/order.entity';
 import { UnitAuthorizationService } from '../../units/services/unit-authorization.service';
 import { User } from '../../users/entities/user.entity';
@@ -36,14 +35,18 @@ export class GetMonthlyRevenueUseCase {
 
     const rows = await this.orderRepository
       .createQueryBuilder('o')
-      .select(["TO_CHAR(o.order_date, 'DD') AS day", 'SUM(o.total_amount) AS total'])
-      .where('o.status = :st', { st: OrderStatus.DELIVERED })
+      .innerJoin('payments', 'p', 'p.order_id=o.id')
+      .select([
+        "TO_CHAR(p.payment_date, 'DD') AS day",
+        'SUM(GREATEST(0,o.total_amount-p.refunded_amount-p.fee_amount)) AS total',
+      ])
+      .where("p.status IN ('PAID','PARTIALLY_REFUNDED')")
       .andWhere('o.unit_id = :unitId', { unitId })
-      .andWhere('o.order_date >= :start AND o.order_date < :end', {
+      .andWhere('p.payment_date >= :start AND p.payment_date < :end', {
         start,
         end,
       })
-      .groupBy("TO_CHAR(o.order_date, 'DD')")
+      .groupBy("TO_CHAR(p.payment_date, 'DD')")
       .getRawMany<{ day: string; total: string }>();
 
     const map = new Map<number, number>();

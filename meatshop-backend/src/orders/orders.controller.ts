@@ -182,12 +182,11 @@ export class OrdersController {
   }
 
   @ApiOperation({
-    summary: 'Repeats a previous order by creating a new order with the same items',
+    summary: 'Adds available items to the cart for a new price and payment review',
   })
   @ApiResponse({
     status: 201,
-    description: 'New order created from the previous order',
-    type: OrderResponseDto,
+    description: 'Cart updated; returns cart_updated and skippedItems',
   })
   @ApiResponse({
     status: 400,

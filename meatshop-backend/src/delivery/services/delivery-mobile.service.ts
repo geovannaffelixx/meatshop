@@ -229,11 +229,16 @@ export class DeliveryMobileService {
       order: { updated_at: 'DESC' },
       take: 365,
     });
+    const settled = await this.orders.manager.query(
+      'SELECT order_id,paid_at FROM delivery_settlements WHERE delivery_person_id=$1',
+      [person.id],
+    );
     const entries = delivered.map((order) => ({
       id: String(order.id),
       delivery_person_id: String(person.id),
       order_id: String(order.id),
       label: `Order #${order.id}`,
+      paid_at: settled.find((s: { order_id: number }) => s.order_id === order.id)?.paid_at ?? null,
       amount: Number(order.delivery_fee),
       created_at: order.updated_at,
     }));

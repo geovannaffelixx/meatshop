@@ -1,5 +1,6 @@
 "use client"
 
+import { PaymentActions } from "@/modules/finance/components/payment-management"
 import React, { useEffect, useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, MessageSquare } from "lucide-react"
@@ -51,7 +52,7 @@ type Order = {
   cancelled_at: string | null
   cancelled_by: string | null
   items: OrderItem[]
-  payment: { method: string | null; status: string; payment_date: string | null } | null
+  payment: { method: string | null; status: string; payment_date: string | null; refunded_amount: number; fee_amount: number; refund_status: string | null } | null
 }
 
 interface OrderDetailScreenProps {
@@ -147,7 +148,8 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
       </div>
     )
 
-  const nextAction = getNextAction(order.status, order.delivery_type)
+  const allowsPreparation = order.payment_status === "PAID" || (order.payment_status === "PENDING" && ["Cash", "Card on Delivery"].includes(order.payment?.method ?? ""))
+  const nextAction = allowsPreparation ? getNextAction(order.status, order.delivery_type) : null
 
   return (
     <div className="page-surface p-4 sm:p-6">
@@ -203,6 +205,8 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
           </div>
         </div>
 
+        {order.payment && <PaymentActions order={{...order,...order.payment,payment_status:order.payment_status,status:order.status}} onChange={loadOrder} />}
+        {!allowsPreparation && order.status !== "CANCELLED" && <p className="text-amber-700">O preparo depende da confirmação do pagamento.</p>}
         <div className="overflow-x-auto">
           <table className="data-table">
             <caption className="sr-only">Itens do pedido</caption>

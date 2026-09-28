@@ -1,3 +1,5 @@
+import { Payment } from '../entities/payment.entity';
+import { In } from 'typeorm';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -14,7 +16,17 @@ export class ListOrderHistoryUseCase {
     private readonly unitAuthorizationService: UnitAuthorizationService,
   ) {}
 
-  async execute(currentUser: User): Promise<Order[]> {
+  async execute(currentUser: User): Promise<(Order & { payment_method?: string | null })[]> {
+    const orders = await this.list(currentUser);
+    if (!orders.length) return orders;
+    const payments = await this.orderRepository.manager.find(Payment, {
+      where: { order_id: In(orders.map((o) => o.id)) },
+    });
+    const methods = new Map(payments.map((p) => [p.order_id, p.method]));
+    return orders.map((o) => Object.assign(o, { payment_method: methods.get(o.id) ?? null }));
+  }
+
+  private async list(currentUser: User): Promise<Order[]> {
     if (currentUser.global_role === GlobalRole.SUPER_ADMIN) {
       return this.orderRepository.find({
         relations: ['client'],

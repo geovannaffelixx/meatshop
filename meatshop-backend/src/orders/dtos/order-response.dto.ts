@@ -150,6 +150,10 @@ export class OrderResponseDto {
   })
   payment_status: string;
 
+  checkout_id: string | null;
+  payment_due_at: Date | null;
+  change_for: number | null;
+
   @ApiProperty({
     description: 'Indicates whether the order has a scheduled delivery date',
     example: false,
@@ -204,6 +208,10 @@ export class OrderResponseDto {
     method: string | null;
     status: string;
     payment_date: Date | null;
+    refunded_amount: number;
+    fee_amount: number;
+    refund_status: string | null;
+    receipt_reference: string | null;
   } | null;
 
   @ApiPropertyOptional({
@@ -238,6 +246,9 @@ export class OrderResponseDto {
     dto.coupon_id = order.coupon_id;
     dto.delivery_type = order.delivery_type;
     dto.payment_status = order.payment_status;
+    dto.checkout_id = order.checkout_id;
+    dto.payment_due_at = order.payment_due_at;
+    dto.change_for = order.change_for == null ? null : Number(order.change_for);
     dto.is_scheduled = order.is_scheduled;
     dto.scheduled_delivery_date = order.scheduled_delivery_date;
     dto.cancellation_reason = order.cancellation_reason;
@@ -249,6 +260,10 @@ export class OrderResponseDto {
           method: payment.method,
           status: payment.status,
           payment_date: payment.payment_date,
+          refunded_amount: Number(payment.refunded_amount ?? 0),
+          fee_amount: Number(payment.fee_amount ?? 0),
+          refund_status: payment.refund_status,
+          receipt_reference: payment.receipt_reference,
         }
       : null;
     dto.delivery_code = deliveryCode;

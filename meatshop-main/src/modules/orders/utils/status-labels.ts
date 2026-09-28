@@ -13,6 +13,8 @@ export const PAYMENT_STATUS_LABELS: Record<string, string> = {
   PAID: "Pago",
   REJECTED: "Rejeitado",
   REFUNDED: "Reembolsado",
+  PARTIALLY_REFUNDED: "Reembolsado parcialmente",
+  CHARGED_BACK: "Contestado",
   CANCELLED: "Cancelado",
 };
 

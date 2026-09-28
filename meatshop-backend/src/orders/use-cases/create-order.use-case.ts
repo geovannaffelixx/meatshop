@@ -1,3 +1,8 @@
+import { SellerAccountsService } from '../../payments/seller-accounts.service';
+import { isOfflinePayment } from '../../payments/payment-policy';
+import { PaymentMethod } from '../enums/payment-method.enum';
+import { PaymentStatus } from '../enums/payment-status.enum';
+import { OrderStatus } from '../enums/order-status.enum';
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, Repository } from 'typeorm';
@@ -47,6 +52,7 @@ export class CreateOrderUseCase {
     private readonly deliveryCodeService: DeliveryCodeService,
     @InjectDataSource()
     private readonly dataSource: DataSource,
+    private readonly mp: SellerAccountsService,
   ) {}
 
   async execute(
@@ -60,13 +66,27 @@ export class CreateOrderUseCase {
       return this.toResponse(checkoutId, existing);
     }
 
+    if (!dto.payment_method) throw new BadRequestException('Choose a payment method');
+    if (!isOfflinePayment(dto.payment_method) && !this.mp.enabled)
+      throw new BadRequestException({
+        code: 'PAYMENTS_DISABLED',
+        message: 'Online payments are currently unavailable.',
+      });
+    if (dto.change_for != null && dto.payment_method !== PaymentMethod.CASH)
+      throw new BadRequestException('Change is only available for cash');
     const cart = await this.cartAccessService.getOrCreateCart(currentUser.id);
     const previewItems = await this.loadItems(this.dataSource.manager, cart.id);
     this.assertCart(previewItems);
     const previewGroups = this.pricing.group(previewItems, dto);
     await this.validateSchedule(dto, previewGroups);
+    if (!isOfflinePayment(dto.payment_method))
+      for (const group of previewGroups) await this.mp.forUnit(group.unitId, true);
 
     const transaction = await this.dataSource.transaction(async (manager) => {
+      await manager.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`checkout:${checkoutId}`]);
+      const owner = await manager.findOne(Order, { where: { checkout_id: checkoutId } });
+      if (owner && owner.client_id !== currentUser.id)
+        throw new BadRequestException('Idempotency key is already in use');
       await manager
         .getRepository(Cart)
         .createQueryBuilder('cart')
@@ -89,6 +109,8 @@ export class CreateOrderUseCase {
       this.assertCart(items);
       const groups = this.pricing.group(items, dto);
       await this.lockAndValidateStock(manager, items);
+      if (dto.change_for != null && groups.length > 1)
+        throw new BadRequestException('Use exact cash for a multi-unit checkout');
       const address = await this.resolveAddress(manager, dto, currentUser.id);
 
       const results: CreatedOrder[] = [];
@@ -97,6 +119,17 @@ export class CreateOrderUseCase {
           await this.createUnitOrder(manager, dto, currentUser, checkoutId, group, address),
         );
       }
+      if (
+        dto.expected_total != null &&
+        Math.round(dto.expected_total * 100) !==
+          Math.round(
+            results.reduce((sum, result) => sum + Number(result.order.total_amount), 0) * 100,
+          )
+      )
+        throw new BadRequestException({
+          code: 'QUOTE_CHANGED',
+          message: 'Order total changed. Review the updated quote before confirming.',
+        });
       await manager.delete(CartItem, { cart_id: cart.id });
       return { results, replay: false };
     });
@@ -134,6 +167,8 @@ export class CreateOrderUseCase {
         dto.scheduled_delivery_date ? new Date(dto.scheduled_delivery_date) : new Date(),
       ),
     );
+    if (dto.change_for != null && dto.change_for < amounts.total_amount)
+      throw new BadRequestException('Change amount must cover the order total');
     const scheduledDate = dto.scheduled_delivery_date
       ? new Date(dto.scheduled_delivery_date)
       : null;
@@ -141,6 +176,12 @@ export class CreateOrderUseCase {
       Order,
       manager.create(Order, {
         checkout_id: checkoutId,
+        change_for: dto.change_for ?? null,
+        payment_due_at: isOfflinePayment(dto.payment_method)
+          ? null
+          : new Date(Date.now() + 30 * 60_000),
+        payment_status: amounts.total_amount === 0 ? PaymentStatus.PAID : PaymentStatus.PENDING,
+        status: amounts.total_amount === 0 ? OrderStatus.CONFIRMED : OrderStatus.PENDING,
         client_id: user.id,
         unit_id: group.unitId,
         delivery_type: dto.delivery_type,
@@ -181,6 +222,8 @@ export class CreateOrderUseCase {
       manager.create(Payment, {
         order_id: order.id,
         method: dto.payment_method ?? null,
+        status: amounts.total_amount === 0 ? PaymentStatus.PAID : PaymentStatus.PENDING,
+        payment_date: amounts.total_amount === 0 ? new Date() : null,
       }),
     );
     await manager.save(

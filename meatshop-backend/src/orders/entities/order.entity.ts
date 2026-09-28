@@ -21,6 +21,12 @@ import { PaymentStatus } from '../enums/payment-status.enum';
 
 @Entity('orders')
 export class Order {
+  @Column({ type: 'timestamptz', nullable: true })
+  payment_due_at: Date | null;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
+  change_for: number | null;
+
   @PrimaryGeneratedColumn()
   id: number;
 

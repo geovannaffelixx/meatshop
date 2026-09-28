@@ -31,6 +31,7 @@ type Order = {
   status: string
   delivery_status: string | null
   delivery_type: string
+  payment_method?: string | null
   payment_status: string
   total_amount: number
   scheduled_delivery_date: string | null
@@ -153,7 +154,7 @@ export function OrdersTable({ filters, currentPage, onPageChange }: OrdersTableP
                 <td className="whitespace-nowrap font-medium">{formatCurrency(o.total_amount)}</td>
                 <td>{o.delivery_type === "DELIVERY" ? "Entrega" : "Retirada"}</td>
                 <td className="space-x-3 whitespace-nowrap text-right">
-                  {o.status === "PENDING" && (
+                  {o.status === "PENDING" && (o.payment_status === "PAID" || ["Cash", "Card on Delivery"].includes(o.payment_method ?? "")) && (
                     <button
                       onClick={() => handleConfirm(o.id)}
                       disabled={confirmingId === o.id}

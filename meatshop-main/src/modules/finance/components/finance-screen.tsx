@@ -16,6 +16,7 @@ import { Textarea } from "@/shared/components/ui/textarea"
 import { RequiredMark } from "@/shared/components/ui/required-mark"
 import { Spinner } from "@/shared/components/ui/spinner"
 import { Plus } from "lucide-react"
+import { PaymentManagement } from "./payment-management"
 import { FinanceSummary } from "./finance-summary"
 import { apiGet, apiPost, apiPut, apiDelete } from "@/shared/lib/api"
 import { toast } from "@/shared/lib/toast"
@@ -425,6 +426,8 @@ export function FinanceScreen() {
               </label>
             )}
           </div>
+
+          {unitId && <PaymentManagement key={unitId} unitId={unitId} />}
 
           {!unitsLoading && units.length === 0 && (
             <div className="text-center text-red-600">

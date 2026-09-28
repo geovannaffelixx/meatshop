@@ -43,6 +43,20 @@ export class GetOrdersChartUseCase {
 
     const inRange = orders.filter((o) => o.order_date >= start);
     const series = this.buildDailySeries(inRange, start, days);
+    const receipts = await this.orderRepository
+      .createQueryBuilder('o')
+      .innerJoin('payments', 'p', 'p.order_id=o.id')
+      .select([
+        "TO_CHAR(p.payment_date,'YYYY-MM-DD') AS day",
+        'SUM(GREATEST(0,o.total_amount-p.refunded_amount-p.fee_amount)) AS revenue',
+      ])
+      .where('o.unit_id=:unitId', { unitId })
+      .andWhere("p.status IN ('PAID','PARTIALLY_REFUNDED')")
+      .andWhere('p.payment_date>=:start', { start })
+      .groupBy("TO_CHAR(p.payment_date,'YYYY-MM-DD')")
+      .getRawMany();
+    for (const point of series)
+      point.revenue = Number(receipts.find((r) => r.day === point.date)?.revenue ?? 0);
     const statusBreakdown = this.buildStatusBreakdown(inRange);
 
     return { series, statusBreakdown };

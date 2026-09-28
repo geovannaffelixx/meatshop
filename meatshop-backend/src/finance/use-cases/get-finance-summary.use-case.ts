@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Like, Repository } from 'typeorm';
 import { UnitPermission } from '../../common/enums/unit-permission.enum';
 import { Order } from '../../orders/entities/order.entity';
-import { OrderStatus } from '../../orders/enums/order-status.enum';
 import { UnitAuthorizationService } from '../../units/services/unit-authorization.service';
 import { User } from '../../users/entities/user.entity';
 import { FinanceReportQueryDto } from '../dtos/finance-report-query.dto';
@@ -47,15 +46,22 @@ export class GetFinanceSummaryUseCase {
         },
       ],
     });
-    const expensesTotal = expenses.reduce((s, e) => s + Number(e.paidAmount ?? 0), 0);
+    const [deliveryCosts] = await this.orderRepository.manager.query(
+      'SELECT COALESCE(SUM(s.amount),0) AS total FROM delivery_settlements s JOIN orders o ON o.id=s.order_id WHERE o.unit_id=$1 AND s.paid_at >= $2 AND s.paid_at < $3',
+      [unitId, start, end],
+    );
+    const expensesTotal =
+      expenses.reduce((s, e) => s + Number(e.paidAmount ?? 0), 0) + Number(deliveryCosts.total);
 
     const { entities: orders, raw } = await this.orderRepository
       .createQueryBuilder('o')
       .leftJoin('payments', 'p', 'p.order_id = o.id')
       .addSelect('p.method', 'payment_method')
-      .where('o.status = :st', { st: OrderStatus.DELIVERED })
+      .addSelect('p.refunded_amount', 'refunded_amount')
+      .addSelect('p.fee_amount', 'fee_amount')
+      .where("p.status IN ('PAID','PARTIALLY_REFUNDED')")
       .andWhere('o.unit_id = :unitId', { unitId })
-      .andWhere('o.order_date >= :start AND o.order_date < :end', {
+      .andWhere('p.payment_date >= :start AND p.payment_date < :end', {
         start,
         end,
       })
@@ -64,7 +70,16 @@ export class GetFinanceSummaryUseCase {
     const paymentsMap = new Map<string, number>();
     orders.forEach((o, i) => {
       const key = raw[i]?.payment_method ?? 'Other';
-      paymentsMap.set(key, (paymentsMap.get(key) ?? 0) + Number(o.total_amount ?? 0));
+      paymentsMap.set(
+        key,
+        (paymentsMap.get(key) ?? 0) +
+          Math.max(
+            0,
+            Number(o.total_amount ?? 0) -
+              Number(raw[i]?.refunded_amount ?? 0) -
+              Number(raw[i]?.fee_amount ?? 0),
+          ),
+      );
     });
 
     const payments = Array.from(paymentsMap.entries()).map(([name, value]) => ({
