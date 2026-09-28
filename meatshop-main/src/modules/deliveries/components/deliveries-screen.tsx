@@ -97,7 +97,7 @@ export function DeliveriesScreen() {
   const [loading, setLoading] = useState(true);
   const [connected, setConnected] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
-  const [now, setNow] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
   const [tab, setTab] = useState<"operation" | "people">("operation");
   const [assigningOrder, setAssigningOrder] = useState<LiveDelivery | null>(
     null,
@@ -199,7 +199,7 @@ export function DeliveriesScreen() {
         return {
           ...current,
           deliveries: current.deliveries.map((delivery) =>
-            delivery.orderId === event.orderId
+            delivery.orderId === event.orderId && delivery.deliveryPerson?.id === event.deliveryPersonId
               ? {
                   ...delivery,
                   location: newerPoint(delivery.location, event),

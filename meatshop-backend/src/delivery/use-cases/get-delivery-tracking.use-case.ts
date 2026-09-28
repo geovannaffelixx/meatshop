@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MoreThanOrEqual, Repository } from 'typeorm';
 import { Order } from '../../orders/entities/order.entity';
 import { UnitAuthorizationService } from '../../units/services/unit-authorization.service';
 import { User } from '../../users/entities/user.entity';
@@ -25,7 +25,11 @@ export class GetDeliveryTrackingUseCase {
     const sender = await this.people.findOne({ where: { id: order.delivery_person_id! } });
     if (!sender?.is_online || sender.status !== 'ACTIVE') return [];
     return this.tracking.find({
-      where: { order_id: orderId, delivery_person_id: order.delivery_person_id! },
+      where: {
+        order_id: orderId,
+        delivery_person_id: order.delivery_person_id!,
+        created_at: MoreThanOrEqual(order.tracking_consent_at),
+      },
       order: { created_at: 'DESC', id: 'DESC' },
       take: 1,
     });

@@ -135,8 +135,8 @@ export class UnitAddressService {
       ['zip_code', 'street', 'number', 'city', 'state', 'neighborhood'].some(
         (key) =>
           input[key as keyof AddressInput] !== undefined &&
-          String(input[key as keyof AddressInput]).trim() !==
-            String(current[key as keyof AddressInput] ?? '').trim(),
+          this.normalizedAddressField(key, input[key as keyof AddressInput]) !==
+            this.normalizedAddressField(key, current[key as keyof AddressInput]),
       );
     if (!hasLat && !changed && current)
       return {
@@ -175,5 +175,12 @@ export class UnitAddressService {
       longitude: approximate?.longitude ?? null,
       coordinate_source: approximate?.latitude != null ? 'POSTAL_CODE' : 'UNRESOLVED',
     };
+  }
+
+  private normalizedAddressField(key: string, value: unknown): string {
+    const text = String(value ?? '').trim();
+    if (key === 'zip_code') return text.replace(/\D/g, '');
+    if (key === 'state') return text.toUpperCase();
+    return text;
   }
 }

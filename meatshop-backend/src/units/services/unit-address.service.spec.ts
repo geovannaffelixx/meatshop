@@ -81,4 +81,19 @@ describe('Address resolution', () => {
       service.coordinatesFor({ zip_code: '01001000', latitude: 0, longitude: 0 }),
     ).rejects.toThrow();
   });
+
+  it('preserves a confirmed pin when only CEP formatting or state casing changes', async () => {
+    const fetch = jest.spyOn(globalThis, 'fetch');
+    const current = {
+      zip_code: '01001000',
+      state: 'SP',
+      latitude: -23.5,
+      longitude: -46.6,
+      coordinate_source: 'USER_PIN',
+    };
+    expect(
+      await service.coordinatesFor({ zip_code: '01001-000', state: 'sp' }, current),
+    ).toMatchObject({ latitude: -23.5, longitude: -46.6, coordinate_source: 'USER_PIN' });
+    expect(fetch).not.toHaveBeenCalled();
+  });
 });

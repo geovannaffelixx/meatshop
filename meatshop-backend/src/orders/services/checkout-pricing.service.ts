@@ -117,7 +117,9 @@ export class CheckoutPricingService {
       Math.cos(toRadians(unitLat)) *
         Math.cos(toRadians(destinationLat)) *
         Math.sin(longitudeDelta / 2) ** 2;
-    const distanceKm = 6371 * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+    const clampedHaversine = Math.min(1, Math.max(0, haversine));
+    const distanceKm =
+      6371 * 2 * Math.atan2(Math.sqrt(clampedHaversine), Math.sqrt(1 - clampedHaversine));
     if (distanceKm > Number(unit.delivery_radius_km ?? 25)) {
       throw new BadRequestException({
         code: 'OUTSIDE_DELIVERY_AREA',

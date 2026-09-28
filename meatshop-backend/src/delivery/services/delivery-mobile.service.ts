@@ -346,6 +346,8 @@ export class DeliveryMobileService {
   private mapOrder(order: Order, items: OrderItem[], includeDestination = true) {
     const address = order.destination_snapshot ?? order.address;
     const unit = order.unit;
+    const pickupPoint = this.navigationPoint(unit);
+    const destinationPoint = this.navigationPoint(includeDestination ? address : null);
     return {
       id: order.id,
       client_id: String(order.client_id),
@@ -361,10 +363,10 @@ export class DeliveryMobileService {
       sharing_enabled: Boolean(order.tracking_consent_at && !order.tracking_revoked_at),
       delivery_status: order.delivery_status,
       delivery_step: order.delivery_step,
-      unit_lat: unit?.latitude === null ? null : Number(unit?.latitude),
-      unit_lng: unit?.longitude === null ? null : Number(unit?.longitude),
-      dest_lat: includeDestination && address?.latitude != null ? Number(address.latitude) : null,
-      dest_lng: includeDestination && address?.longitude != null ? Number(address.longitude) : null,
+      unit_lat: pickupPoint.latitude,
+      unit_lng: pickupPoint.longitude,
+      dest_lat: destinationPoint.latitude,
+      dest_lng: destinationPoint.longitude,
       unit_address: unit ? this.address(unit) : {},
       delivery_address: address
         ? includeDestination
@@ -377,6 +379,36 @@ export class DeliveryMobileService {
         : {},
       updated_at: order.updated_at,
     };
+  }
+
+  private navigationPoint(
+    value:
+      | {
+          latitude?: number | string | null;
+          longitude?: number | string | null;
+          coordinate_source?: string;
+        }
+      | null
+      | undefined,
+  ) {
+    if (
+      value?.coordinate_source !== 'USER_PIN' ||
+      value.latitude == null ||
+      value.longitude == null
+    ) {
+      return { latitude: null, longitude: null };
+    }
+    const latitude = Number(value.latitude);
+    const longitude = Number(value.longitude);
+    if (
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude) ||
+      Math.abs(latitude) > 90 ||
+      Math.abs(longitude) > 180
+    ) {
+      return { latitude: null, longitude: null };
+    }
+    return { latitude, longitude };
   }
 
   private address(value: {
