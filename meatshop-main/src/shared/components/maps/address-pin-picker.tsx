@@ -22,7 +22,9 @@ function PinMap({initial,onConfirm}:{initial?:AddressPin|null;onConfirm:(point:A
   const marker=useRef<Marker|null>(null);
   const [point,setPoint]=useState<AddressPin|null>(initial&&validPoint(initial.latitude,initial.longitude)?initial:null);
   const [error,setError]=useState('');
+  const [message,setMessage]=useState('');
   const [ready,setReady]=useState(false);
+  const [locating,setLocating]=useState(false);
   useEffect(()=>{
     let cancelled=false;
     const timeout=setTimeout(()=>{if(!cancelled)setError('O mapa demorou para carregar. Feche e tente novamente.');},15000);
@@ -47,20 +49,49 @@ function PinMap({initial,onConfirm}:{initial?:AddressPin|null;onConfirm:(point:A
     return ()=>{cancelled=true;clearTimeout(timeout);marker.current?.remove();map.current?.remove();map.current=null;};
   },[initial]);
   function locate(){
-    if(!navigator.geolocation){setError('Localização indisponível. Escolha o ponto manualmente.');return;}
+    setError('');
+    setMessage('');
+    if(!window.isSecureContext&&window.location.hostname!=='localhost'){
+      setError('A localização do navegador exige uma conexão HTTPS. Você ainda pode marcar o ponto manualmente.');
+      return;
+    }
+    if(!navigator.geolocation){
+      setError('Localização indisponível neste navegador. Escolha o ponto manualmente.');
+      return;
+    }
+    setLocating(true);
     navigator.geolocation.getCurrentPosition(position=>{
       const next={latitude:position.coords.latitude,longitude:position.coords.longitude};
-      setPoint(next); map.current?.flyTo({center:[next.longitude,next.latitude],zoom:18});
-      if(map.current)marker.current?.setLngLat([next.longitude,next.latitude]).addTo(map.current);
-      setError(`Precisão do GPS: ${Math.round(position.coords.accuracy)} m. Confira a entrada antes de confirmar.`);
-    },()=>setError('Sem acesso ao GPS. Você pode marcar o ponto manualmente.'),{enableHighAccuracy:true,timeout:15000,maximumAge:0});
+      if(!validPoint(next.latitude,next.longitude)){
+        setError('O navegador retornou uma localização inválida. Escolha o ponto manualmente.');
+        setLocating(false);
+        return;
+      }
+      const instance=map.current;
+      setPoint(next);
+      instance?.flyTo({center:[next.longitude,next.latitude],zoom:18,essential:true});
+      if(instance)marker.current?.setLngLat([next.longitude,next.latitude]).addTo(instance);
+      setMessage(`Localização encontrada com precisão aproximada de ${Math.round(position.coords.accuracy)} m. Confira a entrada antes de confirmar.`);
+      setLocating(false);
+    },geolocationError=>{
+      const locationError=geolocationError.code===geolocationError.PERMISSION_DENIED
+        ? 'A permissão de localização foi negada. Libere-a nas configurações do navegador ou marque o ponto manualmente.'
+        : geolocationError.code===geolocationError.POSITION_UNAVAILABLE
+          ? 'O navegador não conseguiu determinar sua localização. Verifique o serviço de localização do dispositivo.'
+          : 'A busca da localização demorou demais. Tente novamente ou marque o ponto manualmente.';
+      setError(locationError);
+      setLocating(false);
+    },{enableHighAccuracy:true,timeout:20000,maximumAge:10000});
   }
   return <>
     <div ref={host} className="h-80 w-full rounded-lg" aria-label="Escolha o ponto do endereço" />
     {!ready&&!error&&<p role="status">Carregando mapa…</p>}
-    {error&&<p role="status" className="text-sm">{error}</p>}
+    {message&&<p role="status" className="text-sm text-emerald-700">{message}</p>}
+    {error&&<p role="alert" className="text-sm text-red-700">{error}</p>}
     <div className="flex justify-between gap-3">
-      <button type="button" onClick={locate} disabled={!ready} className="rounded border px-3 py-2">Usar minha localização</button>
+      <button type="button" onClick={locate} disabled={!ready||locating} className="rounded border px-3 py-2 disabled:opacity-50">
+        {locating?'Buscando localização…':'Usar minha localização'}
+      </button>
       <button type="button" disabled={!point||!ready} onClick={()=>point&&onConfirm(point)}
         className="rounded bg-red-700 px-3 py-2 text-white disabled:opacity-50">Confirmar ponto</button>
     </div>
