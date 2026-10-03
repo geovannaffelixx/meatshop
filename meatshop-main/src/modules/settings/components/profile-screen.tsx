@@ -6,7 +6,7 @@ import { AddressPinPicker, type AddressPin } from '@/shared/components/maps/addr
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
 import { Spinner } from "@/shared/components/ui/spinner";
 import {
-  API_URL,
+  apiUpload,
   apiGet,
   apiPatch,
   apiPost,
@@ -206,12 +206,7 @@ function UnitSettings() {
     const body = new FormData();
     body.append("file", file);
     try {
-      const response = await fetch(`${API_URL}/units/${unitId}/logo`, {
-        method: "POST",
-        body,
-        credentials: "include",
-      });
-      if (!response.ok) throw new Error("Não foi possível enviar a imagem.");
+      await apiUpload(`/units/${unitId}/logo`, body, { silent: true });
       toast.success("Logo da unidade atualizada.");
       await Promise.all([load(), refresh()]);
     } catch (error) {
