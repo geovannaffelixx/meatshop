@@ -86,8 +86,11 @@ export class AssignDeliveryPersonUseCase {
       ? null
       : this.deliveryCodeService.issue(order, 'DELIVERY');
     const result = await this.orderRepository.update(
-      { id: orderId, unit_id: unitId, delivery_person_id: IsNull() },
+      { id: orderId, unit_id: unitId, delivery_person_id: IsNull(), status: OrderStatus.READY },
       {
+        tracking_session_id: null,
+        tracking_consent_at: null,
+        tracking_revoked_at: new Date(),
         delivery_person_id: deliveryPerson.id,
         delivery_status: DeliveryStatus.PICKUP,
         delivery_step: DeliveryStep.PICKUP,

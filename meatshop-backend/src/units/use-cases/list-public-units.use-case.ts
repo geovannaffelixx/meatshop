@@ -1,10 +1,11 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, IsNull, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Review } from '../../reviews/entities/review.entity';
 import { FilterPublicUnitsDto } from '../dtos/filter-public-units.dto';
 import { PublicUnitDto } from '../dtos/public-unit.dto';
 import { Unit } from '../entities/unit.entity';
+import { distanceMeters } from '../../delivery/services/tracking-policy';
 
 @Injectable()
 export class ListPublicUnitsUseCase {
@@ -14,78 +15,71 @@ export class ListPublicUnitsUseCase {
   ) {}
 
   async execute(filters: FilterPublicUnitsDto) {
-    const hasLat = filters.lat !== undefined;
-    const hasLng = filters.lng !== undefined;
-    if (hasLat !== hasLng) {
+    const located = filters.lat !== undefined;
+    if (located !== (filters.lng !== undefined))
       throw new BadRequestException('Latitude and longitude must be provided together');
-    }
-
-    const all = await this.units.find({ order: { name: 'ASC', id: 'ASC' } });
-    const reviews =
-      all.length === 0
-        ? []
-        : await this.reviews.find({
-            where: {
-              unit_id: In(all.map((unit) => unit.id)),
-              product_id: IsNull(),
-            },
-          });
-    const ratings = new Map<number, { sum: number; count: number }>();
-    for (const review of reviews) {
-      const current = ratings.get(review.unit_id) ?? { sum: 0, count: 0 };
-      current.sum += review.rating;
-      current.count += 1;
-      ratings.set(review.unit_id, current);
-    }
-    const located = all
-      .map((unit) => ({
-        unit,
-        distance: hasLat ? this.distance(filters.lat!, filters.lng!, unit) : null,
-      }))
-      .filter(
-        ({ distance }) => !hasLat || (distance !== null && distance <= (filters.radius_km ?? 25)),
-      )
-      .sort((a, b) =>
-        hasLat ? a.distance! - b.distance! || a.unit.name.localeCompare(b.unit.name) : 0,
-      );
-    const start = (filters.page - 1) * filters.limit;
-    const data = located
-      .slice(start, start + filters.limit)
-      .map(({ unit, distance }) =>
+    const query = this.units.createQueryBuilder('unit');
+    if (located) {
+      // Clamp the cosine to protect acos from floating-point rounding near identical points.
+      const distance =
+        '6371 * acos(LEAST(1.0,GREATEST(-1.0,sin(radians(:lat))*sin(radians(unit.latitude::float8)) + cos(radians(:lat))*cos(radians(unit.latitude::float8))*cos(radians(unit.longitude::float8-:lng)))))';
+      query
+        .andWhere('unit.latitude IS NOT NULL AND unit.longitude IS NOT NULL')
+        .andWhere(distance + ' <= LEAST(:radius,unit.delivery_radius_km)', {
+          lat: filters.lat,
+          lng: filters.lng,
+          radius: filters.radius_km ?? 25,
+        })
+        .addSelect(distance, 'distance')
+        .orderBy('distance', 'ASC');
+    } else query.orderBy('unit.name', 'ASC');
+    query
+      .addOrderBy('unit.id', 'ASC')
+      .skip((filters.page - 1) * filters.limit)
+      .take(filters.limit);
+    const [units, total] = await query.getManyAndCount();
+    const ratings = units.length
+      ? await this.reviews
+          .createQueryBuilder('r')
+          .select('r.unit_id', 'unit_id')
+          .addSelect('AVG(r.rating)', 'average')
+          .addSelect('COUNT(*)', 'count')
+          .where('r.unit_id IN (:...ids)', { ids: units.map((u) => u.id) })
+          .andWhere('r.product_id IS NULL')
+          .groupBy('r.unit_id')
+          .getRawMany<{ unit_id: number; average: string; count: string }>()
+      : [];
+    const byUnit = new Map(
+      ratings.map((r) => [
+        r.unit_id,
+        { average: Number(Number(r.average).toFixed(1)), count: Number(r.count) },
+      ]),
+    );
+    return {
+      data: units.map((unit) =>
         PublicUnitDto.fromEntity(
           unit,
-          distance == null ? undefined : Number(distance.toFixed(2)),
-          this.rating(ratings.get(unit.id)),
+          located
+            ? Number(
+                (
+                  distanceMeters(
+                    filters.lat!,
+                    filters.lng!,
+                    Number(unit.latitude),
+                    Number(unit.longitude),
+                  ) / 1000
+                ).toFixed(2),
+              )
+            : undefined,
+          byUnit.get(unit.id),
         ),
-      );
-    return {
-      data,
+      ),
       meta: {
         page: filters.page,
         limit: filters.limit,
-        total: located.length,
-        totalPages: Math.max(Math.ceil(located.length / filters.limit), 1),
+        total,
+        totalPages: Math.max(1, Math.ceil(total / filters.limit)),
       },
     };
-  }
-
-  private rating(value?: { sum: number; count: number }) {
-    return value
-      ? {
-          average: Number((value.sum / value.count).toFixed(1)),
-          count: value.count,
-        }
-      : { average: 0, count: 0 };
-  }
-
-  private distance(lat: number, lng: number, unit: Unit): number | null {
-    if (unit.latitude == null || unit.longitude == null) return null;
-    const radians = (value: number) => (value * Math.PI) / 180;
-    const dLat = radians(Number(unit.latitude) - lat);
-    const dLng = radians(Number(unit.longitude) - lng);
-    const a =
-      Math.sin(dLat / 2) ** 2 +
-      Math.cos(radians(lat)) * Math.cos(radians(Number(unit.latitude))) * Math.sin(dLng / 2) ** 2;
-    return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 }

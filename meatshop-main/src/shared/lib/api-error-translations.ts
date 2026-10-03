@@ -6,6 +6,11 @@ type ApiErrorPayload = {
 };
 
 const ERROR_CODE_MESSAGES: Record<string, string> = {
+  DELIVERY_LOCATION_REQUIRED: "Confirme no mapa a localização da unidade e do endereço de entrega.",
+  DELIVERY_LOCATION_CONFIRMATION_REQUIRED: "Marque a entrada da unidade e o endereço de entrega no mapa.",
+  OUTSIDE_DELIVERY_AREA: "O endereço está fora da área de entrega desta unidade.",
+  PIN_TOO_FAR: "O ponto está muito distante do CEP. Confira o endereço e o mapa.",
+  CEP_PROVIDER_UNAVAILABLE: "A consulta de CEP está indisponível. Preencha o endereço e marque o ponto no mapa.",
   EMAIL_ALREADY_EXISTS: "Já existe uma conta cadastrada com este e-mail.",
   CPF_ALREADY_EXISTS: "Já existe uma conta cadastrada com este CPF.",
   CNPJ_ALREADY_EXISTS: "Já existe um açougue cadastrado com este CNPJ.",

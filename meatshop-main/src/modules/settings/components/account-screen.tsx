@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
 import { Spinner } from "@/shared/components/ui/spinner";
 import { PasswordInput } from "@/shared/components/ui/password-input";
-import { API_URL, apiPatch, apiPost } from "@/shared/lib/api";
+import { API_URL, apiUpload, apiPatch, apiPost } from "@/shared/lib/api";
 import { toast } from "@/shared/lib/toast";
 import { PageHeader } from "@/shared/components/page-header";
 import { RequiredMark } from "@/shared/components/ui/required-mark";
@@ -73,12 +73,7 @@ function AccountForm() {
     const body = new FormData();
     body.append("file", file);
     try {
-      const response = await fetch(`${API_URL}/users/${user.id}/logo`, {
-        method: "POST",
-        body,
-        credentials: "include",
-      });
-      if (!response.ok) throw new Error("Não foi possível enviar a imagem.");
+      await apiUpload(`/users/${user.id}/logo`, body, { silent: true });
       await refresh();
       toast.success("Foto de perfil atualizada.");
     } catch (error) {

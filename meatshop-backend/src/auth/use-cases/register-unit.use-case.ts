@@ -8,6 +8,7 @@ import { AppProfile } from '../../common/enums/app-profile.enum';
 import { LocalRole } from '../../common/enums/local-role.enum';
 import { EmailService } from '../../email/email.service';
 import { verifyEmailTemplate } from '../../email/templates/verify-email.template';
+import { UnitAddressService } from '../../units/services/unit-address.service';
 import { Unit } from '../../units/entities/unit.entity';
 import { UserUnit } from '../../units/entities/user-unit.entity';
 import { User } from '../../users/entities/user.entity';
@@ -30,6 +31,7 @@ export class RegisterUnitUseCase {
     private readonly emailService: EmailService,
     private readonly configService: ConfigService,
     private readonly loginUseCase: LoginUseCase,
+    private readonly geocoding: UnitAddressService,
   ) {}
 
   async execute(dto: RegisterUnitDto) {
@@ -37,6 +39,7 @@ export class RegisterUnitUseCase {
     await this.ensureCpfIsUnique(dto.owner.cpf);
     await this.ensureCnpjIsUnique(dto.unit.cnpj);
 
+    const coordinates = await this.geocoding.coordinatesFor(dto.unit);
     const { user, unit } = await this.dataSource.transaction(async (manager) => {
       const user = await manager.save(
         User,
@@ -55,6 +58,7 @@ export class RegisterUnitUseCase {
         Unit,
         manager.create(Unit, {
           ...dto.unit,
+          ...coordinates,
           admin_id: user.id,
         }),
       );

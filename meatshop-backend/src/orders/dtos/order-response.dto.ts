@@ -42,6 +42,9 @@ export class OrderItemResponseDto {
 }
 
 export class OrderResponseDto {
+  @ApiPropertyOptional()
+  destination: Order['destination_snapshot'];
+
   @ApiProperty({ description: 'Order ID', example: 1001 })
   id: number;
 
@@ -235,6 +238,7 @@ export class OrderResponseDto {
     dto.discount_amount = Number(order.discount_amount);
     dto.delivery_fee = Number(order.delivery_fee);
     dto.address_id = order.address_id;
+    dto.destination = order.destination_snapshot;
     dto.coupon_id = order.coupon_id;
     dto.delivery_type = order.delivery_type;
     dto.payment_status = order.payment_status;

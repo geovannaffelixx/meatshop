@@ -134,6 +134,14 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/dependency-review-action@v4
+      # Dependency Review is unavailable when GitHub's dependency graph is disabled.
+      # Audit both locked production trees without requiring that repository feature.
+      - uses: actions/setup-node@v4
         with:
-          fail-on-severity: high
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Audit backend lockfile
+        working-directory: meatshop-backend
+        run: npm audit --package-lock-only --omit=dev --audit-level=high
+      - name: Audit frontend lockfile
+        working-directory: meatshop-main
+        run: npm audit --package-lock-only --omit=dev --audit-level=high

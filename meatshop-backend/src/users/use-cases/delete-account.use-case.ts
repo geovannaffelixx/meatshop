@@ -33,6 +33,17 @@ export class DeleteAccountUseCase {
           is_default: false,
         },
       );
+      await manager.query(
+        'DELETE FROM delivery_tracking WHERE order_id IN (SELECT id FROM orders WHERE client_id=$1 OR delivery_person_id IN (SELECT id FROM delivery_persons WHERE user_id=$1))',
+        [userId],
+      );
+      await manager.query('UPDATE orders SET destination_snapshot=NULL WHERE client_id=$1', [
+        userId,
+      ]);
+      await manager.query(
+        'UPDATE orders SET tracking_session_id=NULL, tracking_revoked_at=now() WHERE client_id=$1 OR tracking_consent_user_id=$1',
+        [userId],
+      );
       await manager.delete('refresh_tokens', { user_id: userId });
       await manager.delete('user_device_tokens', { user_id: userId });
       await manager.update(User, userId, {
