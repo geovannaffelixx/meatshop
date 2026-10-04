@@ -112,7 +112,16 @@ export class DeliveryMobileService {
     }
     person.is_online = isOnline;
     person.availability_updated_at = new Date();
-    return this.access.deliveryPersonRepository.save(person);
+    const saved = await this.access.deliveryPersonRepository.save(person);
+    if (!isOnline)
+      await this.orders.update(
+        { delivery_person_id: person.id },
+        {
+          tracking_session_id: null,
+          tracking_revoked_at: new Date(),
+        },
+      );
+    return saved;
   }
 
   async listVehicles(user: User) {
@@ -340,8 +349,10 @@ export class DeliveryMobileService {
   }
 
   private mapOrder(order: Order, items: OrderItem[], includeDestination = true) {
-    const address = order.address;
+    const address = order.destination_snapshot ?? order.address;
     const unit = order.unit;
+    const pickupPoint = this.navigationPoint(unit);
+    const destinationPoint = this.navigationPoint(includeDestination ? address : null);
     return {
       id: order.id,
       client_id: String(order.client_id),
@@ -353,12 +364,14 @@ export class DeliveryMobileService {
         .join(', '),
       total_amount: Number(order.total_amount),
       delivery_fee: Number(order.delivery_fee),
+      status: order.status,
+      sharing_enabled: Boolean(order.tracking_consent_at && !order.tracking_revoked_at),
       delivery_status: order.delivery_status,
       delivery_step: order.delivery_step,
-      unit_lat: unit?.latitude === null ? null : Number(unit?.latitude),
-      unit_lng: unit?.longitude === null ? null : Number(unit?.longitude),
-      dest_lat: includeDestination && address?.latitude != null ? Number(address.latitude) : null,
-      dest_lng: includeDestination && address?.longitude != null ? Number(address.longitude) : null,
+      unit_lat: pickupPoint.latitude,
+      unit_lng: pickupPoint.longitude,
+      dest_lat: destinationPoint.latitude,
+      dest_lng: destinationPoint.longitude,
       unit_address: unit ? this.address(unit) : {},
       delivery_address: address
         ? includeDestination
@@ -373,14 +386,44 @@ export class DeliveryMobileService {
     };
   }
 
+  private navigationPoint(
+    value:
+      | {
+          latitude?: number | string | null;
+          longitude?: number | string | null;
+          coordinate_source?: string;
+        }
+      | null
+      | undefined,
+  ) {
+    if (
+      value?.coordinate_source !== 'USER_PIN' ||
+      value.latitude == null ||
+      value.longitude == null
+    ) {
+      return { latitude: null, longitude: null };
+    }
+    const latitude = Number(value.latitude);
+    const longitude = Number(value.longitude);
+    if (
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude) ||
+      Math.abs(latitude) > 90 ||
+      Math.abs(longitude) > 180
+    ) {
+      return { latitude: null, longitude: null };
+    }
+    return { latitude, longitude };
+  }
+
   private address(value: {
-    street: string | null;
-    number: string | null;
-    complement: string | null;
-    neighborhood: string | null;
-    city: string;
-    state: string;
-    zip_code: string;
+    street?: string | null;
+    number?: string | null;
+    complement?: string | null;
+    neighborhood?: string | null;
+    city?: string;
+    state?: string;
+    zip_code?: string;
   }) {
     return {
       street: value.street ?? '',

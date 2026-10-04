@@ -15,7 +15,7 @@ import { User } from '../users/entities/user.entity';
 import { CreateDeliveryPersonDto } from './dtos/create-delivery-person.dto';
 import { CreateVehicleDto } from './dtos/create-vehicle.dto';
 import { UpdateDeliveryStatusDto } from './dtos/update-delivery-status.dto';
-import { UpdateLocationDto } from './dtos/update-location.dto';
+import { UpdateLocationDto, SharingConsentDto } from './dtos/update-location.dto';
 import { AssignDeliveryPersonDto } from './dtos/assign-delivery-person.dto';
 import { VerifyDeliveryCodeDto } from './dtos/verify-delivery-code.dto';
 import { AcceptDeliveryUseCase } from './use-cases/accept-delivery.use-case';
@@ -39,6 +39,7 @@ import { RejectDeliveryOfferDto } from './dtos/reject-delivery-offer.dto';
 import { UpdateDeliveryGoalDto } from './dtos/update-delivery-goal.dto';
 import { UpdateVehicleDto } from './dtos/update-vehicle.dto';
 import { DeliveryGoalPeriod } from './entities/delivery-goal.entity';
+import { DeliveryTrackingRetentionService } from './services/delivery-tracking-retention.service';
 import { DeliveryMobileService } from './services/delivery-mobile.service';
 
 @ApiTags('Delivery')
@@ -63,7 +64,13 @@ export class DeliveryController {
     private readonly approveUnitDeliveryPersonUseCase: ApproveUnitDeliveryPersonUseCase,
     private readonly regenerateDeliveryCodeUseCase: RegenerateDeliveryCodeUseCase,
     private readonly mobileService: DeliveryMobileService,
+    private readonly trackingRetention: DeliveryTrackingRetentionService,
   ) {}
+
+  @Get('tracking-policy')
+  trackingPolicy() {
+    return this.trackingRetention.policy();
+  }
 
   @Get('me')
   me(@CurrentUser() currentUser: User) {
@@ -366,6 +373,15 @@ export class DeliveryController {
     description: 'User is not allowed to update this delivery location',
   })
   @ApiResponse({ status: 404, description: 'Order not found' })
+  @Patch('orders/:orderId/sharing')
+  setSharing(
+    @Param('orderId', ParseIntPipe) orderId: number,
+    @Body() dto: SharingConsentDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.updateDeliveryLocationUseCase.sharing(orderId, dto, user);
+  }
+
   @Post('orders/:orderId/location')
   updateLocation(
     @Param('orderId', ParseIntPipe) orderId: number,

@@ -190,6 +190,20 @@ export class CreateOrderUseCase {
             ? DeliveryStatus.WAITING_DELIVERY_PERSON
             : null,
         address_id: address?.id ?? null,
+        destination_snapshot: address
+          ? {
+              street: address.street,
+              number: address.number,
+              complement: address.complement,
+              neighborhood: address.neighborhood,
+              city: address.city,
+              state: address.state,
+              zip_code: address.zip_code,
+              latitude: address.latitude,
+              longitude: address.longitude,
+              coordinate_source: address.coordinate_source,
+            }
+          : null,
         coupon_id: prepared?.coupon.id ?? null,
         scheduled_delivery_date: scheduledDate,
         is_scheduled: scheduledDate !== null,

@@ -1,7 +1,18 @@
+import { Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsLatitude, IsLongitude, IsNumber, Min, Max } from 'class-validator';
 
 export class CreateUnitDto {
+  @Transform(({ obj, key }) => obj[key]) @IsOptional() @IsNumber() @IsLatitude() latitude?: number;
+  @Transform(({ obj, key }) => obj[key])
+  @IsOptional()
+  @IsNumber()
+  @IsLongitude()
+  longitude?: number;
+
+  @IsOptional() @IsNumber() @Min(0.1) @Max(500) delivery_radius_km?: number;
+
   @ApiProperty({
     description: 'Unit name',
     example: 'Downtown Store',

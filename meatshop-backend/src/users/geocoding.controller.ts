@@ -20,7 +20,8 @@ export class GeocodingController {
     return {
       ...address,
       source: 'BRASIL_API',
-      precision: 'POSTAL_CODE',
+      precision: address.latitude == null ? 'UNRESOLVED' : 'POSTAL_CODE',
+      coordinate_source: address.latitude == null ? 'UNRESOLVED' : 'POSTAL_CODE',
     };
   }
 }

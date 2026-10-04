@@ -57,6 +57,10 @@ export class CancelOrderUseCase {
         await manager.increment(Stock, { product_id: item.product_id }, 'quantity', item.quantity);
       }
       order.status = OrderStatus.CANCELLED;
+      order.delivery_status = null;
+      order.delivery_step = null;
+      order.tracking_session_id = null;
+      order.tracking_revoked_at = new Date();
       order.cancellation_reason = dto.reason;
       order.cancelled_at = new Date();
       order.cancelled_by = cancelledBy;

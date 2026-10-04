@@ -29,7 +29,7 @@ function isAuthExempt(path: string) {
 
 let refreshPromise: Promise<boolean> | null = null;
 
-async function refreshSession(): Promise<boolean> {
+export async function refreshSession(): Promise<boolean> {
   if (!refreshPromise) {
     refreshPromise = fetch(`${API_URL}/auth/refresh`, {
       method: "POST",

@@ -27,6 +27,21 @@ export class Order {
   @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
   change_for: number | null;
 
+  @Column({ type: 'jsonb', nullable: true })
+  destination_snapshot: Partial<Address> | null;
+
+  @Column({ type: 'uuid', nullable: true, select: false })
+  tracking_session_id: string | null;
+
+  @Column({ type: 'int', nullable: true })
+  tracking_consent_user_id: number | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  tracking_consent_at: Date | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  tracking_revoked_at: Date | null;
+
   @PrimaryGeneratedColumn()
   id: number;
 

@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Optional, Logger, OnModuleInit } from '@nestjs/common';
+import { MetricsService } from '../../metrics/metrics.service';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -7,14 +8,28 @@ import { readPositiveInteger } from '../../config/runtime-config';
 import { DeliveryTracking } from '../entities/delivery-tracking.entity';
 
 @Injectable()
-export class DeliveryTrackingRetentionService {
+export class DeliveryTrackingRetentionService implements OnModuleInit {
+  async onModuleInit(): Promise<void> {
+    await this.purgeExpired();
+  }
+
   private readonly logger = new Logger(DeliveryTrackingRetentionService.name);
   private readonly retentionDays: number;
+
+  policy() {
+    return {
+      version: '2026-09-11',
+      retention_days: this.retentionDays,
+      purpose: 'Acompanhamento da entrega ativa pelo cliente e pela equipe autorizada da unidade',
+      pause_deletes_tracking: true,
+    };
+  }
 
   constructor(
     @InjectRepository(DeliveryTracking)
     private readonly trackingRepository: Repository<DeliveryTracking>,
     config: ConfigService,
+    @Optional() private readonly metrics?: MetricsService,
   ) {
     this.retentionDays = readPositiveInteger(
       {
@@ -32,6 +47,7 @@ export class DeliveryTrackingRetentionService {
       created_at: LessThan(cutoff),
     });
     const removed = result.affected ?? 0;
+    this.metrics?.observeTrackingPurge(removed);
     if (removed > 0) this.logger.log(`Purged ${removed} expired delivery tracking records`);
     return removed;
   }

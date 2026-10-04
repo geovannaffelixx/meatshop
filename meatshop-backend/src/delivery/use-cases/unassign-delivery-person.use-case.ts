@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { UnitPermission } from '../../common/enums/unit-permission.enum';
 import { Order } from '../../orders/entities/order.entity';
 import { DeliveryStatus } from '../../orders/enums/delivery-status.enum';
@@ -39,11 +39,28 @@ export class UnassignDeliveryPersonUseCase {
       throw new BadRequestException('Delivery person cannot be changed after pickup verification');
     }
 
+    order.tracking_session_id = null;
+    order.tracking_revoked_at = new Date();
     order.delivery_person_id = null;
     order.delivery_status = DeliveryStatus.WAITING_DELIVERY_PERSON;
     order.delivery_step = null;
     this.deliveryCodeService.clearPickup(order);
-    const savedOrder = await this.orderRepository.save(order);
+    const updated = await this.orderRepository.update(
+      { id: order.id, status: OrderStatus.READY, pickup_verified_at: IsNull() },
+      {
+        delivery_person_id: null,
+        delivery_status: order.delivery_status,
+        delivery_step: null,
+        tracking_session_id: null,
+        tracking_revoked_at: order.tracking_revoked_at,
+        pickup_code_hash: null,
+        pickup_code_expires_at: null,
+        pickup_verified_at: null,
+      },
+    );
+    if (!updated.affected)
+      throw new BadRequestException('Delivery state changed; refresh and retry');
+    const savedOrder = order;
     this.deliveryGateway.emitDeliveryChanged(savedOrder);
     return savedOrder;
   }

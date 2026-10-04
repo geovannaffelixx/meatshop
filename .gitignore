@@ -55,3 +55,9 @@ docker-compose.override.yml
 Thumbs.db
 .vscode/
 .idea/
+
+# Markdown documentation
+*.[mM][dD]
+![rR][eE][aA][dD][mM][eE]*.[mM][dD]
+![cC][hH][aA][nN][gG][eE][lL][oO][gG]*.[mM][dD]
+![rR][eE][lL][eE][aA][sS][eE][sS]*.[mM][dD]

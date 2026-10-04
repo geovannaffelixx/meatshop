@@ -90,11 +90,23 @@ export class CheckoutPricingService {
     if (deliveryType !== DeliveryType.DELIVERY) return 0;
     const rawCoordinates = [unit.latitude, unit.longitude, address?.latitude, address?.longitude];
     if (rawCoordinates.some((value) => value === null || value === undefined)) {
-      return Number(this.config.get<string>('DEFAULT_DELIVERY_FEE', '0'));
+      throw new BadRequestException({
+        code: 'DELIVERY_LOCATION_REQUIRED',
+        message: 'Confirm the destination and store location on the map before choosing delivery',
+      });
+    }
+    if (unit.coordinate_source !== 'USER_PIN' || address?.coordinate_source !== 'USER_PIN') {
+      throw new BadRequestException({
+        code: 'DELIVERY_LOCATION_CONFIRMATION_REQUIRED',
+        message: 'Confirm the store and destination pins before delivery',
+      });
     }
     const coordinates = rawCoordinates.map(Number);
     if (coordinates.some((value) => !Number.isFinite(value))) {
-      return Number(this.config.get<string>('DEFAULT_DELIVERY_FEE', '0'));
+      throw new BadRequestException({
+        code: 'DELIVERY_LOCATION_REQUIRED',
+        message: 'Invalid delivery coordinates',
+      });
     }
     const [unitLat, unitLng, destinationLat, destinationLng] = coordinates;
     const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
@@ -105,7 +117,15 @@ export class CheckoutPricingService {
       Math.cos(toRadians(unitLat)) *
         Math.cos(toRadians(destinationLat)) *
         Math.sin(longitudeDelta / 2) ** 2;
-    const distanceKm = 6371 * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+    const clampedHaversine = Math.min(1, Math.max(0, haversine));
+    const distanceKm =
+      6371 * 2 * Math.atan2(Math.sqrt(clampedHaversine), Math.sqrt(1 - clampedHaversine));
+    if (distanceKm > Number(unit.delivery_radius_km ?? 25)) {
+      throw new BadRequestException({
+        code: 'OUTSIDE_DELIVERY_AREA',
+        message: 'The destination is outside this store delivery area',
+      });
+    }
     const base = Number(this.config.get<string>('DELIVERY_FEE_BASE', '3.20'));
     const perKm = Number(this.config.get<string>('DELIVERY_FEE_PER_KM', '1.10'));
     const threshold = Number(this.config.get<string>('DELIVERY_FEE_LONG_DISTANCE_KM', '8'));
@@ -113,9 +133,16 @@ export class CheckoutPricingService {
     const peakMultiplier = Number(this.config.get<string>('DELIVERY_FEE_PEAK_MULTIPLIER', '1.3'));
     let fee = base + distanceKm * perKm;
     if (distanceKm > threshold) fee += surcharge;
-    const isWeekend = at.getDay() === 0 || at.getDay() === 6;
-    const isMealTime =
-      (at.getHours() >= 11 && at.getHours() < 14) || (at.getHours() >= 18 && at.getHours() < 21);
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Sao_Paulo',
+      weekday: 'short',
+      hour: 'numeric',
+      hourCycle: 'h23',
+    }).formatToParts(at);
+    const weekday = parts.find((p) => p.type === 'weekday')?.value;
+    const hour = Number(parts.find((p) => p.type === 'hour')?.value);
+    const isWeekend = weekday === 'Sat' || weekday === 'Sun';
+    const isMealTime = (hour >= 11 && hour < 14) || (hour >= 18 && hour < 21);
     if (isWeekend && isMealTime) fee *= peakMultiplier;
     return this.roundMoney(fee);
   }

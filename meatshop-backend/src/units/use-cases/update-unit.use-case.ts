@@ -27,16 +27,8 @@ export class UpdateUnitUseCase {
 
     this.unitAuthorizationService.assertCanManageUnit(unit, currentUser);
 
-    Object.assign(unit, dto);
-    const nextCep = unit.zip_code;
-    const shouldRefreshCoordinates =
-      dto.zip_code !== undefined || unit.latitude === null || unit.longitude === null;
-    if (shouldRefreshCoordinates) {
-      const address = await this.unitAddressService.lookupByCep(nextCep);
-      unit.zip_code = address.zip_code;
-      unit.latitude = address.latitude;
-      unit.longitude = address.longitude;
-    }
+    const coordinates = await this.unitAddressService.coordinatesFor(dto, unit);
+    Object.assign(unit, dto, coordinates);
 
     await this.unitRepository.save(unit);
 

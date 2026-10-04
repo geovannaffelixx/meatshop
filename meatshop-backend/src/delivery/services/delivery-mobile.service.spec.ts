@@ -80,6 +80,32 @@ describe('DeliveryMobileService', () => {
     jest.mocked(memberships.find).mockResolvedValue([]);
   });
 
+  it.each(['POSTAL_CODE', 'UNRESOLVED', 'USER_PIN'])(
+    'uses only confirmed pins for navigation (%s)',
+    async (source) => {
+      const address = {
+        latitude: -8.05,
+        longitude: -34.9,
+        coordinate_source: source,
+        street: 'Rua Teste',
+        number: '20',
+      };
+      jest.mocked(orders.findOne).mockResolvedValue({
+        id: 22,
+        unit: address,
+        destination_snapshot: address,
+      } as unknown as Order);
+      const result = await service.active(user);
+      expect(result).toMatchObject({
+        unit_lat: source === 'USER_PIN' ? -8.05 : null,
+        unit_lng: source === 'USER_PIN' ? -34.9 : null,
+        dest_lat: source === 'USER_PIN' ? -8.05 : null,
+        dest_lng: source === 'USER_PIN' ? -34.9 : null,
+        delivery_address: { street: 'Rua Teste', number: '20' },
+      });
+    },
+  );
+
   it('exposes the public profile only when the delivery person is assigned to the customer', async () => {
     jest.mocked(orders.findOne).mockResolvedValue({ id: 22 } as Order);
     jest.mocked(access.deliveryPersonRepository.findOne).mockResolvedValue({

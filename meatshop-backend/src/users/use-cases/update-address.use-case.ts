@@ -9,34 +9,17 @@ import { UnitAddressService } from '../../units/services/unit-address.service';
 @Injectable()
 export class UpdateAddressUseCase {
   constructor(
-    @InjectRepository(Address)
-    private readonly addressRepository: Repository<Address>,
-    private readonly unitAddressService: UnitAddressService,
+    @InjectRepository(Address) private readonly addresses: Repository<Address>,
+    private readonly geocoding: UnitAddressService,
   ) {}
 
-  async execute(addressId: number, dto: UpdateAddressDto, currentUser: User): Promise<Address> {
-    const address = await this.addressRepository.findOne({
-      where: { id: addressId, user_id: currentUser.id },
-    });
-
-    if (!address) {
-      throw new NotFoundException('Address not found');
-    }
-
-    Object.assign(address, dto);
-    if (dto.state != null) {
-      address.state = dto.state.trim().toUpperCase();
-    }
-    if (dto.zip_code != null) {
-      const resolved = await this.unitAddressService.lookupByCep(dto.zip_code);
-      address.zip_code = resolved.zip_code;
-      address.street = resolved.street || address.street;
-      address.neighborhood = resolved.neighborhood || address.neighborhood;
-      address.city = resolved.city;
-      address.state = resolved.state;
-      address.latitude = resolved.latitude;
-      address.longitude = resolved.longitude;
-    }
-    return this.addressRepository.save(address);
+  async execute(id: number, dto: UpdateAddressDto, user: User): Promise<Address> {
+    const address = await this.addresses.findOne({ where: { id, user_id: user.id } });
+    if (!address) throw new NotFoundException('Address not found');
+    const coordinates = await this.geocoding.coordinatesFor(dto, address);
+    Object.assign(address, dto, coordinates);
+    address.state = address.state.trim().toUpperCase();
+    address.zip_code = address.zip_code.replace(/\D/g, '');
+    return this.addresses.save(address);
   }
 }

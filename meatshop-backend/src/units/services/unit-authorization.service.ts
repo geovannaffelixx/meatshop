@@ -19,6 +19,14 @@ export class UnitAuthorizationService {
     private readonly permissionPolicy: UnitPermissionPolicy,
   ) {}
 
+  async assertActiveDeliveryMembership(userId: number, unitId: number): Promise<void> {
+    const membership = await this.userUnitRepository.findOne({
+      where: { user_id: userId, unit_id: unitId, status: UserUnitStatus.ACTIVE },
+    });
+    if (!membership || membership.local_role !== 'DELIVERY')
+      throw new ForbiddenException('Delivery membership inactive');
+  }
+
   assertCanManageUnit(unit: Unit, currentUser: User): void {
     const isOwner = unit.admin_id === currentUser.id;
     const isSuperAdmin = currentUser.global_role === GlobalRole.SUPER_ADMIN;

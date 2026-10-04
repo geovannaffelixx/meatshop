@@ -26,6 +26,7 @@ export class ListLiveDeliveriesUseCase {
   ) {}
 
   async execute(unitId: number, currentUser: User) {
+    const generatedAt = new Date();
     await this.unitAuthorizationService.assertHasPermission(
       currentUser,
       unitId,
@@ -85,11 +86,21 @@ export class ListLiveDeliveriesUseCase {
         longitude: unit.longitude === null ? null : Number(unit.longitude),
       },
       deliveries: orders.map((order) => {
-        const location = locationsByOrder.get(order.id);
+        const candidate = locationsByOrder.get(order.id);
+        const location =
+          order.delivery_person?.is_online &&
+          order.delivery_person.status === 'ACTIVE' &&
+          order.tracking_consent_at &&
+          !order.tracking_revoked_at &&
+          candidate?.delivery_person_id === order.delivery_person_id &&
+          candidate &&
+          candidate.created_at >= order.tracking_consent_at
+            ? candidate
+            : undefined;
         const vehicle = order.delivery_person_id
           ? vehiclesByDeliveryPerson.get(order.delivery_person_id)
           : undefined;
-        const address = order.address;
+        const address = order.destination_snapshot ?? order.address;
 
         return {
           orderId: order.id,
@@ -109,8 +120,8 @@ export class ListLiveDeliveriesUseCase {
                   address.neighborhood,
                   `${address.city} - ${address.state}`,
                 ].join(', '),
-                latitude: null,
-                longitude: null,
+                latitude: address.latitude == null ? null : Number(address.latitude),
+                longitude: address.longitude == null ? null : Number(address.longitude),
               }
             : null,
           deliveryPerson: order.delivery_person
@@ -148,11 +159,14 @@ export class ListLiveDeliveriesUseCase {
                 latitude: Number(location.latitude),
                 longitude: Number(location.longitude),
                 recordedAt: location.created_at,
+                capturedAt: location.captured_at ?? location.created_at,
+                accuracy: location.accuracy == null ? null : Number(location.accuracy),
+                pointId: location.id,
               }
             : null,
         };
       }),
-      generatedAt: new Date(),
+      generatedAt,
     };
   }
 }
