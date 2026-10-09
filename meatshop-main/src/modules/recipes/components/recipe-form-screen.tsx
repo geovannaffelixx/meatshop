@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Plus, X } from "lucide-react"
+import { ArrowLeft, Check, Plus, Sparkles, X } from "lucide-react"
 import { Spinner } from "@/shared/components/ui/spinner"
 import { apiGet, apiPatch, apiPost, API_URL, resolveAssetUrl } from "@/shared/lib/api"
 import { toast } from "@/shared/lib/toast"
@@ -14,6 +14,15 @@ type StepDraft = { description: string; tip: string }
 type IngredientDraft = { name: string; quantity: string; tip: string }
 type ProductDraft = { product_id: number; call_to_action: string }
 type Product = { id: number; name: string }
+type AiRecipeDraft = {
+  title: string
+  description: string
+  tag: string
+  safety_notice: string
+  ingredients: { name: string; quantity: string; tip: string | null }[]
+  steps: { step_number: number; description: string; tip: string | null }[]
+  products: ProductDraft[]
+}
 
 type RecipeDetail = {
   id: number
@@ -59,6 +68,12 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
   const [steps, setSteps] = useState<StepDraft[]>([{ ...EMPTY_STEP }])
   const [ingredients, setIngredients] = useState<IngredientDraft[]>([{ ...EMPTY_INGREDIENT }])
   const [productDrafts, setProductDrafts] = useState<ProductDraft[]>([])
+  const [aiBrief, setAiBrief] = useState("")
+  const [aiServings, setAiServings] = useState(4)
+  const [aiProductIds, setAiProductIds] = useState<number[]>([])
+  const [aiDraft, setAiDraft] = useState<AiRecipeDraft | null>(null)
+  const [aiDraftRequestId, setAiDraftRequestId] = useState<string | null>(null)
+  const [generatingDraft, setGeneratingDraft] = useState(false)
 
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [stagedImage, setStagedImage] = useState<File | null>(null)
@@ -105,6 +120,72 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
     if (!file) return
     setStagedImage(file)
     setStagedPreview(URL.createObjectURL(file))
+  }
+
+  const generateAiDraft = async () => {
+    if (!unitId) {
+      setError("Selecione uma unidade antes de gerar o rascunho.")
+      return
+    }
+    if (aiBrief.trim().length < 3) {
+      setError("Descreva em poucas palavras a receita que deseja criar.")
+      return
+    }
+    setGeneratingDraft(true)
+    setError(null)
+    try {
+      const response = await apiPost(
+        "/ai/recipe-drafts",
+        {
+          unit_id: unitId,
+          brief: aiBrief.trim(),
+          servings: aiServings,
+          tag: tag.trim() || undefined,
+          product_ids: aiProductIds,
+        },
+        { silent: true },
+      )
+      setAiDraft(response.draft as AiRecipeDraft)
+      setAiDraftRequestId(typeof response.request_id === "string" ? response.request_id : null)
+      toast.success("Rascunho gerado. Revise antes de aplicar.")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível gerar o rascunho.")
+    } finally {
+      setGeneratingDraft(false)
+    }
+  }
+
+  const applyAiDraft = () => {
+    if (!aiDraft) return
+    setTitle(aiDraft.title)
+    setDescription(aiDraft.description)
+    setTag(aiDraft.tag)
+    setIngredients(aiDraft.ingredients.map((item) => ({ ...item, tip: item.tip ?? "" })))
+    setSteps(
+      [...aiDraft.steps]
+        .sort((a, b) => a.step_number - b.step_number)
+        .map((item) => ({ description: item.description, tip: item.tip ?? "" })),
+    )
+    setProductDrafts(aiDraft.products)
+    recordAiDraftFeedback("APPLIED")
+    setAiDraft(null)
+    setAiDraftRequestId(null)
+    toast.success("Rascunho aplicado ao formulário. Revise e salve quando estiver pronto.")
+  }
+
+  const recordAiDraftFeedback = (action: "APPLIED" | "DISCARDED") => {
+    if (!unitId || !aiDraftRequestId) return
+    void apiPost(
+      "/ai/recipe-drafts/feedback",
+      { unit_id: unitId, request_id: aiDraftRequestId, action },
+      { silent: true },
+    ).catch(() => {})
+  }
+
+  const discardAiDraft = () => {
+    recordAiDraftFeedback("DISCARDED")
+    setAiDraft(null)
+    setAiDraftRequestId(null)
   }
 
   const uploadImageIfNeeded = async (targetId: number) => {
@@ -224,6 +305,92 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
             {error}
           </div>
         )}
+
+        <section className="mb-5 rounded-xl border border-violet-200 bg-violet-50/70 p-4" aria-labelledby="ai-draft-title">
+          <div className="flex items-start gap-3">
+            <div className="rounded-lg bg-violet-700 p-2 text-white"><Sparkles className="size-5" /></div>
+            <div className="min-w-0 flex-1">
+              <h3 id="ai-draft-title" className="font-bold text-slate-950">Rascunho com IA</h3>
+              <p className="mt-1 text-sm text-slate-600">
+                A IA preenche uma sugestão para revisão. Ela nunca salva ou publica automaticamente.
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-[1fr_8rem]">
+            <label className="text-sm font-semibold text-slate-700">
+              O que deseja preparar?
+              <textarea
+                value={aiBrief}
+                onChange={(event) => setAiBrief(event.target.value)}
+                maxLength={1000}
+                rows={3}
+                placeholder="Ex.: receita rápida de picanha com ervas para almoço em família"
+                className={`${fieldClass} mt-1 resize-y font-normal`}
+              />
+            </label>
+            <label className="text-sm font-semibold text-slate-700">
+              Porções
+              <input
+                type="number"
+                min={1}
+                max={100}
+                value={aiServings}
+                onChange={(event) => setAiServings(Math.min(100, Math.max(1, Number(event.target.value) || 1)))}
+                className={`${fieldClass} mt-1 font-normal`}
+              />
+            </label>
+          </div>
+          {products.length > 0 && (
+            <fieldset className="mt-3">
+              <legend className="text-sm font-semibold text-slate-700">Produtos que a IA pode associar</legend>
+              <div className="mt-2 flex max-h-32 flex-wrap gap-2 overflow-auto">
+                {products.map((product) => {
+                  const selected = aiProductIds.includes(product.id)
+                  return (
+                    <label key={product.id} className={`cursor-pointer rounded-full border px-3 py-1.5 text-xs font-semibold ${selected ? "border-violet-700 bg-violet-700 text-white" : "border-slate-300 bg-white text-slate-700"}`}>
+                      <input
+                        type="checkbox"
+                        className="sr-only"
+                        checked={selected}
+                        onChange={() => setAiProductIds((current) => selected ? current.filter((id) => id !== product.id) : [...current, product.id])}
+                      />
+                      {product.name}
+                    </label>
+                  )
+                })}
+              </div>
+            </fieldset>
+          )}
+          <button
+            type="button"
+            onClick={() => void generateAiDraft()}
+            disabled={generatingDraft}
+            className="mt-4 inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-violet-700 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-800 disabled:opacity-60"
+          >
+            {generatingDraft ? <Spinner /> : <Sparkles className="size-4" />}
+            {generatingDraft ? "Gerando..." : "Gerar rascunho"}
+          </button>
+
+          {aiDraft && (
+            <div className="mt-4 rounded-lg border border-violet-300 bg-white p-4" role="status">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wide text-violet-700">Prévia para revisão</p>
+                  <h4 className="mt-1 text-lg font-bold text-slate-950">{aiDraft.title}</h4>
+                  <p className="mt-1 text-sm text-slate-600">{aiDraft.description}</p>
+                  <p className="mt-2 text-xs text-amber-800"><strong>Segurança:</strong> {aiDraft.safety_notice}</p>
+                  <p className="mt-2 text-xs text-slate-500">
+                    {aiDraft.ingredients.length} ingredientes · {aiDraft.steps.length} passos · {aiDraft.products.length} produtos associados
+                  </p>
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  <button type="button" onClick={discardAiDraft} className="min-h-10 rounded-lg border border-slate-300 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Descartar</button>
+                  <button type="button" onClick={applyAiDraft} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-violet-700 px-3 text-sm font-semibold text-white hover:bg-violet-800"><Check className="size-4" />Aplicar</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
 
         <fieldset className="border border-gray-400 rounded-md px-3 py-2 mb-3">
           <legend className="text-gray-600 font-medium px-1 text-sm">Foto de capa</legend>

@@ -9,6 +9,9 @@ cd meatshop
 docker compose up -d --build
 ```
 
+O assistente de IA também requer o repositório `meatshop-chatbot` clonado ao lado deste e a
+variável local `GROQ_API_KEY`. Consulte [SETUP.md](./SETUP.md).
+
 ![Build Status](https://img.shields.io/github/actions/workflow/status/geovannaffelixx/meatshop/ci.yml?label=CI%2FCD&logo=github)
 ![Último Commit](https://img.shields.io/github/last-commit/geovannaffelixx/meatshop)
 ![Linguagens](https://img.shields.io/github/languages/top/geovannaffelixx/meatshop)
@@ -82,7 +85,7 @@ Local: `/meatshop-main`
 
 ### ✔ Infraestrutura
 
-- Docker Compose (db + backend + frontend + prometheus + grafana)
+- Docker Compose (db + migrations + backend + frontend + chatbot + prometheus + grafana)
 - Prometheus: scrape `backend:3001/metrics`
 - Grafana: dashboards prontos para métricas HTTP
 
