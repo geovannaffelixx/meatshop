@@ -4,6 +4,7 @@
 
 - Painel web: `https://app.seudominio.com.br` (Vercel)
 - API e WebSocket: `https://api.seudominio.com.br` (Render)
+- Chatbot interno: serviço Render separado, sem acesso direto pelo mobile ou painel
 
 Os dois subdomínios sob o mesmo domínio permitem cookies seguros com `SameSite=Lax`. Enquanto forem usados os domínios gratuitos `vercel.app` e `onrender.com`, use `SameSite=None`.
 
@@ -16,6 +17,16 @@ Os dois subdomínios sob o mesmo domínio permitem cookies seguros com `SameSite
 5. Use `https://api.seudominio.com.br` em `BACKEND_PUBLIC_URL`.
 
 O Blueprint executa as migrations antes de iniciar a API e só publica a `develop` depois que o CI passar.
+
+## Render (chatbot)
+
+1. Conecte o repositório `meatshop-chatbot` e use o `render.yaml` dele.
+2. Configure `GROQ_API_KEY` e gere um valor forte para `SERVICE_API_KEY`.
+3. No serviço `meatshop-api`, informe a URL HTTPS do chatbot em `AI_CHATBOT_URL`.
+4. Copie exatamente o mesmo `SERVICE_API_KEY` para `AI_CHATBOT_SERVICE_KEY` no backend.
+
+O chatbot não acessa o PostgreSQL. Histórico, autenticação, retenção de sete dias e limite por
+usuário permanecem no backend principal.
 
 ## Cloudinary (imagens)
 

@@ -4,10 +4,16 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ## [Não lançado]
 
+### Segurança
+
+- Dependências transitivas `sharp` e `source-map-js` atualizadas para versões corrigidas, mantendo a auditoria de produção sem vulnerabilidades conhecidas.
+
 ## [3.0.0] - Em desenvolvimento
 
 ### Adicionado
 
+- Auxiliar de receitas no formulário, com brief, porções e seleção explícita dos produtos que a IA pode associar.
+- Prévia do rascunho e ação manual de aplicar; a IA nunca salva nem publica conteúdo automaticamente.
 - Testes automatizados do mapa declarativo de acesso e gates de cobertura no CI.
 - Gestão completa de cupons no painel: campanhas globais para `SUPER_ADMIN` e cupons locais para gestores da unidade.
 - Formulário de escopo, desconto, período, pedido mínimo e limites, além de listagem, ativação e histórico de utilizações.

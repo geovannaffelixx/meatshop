@@ -72,6 +72,22 @@ services:
         value: "false"
       - key: MP_ENV
         value: sandbox
+      - key: AI_CHATBOT_URL
+        sync: false
+      - key: AI_CHATBOT_SERVICE_KEY
+        sync: false
+      - key: AI_CHATBOT_TIMEOUT_MS
+        value: "45000"
+      - key: AI_RATE_LIMIT_WINDOW_MS
+        value: "60000"
+      - key: AI_RATE_LIMIT_MAX
+        value: "20"
+      - key: AI_CONVERSATION_RETENTION_DAYS
+        value: "7"
+      - key: AI_HISTORY_MAX_MESSAGES
+        value: "6"
+      - key: AI_HISTORY_MAX_CHARACTERS
+        value: "6000"
 
 databases:
   - name: meatshop-db

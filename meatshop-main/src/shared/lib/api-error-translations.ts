@@ -26,6 +26,13 @@ const ERROR_CODE_MESSAGES: Record<string, string> = {
   COUPON_USER_LIMIT_REACHED: "Você já atingiu o limite de uso deste cupom.",
   COUPON_MINIMUM_NOT_REACHED: "O valor mínimo exigido por este cupom não foi atingido.",
   COUPON_INVALID_PERIOD: "O período de validade do cupom é inválido.",
+  AI_RATE_LIMITED: "Muitas solicitações para a IA. Aguarde um momento e tente novamente.",
+  AI_UPSTREAM_UNAVAILABLE: "O auxiliar está indisponível no momento. Tente novamente em instantes.",
+  AI_NOT_CONFIGURED: "O auxiliar ainda não está configurado neste ambiente.",
+  AI_INVALID_RESPONSE: "A IA retornou um rascunho inválido. Tente gerar novamente.",
+  AI_INVALID_PRODUCTS: "Um dos produtos selecionados não pertence à unidade ou está inativo.",
+  AI_INVALID_DRAFT: "O rascunho associou um produto não autorizado e foi rejeitado.",
+  AI_UNSAFE_INPUT: "Essa solicitação não pode ser processada pelo auxiliar.",
 };
 
 const STATUS_MESSAGES: Record<number, string> = {
