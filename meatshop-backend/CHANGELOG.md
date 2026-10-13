@@ -4,6 +4,14 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ## [Não lançado]
 
+### Segurança
+
+- Dependências transitivas de produção atualizadas para eliminar vulnerabilidades conhecidas em `proxy-addr`, `js-yaml` e `uuid`.
+
+### CI
+
+- Job de integração passa a obter o chatbot na branch correspondente do PR, com fallback para `main` ou `develop`, e reproduz o layout multi-repositório usado pelo Docker Compose.
+
 ## [3.0.0] - Em desenvolvimento
 
 ### Adicionado

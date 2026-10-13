@@ -4,6 +4,10 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ## [Não lançado]
 
+### Segurança
+
+- Dependências transitivas `sharp` e `source-map-js` atualizadas para versões corrigidas, mantendo a auditoria de produção sem vulnerabilidades conhecidas.
+
 ## [3.0.0] - Em desenvolvimento
 
 ### Adicionado
