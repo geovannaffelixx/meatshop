@@ -2,38 +2,30 @@
 
 Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Changelog e Semantic Versioning.
 
-## [Não lançado]
-
-### Segurança
-
-- Dependências transitivas `sharp` e `source-map-js` atualizadas para versões corrigidas, mantendo a auditoria de produção sem vulnerabilidades conhecidas.
-
 ## [3.0.0] - Em desenvolvimento
 
 ### Adicionado
 
-- Auxiliar de receitas no formulário, com brief, porções e seleção explícita dos produtos que a IA pode associar.
-- Prévia do rascunho e ação manual de aplicar; a IA nunca salva nem publica conteúdo automaticamente.
-- Testes automatizados do mapa declarativo de acesso e gates de cobertura no CI.
-- Gestão completa de cupons no painel: campanhas globais para `SUPER_ADMIN` e cupons locais para gestores da unidade.
-- Formulário de escopo, desconto, período, pedido mínimo e limites, além de listagem, ativação e histórico de utilizações.
-- Traduções dos códigos de erro de elegibilidade e limites dos cupons.
-- Painel global de auditoria exclusivo para `SUPER_ADMIN`, com indicadores, busca, período, resultado, paginação e inspeção antes/depois.
-- Exportação CSV filtrada e item “Auditoria” na navegação administrativa.
-- Área “Ajuda e suporte” para usuários abrirem chamados destinados à plataforma MeatShop.
-- Console global de suporte para `SUPER_ADMIN`, com solicitante, unidade, prioridade, status e filtros.
-- Conversa completa por chamado, envio e visualização de imagens, encerramento e reabertura.
-- Feedback visual de carregamento, sucesso e falha em todas as ações do módulo.
+- Assistente de IA para criação de receitas, com definição de porções, seleção explícita de produtos, prévia do conteúdo e aplicação manual do rascunho.
+- Gestão de cupons globais e por unidade, incluindo regras de elegibilidade, limites de uso, vigência, pedido mínimo e histórico de utilizações.
+- Auditoria administrativa para `SUPER_ADMIN`, com indicadores, filtros, paginação, comparação antes/depois e exportação CSV.
+- Central de ajuda e suporte com abertura de chamados, prioridades, anexos, conversa, encerramento e reabertura.
+- Indicador da versão atual no rodapé da tela de login, obtido diretamente do `package.json`.
 
 ### Alterado
 
-- Painel atualizado para Next.js 16.3.4 e convenção de proxy atual, com build standalone e auditoria de dependências sem vulnerabilidades conhecidas.
-- Imagens internas migradas para o componente otimizado do Next.js e skeletons tornados determinísticos.
+- Painel atualizado para Next.js 16.3.8, com proxy compatível, build standalone e imagens internas servidas pelo componente otimizado do framework.
+- Estados de carregamento e feedback das operações foram padronizados para reduzir ações duplicadas e tornar o comportamento da interface previsível.
 
 ### Segurança
 
-- Headers de proteção contra MIME sniffing, framing, vazamento de referência e uso indevido de recursos do navegador.
-- Rotas privadas continuam protegidas no proxy e na guarda declarativa, com negação segura para rotas não mapeadas.
+- Dependências transitivas `sharp` e `source-map-js` atualizadas para versões corrigidas, mantendo a auditoria de produção sem vulnerabilidades conhecidas.
+- Headers contra MIME sniffing, framing, vazamento de referência e uso indevido de recursos sensíveis do navegador.
+- Rotas privadas protegidas pelo proxy e por uma matriz declarativa de acesso, com negação segura para caminhos não mapeados.
+
+### Qualidade
+
+- Testes automatizados para as regras de acesso, gates de cobertura e validação integrada do frontend com backend, banco de dados e chatbot no CI.
 
 ## [2.3.0] - 2026-08-26
 
