@@ -29,11 +29,14 @@ export class MercadoPagoController {
   @Public()
   @Get('capabilities')
   async capabilities(@Query('unit_ids') rawIds?: unknown) {
-    if (rawIds != null && typeof rawIds !== 'string')
+    let ids: number[] = [];
+    if (typeof rawIds === 'string') {
+      if (rawIds.length > 300 || !/^\d+(,\d+)*$/.test(rawIds))
+        throw new BadRequestException('Invalid unit list');
+      ids = [...new Set(rawIds.split(',').map(Number))];
+    } else if (rawIds != null) {
       throw new BadRequestException('Invalid unit list');
-    if (rawIds != null && (rawIds.length > 300 || !/^\d+(,\d+)*$/.test(rawIds)))
-      throw new BadRequestException('Invalid unit list');
-    const ids = rawIds ? [...new Set(rawIds.split(',').map(Number))] : [];
+    }
     if (ids.length > 20 || ids.some((id) => !Number.isSafeInteger(id) || id < 1))
       throw new BadRequestException('Invalid unit list');
     return {
