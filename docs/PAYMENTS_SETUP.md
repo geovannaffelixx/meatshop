@@ -42,7 +42,7 @@ docker compose --env-file .env.payments.local up -d --build
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\check-payments-readiness.ps1
 ```
 
-Na hospedagem, injete as mesmas variáveis no backend. Recompile o painel ao alterar `NEXT_PUBLIC_API_URL`. Compile o mobile para a URL HTTPS:
+Na hospedagem, injete as mesmas variáveis no backend. Mantenha `NODE_ENV=production` no Render, inclusive durante a homologação: o modo seguro do servidor é independente de `MP_ENV=sandbox`, que seleciona os pagamentos de teste. Recompile o painel ao alterar `NEXT_PUBLIC_API_URL`. Compile o mobile para a URL HTTPS:
 
 ```powershell
 flutter build apk --release --dart-define=MEATSHOP_API_URL=https://api.seu-dominio.com --dart-define=MEATSHOP_ENV=staging
