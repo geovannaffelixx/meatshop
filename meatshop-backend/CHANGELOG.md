@@ -4,10 +4,24 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ## [Não lançado]
 
+### Segurança
+
+- Dependências transitivas de produção atualizadas para eliminar vulnerabilidades conhecidas em `proxy-addr`, `js-yaml` e `uuid`.
+
+### CI
+
+- Job de integração passa a obter o chatbot na branch correspondente do PR, com fallback para `main` ou `develop`, e reproduz o layout multi-repositório usado pelo Docker Compose.
+
 ## [3.0.0] - Em desenvolvimento
 
 ### Adicionado
 
+- Gateway autenticado de IA em `/ai/chat` e `/ai/recipe-drafts`, sem expor a Groq ou a credencial interna aos clientes.
+- Conversas do assistente persistidas exclusivamente no PostgreSQL por sete dias corridos, vinculadas ao usuário autenticado e com exclusão manual e limpeza automática.
+- Stack Docker local com chatbot isolado, credencial interna entre serviços e migration automática; manifesto Render documenta URL, segredo compartilhado e limites de IA.
+- Geração de receitas limitada à unidade e a produtos autorizados, com permissão `MANAGE_PRODUCTS` e validação posterior dos IDs retornados.
+- Rate limit atômico no PostgreSQL por usuário, correlação, auditoria somente de metadados e métricas de operação, resultado, latência e retenção.
+- Testes do cliente interno, propagação segura de cabeçalhos e limites isolados por usuário.
 - Script local que valida e injeta a conta de serviço Firebase Admin no Docker sem versionar a chave privada.
 - Proteções globais de produção com Helmet, CORS restritivo por ambiente, rate limiting, correlação de requisições, métricas e validação fail-fast da configuração.
 - Retenção diária automatizada da localização de entregas e alertas Prometheus para disponibilidade, erros, latência e falhas de login.
@@ -33,6 +47,8 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ### Segurança
 
+- Rotas de IA excluídas da auditoria genérica para impedir retenção de prompts e respostas; eventos próprios registram somente metadados.
+- Credencial do chatbot permanece exclusivamente no backend e respostas inválidas ou produtos não autorizados são rejeitados.
 - App Check agora é decidido exclusivamente pelas rotas protegidas no servidor; cabeçalhos informados pelo cliente não podem mais contornar a validação.
 - Exclusão LGPD também remove a identidade Firebase, e conexões Socket.IO recusam contas inativas e origens não autorizadas.
 - DTOs rejeitam propriedades desconhecidas e a aplicação não inicia em produção com secrets fracos, HTTP, sincronização de schema ou Firebase Admin ausente.

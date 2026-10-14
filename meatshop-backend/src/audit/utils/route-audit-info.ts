@@ -1,5 +1,6 @@
 const MUTATING_METHODS = ['POST', 'PATCH', 'PUT', 'DELETE'];
-const EXCLUDED_PREFIXES = ['/docs', '/metrics', '/health'];
+// AI prompts and generated content have a separate metadata-only audit trail.
+const EXCLUDED_PREFIXES = ['/docs', '/metrics', '/health', '/ai'];
 const SAFE_IDENTIFIER = /^[a-z_]+$/;
 
 const METHOD_TO_ACTION: Record<string, string> = {

@@ -14,6 +14,10 @@ export class MetricsService {
   private readonly refundQueue: Gauge;
   private readonly oldestRefund: Gauge;
   private readonly paymentMaintenance: Gauge;
+  private readonly aiRequests: Counter;
+  private readonly aiDuration: Histogram;
+  private readonly aiDraftFeedback: Counter;
+  private readonly aiConversationsPurged: Counter;
 
   constructor() {
     this.register = new Registry();
@@ -53,6 +57,30 @@ export class MetricsService {
       help: 'Expired tracking records deleted',
       registers: [this.register],
     });
+    this.aiRequests = new Counter({
+      name: 'ai_requests_total',
+      help: 'AI requests by operation and outcome without prompt content',
+      labelNames: ['operation', 'outcome'],
+      registers: [this.register],
+    });
+    this.aiDuration = new Histogram({
+      name: 'ai_request_duration_ms',
+      help: 'AI request duration by operation and outcome',
+      labelNames: ['operation', 'outcome'],
+      buckets: [100, 250, 500, 1000, 2000, 5000, 10000, 30000, 60000],
+      registers: [this.register],
+    });
+    this.aiDraftFeedback = new Counter({
+      name: 'ai_recipe_draft_feedback_total',
+      help: 'Recipe draft decisions after human review',
+      labelNames: ['action'],
+      registers: [this.register],
+    });
+    this.aiConversationsPurged = new Counter({
+      name: 'ai_conversations_purged_total',
+      help: 'Expired AI conversations deleted after the retention period',
+      registers: [this.register],
+    });
 
     this.httpRequestsTotal = new Counter({
       name: 'http_requests_total',
@@ -85,6 +113,19 @@ export class MetricsService {
 
   observeTrackingPurge(count: number): void {
     this.trackingPurged.inc(count);
+  }
+
+  observeAiRequest(operation: string, outcome: string, durationMs: number): void {
+    this.aiRequests.inc({ operation, outcome });
+    this.aiDuration.observe({ operation, outcome }, durationMs);
+  }
+
+  observeAiDraftFeedback(action: string): void {
+    this.aiDraftFeedback.inc({ action });
+  }
+
+  observeAiConversationPurge(count: number): void {
+    this.aiConversationsPurged.inc(count);
   }
 
   async getMetrics(): Promise<string> {
