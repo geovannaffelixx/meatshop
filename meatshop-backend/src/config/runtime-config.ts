@@ -74,7 +74,8 @@ export function validateEnvironment(environment: Environment): void {
     if (!environment.MP_OAUTH_REDIRECT_URI?.startsWith('https://'))
       throw new Error('MP_OAUTH_REDIRECT_URI must use HTTPS');
     assertStrongSecret(environment, 'MP_WEBHOOK_SECRET');
-    if (environment.MP_ENV !== 'production') throw new Error('MP_ENV must be production');
+    if (!['sandbox', 'production'].includes(environment.MP_ENV ?? ''))
+      throw new Error('MP_ENV must be sandbox or production');
   }
   if (environment.SWAGGER_ENABLED === 'true') {
     throw new Error('SWAGGER_ENABLED must be false in production');
