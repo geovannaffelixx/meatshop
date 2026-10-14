@@ -28,7 +28,9 @@ export class MercadoPagoController {
 
   @Public()
   @Get('capabilities')
-  async capabilities(@Query('unit_ids') rawIds?: string) {
+  async capabilities(@Query('unit_ids') rawIds?: unknown) {
+    if (rawIds != null && typeof rawIds !== 'string')
+      throw new BadRequestException('Invalid unit list');
     if (rawIds != null && (rawIds.length > 300 || !/^\d+(,\d+)*$/.test(rawIds)))
       throw new BadRequestException('Invalid unit list');
     const ids = rawIds ? [...new Set(rawIds.split(',').map(Number))] : [];
