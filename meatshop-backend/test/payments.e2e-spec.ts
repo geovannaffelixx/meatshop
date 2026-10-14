@@ -198,6 +198,48 @@ const enabled = process.env.PAYMENTS_TEST_DATABASE === 'meatshop_payments_test';
     await db?.destroy();
   });
   const paymentId = () => `test-${order.id}`;
+  it('migrates payment indexes when a preceding migration adds enum values in the same transaction', async () => {
+    const runner = db.createQueryRunner();
+    await runner.connect();
+    try {
+      await runner.query('CREATE TEMP TABLE payment_migration_bootstrap (id integer)');
+      await runner.query("CREATE TYPE pg_temp.payment_migration_status AS ENUM ('PAID')");
+      await runner.startTransaction();
+      await runner.query(
+        "ALTER TYPE pg_temp.payment_migration_status ADD VALUE 'PARTIALLY_REFUNDED'",
+      );
+      await runner.query(
+        'CREATE TEMP TABLE payments (transaction_id varchar(80),payment_date timestamptz,order_id integer,status pg_temp.payment_migration_status)',
+      );
+      await runner.query(
+        'CREATE TEMP TABLE orders (id integer,unit_id integer,client_id integer,order_date timestamp)',
+      );
+      await runner.query('CREATE TEMP TABLE order_items (product_id integer)');
+      await runner.query(
+        'CREATE TEMP TABLE products (id integer,name text,unit_of_measure text,image_url text)',
+      );
+      await runner.query('SAVEPOINT demonstrate_unsafe_enum');
+      await expect(
+        runner.query(
+          "CREATE INDEX unsafe_receipt_index ON payments(payment_date) WHERE status IN ('PAID','PARTIALLY_REFUNDED')",
+        ),
+      ).rejects.toMatchObject({ driverError: { code: '55P04' } });
+      await runner.query('ROLLBACK TO SAVEPOINT demonstrate_unsafe_enum');
+      await new PaymentContract1791900002000().up(runner);
+      const [index] = await runner.query(
+        "SELECT pg_get_indexdef(c.oid) AS definition FROM pg_class c WHERE c.relnamespace=pg_my_temp_schema() AND c.relname='payment_receipt_date'",
+      );
+      expect(index.definition).toContain('(payment_date, order_id)');
+      expect(index.definition).not.toContain('WHERE');
+      await new PaymentContract1791900002000().down(runner);
+    } finally {
+      if (runner.isTransactionActive) await runner.rollbackTransaction();
+      await runner.query('DROP TYPE IF EXISTS pg_temp.payment_migration_status');
+      await runner.query('DROP TABLE IF EXISTS pg_temp.payment_migration_bootstrap');
+      await runner.release();
+    }
+  });
+
   it('does not assign a previously accepted transaction to another order after reference tampering', async () => {
     await lifecycle.process(paymentId(), unit.id);
     const another = await db.getRepository(Order).save({
