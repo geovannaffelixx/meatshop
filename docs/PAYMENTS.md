@@ -1,6 +1,8 @@
 # Pagamentos — implementação e homologação
 
-Branch dos dois repositórios: `fix/payments`. Atualizado em 28/09/2026.
+Branch dos dois repositórios: `fix/payments`. Atualizado em 13/10/2026.
+
+Para criar a aplicação, contas de teste e configurar HTTPS, siga [PAYMENTS_SETUP.md](PAYMENTS_SETUP.md). Esse guia também define as regras atuais e a matriz de aceite externo.
 
 ## Modelo de recebimento
 
@@ -48,7 +50,7 @@ No Docker local, pagamentos online ficam desabilitados por padrão. Depois de co
 
 ## Migrações e compatibilidade
 
-Aplicar `1790550000000-HardenPayments` e `1790550001000-PaymentReceipts` antes de iniciar o código novo, com `DB_SYNCHRONIZE=false`. Atualizar mobile e backend em conjunto devido às mudanças de recompra e pagamento por pedido. Fazer backup antes da implantação.
+Aplicar as migrations anteriores e `1791900000000-PaymentOperations`, `1791900001000-PaymentStateIntegrity` e `1791900002000-PaymentContract`, com `DB_SYNCHRONIZE=false`, backup e escritas antigas paradas. Confirmar `PAYMENTS_LEGACY_TIMEZONE` conforme o histórico. Atualizar mobile e backend em conjunto devido à cotação assinada, recuperação de checkout e histórico paginado.
 
 Não trocar a conta Mercado Pago de uma unidade com histórico: a reconexão aceita o mesmo recebedor para preservar acesso às cobranças anteriores. A migração de transações reais de uma eventual conta central antiga exige conciliação específica; elas não são automaticamente transferidas para as contas dos açougues. Os valores adicionados aos enums não são removidos pelo rollback da migração.
 
@@ -60,7 +62,7 @@ Web: `npm.cmd run typecheck`, `npm.cmd run lint`, `npm.cmd test`.
 
 Mobile: `flutter analyze --no-pub`, `flutter test --no-pub`.
 
-Os testes de pagamentos com PostgreSQL usam exclusivamente o banco isolado `meatshop_payments_test` em `127.0.0.1:5433`, com o esquema base já migrado. O teste aplica as duas migrações novas se necessário e limpa apenas suas próprias fixtures. Para executar no PowerShell, dentro do backend:
+Os testes de pagamentos com PostgreSQL usam exclusivamente o banco isolado `meatshop_payments_test` em `127.0.0.1:5433`, com o esquema base já migrado. O teste aplica as migrations de pagamentos se necessário e limpa apenas suas próprias fixtures. Para executar no PowerShell, dentro do backend:
 
 ```powershell
 $env:PAYMENTS_TEST_DATABASE = 'meatshop_payments_test'
@@ -113,7 +115,7 @@ As respostas do Mercado Pago são simuladas nesses testes. Eles verificam concor
 - [ ] Entrega concluída: registrar transferência ao entregador; conferir status no app e despesa no mês correto, sem lançar outra despesa manual.
 - [ ] Conferir isolamento financeiro entre unidades e valores do painel após taxa, devolução e contestação.
 
-## Resultado local em 28/09/2026
+## Resultado local anterior em 28/09/2026
 
 - Backend: 99 testes unitários e 14 testes de pagamentos com PostgreSQL aprovados.
 - Painel: 6 testes aprovados; lint, verificação de tipos e build aprovados.
@@ -125,5 +127,17 @@ As respostas do Mercado Pago são simuladas nesses testes. Eles verificam concor
 ## Homologação ainda necessária
 
 Credenciais/contas Mercado Pago, pagamentos e estornos externos, notificações reais e teste em aparelhos físicos precisam ser validados antes de produção. Build e testes locais não atestam essas etapas. A compilação iOS deve ser feita no macOS.
+
+## Verificação em 13/10/2026
+
+- Backend: 141 testes unitários e 25 testes com PostgreSQL aprovados, incluindo autenticação HTTP real, isolamento por unidade, concorrência, recuperação e estornos incertos.
+- Painel: 16 testes aprovados, verificação de tipos, lint e build aprovados.
+- Mobile: 111 testes aprovados e análise estática sem problemas. Corrigida quebra de texto na revisão do pedido. APK Android debug compilado para o emulador (`http://10.0.2.2:3001`).
+- As três migrations novas foram aplicadas no banco local após backup. Nenhuma divergência entre estado do pedido e pagamento encontrada.
+- Health, capacidades por unidade e retorno público responderam HTTP 200. O retorno inclui o pedido correto no link do aplicativo.
+- O histórico mobile foi consultado no backend em execução com duas contas locais: somente pedidos do próprio cliente, e HTTP 401 sem autenticação. Banco, backend e painel estão saudáveis; migrator terminou com código 0.
+- `npm audit --omit=dev` não aponta vulnerabilidades nas dependências de produção de backend ou painel após os overrides registrados nos respectivos manifests/lockfiles. Isso não constitui uma auditoria completa de segurança.
+- A auditoria completa ainda aponta dependências das ferramentas de desenvolvimento/teste. `braces` e `sprintf-js` não possuem versão corrigida publicada no momento desta verificação; não fazem parte das dependências de produção auditadas. Os runners devem processar somente código e configurações confiáveis. Atualizações do toolchain permanecem uma frente separada de manutenção.
+- Nenhuma conta vendedora está conectada no banco local. Pagamentos online permanecem desabilitados. Nenhuma cobrança ou devolução externa foi feita.
 
 Referência do provedor para devolução integral e repetição segura: [API de estornos do Checkout Pro](https://www.mercadopago.com.br/developers/pt/reference/online-payments/checkout-pro/create-refund/post).

@@ -1,10 +1,34 @@
 import { RepeatOrderUseCase } from '../src/orders/use-cases/repeat-order.use-case';
-import type { CartAccessService } from '../src/cart/services/cart-access.service';
+import { CartAccessService } from '../src/cart/services/cart-access.service';
+import { CreateOrderUseCase } from '../src/orders/use-cases/create-order.use-case';
+import { QuoteCartUseCase } from '../src/orders/use-cases/quote-cart.use-case';
+import { CheckoutQuoteService } from '../src/orders/services/checkout-quote.service';
+import { CheckoutPricingService } from '../src/orders/services/checkout-pricing.service';
+import { DeliveryCodeService } from '../src/orders/services/delivery-code.service';
+import { StockAvailabilityValidator } from '../src/orders/validators/stock-availability.validator';
+import { DeliveryType } from '../src/orders/enums/delivery-type.enum';
+import { Address } from '../src/users/entities/address.entity';
+import { Test } from '@nestjs/testing';
+import { ValidationPipe } from '@nestjs/common';
+import { PassportModule } from '@nestjs/passport';
+import { JwtService } from '@nestjs/jwt';
+import { Reflector } from '@nestjs/core';
+import request from 'supertest';
+import { JwtStrategy } from '../src/auth/strategies/jwt.strategy';
+import { JwtAuthGuard } from '../src/common/guards/jwt-auth.guard';
+import { PaymentsController } from '../src/payments/payments.controller';
+import { UserUnit } from '../src/units/entities/user-unit.entity';
+import { LocalRole } from '../src/common/enums/local-role.enum';
+import { UnitPermissionPolicy } from '../src/units/services/unit-permission.policy';
+import { GetMonthlyRevenueUseCase } from '../src/finance/use-cases/get-monthly-revenue.use-case';
 import type { OrderAuthorizationService } from '../src/orders/services/order-authorization.service';
 import { Cart } from '../src/cart/entities/cart.entity';
 import { CartItem } from '../src/cart/entities/cart-item.entity';
 /* global jest, beforeEach */
 import { PaymentReceipts1790550001000 } from '../src/database/migrations/1790550001000-PaymentReceipts';
+import { PaymentOperations1791900000000 } from '../src/database/migrations/1791900000000-PaymentOperations';
+import { PaymentStateIntegrity1791900001000 } from '../src/database/migrations/1791900001000-PaymentStateIntegrity';
+import { PaymentContract1791900002000 } from '../src/database/migrations/1791900002000-PaymentContract';
 import type { SendOrderStatusNotificationUseCase } from '../src/notifications/use-cases/send-order-status-notification.use-case';
 import { Product } from '../src/products/entities/product.entity';
 import { Category } from '../src/categories/entities/category.entity';
@@ -17,7 +41,7 @@ import { HardenPayments1790550000000 } from '../src/database/migrations/17905500
 import { PaymentLifecycleService } from '../src/payments/payment-lifecycle.service';
 import { ConfigService } from '@nestjs/config';
 import { SellerAccountsService } from '../src/payments/seller-accounts.service';
-import type { UnitAuthorizationService } from '../src/units/services/unit-authorization.service';
+import { UnitAuthorizationService } from '../src/units/services/unit-authorization.service';
 import type { CouponRedemptionService } from '../src/promotions/services/coupon-redemption.service';
 import type { MercadoPagoPaymentSnapshot } from '../src/payments/providers/mercadopago.service';
 import { User } from '../src/users/entities/user.entity';
@@ -40,7 +64,7 @@ const enabled = process.env.PAYMENTS_TEST_DATABASE === 'meatshop_payments_test';
   const mp = {
     getPaymentSnapshot: jest.fn(async () => snapshot),
     mapPaymentMethod: jest.fn(() => PaymentMethod.PIX),
-    createCheckoutPreference: jest.fn(async () => ({
+    createCheckoutPreference: jest.fn(async (_params: unknown) => ({
       preferenceId: 'preference',
       checkoutUrl: 'https://mercadopago.com.br/checkout',
     })),
@@ -50,20 +74,25 @@ const enabled = process.env.PAYMENTS_TEST_DATABASE === 'meatshop_payments_test';
   };
   const sellers = {
     enabled: true,
+    configured: true,
     forUnit: jest.fn(async () => mp),
+    assertAcceptingPayments: jest.fn(async () => {}),
   } as unknown as SellerAccountsService;
   const units = {
     assertHasPermission: jest.fn(async () => {}),
   } as unknown as UnitAuthorizationService;
   const coupons = { releaseOrder: jest.fn(async () => {}) } as unknown as CouponRedemptionService;
 
-  const notifications = { notifyCustomerOfStatusChange: jest.fn(async () => {}) };
+  const notifications = {
+    notifyCustomerOfStatusChange: jest.fn(async () => {}),
+    notifyCustomerOfPayment: jest.fn(async () => {}),
+  };
   beforeAll(async () => {
     db = new DataSource({
       entities: source.options.entities,
       type: 'postgres',
       host: '127.0.0.1',
-      port: 5433,
+      port: Number(process.env.PAYMENTS_TEST_PORT ?? process.env.DB_PORT ?? 5433),
       username: 'meatshop_user',
       password: 'meatshop_pass',
       database: 'meatshop_payments_test',
@@ -77,7 +106,18 @@ const enabled = process.env.PAYMENTS_TEST_DATABASE === 'meatshop_payments_test';
       await new HardenPayments1790550000000().up(runner);
     if (!(await runner.hasTable('payment_manual_events')))
       await new PaymentReceipts1790550001000().up(runner);
+    if (!(await runner.hasColumn('payments', 'payment_reference')))
+      await new PaymentOperations1791900000000().up(runner);
+    if (
+      !(await runner.query("SELECT 1 FROM pg_trigger WHERE tgname='orders_payment_consistent'"))
+        .length
+    )
+      await new PaymentStateIntegrity1791900001000().up(runner);
     await runner.release();
+    const contractRunner = db.createQueryRunner();
+    if (!(await contractRunner.hasColumn('order_items', 'product_snapshot')))
+      await new PaymentContract1791900002000().up(contractRunner);
+    await contractRunner.release();
     user = await db
       .getRepository(User)
       .save({ name: 'Payment test', email: `payment-${randomUUID()}@example.invalid` });
@@ -99,6 +139,14 @@ const enabled = process.env.PAYMENTS_TEST_DATABASE === 'meatshop_payments_test';
   });
   beforeEach(async () => {
     jest.clearAllMocks();
+    await db.query(
+      "UPDATE payments SET reconcile_after=now()+interval '1 year' WHERE order_id IN (SELECT id FROM orders WHERE unit_id=$1)",
+      [unit.id],
+    );
+    await db.query(
+      'DELETE FROM payment_refund_attempts WHERE refund_id IN (SELECT id FROM payment_refunds WHERE unit_id=$1)',
+      [unit.id],
+    );
     await db.query('DELETE FROM payment_refunds WHERE unit_id=$1', [unit.id]);
     await db.query(
       'DELETE FROM payment_notifications WHERE order_id IN (SELECT id FROM orders WHERE unit_id=$1)',
@@ -130,6 +178,11 @@ const enabled = process.env.PAYMENTS_TEST_DATABASE === 'meatshop_payments_test';
   });
   afterAll(async () => {
     if (unit) {
+      await db.query('DELETE FROM payment_seller_events WHERE unit_id=$1', [unit.id]);
+      await db.query(
+        'DELETE FROM payment_refund_attempts WHERE refund_id IN (SELECT id FROM payment_refunds WHERE unit_id=$1)',
+        [unit.id],
+      );
       await db.query('DELETE FROM payment_oauth_states WHERE unit_id=$1', [unit.id]);
       await db.query('DELETE FROM payment_sellers WHERE unit_id=$1', [unit.id]);
       await db.query('DELETE FROM payment_refunds WHERE unit_id=$1', [unit.id]);
@@ -145,6 +198,354 @@ const enabled = process.env.PAYMENTS_TEST_DATABASE === 'meatshop_payments_test';
     await db?.destroy();
   });
   const paymentId = () => `test-${order.id}`;
+  it('does not assign a previously accepted transaction to another order after reference tampering', async () => {
+    await lifecycle.process(paymentId(), unit.id);
+    const another = await db.getRepository(Order).save({
+      client_id: user.id,
+      unit_id: unit.id,
+      total_amount: 50,
+      subtotal: 50,
+      checkout_id: randomUUID(),
+    });
+    await db.getRepository(Payment).save({ order_id: another.id, method: PaymentMethod.PIX });
+    snapshot.externalReference = String(another.id);
+    await expect(lifecycle.process(paymentId(), unit.id)).rejects.toThrow(
+      'reference or seller changed',
+    );
+    await expect(
+      db.getRepository(Payment).update({ order_id: another.id }, { transaction_id: paymentId() }),
+    ).rejects.toThrow();
+    expect((await db.getRepository(Order).findOneByOrFail({ id: another.id })).payment_status).toBe(
+      PaymentStatus.PENDING,
+    );
+  });
+  it('reports receipts in the Brazilian month and revises the same period for external refunds', async () => {
+    snapshot.approvedAt = new Date('2026-02-01T01:00:00Z');
+    const revenue = new GetMonthlyRevenueUseCase(db.getRepository(Order), units);
+    await lifecycle.process(paymentId(), unit.id);
+    expect((await revenue.forUnit(unit.id, '2026-01')).revenueTotal).toBe(49);
+    expect((await revenue.forUnit(unit.id, '2026-02')).revenueTotal).toBe(0);
+    snapshot.refundedAmount = 20;
+    await lifecycle.process(paymentId(), unit.id);
+    expect((await revenue.forUnit(unit.id, '2026-01')).revenueTotal).toBe(29);
+    snapshot.refundedAmount = 50;
+    snapshot.status = 'refunded';
+    await lifecycle.process(paymentId(), unit.id);
+    expect((await revenue.forUnit(unit.id, '2026-01')).revenueTotal).toBe(0);
+  });
+  it('protects financial HTTP routes with real JWT authentication, DTO validation and unit permissions', async () => {
+    await db.getRepository(User).update(user.id, { is_active: true, profile_complete: true });
+    const outsider = await db.getRepository(User).save({
+      name: 'Outside payment user',
+      email: `outsider-${randomUUID()}@example.invalid`,
+      is_active: true,
+      profile_complete: true,
+    });
+    const membership = await db
+      .getRepository(UserUnit)
+      .save({ user_id: user.id, unit_id: unit.id, local_role: LocalRole.OWNER });
+    const config = new ConfigService({ JWT_SECRET: 'http-payment-test-secret' });
+    const realUnits = new UnitAuthorizationService(
+      db.getRepository(Unit),
+      db.getRepository(UserUnit),
+      new UnitPermissionPolicy(),
+    );
+    const realPayments = new PaymentLifecycleService(
+      db,
+      sellers,
+      realUnits,
+      coupons,
+      notifications as unknown as SendOrderStatusNotificationUseCase,
+    );
+    const module = await Test.createTestingModule({
+      imports: [PassportModule],
+      controllers: [PaymentsController],
+      providers: [
+        { provide: PaymentLifecycleService, useValue: realPayments },
+        { provide: JwtStrategy, useValue: new JwtStrategy(config, db.getRepository(User)) },
+      ],
+    }).compile();
+    const app = module.createNestApplication();
+    app.useGlobalGuards(new JwtAuthGuard(new Reflector()));
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
+    );
+    await app.init();
+    const jwt = new JwtService({ secret: 'http-payment-test-secret' });
+    const token = jwt.sign({ sub: user.id });
+    const outsiderToken = jwt.sign({ sub: outsider.id });
+    try {
+      await request(app.getHttpServer()).get(`/payments/orders?unit_id=${unit.id}`).expect(401);
+      await request(app.getHttpServer())
+        .get(`/payments/orders?unit_id=${unit.id}`)
+        .auth(outsiderToken, { type: 'bearer' })
+        .expect(403);
+      await request(app.getHttpServer())
+        .get(`/payments/orders?unit_id=${unit.id}&view=arbitrary`)
+        .auth(token, { type: 'bearer' })
+        .expect(400);
+      await request(app.getHttpServer())
+        .post(`/payments/orders/${order.id}/receipt`)
+        .auth(token, { type: 'bearer' })
+        .send({ amount: -1, reference: '   ' })
+        .expect(400);
+      await request(app.getHttpServer())
+        .post(`/payments/orders/${order.id}/receipt`)
+        .auth(token, { type: 'bearer' })
+        .send({ amount: 50, reference: 'Receipt test' })
+        .expect(400);
+      await db
+        .getRepository(Payment)
+        .update({ order_id: order.id }, { method: PaymentMethod.CASH });
+      await request(app.getHttpServer())
+        .post(`/payments/orders/${order.id}/receipt`)
+        .auth(token, { type: 'bearer' })
+        .send({ amount: 50, reference: ' Receipt test ' })
+        .expect(201);
+      const response = await request(app.getHttpServer())
+        .get(`/payments/orders/${order.id}/history`)
+        .auth(token, { type: 'bearer' })
+        .expect(200);
+      expect(response.body.manual).toHaveLength(1);
+      expect(response.body.manual[0].reference).toBe('Receipt test');
+      await request(app.getHttpServer())
+        .get(`/payments/orders/${order.id}/history`)
+        .auth(outsiderToken, { type: 'bearer' })
+        .expect(403);
+    } finally {
+      await app.close();
+      await db.getRepository(UserUnit).delete(membership.id);
+      await db.getRepository(User).delete(outsider.id);
+    }
+  });
+  it('enforces matching order/payment states at commit while allowing atomic transitions', async () => {
+    await expect(
+      db.getRepository(Payment).update({ order_id: order.id }, { status: PaymentStatus.PAID }),
+    ).rejects.toThrow();
+    await db.transaction(async (manager) => {
+      await manager.update(Payment, { order_id: order.id }, { status: PaymentStatus.PAID });
+      await manager.update(Order, order.id, { payment_status: PaymentStatus.PAID });
+    });
+    expect((await db.getRepository(Order).findOneByOrFail({ id: order.id })).payment_status).toBe(
+      PaymentStatus.PAID,
+    );
+  });
+  it('creates signed multi-seller orders once under concurrency and rolls back changed quotes', async () => {
+    const second = await db.getRepository(Unit).save({
+      name: 'Second payment seller',
+      cnpj: String(Date.now() + 100).padStart(14, '0'),
+      city: 'Recife',
+      state: 'PE',
+      zip_code: '50000-000',
+      admin_id: user.id,
+    });
+    const categories: Category[] = [];
+    const products: Product[] = [];
+    const key = randomUUID();
+    const changedKey = randomUUID();
+    let cart: Cart | undefined;
+    try {
+      const access = new CartAccessService(db.getRepository(Cart), db.getRepository(CartItem));
+      cart = await access.getOrCreateCart(user.id);
+      for (const [store, price] of [
+        [unit, 10],
+        [second, 20],
+      ] as const) {
+        const category = await db
+          .getRepository(Category)
+          .save({ unit_id: store.id, name: 'Payment test category' });
+        categories.push(category);
+        const product = await db.getRepository(Product).save({
+          unit_id: store.id,
+          category_id: category.id,
+          name: 'Payment test item',
+          price,
+          unit_of_measure: 'un',
+          active: true,
+        });
+        products.push(product);
+        await db.getRepository(Stock).save({ product_id: product.id, quantity: 5 });
+        await db
+          .getRepository(CartItem)
+          .save({ cart_id: cart.id, product_id: product.id, quantity: 1, unit_price: price });
+      }
+      const config = new ConfigService({ JWT_SECRET: 'test-quote-signing-secret' });
+      const pricing = new CheckoutPricingService(config);
+      const signing = new CheckoutQuoteService(config);
+      const couponService = {
+        prepare: async () => null,
+        consume: async () => {},
+        releaseOrder: async () => {},
+      } as unknown as CouponRedemptionService;
+      const hours = { assertWithinBusinessHours: async () => {} } as never;
+      const notifier = {
+        notifyUnitOfNewOrder: async () => {},
+        notifyCustomerOfDeliveryCode: async () => {},
+      } as unknown as SendOrderStatusNotificationUseCase;
+      const creator = new CreateOrderUseCase(
+        db.getRepository(Order),
+        db.getRepository(OrderItem),
+        db.getRepository(Payment),
+        access,
+        couponService,
+        pricing,
+        hours,
+        notifier,
+        new DeliveryCodeService(config, db.getRepository(Order)),
+        db,
+        sellers,
+        signing,
+      );
+      const quote = new QuoteCartUseCase(
+        db.getRepository(CartItem),
+        db.getRepository(Address),
+        db.getRepository(Unit),
+        access,
+        pricing,
+        couponService,
+        new StockAvailabilityValidator(db.getRepository(Stock)),
+        hours,
+        db,
+        sellers,
+        signing,
+      );
+      const selection = {
+        delivery_type: DeliveryType.PICKUP,
+        payment_method: PaymentMethod.CASH,
+        unit_payment_methods: [{ unit_id: second.id, method: PaymentMethod.PIX }],
+      };
+      const quoted = await quote.execute(selection, user);
+      const dto = {
+        ...selection,
+        quote_token: quoted.quote_token,
+        expected_total: quoted.total_amount,
+      };
+      await db.getRepository(Product).update(products[0].id, { price: 15 });
+      await expect(creator.execute(dto, user, changedKey)).rejects.toThrow();
+      expect(await db.getRepository(Order).countBy({ checkout_id: changedKey })).toBe(0);
+      expect(
+        Number(
+          (await db.getRepository(Stock).findOneByOrFail({ product_id: products[0].id })).quantity,
+        ),
+      ).toBe(5);
+      await db.getRepository(Product).update(products[0].id, { price: 10 });
+      const [first, replayed] = await Promise.all([
+        creator.execute(dto, user, key),
+        creator.execute(dto, user, key),
+      ]);
+      expect(first.orders.map((o) => o.id)).toEqual(replayed.orders.map((o) => o.id));
+      expect(first.orders).toHaveLength(2);
+      expect(first.orders.find((o) => o.unit_id === unit.id)?.payment?.method).toBe(
+        PaymentMethod.CASH,
+      );
+      expect(first.orders.find((o) => o.unit_id === second.id)?.payment_due_at).not.toBeNull();
+      expect(
+        Number(
+          (await db.getRepository(Stock).findOneByOrFail({ product_id: products[0].id })).quantity,
+        ),
+      ).toBe(4);
+      expect((await creator.recover(key, user))?.orders.map((o) => o.id)).toEqual(
+        first.orders.map((o) => o.id),
+      );
+      await expect(creator.execute({ ...dto, expected_total: 99 }, user, key)).rejects.toThrow();
+    } finally {
+      await db.getRepository(Order).delete({ checkout_id: key });
+      await db.getRepository(Order).delete({ checkout_id: changedKey });
+      if (cart) await db.getRepository(Cart).delete(cart.id);
+      for (const product of products) await db.getRepository(Product).delete(product.id);
+      for (const category of categories) await db.getRepository(Category).delete(category.id);
+      await db.getRepository(Unit).delete(second.id);
+    }
+  });
+  it('returns a different late approved attempt after a rejected attempt was cancelled', async () => {
+    await db.transaction(async (manager) => {
+      await manager.update(Order, order.id, {
+        status: OrderStatus.CANCELLED,
+        payment_status: PaymentStatus.CANCELLED,
+      });
+      await manager.update(
+        Payment,
+        { order_id: order.id },
+        { status: PaymentStatus.CANCELLED, transaction_id: `rejected-${order.id}` },
+      );
+    });
+    await lifecycle.process(paymentId(), unit.id);
+    const p = await db.getRepository(Payment).findOneByOrFail({ order_id: order.id });
+    expect(p.transaction_id).toBe(paymentId());
+    expect(p.refund_status).toBe('PENDING');
+    expect(
+      await db.query('SELECT id FROM payment_refunds WHERE payment_id=$1', [paymentId()]),
+    ).toHaveLength(1);
+  });
+
+  it('uses canonical order references and recovers legacy UUID preferences without a webhook', async () => {
+    await lifecycle.checkout(order.checkout_id!, user);
+    expect(mp.createCheckoutPreference.mock.calls[0][0]).toMatchObject({
+      checkoutId: String(order.id),
+    });
+    snapshot.externalReference = order.checkout_id;
+    mp.searchPayments.mockResolvedValueOnce([]).mockResolvedValueOnce([paymentId()]);
+    await lifecycle.reconcileOrder(order.id, user);
+    expect(mp.searchPayments).toHaveBeenCalledWith(order.checkout_id);
+    expect((await db.getRepository(Order).findOneByOrFail({ id: order.id })).status).toBe(
+      OrderStatus.CONFIRMED,
+    );
+  });
+
+  it('only rotates refund identity after confirming the earlier provider rejection', async () => {
+    await db.getRepository(Order).update(order.id, { status: OrderStatus.CANCELLED });
+    await lifecycle.process(paymentId(), unit.id);
+    mp.refund.mockResolvedValueOnce({ id: 'rejected-refund', status: 'rejected' });
+    await lifecycle.maintain();
+    const [first] = await db.query('SELECT * FROM payment_refunds WHERE order_id=$1', [order.id]);
+    expect(first.status).toBe('FAILED');
+    mp.getRefund.mockResolvedValueOnce({ id: 'rejected-refund', status: 'rejected' });
+    await lifecycle.retryRefund(order.id, first.id, user);
+    const [retry] = await db.query('SELECT * FROM payment_refunds WHERE id=$1', [first.id]);
+    expect(retry.status).toBe('PENDING');
+    expect(retry.attempt_key).not.toBe(first.attempt_key);
+    expect(retry.provider_id).toBeNull();
+    mp.refund.mockImplementationOnce(async () => {
+      snapshot.refundedAmount = 50;
+      snapshot.status = 'refunded';
+      return { id: 'accepted-refund', status: 'approved' };
+    });
+    await lifecycle.maintain();
+    expect((await lifecycle.history(order.id, user)).refunds[0].status).toBe('COMPLETED');
+  });
+
+  it('keeps existing refunds running when new online payments are suspended', async () => {
+    await db.getRepository(Order).update(order.id, { status: OrderStatus.CANCELLED });
+    await lifecycle.process(paymentId(), unit.id);
+    Object.assign(sellers, { enabled: false });
+    try {
+      await expect(lifecycle.checkout(String(order.id), user)).rejects.toThrow();
+      mp.refund.mockImplementationOnce(async () => {
+        snapshot.refundedAmount = 50;
+        snapshot.status = 'refunded';
+        return { id: 'refund', status: 'approved' };
+      });
+      await lifecycle.maintain();
+      expect((await db.getRepository(Payment).findOneByOrFail({ order_id: order.id })).status).toBe(
+        PaymentStatus.REFUNDED,
+      );
+    } finally {
+      Object.assign(sellers, { enabled: true });
+    }
+  });
+
+  it('recognizes an externally completed refund even after its earlier request failed', async () => {
+    await db.getRepository(Order).update(order.id, { status: OrderStatus.CANCELLED });
+    await lifecycle.process(paymentId(), unit.id);
+    await db.query("UPDATE payment_refunds SET status='FAILED' WHERE order_id=$1", [order.id]);
+    snapshot.refundedAmount = 50;
+    snapshot.status = 'refunded';
+    await lifecycle.process(paymentId(), unit.id);
+    expect((await lifecycle.history(order.id, user)).refunds[0].status).toBe('COMPLETED');
+    expect(
+      (await db.getRepository(Payment).findOneByOrFail({ order_id: order.id })).refund_status,
+    ).toBe('COMPLETED');
+  });
   it('atomically approves and confirms; duplicate delivery does not duplicate history', async () => {
     await Promise.all([
       lifecycle.process(paymentId(), unit.id),
@@ -431,16 +832,27 @@ const enabled = process.env.PAYMENTS_TEST_DATABASE === 'meatshop_payments_test';
     await db.getRepository(Product).delete(product.id);
     await db.getRepository(Category).delete(category.id);
   });
-  it('preserves partial payment accounting and queues the remaining refund when the reservation expires', async () => {
+  it('keeps a seller-compensated confirmed order active after a partial refund', async () => {
     snapshot.refundedAmount = 20;
     await lifecycle.process(paymentId(), unit.id);
     await db.getRepository(Order).update(order.id, { payment_due_at: new Date(0) });
     await lifecycle.maintain();
     const saved = await db.getRepository(Order).findOneByOrFail({ id: order.id });
     const payment = await db.getRepository(Payment).findOneByOrFail({ order_id: order.id });
-    expect(saved.status).toBe(OrderStatus.CANCELLED);
+    expect(saved.status).toBe(OrderStatus.CONFIRMED);
     expect(saved.payment_status).toBe(PaymentStatus.PARTIALLY_REFUNDED);
     expect(payment.status).toBe(saved.payment_status);
+    expect(
+      await db.query('SELECT id FROM payment_refunds WHERE order_id=$1', [order.id]),
+    ).toHaveLength(0);
+  });
+  it('returns the remaining balance for a partial approval discovered after the deadline', async () => {
+    snapshot.refundedAmount = 20;
+    await db.getRepository(Order).update(order.id, { payment_due_at: new Date(0) });
+    await lifecycle.process(paymentId(), unit.id);
+    const saved = await db.getRepository(Order).findOneByOrFail({ id: order.id });
+    expect(saved.status).toBe(OrderStatus.CANCELLED);
+    expect(saved.payment_status).toBe(PaymentStatus.PARTIALLY_REFUNDED);
     const [refund] = await db.query('SELECT amount FROM payment_refunds WHERE order_id=$1', [
       order.id,
     ]);

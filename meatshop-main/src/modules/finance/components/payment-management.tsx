@@ -1,73 +1,77 @@
-"use client";
+"use client"
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react"
 
-import { apiGet, apiPost } from "@/shared/lib/api";
+import { apiGet, apiPost } from "@/shared/lib/api"
 
-import { usePanelAccess } from "@/shared/providers/panel-access-provider";
+import { usePanelAccess } from "@/shared/providers/panel-access-provider"
 
-import { Button } from "@/shared/components/ui/button";
+import { Button } from "@/shared/components/ui/button"
 
-import { Input } from "@/shared/components/ui/input";
+import { Input } from "@/shared/components/ui/input"
 
-import { PAYMENT_STATUS_LABELS } from "@/modules/orders/utils/status-labels";
+import { PAYMENT_STATUS_LABELS } from "@/modules/orders/utils/status-labels"
 
-import { formatCurrency } from "@/shared/lib/formatters";
+import { formatCurrency } from "@/shared/lib/formatters"
+import { PaymentHistory } from "./payment-history"
 
 type PaymentRow = {
-  id: number;
-  status: string;
-  payment_status: string;
-  total_amount: number;
-  method: string | null;
-  refunded_amount: number;
-  fee_amount: number;
-  refund_status: string | null;
-  delivery_fee?: number;
-  delivery_person_id?: number | null;
-  delivery_paid_at?: string | null;
-};
+  id: number
+  status: string
+  payment_status: string
+  total_amount: number
+  method: string | null
+  refunded_amount: number
+  fee_amount: number
+  refund_status: string | null
+  delivery_fee?: number
+  delivery_person_id?: number | null
+  delivery_paid_at?: string | null
+  payment_date?: string | null
+  transaction_id?: string | null
+  receipt_reference?: string | null
+}
 
 export function PaymentActions({
   order,
   onChange,
 }: {
-  order: PaymentRow;
-  onChange: () => void;
+  order: PaymentRow
+  onChange: () => void
 }) {
-  const { hasPermission } = usePanelAccess();
+  const { hasPermission } = usePanelAccess()
 
   const [action, setAction] = useState<
     "receipt" | "refund" | "offline-refund" | "delivery-settlement" | null
-  >(null);
+  >(null)
 
-  const [reference, setReference] = useState("");
+  const [reference, setReference] = useState("")
 
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(false)
 
-  const [error, setError] = useState("");
+  const [error, setError] = useState("")
 
-  const offline = ["Cash", "Card on Delivery"].includes(order.method ?? "");
+  const offline = ["Cash", "Card on Delivery"].includes(order.method ?? "")
 
   const run = async (endpoint: string, body: object = {}) => {
-    setBusy(true);
-    setError("");
+    setBusy(true)
+    setError("")
 
     try {
-      await apiPost(`/payments/orders/${order.id}/${endpoint}`, body);
-      setAction(null);
-      setReference("");
-      onChange();
+      await apiPost(`/payments/orders/${order.id}/${endpoint}`, body)
+      setAction(null)
+      setReference("")
+      onChange()
     } catch (e) {
       setError(
         e instanceof Error
           ? e.message
           : "Não foi possível concluir a operação.",
-      );
+      )
     } finally {
-      setBusy(false);
+      setBusy(false)
     }
-  };
+  }
 
   return (
     <div className="space-y-2">
@@ -91,6 +95,15 @@ export function PaymentActions({
             } as Record<string, string>
           )[order.refund_status] ?? order.refund_status}
         </p>
+      )}
+      {order.payment_date && (
+        <p>
+          Recebido em {new Date(order.payment_date).toLocaleString("pt-BR")}
+        </p>
+      )}
+      {order.transaction_id && <p>Transação: {order.transaction_id}</p>}
+      {order.receipt_reference && (
+        <p>Referência do recebimento: {order.receipt_reference}</p>
       )}
 
       <div className="flex flex-wrap gap-2">
@@ -117,6 +130,7 @@ export function PaymentActions({
           !offline &&
           ["PAID", "PARTIALLY_REFUNDED"].includes(order.payment_status) &&
           ["CANCELLED", "DELIVERED"].includes(order.status) &&
+          Number(order.total_amount) > Number(order.refunded_amount) &&
           !order.refund_status && (
             <Button
               variant="outline"
@@ -130,6 +144,7 @@ export function PaymentActions({
         {hasPermission("MANAGE_FINANCE") &&
           offline &&
           order.payment_status === "PAID" &&
+          Number(order.total_amount) > 0 &&
           ["CANCELLED", "DELIVERED"].includes(order.status) && (
             <Button
               variant="outline"
@@ -166,7 +181,7 @@ export function PaymentActions({
         <form
           className="rounded border p-3 space-y-2"
           onSubmit={(e) => {
-            e.preventDefault();
+            e.preventDefault()
             void run(
               action,
               action === "refund"
@@ -179,7 +194,7 @@ export function PaymentActions({
                     ),
                     reference,
                   },
-            );
+            )
           }}
         >
           <p>
@@ -225,69 +240,84 @@ export function PaymentActions({
           {error}
         </p>
       )}
+      <PaymentHistory orderId={order.id} onChange={onChange} />
     </div>
-  );
+  )
 }
 
-export function PaymentManagement({ unitId }: { unitId: number }) {
-  const { hasPermission } = usePanelAccess();
+export function PaymentManagement({
+  unitId,
+  month,
+  onFinancialChange,
+}: {
+  unitId: number
+  month?: string
+  onFinancialChange?: () => void
+}) {
+  const { hasPermission } = usePanelAccess()
 
   const [account, setAccount] = useState<{
-    available: boolean;
-    connected: boolean;
-    collector_id: string | null;
-  } | null>(null);
+    available: boolean
+    connected: boolean
+    collector_id: string | null
+    state?: string
+    expires_at?: string | null
+    history?: { kind: string; collector_id: string; created_at: string }[]
+  } | null>(null)
 
-  const [rows, setRows] = useState<PaymentRow[]>([]);
+  const [rows, setRows] = useState<PaymentRow[]>([])
 
-  const [error, setError] = useState("");
+  const [error, setError] = useState("")
 
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(0)
+  const [view, setView] = useState("all")
 
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(false)
 
   const load = useCallback(async () => {
     try {
       const payments = await apiGet(
-        `/payments/orders?unit_id=${unitId}&page=${page}`,
-      );
+        `/payments/orders?unit_id=${unitId}&page=${page}&view=${view}${month ? `&month=${month}` : ""}`,
+      )
 
-      setRows(payments);
+      setRows(payments)
 
       if (hasPermission("MANAGE_FINANCE"))
-        setAccount(await apiGet(`/payments/sellers/${unitId}/status`));
+        setAccount(await apiGet(`/payments/sellers/${unitId}/status`))
 
-      setError("");
+      setError("")
     } catch (e) {
       setError(
         e instanceof Error
           ? e.message
           : "Não foi possível carregar pagamentos.",
-      );
+      )
     }
-  }, [unitId, page, hasPermission]);
+  }, [unitId, page, hasPermission, view, month])
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    void load()
+    const timer = setInterval(() => void load(), 30_000)
+    return () => clearInterval(timer)
+  }, [load])
 
   const connect = async () => {
-    setBusy(true);
+    setBusy(true)
 
     try {
-      const { url } = await apiPost(`/payments/sellers/${unitId}/connect`, {});
+      const { url } = await apiPost(`/payments/sellers/${unitId}/connect`, {})
 
-      const destination = new URL(url);
+      const destination = new URL(url)
 
       if (destination.origin !== "https://auth.mercadopago.com.br")
-        throw new Error("Endereço de autorização inválido");
+        throw new Error("Endereço de autorização inválido")
 
-      window.location.assign(url);
+      window.location.assign(url)
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Falha na conexão");
-      setBusy(false);
+      setError(e instanceof Error ? e.message : "Falha na conexão")
+      setBusy(false)
     }
-  };
+  }
 
   return (
     <section className="rounded-xl border bg-white p-4 space-y-4">
@@ -310,6 +340,58 @@ export function PaymentManagement({ unitId }: { unitId: number }) {
           <Button onClick={connect} disabled={!account.available || busy}>
             {account.connected ? "Reconectar conta" : "Conectar Mercado Pago"}
           </Button>
+          {account.connected && account.state !== "PAUSED" && (
+            <Button
+              variant="outline"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true)
+                try {
+                  await apiPost(`/payments/sellers/${unitId}/pause`, {})
+                  await load()
+                } catch (e) {
+                  setError(
+                    e instanceof Error ? e.message : "Não foi possível pausar.",
+                  )
+                } finally {
+                  setBusy(false)
+                }
+              }}
+            >
+              Pausar novas cobranças
+            </Button>
+          )}
+          {account.state === "PAUSED" && (
+            <p>
+              Novas cobranças pausadas. Pagamentos anteriores e estornos
+              continuam sendo acompanhados. Reconecte para voltar a receber.
+            </p>
+          )}
+          {account.state === "RECONNECT_REQUIRED" && (
+            <p className="text-amber-700">
+              A autorização precisa ser verificada. Reconecte a mesma conta
+              Mercado Pago.
+            </p>
+          )}
+          {account.state === "RENEWAL_PENDING" && (
+            <p>
+              A autorização será renovada automaticamente no próximo uso. Se a
+              renovação falhar, reconecte a mesma conta.
+            </p>
+          )}
+          {account.history?.slice(0, 3).map((event, i) => (
+            <p key={i} className="text-sm text-slate-600">
+              {(
+                {
+                  CONNECTED: "Conta conectada",
+                  RECONNECTED: "Conta reconectada",
+                  PAUSED: "Novas cobranças pausadas",
+                } as Record<string, string>
+              )[event.kind] ?? event.kind}
+              : {event.collector_id} ·{" "}
+              {new Date(event.created_at).toLocaleString("pt-BR")}
+            </p>
+          ))}
 
           {!account.available && (
             <p>
@@ -323,6 +405,29 @@ export function PaymentManagement({ unitId }: { unitId: number }) {
       <Button variant="outline" onClick={load}>
         Atualizar
       </Button>
+      <label className="block">
+        Situação financeira
+        <select
+          className="input ml-2"
+          value={view}
+          onChange={(e) => {
+            setPage(0)
+            setView(e.target.value)
+          }}
+        >
+          <option value="all">Todos</option>
+          <option value="pending">Pagamentos pendentes</option>
+          <option value="receivable">A receber presencialmente</option>
+          <option value="refunds">Estornos pendentes ou com falha</option>
+          <option value="issues">Contestações e falhas</option>
+        </select>
+      </label>
+      {month && (
+        <p className="text-sm text-slate-600">
+          Pedidos criados em {month}. Receitas nos gráficos seguem a data de
+          recebimento.
+        </p>
+      )}
 
       {error && (
         <p role="alert" className="text-red-700">
@@ -341,7 +446,13 @@ export function PaymentManagement({ unitId }: { unitId: number }) {
             {formatCurrency(Number(row.fee_amount))}
           </p>
 
-          <PaymentActions order={row} onChange={load} />
+          <PaymentActions
+            order={row}
+            onChange={() => {
+              void load()
+              onFinancialChange?.()
+            }}
+          />
         </article>
       ))}
 
@@ -364,5 +475,5 @@ export function PaymentManagement({ unitId }: { unitId: number }) {
         </Button>
       </div>
     </section>
-  );
+  )
 }

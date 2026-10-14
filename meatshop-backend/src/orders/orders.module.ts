@@ -1,4 +1,6 @@
 import { SellerAccountsService } from '../payments/seller-accounts.service';
+import { MetricsModule } from '../metrics/metrics.module';
+import { CheckoutQuoteService } from './services/checkout-quote.service';
 import { PaymentLifecycleService } from '../payments/payment-lifecycle.service';
 import { PaymentsController, SellerPaymentsController } from '../payments/payments.controller';
 import { MercadoPagoService } from '../payments/providers/mercadopago.service';
@@ -36,6 +38,7 @@ import { QuoteCartUseCase } from './use-cases/quote-cart.use-case';
 
 @Module({
   imports: [
+    MetricsModule,
     TypeOrmModule.forFeature([Order, OrderItem, Payment, OrderStatusHistory, DeliveryPerson]),
     UnitsModule,
     ProductsModule,
@@ -46,6 +49,7 @@ import { QuoteCartUseCase } from './use-cases/quote-cart.use-case';
   ],
   controllers: [OrdersController, CheckoutController, PaymentsController, SellerPaymentsController],
   providers: [
+    CheckoutQuoteService,
     SellerAccountsService,
     PaymentLifecycleService,
     MercadoPagoService,

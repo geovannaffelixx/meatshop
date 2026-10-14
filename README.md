@@ -3,6 +3,8 @@
 > [!IMPORTANT]
 > Para subir banco, migrations, backend e frontend após um clone novo, use o guia oficial [SETUP.md](./SETUP.md). O ambiente Docker é autocontido e não exige criar arquivos `.env`.
 
+Pagamentos: consulte [configuração e homologação Mercado Pago](./docs/PAYMENTS_SETUP.md).
+
 ```powershell
 git clone --branch develop --single-branch https://github.com/geovannaffelixx/meatshop.git
 cd meatshop

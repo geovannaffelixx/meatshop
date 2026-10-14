@@ -41,13 +41,22 @@ export class MercadoPagoWebhookController {
     @Headers('x-signature') xSignature?: string,
     @Headers('x-request-id') xRequestId?: string,
   ) {
+    const payload = this.asRecord(body);
+    const topic = payload?.type ?? query.topic ?? query.type;
+    if (topic != null && topic !== 'payment')
+      return { ok: true, ignored: true, reason: 'unsupported_topic' };
     const paymentId = this.extractPaymentId(query, body);
     if (!paymentId) return { ok: true, ignored: true, reason: 'missing_payment_id' };
     if (!this.verifyIfConfigured(paymentId, xSignature, xRequestId)) {
       throw new UnauthorizedException('Invalid webhook signature');
     }
 
-    const unitId = Number(query.unit_id);
+    const unitId =
+      query.unit_id != null
+        ? Number(query.unit_id)
+        : payload?.user_id != null
+          ? await this.lifecycle.resolveSeller(paymentId, String(payload.user_id))
+          : NaN;
     if (!Number.isSafeInteger(unitId) || unitId <= 0)
       throw new UnauthorizedException('Seller identity required');
     await this.lifecycle.process(paymentId, unitId);

@@ -46,13 +46,14 @@ type Order = {
   delivery_fee: number
   delivery_type: string
   payment_status: string
+  delivery_paid_at:string|null
   is_scheduled: boolean
   scheduled_delivery_date: string | null
   cancellation_reason: string | null
   cancelled_at: string | null
   cancelled_by: string | null
   items: OrderItem[]
-  payment: { method: string | null; status: string; payment_date: string | null; refunded_amount: number; fee_amount: number; refund_status: string | null } | null
+  payment: { method: string | null; status: string; payment_date: string | null; refunded_amount: number; fee_amount: number; refund_status: string | null;transaction_id:string|null;receipt_reference:string|null } | null
 }
 
 interface OrderDetailScreenProps {
@@ -148,7 +149,7 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
       </div>
     )
 
-  const allowsPreparation = order.payment_status === "PAID" || (order.payment_status === "PENDING" && ["Cash", "Card on Delivery"].includes(order.payment?.method ?? ""))
+  const allowsPreparation = ["PAID","PARTIALLY_REFUNDED"].includes(order.payment_status) || (order.payment_status === "PENDING" && ["Cash", "Card on Delivery"].includes(order.payment?.method ?? ""))
   const nextAction = allowsPreparation ? getNextAction(order.status, order.delivery_type) : null
 
   return (

@@ -42,6 +42,7 @@ describe('runtime config', () => {
         DB_SSL: 'true',
         CORS_ORIGINS: 'https://app.example.com',
         BACKEND_PUBLIC_URL: 'https://api.example.com',
+        FRONTEND_URL: 'https://app.example.com',
         COOKIE_SECURE: 'true',
         FIREBASE_SERVICE_ACCOUNT: JSON.stringify({
           project_id: 'example',

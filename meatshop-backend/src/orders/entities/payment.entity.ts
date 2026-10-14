@@ -33,11 +33,14 @@ export class Payment {
   })
   status: PaymentStatus;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   payment_date: Date | null;
 
   @Column({ type: 'varchar', length: 40, nullable: true })
   transaction_id: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  payment_reference: string | null;
 
   @Column({ type: 'varchar', length: 120, nullable: true })
   mp_preference_id: string | null;

@@ -14,6 +14,7 @@ export type FinanceSummaryResult = {
   revenueTotal: number;
   expensesTotal: number;
   payments: { name: string; value: number }[];
+  expensesByDay: { day: number; value: number }[];
 };
 
 @Injectable()
@@ -33,7 +34,7 @@ export class GetFinanceSummaryUseCase {
       query.unit_id,
       UnitPermission.VIEW_FINANCE,
     );
-    const { year, month, start, end } = normalizeMonthRange(query.month);
+    const { year, month, start, end, daysInMonth } = normalizeMonthRange(query.month);
     const mm = String(month).padStart(2, '0');
 
     const expenses = await this.expenseRepository.find({
@@ -46,12 +47,23 @@ export class GetFinanceSummaryUseCase {
         },
       ],
     });
-    const [deliveryCosts] = await this.orderRepository.manager.query(
-      'SELECT COALESCE(SUM(s.amount),0) AS total FROM delivery_settlements s JOIN orders o ON o.id=s.order_id WHERE o.unit_id=$1 AND s.paid_at >= $2 AND s.paid_at < $3',
-      [unitId, start, end],
-    );
-    const expensesTotal =
-      expenses.reduce((s, e) => s + Number(e.paidAmount ?? 0), 0) + Number(deliveryCosts.total);
+    const deliveryCosts: { day: string; total: string }[] =
+      await this.orderRepository.manager.query(
+        "SELECT TO_CHAR(s.paid_at AT TIME ZONE 'America/Sao_Paulo','DD') AS day,SUM(s.amount) AS total FROM delivery_settlements s JOIN orders o ON o.id=s.order_id WHERE o.unit_id=$1 AND s.paid_at >= $2 AND s.paid_at < $3 GROUP BY 1",
+        [unitId, start, end],
+      );
+    const byDay = new Map<number, number>();
+    for (const e of expenses) {
+      const day = Number(String(e.paidAt ?? e.postedAt).slice(8, 10));
+      byDay.set(day, (byDay.get(day) ?? 0) + Number(e.paidAmount ?? 0));
+    }
+    for (const r of deliveryCosts)
+      byDay.set(Number(r.day), (byDay.get(Number(r.day)) ?? 0) + Number(r.total));
+    const expensesByDay = Array.from({ length: daysInMonth }, (_, i) => ({
+      day: i + 1,
+      value: byDay.get(i + 1) ?? 0,
+    }));
+    const expensesTotal = expensesByDay.reduce((sum, p) => sum + p.value, 0);
 
     const { entities: orders, raw } = await this.orderRepository
       .createQueryBuilder('o')
@@ -88,6 +100,6 @@ export class GetFinanceSummaryUseCase {
     }));
     const { revenueTotal } = await this.getMonthlyRevenueUseCase.forUnit(unitId, query.month);
 
-    return { revenueTotal, expensesTotal, payments };
+    return { revenueTotal, expensesTotal, payments, expensesByDay };
   }
 }

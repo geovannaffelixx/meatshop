@@ -23,6 +23,12 @@ export class RateLimitMiddleware implements NestMiddleware {
   }
 
   use(request: Request, response: Response, next: NextFunction): void {
+    // Signed provider notifications must not share a browser/IP quota.
+    // Authentication, deduplication and external confirmation remain in the webhook controller.
+    if (request.method === 'POST' && request.path === '/webhooks/mercadopago') {
+      next();
+      return;
+    }
     const now = Date.now();
     const key = request.ip || request.socket.remoteAddress || 'unknown';
     const previous = this.entries.get(key);

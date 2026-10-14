@@ -65,6 +65,17 @@ jobs:
       - run: npm run migration:run:prod
       - run: npm run test:coverage
       - run: npm run test:e2e
+      - name: Prepare isolated payments database
+        run: PGPASSWORD=meatshop_pass psql -h 127.0.0.1 -U meatshop_user -d meatshop -c 'CREATE DATABASE meatshop_payments_test'
+      - name: Migrate isolated payments database
+        run: npm run migration:run:prod
+        env:
+          DB_DATABASE: meatshop_payments_test
+      - name: Verify payment recovery with PostgreSQL
+        run: npm run test:e2e -- payments.e2e-spec.ts
+        env:
+          PAYMENTS_TEST_DATABASE: meatshop_payments_test
+          PAYMENTS_TEST_PORT: 5432
       - uses: actions/upload-artifact@v4
         if: always()
         with:

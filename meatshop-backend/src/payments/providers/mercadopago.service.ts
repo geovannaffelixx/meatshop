@@ -114,6 +114,9 @@ export class MercadoPagoService {
               expiration_date_to: (
                 params.expiresAt ?? new Date(Date.now() + 30 * 60_000)
               ).toISOString(),
+              date_of_expiration: (
+                params.expiresAt ?? new Date(Date.now() + 30 * 60_000)
+              ).toISOString(),
               payment_methods: {
                 excluded_payment_types: [{ id: 'ticket' }, { id: 'atm' }],
                 ...(params.method === PaymentMethod.PIX
@@ -224,7 +227,9 @@ export class MercadoPagoService {
 
   async removeCard(customerId: string, cardId: string): Promise<void> {
     try {
-      await new Customer(this.ensureClient()).removeCard({
+      if (!this.client)
+        throw new ServiceUnavailableException('The original legacy card credential is unavailable');
+      await new Customer(this.client).removeCard({
         customerId,
         cardId,
       });

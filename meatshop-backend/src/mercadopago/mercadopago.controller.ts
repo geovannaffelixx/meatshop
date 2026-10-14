@@ -6,6 +6,8 @@ import {
   ParseUUIDPipe,
   Post,
   NotFoundException,
+  Query,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -26,13 +28,19 @@ export class MercadoPagoController {
 
   @Public()
   @Get('capabilities')
-  capabilities() {
+  async capabilities(@Query('unit_ids') rawIds?: string) {
+    if (rawIds != null && (rawIds.length > 300 || !/^\d+(,\d+)*$/.test(rawIds)))
+      throw new BadRequestException('Invalid unit list');
+    const ids = rawIds ? [...new Set(rawIds.split(',').map(Number))] : [];
+    if (ids.length > 20 || ids.some((id) => !Number.isSafeInteger(id) || id < 1))
+      throw new BadRequestException('Invalid unit list');
     return {
       online: this.mp.enabled,
       methods: this.mp.enabled
         ? ['Pix', 'Credit', 'Debit', 'Cash', 'Card on Delivery']
         : ['Cash', 'Card on Delivery'],
       card_entry: 'HOSTED_CHECKOUT',
+      units: await this.mp.availability(ids),
     };
   }
 

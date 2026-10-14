@@ -37,7 +37,7 @@ export class GetMonthlyRevenueUseCase {
       .createQueryBuilder('o')
       .innerJoin('payments', 'p', 'p.order_id=o.id')
       .select([
-        "TO_CHAR(p.payment_date, 'DD') AS day",
+        "TO_CHAR(p.payment_date AT TIME ZONE 'America/Sao_Paulo', 'DD') AS day",
         'SUM(GREATEST(0,o.total_amount-p.refunded_amount-p.fee_amount)) AS total',
       ])
       .where("p.status IN ('PAID','PARTIALLY_REFUNDED')")
@@ -46,7 +46,7 @@ export class GetMonthlyRevenueUseCase {
         start,
         end,
       })
-      .groupBy("TO_CHAR(p.payment_date, 'DD')")
+      .groupBy("TO_CHAR(p.payment_date AT TIME ZONE 'America/Sao_Paulo', 'DD')")
       .getRawMany<{ day: string; total: string }>();
 
     const map = new Map<number, number>();

@@ -57,6 +57,16 @@
     "winston": "^3.18.3",
     "winston-daily-rotate-file": "^5.0.0"
   },
+  "overrides": {
+    "handlebars": "4.7.10",
+    "proxy-addr": "2.0.8",
+    "@nestjs/swagger": {
+      "js-yaml": "5.4.3"
+    },
+    "gaxios": {
+      "uuid": "11.1.1"
+    }
+  },
   "devDependencies": {
     "@eslint/js": "^9.37.0",
     "@nestjs/cli": "11.0.24",

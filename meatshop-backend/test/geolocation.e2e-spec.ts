@@ -96,6 +96,7 @@ const enabled = process.env.GEO_TEST_DATABASE === 'meatshop_geo_test';
       dataSource.getRepository(Unit),
       dataSource.getRepository(UserUnit),
       dataSource.getRepository(DeliveryPerson),
+      new UnitPermissionPolicy(),
     );
     update = new UpdateDeliveryLocationUseCase(
       dataSource.getRepository(Order),

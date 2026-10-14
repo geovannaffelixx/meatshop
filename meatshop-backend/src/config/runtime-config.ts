@@ -33,6 +33,7 @@ export function validateEnvironment(environment: Environment): void {
   readPositiveInteger(environment, 'RATE_LIMIT_WINDOW_MS', 60_000);
   readPositiveInteger(environment, 'RATE_LIMIT_MAX', 120);
   readPositiveInteger(environment, 'DELIVERY_TRACKING_RETENTION_DAYS', 30);
+  readPositiveInteger(environment, 'MP_WEBHOOK_TOLERANCE_SECONDS', 300);
 
   if (environment.NODE_ENV !== 'production') return;
   if (environment.DB_TYPE !== 'postgres') throw new Error('Production requires PostgreSQL');
@@ -51,9 +52,14 @@ export function validateEnvironment(environment: Environment): void {
     throw new Error('FIREBASE_SERVICE_ACCOUNT is required in production');
   }
   assertFirebaseServiceAccount(environment.FIREBASE_SERVICE_ACCOUNT);
-  ['DB_HOST', 'DB_USERNAME', 'DB_PASSWORD', 'DB_DATABASE', 'BACKEND_PUBLIC_URL'].forEach((name) =>
-    assertRequired(environment, name),
-  );
+  [
+    'DB_HOST',
+    'DB_USERNAME',
+    'DB_PASSWORD',
+    'DB_DATABASE',
+    'BACKEND_PUBLIC_URL',
+    'FRONTEND_URL',
+  ].forEach((name) => assertRequired(environment, name));
   assertEmailProvider(environment);
   ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'].forEach((name) =>
     assertRequired(environment, name),
@@ -61,7 +67,7 @@ export function validateEnvironment(environment: Environment): void {
   if (environment.FIREBASE_APP_CHECK_ENFORCED !== 'true') {
     throw new Error('FIREBASE_APP_CHECK_ENFORCED must be true in production');
   }
-  if (environment.PAYMENTS_ENABLED === 'true') {
+  if (environment.PAYMENTS_ENABLED === 'true' || environment.MP_CLIENT_ID?.trim()) {
     for (const key of ['MP_CLIENT_ID', 'MP_CLIENT_SECRET', 'MP_OAUTH_REDIRECT_URI'])
       assertRequired(environment, key);
     assertStrongSecret(environment, 'MP_CREDENTIAL_ENCRYPTION_KEY');

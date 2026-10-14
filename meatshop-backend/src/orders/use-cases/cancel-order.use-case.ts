@@ -49,6 +49,14 @@ export class CancelOrderUseCase {
       if (TERMINAL_STATUSES.includes(order.status)) {
         throw new BadRequestException('Order can no longer be cancelled');
       }
+      if (
+        cancelledBy === CancelledBy.CLIENT &&
+        ![OrderStatus.PENDING, OrderStatus.CONFIRMED].includes(order.status)
+      )
+        throw new BadRequestException({
+          code: 'CANCELLATION_REQUIRES_SUPPORT',
+          message: 'O pedido já está em preparo. Solicite o cancelamento ao açougue.',
+        });
 
       const items = await manager.find(OrderItem, {
         where: { order_id: orderId },
@@ -92,6 +100,16 @@ export class CancelOrderUseCase {
           order.unit_id,
         );
         await manager.save(payment);
+      } else if (
+        payment &&
+        [PaymentStatus.PENDING, PaymentStatus.REJECTED, PaymentStatus.CANCELLED].includes(
+          payment.status,
+        )
+      ) {
+        payment.status = PaymentStatus.CANCELLED;
+        order.payment_status = PaymentStatus.CANCELLED;
+        await manager.save(payment);
+        await manager.save(Order, order);
       }
       return order;
     });

@@ -51,6 +51,12 @@ export class GetOrderUseCase {
       order.client_id === currentUser.id
         ? this.deliveryCodeService.revealDeliveryCode(order)
         : null;
-    return OrderResponseDto.fromEntity(order, items, payment, deliveryCode);
+    const dto = OrderResponseDto.fromEntity(order, items, payment, deliveryCode);
+    const [settlement] = await this.orderRepository.manager.query(
+      'SELECT paid_at FROM delivery_settlements WHERE order_id=$1',
+      [orderId],
+    );
+    dto.delivery_paid_at = settlement?.paid_at ?? null;
+    return dto;
   }
 }

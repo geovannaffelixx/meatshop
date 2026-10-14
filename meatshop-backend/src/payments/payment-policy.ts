@@ -10,7 +10,7 @@ export function assertPaymentAllowsPreparation(
   method: PaymentMethod | null | undefined,
 ): void {
   if (
-    status !== PaymentStatus.PAID &&
+    ![PaymentStatus.PAID, PaymentStatus.PARTIALLY_REFUNDED].includes(status) &&
     !(status === PaymentStatus.PENDING && isOfflinePayment(method))
   ) {
     throw new BadRequestException({

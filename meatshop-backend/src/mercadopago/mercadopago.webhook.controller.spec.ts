@@ -44,4 +44,13 @@ describe('Mercado Pago webhook authentication and retries', () => {
       controller.handle({}, { 'data.id': '123', unit_id: '7' }, signature(), 'request'),
     ).rejects.toThrow('Provider unavailable');
   });
+  it('ignores unrelated provider topics without attempting to process a payment', async () => {
+    await controller.handle(
+      { type: 'merchant_order', data: { id: '123' } },
+      { unit_id: '7' },
+      signature(),
+      'request',
+    );
+    expect(process).not.toHaveBeenCalled();
+  });
 });

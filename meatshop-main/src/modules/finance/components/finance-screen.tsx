@@ -1,7 +1,12 @@
 "use client"
-import React, { useState, useEffect, ChangeEvent } from "react"
+import React, { useState, useEffect, useRef, ChangeEvent } from "react"
 import { Button } from "@/shared/components/ui/button"
-import { Card, CardHeader, CardTitle, CardContent } from "@/shared/components/ui/card"
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "@/shared/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -67,8 +72,16 @@ type ExpenseApi = {
   paymentMethod: Expense["paymentMethod"]
 }
 
-type RevenueApi = { series: { day: number; value: number }[]; revenueTotal: number }
-type SummaryApi = { revenueTotal: number; expensesTotal: number; payments: PaymentSlice[] }
+type RevenueApi = {
+  series: { day: number; value: number }[]
+  revenueTotal: number
+}
+type SummaryApi = {
+  revenueTotal: number
+  expensesTotal: number
+  payments: PaymentSlice[]
+  expensesByDay: RevenuePoint[]
+}
 
 const EMPTY_FORM = {
   id: "",
@@ -175,6 +188,8 @@ export function FinanceScreen() {
   const [revenueTotal, setRevenueTotal] = useState(0)
   const [expenseTotal, setExpenseTotal] = useState(0)
   const [payments, setPayments] = useState<PaymentSlice[]>([])
+  const [expenseSeries, setExpenseSeries] = useState<RevenuePoint[]>([])
+  const [financeRevision, setFinanceRevision] = useState(0)
 
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -185,64 +200,111 @@ export function FinanceScreen() {
   const [confirmingRemoval, setConfirmingRemoval] = useState(false)
 
   const [form, setForm] = useState(EMPTY_FORM)
+  const activeScope = useRef(`${unitId}:${month}`)
+  useEffect(() => {
+    activeScope.current = `${unitId}:${month}`
+  }, [unitId, month])
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const connection = params.get("mp_connection")
+    if (connection === "success")
+      toast.success(
+        "Conta Mercado Pago conectada. Confira o recebedor no Financeiro.",
+      )
+    else if (connection)
+      toast.error(
+        "A autorização Mercado Pago não foi concluída. Tente conectar novamente.",
+      )
+    if (connection) {
+      params.delete("mp_connection")
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}${params.size ? `?${params}` : ""}`,
+      )
+    }
+  }, [])
 
-  const reloadExpensesAndSummary = async () => {
+  const reloadExpensesAndSummary = async (
+    isCurrent: () => boolean = () => true,
+  ) => {
     if (!unitId) return
     const query = `month=${month}&unit_id=${unitId}`
-    const [expensesApi, summary]: [ExpenseApi[], SummaryApi] = await Promise.all([
-      apiGet(`/finance/expenses?${query}`),
-      apiGet(`/finance/summary?${query}`),
-    ])
+    const [expensesApi, summary]: [ExpenseApi[], SummaryApi] =
+      await Promise.all([
+        apiGet(`/finance/expenses?${query}`),
+        apiGet(`/finance/summary?${query}`),
+      ])
 
+    if (!isCurrent() || activeScope.current !== `${unitId}:${month}`) return
     setExpenses(mapExpenses(expensesApi))
-    setExpenseTotal(parseFloat(summary.expensesTotal?.toString().replace(",", ".")) || 0)
+    setExpenseTotal(
+      parseFloat(summary.expensesTotal?.toString().replace(",", ".")) || 0,
+    )
+    setExpenseSeries(summary.expensesByDay ?? [])
     setPayments(
       (summary.payments ?? []).map((p) => ({
         name: p.name === "Mercado Pago Balance" ? "Mercado Pago" : p.name,
-        value: roundMoney(parseFloat(p.value?.toString().replace(",", ".")) || 0),
+        value: roundMoney(
+          parseFloat(p.value?.toString().replace(",", ".")) || 0,
+        ),
       })),
     )
   }
 
   useEffect(() => {
     if (!unitId) return
+    let active = true
+    let fetching = false
 
-    const load = async () => {
+    const load = async (background = false) => {
+      if (fetching) return
+      fetching = true
       try {
-        setLoading(true)
+        if (!background) setLoading(true)
         setError(null)
 
         const query = `month=${month}&unit_id=${unitId}`
 
         const revenue: RevenueApi = await apiGet(`/finance/revenue?${query}`)
+        if (!active) return
 
         const byDay = new Map<number, number>()
-        revenue.series.forEach(s => byDay.set(s.day, s.value))
+        revenue.series.forEach((s) => byDay.set(s.day, s.value))
 
         const daysInMonth = new Date(
           Number(month.split("-")[0]),
           Number(month.split("-")[1]),
-          0
+          0,
         ).getDate()
 
-        const series: RevenuePoint[] = Array.from({ length: daysInMonth }, (_, i) => ({
-          day: i + 1,
-          value: byDay.get(i + 1) ?? 0,
-        }))
+        const series: RevenuePoint[] = Array.from(
+          { length: daysInMonth },
+          (_, i) => ({
+            day: i + 1,
+            value: byDay.get(i + 1) ?? 0,
+          }),
+        )
         setRevenueSeries(series)
         setRevenueTotal(revenue.revenueTotal || 0)
 
-        await reloadExpensesAndSummary()
+        await reloadExpensesAndSummary(() => active)
       } catch (err) {
         console.error(err)
-        setError("Falha ao carregar dados do Financeiro.")
+        if (active) setError("Falha ao carregar dados do Financeiro.")
       } finally {
-        setLoading(false)
+        fetching = false
+        if (active) setLoading(false)
       }
     }
-    load()
+    void load()
+    const timer = setInterval(() => void load(true), 30_000)
+    return () => {
+      active = false
+      clearInterval(timer)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [month, unitId])
+  }, [month, unitId, financeRevision])
 
   useEffect(() => {
     const amount = parseCurrencyToNumber(form.amount)
@@ -252,15 +314,21 @@ export function FinanceScreen() {
       setForm((current) => ({
         ...current,
         paidAmount: paidAmount
-          ? paidAmount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+          ? paidAmount.toLocaleString("pt-BR", {
+              style: "currency",
+              currency: "BRL",
+            })
           : "",
       }))
     }
   }, [form.amount, form.discount])
 
-  const handleFormChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleFormChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target
-    if (name === "cpfCnpj") return setForm((p) => ({ ...p, cpfCnpj: formatCpfCnpj(value) }))
+    if (name === "cpfCnpj")
+      return setForm((p) => ({ ...p, cpfCnpj: formatCpfCnpj(value) }))
     if (["amount", "discount"].includes(name)) {
       const digits = value.replace(/\D/g, "").slice(0, 12)
       const number = digits ? parseInt(digits, 10) / 100 : 0
@@ -341,7 +409,11 @@ export function FinanceScreen() {
 
       await reloadExpensesAndSummary()
 
-      toast.success(editingId ? "Despesa atualizada com sucesso." : "Despesa registrada com sucesso.")
+      toast.success(
+        editingId
+          ? "Despesa atualizada com sucesso."
+          : "Despesa registrada com sucesso.",
+      )
       setForm(EMPTY_FORM)
       setEditingId(null)
       setOpen(false)
@@ -367,51 +439,37 @@ export function FinanceScreen() {
     }
   }
 
-  const expensesByDayMap = new Map<number, number>()
-  expenses.forEach((expense) => {
-    const rawDate = expense.paidAt || expense.postedAt
-    if (rawDate) {
-      const day = Number(String(rawDate).slice(8, 10))
-      const current = expensesByDayMap.get(day) ?? 0
-      expensesByDayMap.set(day, current + expense.paidAmount)
-    }
-  })
-
+  const expensesByDay = expenseSeries
   const daysInMonth = new Date(
     Number(month.split("-")[0]),
     Number(month.split("-")[1]),
-    0
+    0,
   ).getDate()
-
-  const expensesByDay: RevenuePoint[] = Array.from({ length: daysInMonth }, (_, i) => ({
-    day: i + 1,
-    value: expensesByDayMap.get(i + 1) ?? 0,
-  }))
 
   const pieColors = ["#16a34a", "#ef4444", "#f59e0b", "#3b82f6", "#7c3aed"]
 
   return (
     <div className="page-surface">
-        <div className="page-container max-w-7xl">
-          <PageHeader
-            eyebrow="Gestão"
-            title="Financeiro"
-            description="Acompanhe receitas, despesas, saldo e formas de pagamento."
-          />
+      <div className="page-container max-w-7xl">
+        <PageHeader
+          eyebrow="Gestão"
+          title="Financeiro"
+          description="Acompanhe receitas, despesas, saldo e formas de pagamento."
+        />
 
-          <div className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <label className="text-sm font-medium text-slate-700">
-              Competência
+        <div className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <label className="text-sm font-medium text-slate-700">
+            Competência
             <input
               type="month"
               value={month}
               onChange={(e) => setMonth(e.target.value)}
               className="input mt-1"
             />
-            </label>
-            {units.length > 1 && (
-              <label className="text-sm font-medium text-slate-700">
-                Unidade
+          </label>
+          {units.length > 1 && (
+            <label className="text-sm font-medium text-slate-700">
+              Unidade
               <select
                 value={unitId ?? ""}
                 onChange={(e) => setUnitId(Number(e.target.value))}
@@ -423,282 +481,453 @@ export function FinanceScreen() {
                   </option>
                 ))}
               </select>
-              </label>
-            )}
-          </div>
-
-          {unitId && <PaymentManagement key={unitId} unitId={unitId} />}
-
-          {!unitsLoading && units.length === 0 && (
-            <div className="text-center text-red-600">
-              Nenhuma unidade encontrada para este usuário.
-            </div>
+            </label>
           )}
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="bg-white/70 backdrop-blur-md shadow-lg">
-              <CardHeader className="px-4 pt-4 text-center">
-                <CardTitle className="text-green-600">Receitas</CardTitle>
-                <p className="text-sm text-gray-500">Total de vendas no mês</p>
-              </CardHeader>
-              <CardContent>
-                {error ? (
-                  <div className="text-center text-red-600">{error}</div>
-                ) : (
-                  <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={revenueSeries} margin={{ top: 0, right: 0, left: 0, bottom: 0 }} barCategoryGap="1%">
-                      <XAxis dataKey="day" hide interval={0} tickCount={daysInMonth} />
-                      <YAxis hide />
-                      <Tooltip
-                        formatter={(value: number) =>
-                          value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-                        }
-                      />
-                      <Bar dataKey="value" fill="#16a34a" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </CardContent>
-            </Card>
+        {unitId && (
+          <PaymentManagement
+            key={`${unitId}:${month}`}
+            unitId={unitId}
+            month={month}
+            onFinancialChange={() => setFinanceRevision((v) => v + 1)}
+          />
+        )}
 
-            <Card className="bg-white/70 backdrop-blur-md shadow-lg relative">
-              <CardHeader className="flex flex-col items-center px-4 pt-4">
-                <div className="flex items-center gap-3">
-                  <CardTitle className="text-red-600">Despesas</CardTitle>
-                  <Dialog open={open} onOpenChange={setOpen}>
-                    <DialogTrigger asChild>
-                      <Button onClick={openCreateDialog} className="bg-red-600 hover:bg-red-700 rounded-full w-8 h-8 flex items-center justify-center text-white shadow-md">
-                        <Plus size={18} />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-4xl">
-                      <DialogHeader className="flex items-center justify-between">
-                        <DialogTitle className="text-2xl font-bold text-red-700">
-                          {editingId ? "Editar Despesa" : "Adicionar Despesa"}
-                        </DialogTitle>
-                      </DialogHeader>
+        {!unitsLoading && units.length === 0 && (
+          <div className="text-center text-red-600">
+            Nenhuma unidade encontrada para este usuário.
+          </div>
+        )}
 
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
-                        <div className="md:col-span-2">
-                          <label className="text-sm font-medium text-gray-700">ID</label>
-                          <Input value={form.id} disabled placeholder="Gerado automaticamente" />
-                        </div>
-
-                        <div className="md:col-span-3">
-                          <label className="text-sm font-medium text-gray-700">ID Fornecedor</label>
-                          <Input name="supplierId" value={form.supplierId} onChange={handleFormChange} inputMode="numeric" placeholder="Ex.: 1024" />
-                        </div>
-
-                        <div className="md:col-span-3">
-                          <label className="text-sm font-medium text-gray-700">CPF / CNPJ</label>
-                          <Input name="cpfCnpj" value={form.cpfCnpj} onChange={handleFormChange} placeholder="000.000.000-00 ou 00.000.000/0000-00" />
-                        </div>
-
-                        <div className="md:col-span-4">
-                          <label className="text-sm font-medium text-gray-700">Fornecedor<RequiredMark /></label>
-                          <Input name="supplierName" value={form.supplierName} onChange={handleFormChange} placeholder="Ex.: Distribuidora Central" required />
-                        </div>
-
-                        <div className="flex flex-col justify-end md:col-span-3">
-                          <label className="text-sm font-medium text-gray-700 mb-1">Tipo<RequiredMark /></label>
-                          <select
-                            name="type"
-                            value={form.type}
-                            onChange={handleFormChange}
-                            className="w-full border rounded-md px-3 py-2 text-gray-800"
-                            required
-                          >
-                            <option value="Purchases">Compras</option>
-                            <option value="Services">Serviços</option>
-                            <option value="Other">Outros</option>
-                          </select>
-                        </div>
-
-                        <div className="md:col-span-3">
-                          <label className="text-sm font-medium text-gray-700 mb-1">Valor<RequiredMark /></label>
-                          <Input name="amount" value={form.amount} onChange={handleFormChange} inputMode="numeric" placeholder="Ex.: R$ 1.250,00" required />
-                        </div>
-
-                        <div className="md:col-span-3">
-                          <label className="text-sm font-medium text-gray-700 mb-1">Desconto</label>
-                          <Input name="discount" value={form.discount} onChange={handleFormChange} inputMode="numeric" placeholder="Ex.: R$ 50,00" />
-                        </div>
-
-                        <div className="md:col-span-3">
-                          <label className="text-sm font-medium text-gray-700 mb-1">Valor Pago (AUTO)</label>
-                          <Input name="paidAmount" value={form.paidAmount} readOnly disabled />
-                        </div>
-
-                        <div className="grid items-end gap-4 md:col-span-12 sm:grid-cols-3">
-                          <div>
-                            <label className="text-sm font-medium text-gray-700 mb-1">Data lançamento</label>
-                            <Input type="date" name="postedAt" value={form.postedAt} onChange={handleFormChange} />
-                          </div>
-
-                          <div>
-                            <label className="text-sm font-medium text-gray-700 mb-1">Data pagamento</label>
-                            <Input type="date" name="paidAt" value={form.paidAt} onChange={handleFormChange} />
-                          </div>
-
-                          <div>
-                            <label className="text-sm font-medium text-gray-700 mb-1">Forma de pagamento</label>
-                            <select
-                              name="paymentMethod"
-                              value={form.paymentMethod}
-                              onChange={handleFormChange}
-                              className="w-full border rounded-md px-3 py-1.5 text-gray-800"
-                            >
-                              <option>Pix</option>
-                              <option value="Credit">Crédito</option>
-                              <option value="Debit">Débito</option>
-                              <option value="Cash">Dinheiro</option>
-                              <option value="Bank Slip">Boleto</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        <div className="md:col-span-12">
-                          <label className="text-sm font-medium text-gray-700 mb-1">Observações</label>
-                          <Textarea name="notes" value={form.notes} onChange={handleFormChange} rows={3} placeholder="Ex.: Pagamento referente ao pedido mensal." />
-                        </div>
-
-                        <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end md:col-span-12">
-                          <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-                          <Button disabled={saving} className="bg-red-600 hover:bg-red-700 text-white" onClick={handleSaveExpense}>
-                            {saving && <Spinner />}
-                            {saving ? "Salvando..." : editingId ? "Salvar alterações" : "Salvar"}
-                          </Button>
-                        </div>
-                      </div>
-
-                    </DialogContent>
-                  </Dialog>
-                </div>
-                <p className="text-center text-sm text-gray-500 mt-2">Total de despesas no mês</p>
-              </CardHeader>
-
-              <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="bg-white/70 backdrop-blur-md shadow-lg">
+            <CardHeader className="px-4 pt-4 text-center">
+              <CardTitle className="text-green-600">Receitas</CardTitle>
+              <p className="text-sm text-gray-500">Total de vendas no mês</p>
+            </CardHeader>
+            <CardContent>
+              {error ? (
+                <div className="text-center text-red-600">{error}</div>
+              ) : (
                 <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={expensesByDay} margin={{ top: 0, right: 0, left: 0, bottom: 0 }} barCategoryGap="1%">
-                    <XAxis dataKey="day" hide interval={0} tickCount={daysInMonth} />
+                  <BarChart
+                    data={revenueSeries}
+                    margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+                    barCategoryGap="1%"
+                  >
+                    <XAxis
+                      dataKey="day"
+                      hide
+                      interval={0}
+                      tickCount={daysInMonth}
+                    />
                     <YAxis hide />
                     <Tooltip
                       formatter={(value: number) =>
-                        value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                        value.toLocaleString("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                        })
                       }
                     />
-                    <Bar dataKey="value" fill="#dc2626" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="value" fill="#16a34a" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card className="bg-white/70 backdrop-blur-md shadow-lg">
-            <CardHeader className="px-4 pt-4">
-              <CardTitle className="text-gray-700">Despesas do mês</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-gray-100 text-gray-700">
-                    <tr>
-                      <th className="p-3">Fornecedor</th>
-                      <th className="p-3">Tipo</th>
-                      <th className="p-3">Valor pago</th>
-                      <th className="p-3">Pagamento</th>
-                      <th className="p-3">Data</th>
-                      <th className="p-3 text-right">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loading ? (
-                      <tr>
-                        <td colSpan={6} className="p-6 text-center italic text-gray-500">Carregando despesas...</td>
-                      </tr>
-                    ) : expenses.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="p-6 text-center italic text-gray-500">Nenhuma despesa registrada neste mês.</td>
-                      </tr>
-                    ) : (
-                      expenses.map((expense) => (
-                        <tr key={expense.id} className="border-t hover:bg-gray-50">
-                          <td className="p-3 font-medium">{expense.supplierName}</td>
-                          <td className="p-3">{expense.type}</td>
-                          <td className="p-3">{formatCurrency(expense.paidAmount)}</td>
-                          <td className="p-3">{expense.paymentMethod}</td>
-                          <td className="p-3">{formatLocalDate(expense.paidAt || expense.postedAt)}</td>
-                          <td className="p-3 text-right space-x-3">
-                            <button onClick={() => openEditDialog(expense)} className="font-semibold text-red-600 hover:underline">
-                              Editar
-                            </button>
-                            <button onClick={() => setRemoving(expense)} className="font-semibold text-gray-600 hover:underline">
-                              Excluir
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              )}
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FinanceSummary
-              revenueTotal={revenueTotal}
-              expenseTotal={expenseTotal}
-              payments={payments}
-            />
-
-            <Card className="bg-white/70 backdrop-blur-md shadow-lg">
-              <CardHeader className="px-4 pt-4 text-center">
-                <CardTitle className="text-gray-700">Vendas por forma de pagamento</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={220}>
-                  <PieChart>
-                    <Pie
-                      data={payments}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      label={({ value }) => formatCurrency(Number(value ?? 0))}
+          <Card className="bg-white/70 backdrop-blur-md shadow-lg relative">
+            <CardHeader className="flex flex-col items-center px-4 pt-4">
+              <div className="flex items-center gap-3">
+                <CardTitle className="text-red-600">Despesas</CardTitle>
+                <Dialog open={open} onOpenChange={setOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      onClick={openCreateDialog}
+                      className="bg-red-600 hover:bg-red-700 rounded-full w-8 h-8 flex items-center justify-center text-white shadow-md"
                     >
-                      {payments.map((entry, i) => (
-                        <Cell key={i} fill={pieColors[i % pieColors.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value: number) => formatCurrency(Number(value ?? 0))} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
+                      <Plus size={18} />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl">
+                    <DialogHeader className="flex items-center justify-between">
+                      <DialogTitle className="text-2xl font-bold text-red-700">
+                        {editingId ? "Editar Despesa" : "Adicionar Despesa"}
+                      </DialogTitle>
+                    </DialogHeader>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+                      <div className="md:col-span-2">
+                        <label className="text-sm font-medium text-gray-700">
+                          ID
+                        </label>
+                        <Input
+                          value={form.id}
+                          disabled
+                          placeholder="Gerado automaticamente"
+                        />
+                      </div>
+
+                      <div className="md:col-span-3">
+                        <label className="text-sm font-medium text-gray-700">
+                          ID Fornecedor
+                        </label>
+                        <Input
+                          name="supplierId"
+                          value={form.supplierId}
+                          onChange={handleFormChange}
+                          inputMode="numeric"
+                          placeholder="Ex.: 1024"
+                        />
+                      </div>
+
+                      <div className="md:col-span-3">
+                        <label className="text-sm font-medium text-gray-700">
+                          CPF / CNPJ
+                        </label>
+                        <Input
+                          name="cpfCnpj"
+                          value={form.cpfCnpj}
+                          onChange={handleFormChange}
+                          placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                        />
+                      </div>
+
+                      <div className="md:col-span-4">
+                        <label className="text-sm font-medium text-gray-700">
+                          Fornecedor
+                          <RequiredMark />
+                        </label>
+                        <Input
+                          name="supplierName"
+                          value={form.supplierName}
+                          onChange={handleFormChange}
+                          placeholder="Ex.: Distribuidora Central"
+                          required
+                        />
+                      </div>
+
+                      <div className="flex flex-col justify-end md:col-span-3">
+                        <label className="text-sm font-medium text-gray-700 mb-1">
+                          Tipo
+                          <RequiredMark />
+                        </label>
+                        <select
+                          name="type"
+                          value={form.type}
+                          onChange={handleFormChange}
+                          className="w-full border rounded-md px-3 py-2 text-gray-800"
+                          required
+                        >
+                          <option value="Purchases">Compras</option>
+                          <option value="Services">Serviços</option>
+                          <option value="Other">Outros</option>
+                        </select>
+                      </div>
+
+                      <div className="md:col-span-3">
+                        <label className="text-sm font-medium text-gray-700 mb-1">
+                          Valor
+                          <RequiredMark />
+                        </label>
+                        <Input
+                          name="amount"
+                          value={form.amount}
+                          onChange={handleFormChange}
+                          inputMode="numeric"
+                          placeholder="Ex.: R$ 1.250,00"
+                          required
+                        />
+                      </div>
+
+                      <div className="md:col-span-3">
+                        <label className="text-sm font-medium text-gray-700 mb-1">
+                          Desconto
+                        </label>
+                        <Input
+                          name="discount"
+                          value={form.discount}
+                          onChange={handleFormChange}
+                          inputMode="numeric"
+                          placeholder="Ex.: R$ 50,00"
+                        />
+                      </div>
+
+                      <div className="md:col-span-3">
+                        <label className="text-sm font-medium text-gray-700 mb-1">
+                          Valor Pago (AUTO)
+                        </label>
+                        <Input
+                          name="paidAmount"
+                          value={form.paidAmount}
+                          readOnly
+                          disabled
+                        />
+                      </div>
+
+                      <div className="grid items-end gap-4 md:col-span-12 sm:grid-cols-3">
+                        <div>
+                          <label className="text-sm font-medium text-gray-700 mb-1">
+                            Data lançamento
+                          </label>
+                          <Input
+                            type="date"
+                            name="postedAt"
+                            value={form.postedAt}
+                            onChange={handleFormChange}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-sm font-medium text-gray-700 mb-1">
+                            Data pagamento
+                          </label>
+                          <Input
+                            type="date"
+                            name="paidAt"
+                            value={form.paidAt}
+                            onChange={handleFormChange}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-sm font-medium text-gray-700 mb-1">
+                            Forma de pagamento
+                          </label>
+                          <select
+                            name="paymentMethod"
+                            value={form.paymentMethod}
+                            onChange={handleFormChange}
+                            className="w-full border rounded-md px-3 py-1.5 text-gray-800"
+                          >
+                            <option>Pix</option>
+                            <option value="Credit">Crédito</option>
+                            <option value="Debit">Débito</option>
+                            <option value="Cash">Dinheiro</option>
+                            <option value="Bank Slip">Boleto</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="md:col-span-12">
+                        <label className="text-sm font-medium text-gray-700 mb-1">
+                          Observações
+                        </label>
+                        <Textarea
+                          name="notes"
+                          value={form.notes}
+                          onChange={handleFormChange}
+                          rows={3}
+                          placeholder="Ex.: Pagamento referente ao pedido mensal."
+                        />
+                      </div>
+
+                      <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end md:col-span-12">
+                        <Button variant="ghost" onClick={() => setOpen(false)}>
+                          Cancelar
+                        </Button>
+                        <Button
+                          disabled={saving}
+                          className="bg-red-600 hover:bg-red-700 text-white"
+                          onClick={handleSaveExpense}
+                        >
+                          {saving && <Spinner />}
+                          {saving
+                            ? "Salvando..."
+                            : editingId
+                              ? "Salvar alterações"
+                              : "Salvar"}
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+              <p className="text-center text-sm text-gray-500 mt-2">
+                Total de despesas no mês
+              </p>
+            </CardHeader>
+
+            <CardContent>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart
+                  data={expensesByDay}
+                  margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+                  barCategoryGap="1%"
+                >
+                  <XAxis
+                    dataKey="day"
+                    hide
+                    interval={0}
+                    tickCount={daysInMonth}
+                  />
+                  <YAxis hide />
+                  <Tooltip
+                    formatter={(value: number) =>
+                      value.toLocaleString("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                      })
+                    }
+                  />
+                  <Bar dataKey="value" fill="#dc2626" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
         </div>
 
-        <Dialog open={Boolean(removing)} onOpenChange={(nextOpen) => !nextOpen && setRemoving(null)}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Remover despesa?</DialogTitle>
-              <DialogDescription>
-                A despesa de {removing?.supplierName} no valor de {removing ? formatCurrency(removing.paidAmount) : ""} será removida permanentemente.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" disabled={confirmingRemoval} onClick={() => setRemoving(null)}>
-                Cancelar
-              </Button>
-              <Button variant="destructive" disabled={confirmingRemoval} onClick={() => void confirmRemoveExpense()}>
-                {confirmingRemoval && <Spinner />}
-                {confirmingRemoval ? "Removendo..." : "Remover despesa"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Card className="bg-white/70 backdrop-blur-md shadow-lg">
+          <CardHeader className="px-4 pt-4">
+            <CardTitle className="text-gray-700">Despesas do mês</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-gray-100 text-gray-700">
+                  <tr>
+                    <th className="p-3">Fornecedor</th>
+                    <th className="p-3">Tipo</th>
+                    <th className="p-3">Valor pago</th>
+                    <th className="p-3">Pagamento</th>
+                    <th className="p-3">Data</th>
+                    <th className="p-3 text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="p-6 text-center italic text-gray-500"
+                      >
+                        Carregando despesas...
+                      </td>
+                    </tr>
+                  ) : expenses.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="p-6 text-center italic text-gray-500"
+                      >
+                        Nenhuma despesa registrada neste mês.
+                      </td>
+                    </tr>
+                  ) : (
+                    expenses.map((expense) => (
+                      <tr
+                        key={expense.id}
+                        className="border-t hover:bg-gray-50"
+                      >
+                        <td className="p-3 font-medium">
+                          {expense.supplierName}
+                        </td>
+                        <td className="p-3">{expense.type}</td>
+                        <td className="p-3">
+                          {formatCurrency(expense.paidAmount)}
+                        </td>
+                        <td className="p-3">{expense.paymentMethod}</td>
+                        <td className="p-3">
+                          {formatLocalDate(expense.paidAt || expense.postedAt)}
+                        </td>
+                        <td className="p-3 text-right space-x-3">
+                          <button
+                            onClick={() => openEditDialog(expense)}
+                            className="font-semibold text-red-600 hover:underline"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            onClick={() => setRemoving(expense)}
+                            className="font-semibold text-gray-600 hover:underline"
+                          >
+                            Excluir
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FinanceSummary
+            revenueTotal={revenueTotal}
+            expenseTotal={expenseTotal}
+            payments={payments}
+          />
+
+          <Card className="bg-white/70 backdrop-blur-md shadow-lg">
+            <CardHeader className="px-4 pt-4 text-center">
+              <CardTitle className="text-gray-700">
+                Vendas por forma de pagamento
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie
+                    data={payments}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    label={({ value }) => formatCurrency(Number(value ?? 0))}
+                  >
+                    {payments.map((entry, i) => (
+                      <Cell key={i} fill={pieColors[i % pieColors.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value: number) =>
+                      formatCurrency(Number(value ?? 0))
+                    }
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
       </div>
+
+      <Dialog
+        open={Boolean(removing)}
+        onOpenChange={(nextOpen) => !nextOpen && setRemoving(null)}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Remover despesa?</DialogTitle>
+            <DialogDescription>
+              A despesa de {removing?.supplierName} no valor de{" "}
+              {removing ? formatCurrency(removing.paidAmount) : ""} será
+              removida permanentemente.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              disabled={confirmingRemoval}
+              onClick={() => setRemoving(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={confirmingRemoval}
+              onClick={() => void confirmRemoveExpense()}
+            >
+              {confirmingRemoval && <Spinner />}
+              {confirmingRemoval ? "Removendo..." : "Remover despesa"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   )
 }

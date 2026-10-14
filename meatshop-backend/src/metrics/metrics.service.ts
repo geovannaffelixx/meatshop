@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { collectDefaultMetrics, Registry, Counter, Histogram } from 'prom-client';
+import { collectDefaultMetrics, Registry, Counter, Histogram, Gauge } from 'prom-client';
 
 @Injectable()
 export class MetricsService {
@@ -11,9 +11,29 @@ export class MetricsService {
   private readonly trackingSamples: Counter;
   private readonly trackingAge: Histogram;
   private readonly trackingPurged: Counter;
+  private readonly refundQueue: Gauge;
+  private readonly oldestRefund: Gauge;
+  private readonly paymentMaintenance: Gauge;
 
   constructor() {
     this.register = new Registry();
+    this.refundQueue = new Gauge({
+      name: 'payment_refund_queue',
+      help: 'Refunds requiring processing or financial intervention',
+      labelNames: ['status'],
+      registers: [this.register],
+    });
+    this.oldestRefund = new Gauge({
+      name: 'payment_oldest_pending_refund_seconds',
+      help: 'Age of the oldest pending refund',
+      registers: [this.register],
+    });
+    this.paymentMaintenance = new Gauge({
+      name: 'payment_maintenance_last_success_timestamp_seconds',
+      help: 'Most recent successful payment maintenance',
+      registers: [this.register],
+    });
+    this.paymentMaintenance.set(Date.now() / 1000);
 
     collectDefaultMetrics({ register: this.register });
     this.trackingSamples = new Counter({
@@ -38,16 +58,16 @@ export class MetricsService {
       name: 'http_requests_total',
       help: 'Total number of HTTP requests received',
       labelNames: ['method', 'route', 'status_code'],
+      registers: [this.register],
     });
-    this.register.registerMetric(this.httpRequestsTotal);
 
     this.httpRequestDuration = new Histogram({
       name: 'http_request_duration_ms',
       help: 'HTTP request duration in milliseconds',
       labelNames: ['method', 'route', 'status_code'],
       buckets: [5, 10, 25, 50, 100, 250, 500, 1000, 2000, 5000],
+      registers: [this.register],
     });
-    this.register.registerMetric(this.httpRequestDuration);
   }
 
   incrementHttpRequests(method = 'GET', route = 'unknown', statusCode = 200): void {
@@ -69,5 +89,12 @@ export class MetricsService {
 
   async getMetrics(): Promise<string> {
     return this.register.metrics();
+  }
+
+  observePayments(pending: number, failed: number, age: number) {
+    this.refundQueue.set({ status: 'PENDING' }, pending);
+    this.refundQueue.set({ status: 'FAILED' }, failed);
+    this.oldestRefund.set(age);
+    this.paymentMaintenance.set(Date.now() / 1000);
   }
 }
