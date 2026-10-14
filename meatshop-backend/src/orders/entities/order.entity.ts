@@ -21,6 +21,12 @@ import { PaymentStatus } from '../enums/payment-status.enum';
 
 @Entity('orders')
 export class Order {
+  @Column({ type: 'timestamptz', nullable: true })
+  payment_due_at: Date | null;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
+  change_for: number | null;
+
   @Column({ type: 'jsonb', nullable: true })
   destination_snapshot: Partial<Address> | null;
 
@@ -41,6 +47,9 @@ export class Order {
 
   @Column({ type: 'uuid', nullable: true })
   checkout_id: string | null;
+
+  @Column({ type: 'varchar', length: 64, nullable: true })
+  checkout_request_hash: string | null;
 
   @Column()
   client_id: number;

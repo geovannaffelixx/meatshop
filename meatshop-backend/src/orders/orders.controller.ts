@@ -1,4 +1,15 @@
-import { Body, Controller, Get, Headers, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+  DefaultValuePipe,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { User } from '../users/entities/user.entity';
@@ -69,6 +80,14 @@ export class OrdersController {
     return orders.map((order) => OrderListItemDto.fromEntity(order));
   }
 
+  @Get('mobile')
+  mobile(
+    @CurrentUser() user: User,
+    @Query('page', new DefaultValuePipe(0), ParseIntPipe) page: number,
+  ) {
+    return this.listOrderHistoryUseCase.mobile(user, page);
+  }
+
   @ApiOperation({ summary: 'Gets the details of a specific order' })
   @ApiResponse({
     status: 200,
@@ -83,6 +102,11 @@ export class OrdersController {
   @Get(':id')
   getOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
     return this.getOrderUseCase.execute(id, currentUser);
+  }
+
+  @Get('checkouts/:checkoutId')
+  recover(@Param('checkoutId') id: string, @CurrentUser() user: User) {
+    return this.createOrderUseCase.recover(id, user);
   }
 
   @ApiOperation({
@@ -182,12 +206,11 @@ export class OrdersController {
   }
 
   @ApiOperation({
-    summary: 'Repeats a previous order by creating a new order with the same items',
+    summary: 'Adds available items to the cart for a new price and payment review',
   })
   @ApiResponse({
     status: 201,
-    description: 'New order created from the previous order',
-    type: OrderResponseDto,
+    description: 'Cart updated; returns cart_updated and skippedItems',
   })
   @ApiResponse({
     status: 400,

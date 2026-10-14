@@ -1,110 +1,64 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { randomUUID } from 'crypto';
 import { CartAccessService } from '../../cart/services/cart-access.service';
+import { Cart } from '../../cart/entities/cart.entity';
 import { CartItem } from '../../cart/entities/cart-item.entity';
 import { Product } from '../../products/entities/product.entity';
 import { Stock } from '../../products/entities/stock.entity';
 import { User } from '../../users/entities/user.entity';
-import { CreateOrderDto } from '../dtos/create-order.dto';
-import { OrderResponseDto } from '../dtos/order-response.dto';
 import { Order } from '../entities/order.entity';
 import { OrderItem } from '../entities/order-item.entity';
 import { OrderAuthorizationService } from '../services/order-authorization.service';
-import { CreateOrderUseCase } from './create-order.use-case';
-
-export interface IRepeatOrderResult {
-  orders: OrderResponseDto[];
-  checkout_id: string;
-  skippedItems: string[];
-}
 
 @Injectable()
 export class RepeatOrderUseCase {
   constructor(
-    @InjectRepository(Order)
-    private readonly orderRepository: Repository<Order>,
-    @InjectRepository(OrderItem)
-    private readonly orderItemRepository: Repository<OrderItem>,
-    @InjectRepository(Product)
-    private readonly productRepository: Repository<Product>,
-    @InjectRepository(Stock)
-    private readonly stockRepository: Repository<Stock>,
-    @InjectRepository(CartItem)
-    private readonly cartItemRepository: Repository<CartItem>,
-    private readonly cartAccessService: CartAccessService,
-    private readonly orderAuthorizationService: OrderAuthorizationService,
-    private readonly createOrderUseCase: CreateOrderUseCase,
+    @InjectRepository(Order) private readonly orders: Repository<Order>,
+    private readonly carts: CartAccessService,
+    private readonly authorization: OrderAuthorizationService,
   ) {}
 
-  async execute(orderId: number, currentUser: User): Promise<IRepeatOrderResult> {
-    const order = await this.orderRepository.findOne({
-      where: { id: orderId },
-    });
-    if (!order) {
-      throw new NotFoundException('Order not found');
-    }
-    this.orderAuthorizationService.assertOwnsOrder(order, currentUser);
-
-    const cart = await this.cartAccessService.getOrCreateCart(currentUser.id);
-    await this.cartItemRepository.delete({ cart_id: cart.id });
-
-    const skippedItems = await this.rebuildCart(orderId, cart.id);
-    if (skippedItems === null) {
-      throw new BadRequestException('None of the items are currently available');
-    }
-
-    const dto: CreateOrderDto = {
-      delivery_type: order.delivery_type,
-      address_id: order.address_id ?? undefined,
-    };
-    const checkout = await this.createOrderUseCase.execute(dto, currentUser, randomUUID());
-
-    return {
-      orders: checkout.orders,
-      checkout_id: checkout.checkout_id,
-      skippedItems,
-    };
-  }
-
-  private async rebuildCart(orderId: number, cartId: number): Promise<string[] | null> {
-    const items = await this.orderItemRepository.find({
-      where: { order_id: orderId },
-    });
-    const skipped: string[] = [];
-    let addedAny = false;
-
-    for (const item of items) {
-      const product = await this.productRepository.findOne({
-        where: { id: item.product_id },
+  async execute(orderId: number, user: User) {
+    const order = await this.orders.findOneBy({ id: orderId });
+    if (!order) throw new NotFoundException('Order not found');
+    this.authorization.assertOwnsOrder(order, user);
+    const cart = await this.carts.getOrCreateCart(user.id);
+    return this.orders.manager.transaction(async (manager) => {
+      await manager.findOneOrFail(Cart, {
+        where: { id: cart.id },
+        lock: { mode: 'pessimistic_write' },
       });
-      const available = await this.isAvailable(product, item.quantity);
-
-      if (!product || !available) {
-        skipped.push(product?.name ?? `product #${item.product_id}`);
-        continue;
+      const items = await manager.find(OrderItem, { where: { order_id: orderId } });
+      const skippedItems: string[] = [];
+      let added = 0;
+      for (const item of items) {
+        const product = await manager.findOneBy(Product, { id: item.product_id });
+        const stock = await manager.findOneBy(Stock, { product_id: item.product_id });
+        const existing = await manager.findOneBy(CartItem, {
+          cart_id: cart.id,
+          product_id: item.product_id,
+        });
+        const quantity = Math.max(Number(item.quantity), Number(existing?.quantity ?? 0));
+        if (!product?.active || !stock || Number(stock.quantity) < quantity) {
+          skippedItems.push(product?.name ?? `Product #${item.product_id}`);
+          continue;
+        }
+        await manager.save(
+          CartItem,
+          manager.create(CartItem, {
+            ...existing,
+            cart_id: cart.id,
+            product_id: product.id,
+            quantity,
+            unit_price: product.price,
+          }),
+        );
+        added++;
       }
-
-      await this.cartItemRepository.save(
-        this.cartItemRepository.create({
-          cart_id: cartId,
-          product_id: product.id,
-          quantity: item.quantity,
-          unit_price: product.price,
-        }),
-      );
-      addedAny = true;
-    }
-
-    return addedAny ? skipped : null;
-  }
-
-  private async isAvailable(product: Product | null, quantity: number): Promise<boolean> {
-    if (!product || !product.active) return false;
-    const stock = await this.stockRepository.findOne({
-      where: { product_id: product.id },
+      if (!added) throw new BadRequestException('None of the items are currently available');
+      // Review prices, address and payment before creating another order.
+      return { cart_updated: true, skippedItems };
     });
-    return !!stock && stock.quantity >= quantity;
   }
 }

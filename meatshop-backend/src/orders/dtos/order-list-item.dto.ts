@@ -46,6 +46,8 @@ export class OrderListItemDto {
   @ApiProperty({ description: 'Current order payment status', example: 'PAID' })
   payment_status: string;
 
+  payment_method: string | null;
+
   @ApiProperty({ description: 'Total order amount', example: 129.9 })
   total_amount: number;
 
@@ -56,7 +58,7 @@ export class OrderListItemDto {
   })
   scheduled_delivery_date: Date | null;
 
-  static fromEntity(order: Order): OrderListItemDto {
+  static fromEntity(order: Order & { payment_method?: string | null }): OrderListItemDto {
     const dto = new OrderListItemDto();
     dto.id = order.id;
     dto.client_id = order.client_id;
@@ -67,6 +69,7 @@ export class OrderListItemDto {
     dto.delivery_status = order.delivery_status;
     dto.delivery_type = order.delivery_type;
     dto.payment_status = order.payment_status;
+    dto.payment_method = order.payment_method ?? null;
     dto.total_amount = Number(order.total_amount);
     dto.scheduled_delivery_date = order.scheduled_delivery_date;
     return dto;

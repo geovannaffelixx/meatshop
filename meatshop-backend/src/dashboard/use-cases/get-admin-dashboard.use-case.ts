@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { GetMonthlyRevenueUseCase } from '../../finance/use-cases/get-monthly-revenue.use-case';
+import { businessDateKey } from '../../finance/utils/month-range.util';
 import { Order } from '../../orders/entities/order.entity';
-import { PaymentStatus } from '../../orders/enums/payment-status.enum';
 import { OrderStatus } from '../../orders/enums/order-status.enum';
 import { UnitAuthorizationService } from '../../units/services/unit-authorization.service';
 import { User } from '../../users/entities/user.entity';
@@ -49,7 +49,7 @@ export class GetAdminDashboardUseCase {
       query.unit_id,
     );
 
-    const currentMonth = new Date().toISOString().slice(0, 7);
+    const currentMonth = businessDateKey(new Date()).slice(0, 7);
 
     const [weeklyChart, stockAlerts, topProducts, recentOrders, pendingOrdersCount, revenue] =
       await Promise.all([
@@ -85,7 +85,7 @@ export class GetAdminDashboardUseCase {
       id: o.id,
       client_name: o.client?.name ?? 'Customer',
       status: o.status,
-      value: o.payment_status === PaymentStatus.PAID ? Number(o.total_amount) : 0,
+      value: Number(o.total_amount),
       order_date: o.order_date,
     }));
   }

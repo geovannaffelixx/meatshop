@@ -6,6 +6,7 @@ import {
 export const publicRoutes = [
   "/",
   "/login",
+  "/payment-return",
   "/register",
   "/forgot-password",
   "/reset-password",

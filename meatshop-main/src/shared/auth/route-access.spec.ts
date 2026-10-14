@@ -3,6 +3,7 @@ import { unitPermissions } from './panel-access';
 
 describe('route access', () => {
   it('keeps authentication routes public, including nested paths', () => {
+    expect(isPublicRoute('/payment-return')).toBe(true);
     expect(isPublicRoute('/login')).toBe(true);
     expect(isPublicRoute('/reset-password/token')).toBe(true);
     expect(isPublicRoute('/dashboard')).toBe(false);

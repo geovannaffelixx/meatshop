@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Order } from '../../orders/entities/order.entity';
 import { OrderStatus } from '../../orders/enums/order-status.enum';
+import { PaymentStatus } from '../../orders/enums/payment-status.enum';
 import { Unit } from '../../units/entities/unit.entity';
 import { UserUnit } from '../../units/entities/user-unit.entity';
 import { UnitPermissionPolicy } from '../../units/services/unit-permission.policy';
@@ -67,6 +68,26 @@ export class SendOrderStatusNotificationUseCase {
       unit_id: order.unit_id,
       title: 'Order update',
       message: `Your order #${order.id} ${STATUS_MESSAGES[order.status]}`,
+      action_url: `/orders/${order.id}`,
+      type: NotificationType.ORDER,
+    });
+  }
+
+  async notifyCustomerOfPayment(order: Order, status: PaymentStatus): Promise<void> {
+    const labels: Record<PaymentStatus, string> = {
+      PENDING: 'aguardando pagamento',
+      PAID: 'pagamento aprovado',
+      REJECTED: 'pagamento recusado',
+      CANCELLED: 'pagamento cancelado',
+      REFUNDED: 'pagamento devolvido',
+      PARTIALLY_REFUNDED: 'pagamento parcialmente devolvido',
+      CHARGED_BACK: 'pagamento contestado',
+    };
+    await this.sendNotificationUseCase.execute({
+      user_id: order.client_id,
+      unit_id: order.unit_id,
+      title: 'Atualização do pagamento',
+      message: `Pedido #${order.id}: ${labels[status]}.`,
       action_url: `/orders/${order.id}`,
       type: NotificationType.ORDER,
     });

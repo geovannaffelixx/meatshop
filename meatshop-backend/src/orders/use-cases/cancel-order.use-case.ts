@@ -1,3 +1,6 @@
+import { PaymentLifecycleService } from '../../payments/payment-lifecycle.service';
+import { Payment } from '../entities/payment.entity';
+import { PaymentStatus } from '../enums/payment-status.enum';
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
@@ -27,6 +30,7 @@ export class CancelOrderUseCase {
     private readonly coupons: CouponRedemptionService,
     @InjectDataSource()
     private readonly dataSource: DataSource,
+    private readonly payments: PaymentLifecycleService,
   ) {}
 
   async execute(orderId: number, dto: CancelOrderDto, currentUser: User): Promise<Order> {
@@ -45,6 +49,14 @@ export class CancelOrderUseCase {
       if (TERMINAL_STATUSES.includes(order.status)) {
         throw new BadRequestException('Order can no longer be cancelled');
       }
+      if (
+        cancelledBy === CancelledBy.CLIENT &&
+        ![OrderStatus.PENDING, OrderStatus.CONFIRMED].includes(order.status)
+      )
+        throw new BadRequestException({
+          code: 'CANCELLATION_REQUIRES_SUPPORT',
+          message: 'O pedido já está em preparo. Solicite o cancelamento ao açougue.',
+        });
 
       const items = await manager.find(OrderItem, {
         where: { order_id: orderId },
@@ -70,6 +82,35 @@ export class CancelOrderUseCase {
         }),
       );
       await this.coupons.releaseOrder(order.id, manager);
+      const payment = await manager.findOne(Payment, {
+        where: { order_id: order.id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (
+        payment?.transaction_id &&
+        [PaymentStatus.PAID, PaymentStatus.PARTIALLY_REFUNDED].includes(payment.status)
+      ) {
+        payment.refund_status = await this.payments.queueRefund(
+          manager,
+          payment.transaction_id,
+          order.id,
+          Number(order.total_amount) - Number(payment.refunded_amount),
+          dto.reason,
+          currentUser.id,
+          order.unit_id,
+        );
+        await manager.save(payment);
+      } else if (
+        payment &&
+        [PaymentStatus.PENDING, PaymentStatus.REJECTED, PaymentStatus.CANCELLED].includes(
+          payment.status,
+        )
+      ) {
+        payment.status = PaymentStatus.CANCELLED;
+        order.payment_status = PaymentStatus.CANCELLED;
+        await manager.save(payment);
+        await manager.save(Order, order);
+      }
       return order;
     });
 

@@ -11,6 +11,8 @@ import { Unit } from '../../units/entities/unit.entity';
 import { UserUnit } from '../../units/entities/user-unit.entity';
 import { User } from '../../users/entities/user.entity';
 import { Order } from '../entities/order.entity';
+import { UnitPermissionPolicy } from '../../units/services/unit-permission.policy';
+import { UnitPermission } from '../../common/enums/unit-permission.enum';
 
 @Injectable()
 export class OrderAuthorizationService {
@@ -21,6 +23,7 @@ export class OrderAuthorizationService {
     private readonly userUnitRepository: Repository<UserUnit>,
     @InjectRepository(DeliveryPerson)
     private readonly deliveryPersonRepository: Repository<DeliveryPerson>,
+    private readonly permissionPolicy: UnitPermissionPolicy,
   ) {}
 
   assertOwnsOrder(order: Order, currentUser: User): void {
@@ -49,7 +52,10 @@ export class OrderAuthorizationService {
       },
     });
 
-    if (!membership) {
+    if (
+      !membership ||
+      !this.permissionPolicy.has(membership.local_role, UnitPermission.MANAGE_ORDERS)
+    ) {
       throw new ForbiddenException('Only unit staff or a super admin can perform this action');
     }
   }

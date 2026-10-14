@@ -1,3 +1,8 @@
+import { SellerAccountsService } from '../../payments/seller-accounts.service';
+import { isOfflinePayment } from '../../payments/payment-policy';
+import { PaymentMethod } from '../enums/payment-method.enum';
+import { PaymentStatus } from '../enums/payment-status.enum';
+import { OrderStatus } from '../enums/order-status.enum';
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, Repository } from 'typeorm';
@@ -11,7 +16,8 @@ import { Address } from '../../users/entities/address.entity';
 import { User } from '../../users/entities/user.entity';
 import { Unit } from '../../units/entities/unit.entity';
 import { CheckoutResponseDto } from '../dtos/checkout-response.dto';
-import { CreateOrderDto } from '../dtos/create-order.dto';
+import { CreateOrderDto, paymentForUnit } from '../dtos/create-order.dto';
+import { CheckoutQuoteService } from '../services/checkout-quote.service';
 import { OrderResponseDto } from '../dtos/order-response.dto';
 import { Order } from '../entities/order.entity';
 import { OrderItem } from '../entities/order-item.entity';
@@ -47,6 +53,8 @@ export class CreateOrderUseCase {
     private readonly deliveryCodeService: DeliveryCodeService,
     @InjectDataSource()
     private readonly dataSource: DataSource,
+    private readonly mp: SellerAccountsService,
+    private readonly quotes: CheckoutQuoteService,
   ) {}
 
   async execute(
@@ -57,16 +65,20 @@ export class CreateOrderUseCase {
     this.assertCheckoutId(checkoutId);
     const existing = await this.findCheckout(currentUser.id, checkoutId);
     if (existing.length > 0) {
+      this.assertReplay(existing, dto);
       return this.toResponse(checkoutId, existing);
     }
 
+    if (!dto.payment_method) throw new BadRequestException('Choose a payment method');
+    if (dto.change_for != null && dto.payment_method !== PaymentMethod.CASH)
+      throw new BadRequestException('Change is only available for cash');
     const cart = await this.cartAccessService.getOrCreateCart(currentUser.id);
-    const previewItems = await this.loadItems(this.dataSource.manager, cart.id);
-    this.assertCart(previewItems);
-    const previewGroups = this.pricing.group(previewItems, dto);
-    await this.validateSchedule(dto, previewGroups);
 
     const transaction = await this.dataSource.transaction(async (manager) => {
+      await manager.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`checkout:${checkoutId}`]);
+      const owner = await manager.findOne(Order, { where: { checkout_id: checkoutId } });
+      if (owner && owner.client_id !== currentUser.id)
+        throw new BadRequestException('Idempotency key is already in use');
       await manager
         .getRepository(Cart)
         .createQueryBuilder('cart')
@@ -79,6 +91,7 @@ export class CreateOrderUseCase {
         order: { unit_id: 'ASC' },
       });
       if (retry.length > 0) {
+        this.assertReplay(retry, dto);
         return {
           results: retry.map((order) => ({ order, deliveryCode: null })),
           replay: true,
@@ -88,7 +101,13 @@ export class CreateOrderUseCase {
       const items = await this.loadItems(manager, cart.id);
       this.assertCart(items);
       const groups = this.pricing.group(items, dto);
+      await this.validateSchedule(dto, groups);
+      for (const group of groups)
+        if (!isOfflinePayment(paymentForUnit(dto, group.unitId).method))
+          await this.mp.assertAcceptingPayments(group.unitId, manager);
       await this.lockAndValidateStock(manager, items);
+      if (dto.change_for != null && groups.length > 1)
+        throw new BadRequestException('Use exact cash for a multi-unit checkout');
       const address = await this.resolveAddress(manager, dto, currentUser.id);
 
       const results: CreatedOrder[] = [];
@@ -97,6 +116,31 @@ export class CreateOrderUseCase {
           await this.createUnitOrder(manager, dto, currentUser, checkoutId, group, address),
         );
       }
+      this.quotes.assertCurrent(
+        dto.quote_token,
+        currentUser.id,
+        dto,
+        items,
+        results.map(({ order }) => ({
+          unit_id: order.unit_id,
+          subtotal: Number(order.subtotal),
+          discount_amount: Number(order.discount_amount),
+          delivery_fee: Number(order.delivery_fee),
+          total_amount: Number(order.total_amount),
+        })),
+        address,
+      );
+      if (
+        dto.expected_total == null ||
+        Math.round(dto.expected_total * 100) !==
+          Math.round(
+            results.reduce((sum, result) => sum + Number(result.order.total_amount), 0) * 100,
+          )
+      )
+        throw new BadRequestException({
+          code: 'QUOTE_CHANGED',
+          message: 'Order total changed. Review the updated quote before confirming.',
+        });
       await manager.delete(CartItem, { cart_id: cart.id });
       return { results, replay: false };
     });
@@ -123,6 +167,9 @@ export class CreateOrderUseCase {
       { userId: user.id, unitId: group.unitId, subtotal: group.subtotal },
       manager,
     );
+    const selection = paymentForUnit(dto, group.unitId);
+    if (selection.change_for != null && selection.method !== PaymentMethod.CASH)
+      throw new BadRequestException('Troco disponível somente para dinheiro.');
     const amounts = this.pricing.amounts(
       group.subtotal,
       prepared?.discountAmount ?? 0,
@@ -134,6 +181,8 @@ export class CreateOrderUseCase {
         dto.scheduled_delivery_date ? new Date(dto.scheduled_delivery_date) : new Date(),
       ),
     );
+    if (selection.change_for != null && selection.change_for < amounts.total_amount)
+      throw new BadRequestException('Change amount must cover the order total');
     const scheduledDate = dto.scheduled_delivery_date
       ? new Date(dto.scheduled_delivery_date)
       : null;
@@ -141,6 +190,13 @@ export class CreateOrderUseCase {
       Order,
       manager.create(Order, {
         checkout_id: checkoutId,
+        checkout_request_hash: this.quotes.requestHash(dto),
+        change_for: selection.change_for ?? null,
+        payment_due_at: isOfflinePayment(selection.method)
+          ? null
+          : new Date(Date.now() + 30 * 60_000),
+        payment_status: amounts.total_amount === 0 ? PaymentStatus.PAID : PaymentStatus.PENDING,
+        status: amounts.total_amount === 0 ? OrderStatus.CONFIRMED : OrderStatus.PENDING,
         client_id: user.id,
         unit_id: group.unitId,
         delivery_type: dto.delivery_type,
@@ -184,6 +240,11 @@ export class CreateOrderUseCase {
           product_id: item.product_id,
           quantity: item.quantity,
           unit_price: item.product.price,
+          product_snapshot: {
+            name: item.product.name,
+            unit_of_measure: item.product.unit_of_measure,
+            image_url: item.product.image_url,
+          },
         }),
       ),
     );
@@ -194,7 +255,9 @@ export class CreateOrderUseCase {
       Payment,
       manager.create(Payment, {
         order_id: order.id,
-        method: dto.payment_method ?? null,
+        method: selection.method ?? null,
+        status: amounts.total_amount === 0 ? PaymentStatus.PAID : PaymentStatus.PENDING,
+        payment_date: amounts.total_amount === 0 ? new Date() : null,
       }),
     );
     await manager.save(
@@ -296,6 +359,12 @@ export class CreateOrderUseCase {
       .getMany();
   }
 
+  async recover(checkoutId: string, user: User) {
+    this.assertCheckoutId(checkoutId);
+    const orders = await this.findCheckout(user.id, checkoutId);
+    return orders.length ? this.toResponse(checkoutId, orders) : null;
+  }
+
   private async toResponse(checkoutId: string, orders: Order[]): Promise<CheckoutResponseDto> {
     const detailed = await Promise.all(
       orders.map(async (order) => {
@@ -350,5 +419,18 @@ export class CreateOrderUseCase {
         message: 'Idempotency-Key must be a valid UUID v4.',
       });
     }
+  }
+
+  private assertReplay(orders: Order[], dto: CreateOrderDto) {
+    if (
+      orders.some(
+        (o) => o.checkout_request_hash && o.checkout_request_hash !== this.quotes.requestHash(dto),
+      )
+    )
+      throw new BadRequestException({
+        code: 'IDEMPOTENCY_CONFLICT',
+        message:
+          'Esta tentativa já pertence a outra compra. Recupere o pedido antes de tentar novamente.',
+      });
   }
 }

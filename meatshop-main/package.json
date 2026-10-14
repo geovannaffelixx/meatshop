@@ -39,6 +39,11 @@
     "textarea": "^0.3.0",
     "zustand": "^5.0.8"
   },
+  "overrides": {
+    "brace-expansion@1": "1.1.21",
+    "sharp": "0.35.5",
+    "source-map-js": "1.2.2"
+  },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",

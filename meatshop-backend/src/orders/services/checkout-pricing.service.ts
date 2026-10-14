@@ -39,6 +39,8 @@ export class CheckoutPricingService {
     }
 
     const coupons = new Map(dto.coupon_codes?.map((coupon) => [coupon.unit_id, coupon.code]));
+    if (dto.unit_payment_methods?.some((m) => !grouped.has(m.unit_id)))
+      throw new BadRequestException('A forma de pagamento contém uma unidade fora do carrinho.');
     for (const unitId of coupons.keys()) {
       if (!grouped.has(unitId)) {
         throw new BadRequestException({

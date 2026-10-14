@@ -1,4 +1,6 @@
-import { Injectable, Logger, ConflictException } from '@nestjs/common';
+import { assertPaymentAllowsPreparation } from '../../payments/payment-policy';
+import { Payment } from '../entities/payment.entity';
+import { Injectable, Logger, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SendOrderStatusNotificationUseCase } from '../../notifications/use-cases/send-order-status-notification.use-case';
@@ -19,7 +21,7 @@ export class OrderStatusService {
   ) {}
 
   async transition(order: Order, status: OrderStatus, updatedBy: number | null): Promise<Order> {
-    await this.orderRepository.manager.transaction(async (manager) => {
+    order = await this.orderRepository.manager.transaction(async (manager) => {
       const current = await manager
         .getRepository(Order)
         .createQueryBuilder('order')
@@ -35,26 +37,30 @@ export class OrderStatusService {
       ) {
         throw new ConflictException('Order changed; refresh before continuing');
       }
-      // A status transition must not restore consent revoked by a concurrent request.
-      order.tracking_consent_at = current.tracking_consent_at;
-      order.tracking_consent_user_id = current.tracking_consent_user_id;
-      order.tracking_revoked_at = current.tracking_revoked_at;
-      order.tracking_session_id = current.tracking_session_id;
-      order.status = status;
-      if ([OrderStatus.CANCELLED, OrderStatus.DELIVERED].includes(status)) {
-        order.tracking_session_id = null;
-        order.tracking_revoked_at = new Date();
-        order.delivery_step = null;
+      const payment = await manager.findOne(Payment, { where: { order_id: current.id } });
+      assertPaymentAllowsPreparation(current.payment_status, payment?.method);
+      if (status === OrderStatus.CANCELLED) {
+        throw new BadRequestException('Use the cancellation endpoint');
       }
-      await manager.save(Order, order);
+      // Keep the locked row's consent state so concurrent revocations are preserved.
+      current.status = status;
+      current.delivery_status = order.delivery_status;
+      current.delivery_step = order.delivery_step;
+      if (status === OrderStatus.DELIVERED) {
+        current.tracking_session_id = null;
+        current.tracking_revoked_at = new Date();
+        current.delivery_step = null;
+      }
+      await manager.save(Order, current);
       await manager.save(
         OrderStatusHistory,
         manager.create(OrderStatusHistory, {
-          order_id: order.id,
+          order_id: current.id,
           status,
           updated_by: updatedBy,
         }),
       );
+      return current;
     });
 
     await this.sendOrderStatusNotificationUseCase

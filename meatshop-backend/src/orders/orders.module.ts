@@ -1,3 +1,9 @@
+import { SellerAccountsService } from '../payments/seller-accounts.service';
+import { MetricsModule } from '../metrics/metrics.module';
+import { CheckoutQuoteService } from './services/checkout-quote.service';
+import { PaymentLifecycleService } from '../payments/payment-lifecycle.service';
+import { PaymentsController, SellerPaymentsController } from '../payments/payments.controller';
+import { MercadoPagoService } from '../payments/providers/mercadopago.service';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CartModule } from '../cart/cart.module';
@@ -32,6 +38,7 @@ import { QuoteCartUseCase } from './use-cases/quote-cart.use-case';
 
 @Module({
   imports: [
+    MetricsModule,
     TypeOrmModule.forFeature([Order, OrderItem, Payment, OrderStatusHistory, DeliveryPerson]),
     UnitsModule,
     ProductsModule,
@@ -40,8 +47,12 @@ import { QuoteCartUseCase } from './use-cases/quote-cart.use-case';
     CartModule,
     NotificationsModule,
   ],
-  controllers: [OrdersController, CheckoutController],
+  controllers: [OrdersController, CheckoutController, PaymentsController, SellerPaymentsController],
   providers: [
+    CheckoutQuoteService,
+    SellerAccountsService,
+    PaymentLifecycleService,
+    MercadoPagoService,
     OrderAuthorizationService,
     OrderStatusService,
     DeliveryCodeService,
@@ -60,6 +71,9 @@ import { QuoteCartUseCase } from './use-cases/quote-cart.use-case';
     RepeatOrderUseCase,
   ],
   exports: [
+    SellerAccountsService,
+    PaymentLifecycleService,
+    MercadoPagoService,
     TypeOrmModule,
     OrderAuthorizationService,
     OrderStatusService,
