@@ -12,9 +12,9 @@ export class PaymentContract1791900002000 implements MigrationInterface {
     await q.query(
       'CREATE UNIQUE INDEX payment_transaction_owner ON payments(transaction_id) WHERE transaction_id IS NOT NULL',
     );
-    await q.query(
-      "CREATE INDEX payment_receipt_date ON payments(payment_date,order_id) WHERE status IN ('PAID','PARTIALLY_REFUNDED')",
-    );
+    // Earlier pending migrations may add payment enum values in this same transaction.
+    // A full date index avoids using those values before PostgreSQL commits them.
+    await q.query('CREATE INDEX payment_receipt_date ON payments(payment_date,order_id)');
     await q.query('CREATE INDEX payment_order_unit_date ON orders(unit_id,order_date,id)');
     await q.query('CREATE INDEX payment_order_client_date ON orders(client_id,order_date,id)');
     await q.query('ALTER TABLE order_items ADD COLUMN product_snapshot jsonb');
