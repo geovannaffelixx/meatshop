@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 import { apiGet, apiPost } from "@/shared/lib/api"
 
@@ -14,6 +14,73 @@ import { PAYMENT_STATUS_LABELS } from "@/modules/orders/utils/status-labels"
 
 import { formatCurrency } from "@/shared/lib/formatters"
 import { PaymentHistory } from "./payment-history"
+import {
+  CreditCard,
+  Wallet,
+  RefreshCw,
+  Link2,
+  Pause,
+  ChevronLeft,
+  ChevronRight,
+  AlertCircle,
+  CheckCircle2,
+  Clock3,
+} from "lucide-react"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/shared/components/ui/card"
+import { EmptyState } from "@/shared/components/empty-state"
+import { Skeleton } from "@/shared/components/ui/skeleton"
+import { cn } from "@/shared/lib/utils"
+
+const METHOD_LABELS: Record<string, string> = {
+  Cash: "Dinheiro",
+  "Card on Delivery": "Maquininha",
+  Pix: "Pix",
+  Credit: "Cartão de crédito",
+  Debit: "Cartão de débito",
+}
+const ACCOUNT_STATES: Record<
+  string,
+  { label: string; description: string; tone: string }
+> = {
+  CONNECTED: {
+    label: "Conta conectada",
+    description:
+      "Os pagamentos online desta unidade são direcionados para a conta autorizada.",
+    tone: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+  },
+  NOT_CONNECTED: {
+    label: "Conexão pendente",
+    description:
+      "Conecte a conta Mercado Pago do açougue para receber pagamentos online.",
+    tone: "bg-slate-100 text-slate-700 ring-slate-200",
+  },
+  PAUSED: {
+    label: "Novas cobranças pausadas",
+    description:
+      "Pagamentos anteriores e estornos continuam acompanhados. Reconecte a mesma conta para voltar a receber.",
+    tone: "bg-amber-50 text-amber-800 ring-amber-200",
+  },
+  RECONNECT_REQUIRED: {
+    label: "Reconexão necessária",
+    description:
+      "Verifique a autorização e reconecte a mesma conta Mercado Pago.",
+    tone: "bg-amber-50 text-amber-800 ring-amber-200",
+  },
+  RENEWAL_PENDING: {
+    label: "Renovação pendente",
+    description:
+      "A autorização será renovada no próximo uso. Se houver falha, reconecte a mesma conta.",
+    tone: "bg-amber-50 text-amber-800 ring-amber-200",
+  },
+}
+const dateLabel = (value: string) =>
+  new Date(value).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })
 
 type PaymentRow = {
   id: number
@@ -74,11 +141,24 @@ export function PaymentActions({
   }
 
   return (
-    <div className="space-y-2">
-      <p>
-        {PAYMENT_STATUS_LABELS[order.payment_status] ?? order.payment_status} ·{" "}
-        {order.method ?? "Método não informado"}
-      </p>
+    <div className="min-w-0 space-y-4 text-sm text-slate-600">
+      <div className="flex flex-wrap items-center gap-2">
+        <span
+          className={cn(
+            "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset",
+            ["PAID"].includes(order.payment_status)
+              ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
+              : ["CHARGED_BACK", "REJECTED"].includes(order.payment_status)
+                ? "bg-red-50 text-red-700 ring-red-200"
+                : "bg-slate-100 text-slate-700 ring-slate-200",
+          )}
+        >
+          {PAYMENT_STATUS_LABELS[order.payment_status] ?? order.payment_status}
+        </span>
+        <span>
+          {METHOD_LABELS[order.method ?? ""] ?? "Método não informado"}
+        </span>
+      </div>
 
       {Number(order.refunded_amount) > 0 && (
         <p>Devolvido: {formatCurrency(Number(order.refunded_amount))}</p>
@@ -96,17 +176,15 @@ export function PaymentActions({
           )[order.refund_status] ?? order.refund_status}
         </p>
       )}
-      {order.payment_date && (
-        <p>
-          Recebido em {new Date(order.payment_date).toLocaleString("pt-BR")}
-        </p>
+      {order.payment_date && <p>Recebido em {dateLabel(order.payment_date)}</p>}
+      {order.transaction_id && (
+        <p className="break-all text-xs">Transação: {order.transaction_id}</p>
       )}
-      {order.transaction_id && <p>Transação: {order.transaction_id}</p>}
       {order.receipt_reference && (
         <p>Referência do recebimento: {order.receipt_reference}</p>
       )}
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap [&>button]:whitespace-normal [&>button]:text-left">
         {!offline && hasPermission("VIEW_FINANCE") && (
           <Button
             variant="outline"
@@ -172,14 +250,14 @@ export function PaymentActions({
         {order.delivery_paid_at && (
           <p>
             Pagamento ao entregador registrado em{" "}
-            {new Date(order.delivery_paid_at).toLocaleString("pt-BR")}
+            {dateLabel(order.delivery_paid_at)}
           </p>
         )}
       </div>
 
       {action && (
         <form
-          className="rounded border p-3 space-y-2"
+          className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:p-5"
           onSubmit={(e) => {
             e.preventDefault()
             void run(
@@ -207,7 +285,7 @@ export function PaymentActions({
                   : `Solicitar a devolução do saldo deste pedido: ${formatCurrency(Number(order.total_amount) - Number(order.refunded_amount))}.`}
           </p>
 
-          <label>
+          <label className="block space-y-2 font-medium text-slate-800">
             {action === "refund"
               ? "Motivo do estorno"
               : "Referência / comprovante"}
@@ -236,7 +314,10 @@ export function PaymentActions({
       )}
 
       {error && (
-        <p role="alert" className="text-red-700">
+        <p
+          role="alert"
+          className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+        >
           {error}
         </p>
       )}
@@ -274,32 +355,63 @@ export function PaymentManagement({
 
   const [busy, setBusy] = useState(false)
 
-  const load = useCallback(async () => {
-    try {
-      const payments = await apiGet(
-        `/payments/orders?unit_id=${unitId}&page=${page}&view=${view}${month ? `&month=${month}` : ""}`,
-      )
-
-      setRows(payments)
-
-      if (hasPermission("MANAGE_FINANCE"))
-        setAccount(await apiGet(`/payments/sellers/${unitId}/status`))
-
-      setError("")
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Não foi possível carregar pagamentos.",
-      )
-    }
-  }, [unitId, page, hasPermission, view, month])
+  const [loading, setLoading] = useState(true)
+  const request = useRef({ sequence: 0 })
+  const load = useCallback(
+    async (foreground = true) => {
+      const current = ++request.current.sequence
+      if (foreground) {
+        setLoading(true)
+        setRows([])
+      }
+      try {
+        const [payments, seller] = await Promise.all([
+          apiGet(
+            `/payments/orders?unit_id=${unitId}&page=${page}&view=${view}${month ? `&month=${month}` : ""}`,
+          ),
+          hasPermission("MANAGE_FINANCE")
+            ? apiGet(`/payments/sellers/${unitId}/status`)
+            : Promise.resolve(null),
+        ])
+        if (current !== request.current.sequence) return
+        setRows(payments)
+        setAccount(seller)
+        setError("")
+      } catch (e) {
+        if (current !== request.current.sequence) return
+        setError(
+          e instanceof Error
+            ? e.message
+            : "Não foi possível carregar pagamentos.",
+        )
+      } finally {
+        if (current === request.current.sequence) setLoading(false)
+      }
+    },
+    [unitId, page, hasPermission, view, month],
+  )
 
   useEffect(() => {
+    const pendingRequests = request.current
     void load()
-    const timer = setInterval(() => void load(), 30_000)
-    return () => clearInterval(timer)
+    const timer = setInterval(() => void load(false), 30_000)
+    return () => {
+      clearInterval(timer)
+      pendingRequests.sequence++
+    }
   }, [load])
+
+  const pause = async () => {
+    setBusy(true)
+    try {
+      await apiPost(`/payments/sellers/${unitId}/pause`, {})
+      await load(false)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Não foi possível pausar.")
+    } finally {
+      setBusy(false)
+    }
+  }
 
   const connect = async () => {
     setBusy(true)
@@ -319,161 +431,291 @@ export function PaymentManagement({
     }
   }
 
+  const state =
+    ACCOUNT_STATES[
+      account?.state ?? (account?.connected ? "CONNECTED" : "NOT_CONNECTED")
+    ] ?? ACCOUNT_STATES.NOT_CONNECTED
+  const period = month
+    ? new Date(`${month}-01T12:00:00`).toLocaleDateString("pt-BR", {
+        month: "long",
+        year: "numeric",
+      })
+    : null
+
   return (
-    <section className="rounded-xl border bg-white p-4 space-y-4">
-      <h2 className="text-lg font-semibold">Recebimentos e Mercado Pago</h2>
+    <section
+      className="min-w-0 space-y-6"
+      aria-label="Recebimentos e integração Mercado Pago"
+    >
+      {hasPermission("MANAGE_FINANCE") && (
+        <Card className="gap-4 border-slate-200 bg-white shadow-sm">
+          <CardHeader className="px-4 sm:px-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex min-w-0 items-start gap-3">
+                <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-red-50 text-red-700">
+                  <CreditCard className="size-5" aria-hidden="true" />
+                </span>
+                <div className="space-y-1">
+                  <CardTitle className="text-base text-slate-900">
+                    Mercado Pago
+                  </CardTitle>
+                  <CardDescription>
+                    Conta de recebimento desta unidade
+                  </CardDescription>
+                </div>
+              </div>
+              {account && (
+                <span
+                  className={cn(
+                    "inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset",
+                    state.tone,
+                  )}
+                >
+                  {account.state === "CONNECTED" ? (
+                    <CheckCircle2 className="size-3.5" aria-hidden="true" />
+                  ) : (
+                    <Clock3 className="size-3.5" aria-hidden="true" />
+                  )}
+                  {state.label}
+                </span>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4 px-4 sm:px-6">
+            {!account && loading ? (
+              <Skeleton className="h-20 w-full" />
+            ) : account ? (
+              <>
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="min-w-0 space-y-2 text-sm text-slate-600">
+                    <p className="max-w-2xl leading-relaxed">
+                      {state.description}
+                    </p>
+                    {account.collector_id && (
+                      <p className="break-all text-xs text-slate-500">
+                        Identificador da conta: {account.collector_id}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row">
+                    <Button
+                      className="whitespace-normal"
+                      onClick={connect}
+                      disabled={!account.available || busy}
+                    >
+                      <Link2 className="size-4" aria-hidden="true" />
+                      {account.connected
+                        ? "Reconectar conta"
+                        : "Conectar Mercado Pago"}
+                    </Button>
+                    {account.connected && account.state !== "PAUSED" && (
+                      <Button
+                        className="whitespace-normal"
+                        variant="outline"
+                        disabled={busy}
+                        onClick={() => void pause()}
+                      >
+                        <Pause className="size-4" aria-hidden="true" />
+                        Pausar novas cobranças
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                {!account.available && (
+                  <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                    Pagamentos online estão indisponíveis. O administrador
+                    precisa conferir a configuração e a habilitação da
+                    integração.
+                  </p>
+                )}
+                {!!account.history?.length && (
+                  <details className="rounded-lg border border-slate-200 p-3 text-sm">
+                    <summary className="cursor-pointer font-medium text-slate-700">
+                      Atividade da conexão
+                    </summary>
+                    <ul className="mt-3 space-y-2 text-xs text-slate-500">
+                      {account.history.slice(0, 3).map((event, i) => (
+                        <li key={i} className="break-words">
+                          {(
+                            {
+                              CONNECTED: "Conta conectada",
+                              RECONNECTED: "Conta reconectada",
+                              PAUSED: "Novas cobranças pausadas",
+                            } as Record<string, string>
+                          )[event.kind] ?? event.kind}{" "}
+                          · {dateLabel(event.created_at)}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-slate-500">
+                Não foi possível consultar a conexão. Atualize para tentar
+                novamente.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
-      <p>
-        O dinheiro dos pedidos desta unidade é recebido na conta Mercado Pago
-        conectada. Os valores líquidos abaixo descontam taxas e devoluções
-        conhecidas; não representam saldo disponível para saque.
-      </p>
-
-      {account && (
-        <div>
-          <p>
-            {account.connected
-              ? `Conta conectada: ${account.collector_id}`
-              : "Conta Mercado Pago não conectada."}
-          </p>
-
-          <Button onClick={connect} disabled={!account.available || busy}>
-            {account.connected ? "Reconectar conta" : "Conectar Mercado Pago"}
-          </Button>
-          {account.connected && account.state !== "PAUSED" && (
+      <Card className="gap-0 overflow-hidden border-slate-200 bg-white shadow-sm">
+        <CardHeader className="space-y-4 border-b border-slate-200 px-4 sm:px-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1">
+              <CardTitle className="text-lg text-slate-900">
+                Recebimentos dos pedidos
+              </CardTitle>
+              <CardDescription>
+                Acompanhe pagamentos, devoluções e repasses por pedido.
+              </CardDescription>
+            </div>
             <Button
               variant="outline"
-              disabled={busy}
-              onClick={async () => {
-                setBusy(true)
-                try {
-                  await apiPost(`/payments/sellers/${unitId}/pause`, {})
-                  await load()
-                } catch (e) {
-                  setError(
-                    e instanceof Error ? e.message : "Não foi possível pausar.",
-                  )
-                } finally {
-                  setBusy(false)
-                }
-              }}
+              disabled={loading}
+              onClick={() => void load()}
             >
-              Pausar novas cobranças
+              <RefreshCw
+                className={cn("size-4", loading && "animate-spin")}
+                aria-hidden="true"
+              />
+              Atualizar
             </Button>
+          </div>
+          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <label className="block w-full space-y-1.5 text-sm font-medium text-slate-700 md:max-w-sm">
+              Situação financeira
+              <select
+                className="input w-full"
+                value={view}
+                onChange={(e) => {
+                  setPage(0)
+                  setView(e.target.value)
+                }}
+              >
+                <option value="all">Todos os pagamentos</option>
+                <option value="pending">Pagamentos pendentes</option>
+                <option value="receivable">A receber presencialmente</option>
+                <option value="refunds">Estornos pendentes ou com falha</option>
+                <option value="issues">Contestações e falhas</option>
+              </select>
+            </label>
+            {period && (
+              <p className="max-w-md text-xs leading-relaxed text-slate-500">
+                Pedidos criados em{" "}
+                <span className="font-medium text-slate-700">{period}</span>. O
+                resumo do mês considera a data do recebimento.
+              </p>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="px-4 pt-5 sm:px-6" aria-busy={loading}>
+          {error && (
+            <div
+              role="alert"
+              className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+            >
+              <AlertCircle
+                className="mt-0.5 size-4 shrink-0"
+                aria-hidden="true"
+              />
+              <p>{error}</p>
+            </div>
           )}
-          {account.state === "PAUSED" && (
-            <p>
-              Novas cobranças pausadas. Pagamentos anteriores e estornos
-              continuam sendo acompanhados. Reconecte para voltar a receber.
-            </p>
-          )}
-          {account.state === "RECONNECT_REQUIRED" && (
-            <p className="text-amber-700">
-              A autorização precisa ser verificada. Reconecte a mesma conta
-              Mercado Pago.
-            </p>
-          )}
-          {account.state === "RENEWAL_PENDING" && (
-            <p>
-              A autorização será renovada automaticamente no próximo uso. Se a
-              renovação falhar, reconecte a mesma conta.
-            </p>
-          )}
-          {account.history?.slice(0, 3).map((event, i) => (
-            <p key={i} className="text-sm text-slate-600">
-              {(
-                {
-                  CONNECTED: "Conta conectada",
-                  RECONNECTED: "Conta reconectada",
-                  PAUSED: "Novas cobranças pausadas",
-                } as Record<string, string>
-              )[event.kind] ?? event.kind}
-              : {event.collector_id} ·{" "}
-              {new Date(event.created_at).toLocaleString("pt-BR")}
-            </p>
-          ))}
-
-          {!account.available && (
-            <p>
-              A integração precisa ser configurada pelo administrador do
-              sistema.
-            </p>
-          )}
-        </div>
-      )}
-
-      <Button variant="outline" onClick={load}>
-        Atualizar
-      </Button>
-      <label className="block">
-        Situação financeira
-        <select
-          className="input ml-2"
-          value={view}
-          onChange={(e) => {
-            setPage(0)
-            setView(e.target.value)
-          }}
-        >
-          <option value="all">Todos</option>
-          <option value="pending">Pagamentos pendentes</option>
-          <option value="receivable">A receber presencialmente</option>
-          <option value="refunds">Estornos pendentes ou com falha</option>
-          <option value="issues">Contestações e falhas</option>
-        </select>
-      </label>
-      {month && (
-        <p className="text-sm text-slate-600">
-          Pedidos criados em {month}. Receitas nos gráficos seguem a data de
-          recebimento.
-        </p>
-      )}
-
-      {error && (
-        <p role="alert" className="text-red-700">
-          {error}
-        </p>
-      )}
-
-      {rows.map((row) => (
-        <article key={row.id} className="border-t pt-3">
-          <a className="font-semibold underline" href={`/orders/${row.id}`}>
-            Pedido #{row.id}
-          </a>
-
-          <p>
-            Bruto: {formatCurrency(Number(row.total_amount))} · Taxas:{" "}
-            {formatCurrency(Number(row.fee_amount))}
+          {loading ? (
+            <div
+              className="space-y-4"
+              role="status"
+              aria-label="Carregando pagamentos"
+            >
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} className="h-36 w-full rounded-xl" />
+              ))}
+            </div>
+          ) : rows.length ? (
+            <div className="space-y-4">
+              {rows.map((row) => (
+                <article
+                  key={row.id}
+                  className="min-w-0 rounded-xl border border-slate-200 p-4 sm:p-5"
+                >
+                  <div className="mb-4 flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-start sm:justify-between">
+                    <a
+                      className="w-fit font-semibold text-slate-900 underline-offset-4 hover:text-red-700 hover:underline focus-visible:outline-red-600"
+                      href={`/orders/${row.id}`}
+                    >
+                      Pedido #{row.id}
+                    </a>
+                    <dl className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                      <div>
+                        <dt className="text-xs text-slate-500">
+                          Valor do pedido
+                        </dt>
+                        <dd className="font-semibold tabular-nums text-slate-900">
+                          {formatCurrency(Number(row.total_amount))}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-slate-500">Taxas</dt>
+                        <dd className="tabular-nums text-slate-600">
+                          {formatCurrency(Number(row.fee_amount))}
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
+                  <PaymentActions
+                    order={row}
+                    onChange={() => {
+                      void load(false)
+                      onFinancialChange?.()
+                    }}
+                  />
+                </article>
+              ))}
+            </div>
+          ) : !error ? (
+            <EmptyState
+              icon={Wallet}
+              title="Nenhum pagamento encontrado"
+              description="Os pedidos desta unidade aparecerão aqui. Você também pode conferir outro período ou situação financeira."
+            />
+          ) : null}
+        </CardContent>
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-4 pt-4 sm:px-6">
+          <p className="text-xs text-slate-500">
+            Página {page + 1}
+            {!loading && rows.length > 0
+              ? ` · ${rows.length} pedido${rows.length === 1 ? "" : "s"}`
+              : ""}
           </p>
-
-          <PaymentActions
-            order={row}
-            onChange={() => {
-              void load()
-              onFinancialChange?.()
-            }}
-          />
-        </article>
-      ))}
-
-      {!rows.length && <p>Nenhum pagamento nesta página.</p>}
-
-      <div className="flex gap-2">
-        <Button
-          variant="outline"
-          disabled={page === 0}
-          onClick={() => setPage((p) => p - 1)}
-        >
-          Anterior
-        </Button>
-        <Button
-          variant="outline"
-          disabled={rows.length < 20}
-          onClick={() => setPage((p) => p + 1)}
-        >
-          Próxima
-        </Button>
-      </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page === 0 || loading}
+              onClick={() => setPage((p) => p - 1)}
+            >
+              <ChevronLeft className="size-4" aria-hidden="true" />
+              Anterior
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={rows.length < 20 || loading || !!error}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Próxima
+              <ChevronRight className="size-4" aria-hidden="true" />
+            </Button>
+          </div>
+        </div>
+      </Card>
+      <p className="px-1 text-xs leading-relaxed text-slate-500">
+        O resumo considera taxas e devoluções conhecidas. Os valores são
+        indicadores financeiros da unidade e não representam saldo disponível
+        para saque no Mercado Pago.
+      </p>
     </section>
   )
 }

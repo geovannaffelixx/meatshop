@@ -457,14 +457,14 @@ export function FinanceScreen() {
           description="Acompanhe receitas, despesas, saldo e formas de pagamento."
         />
 
-        <div className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:flex-wrap sm:items-end rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <label className="text-sm font-medium text-slate-700">
             Competência
             <input
               type="month"
               value={month}
               onChange={(e) => setMonth(e.target.value)}
-              className="input mt-1"
+              className="input mt-1 w-full sm:min-w-48"
             />
           </label>
           {units.length > 1 && (
@@ -473,7 +473,7 @@ export function FinanceScreen() {
               <select
                 value={unitId ?? ""}
                 onChange={(e) => setUnitId(Number(e.target.value))}
-                className="input mt-1"
+                className="input mt-1 w-full sm:min-w-48"
               >
                 {units.map((u) => (
                   <option key={u.id} value={u.id}>
@@ -484,6 +484,52 @@ export function FinanceScreen() {
             </label>
           )}
         </div>
+
+        {unitId && (
+          <div
+            className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-3"
+            aria-label="Resumo financeiro do mês"
+          >
+            {[
+              {
+                label: "Recebimentos líquidos",
+                value: revenueTotal,
+                color: "text-emerald-700",
+              },
+              {
+                label: "Despesas e repasses",
+                value: expenseTotal,
+                color: "text-red-700",
+              },
+              {
+                label: "Resultado do mês",
+                value: revenueTotal - expenseTotal,
+                color:
+                  revenueTotal - expenseTotal >= 0
+                    ? "text-slate-900"
+                    : "text-red-700",
+              },
+            ].map((item) => (
+              <Card
+                key={item.label}
+                className="gap-2 border-slate-200 bg-white p-4 shadow-sm sm:p-5"
+              >
+                <p className="text-sm font-medium text-slate-500">
+                  {item.label}
+                </p>
+                <p
+                  className={`break-words text-2xl font-semibold tracking-tight tabular-nums ${item.color}`}
+                >
+                  {loading
+                    ? "—"
+                    : error
+                      ? "Indisponível"
+                      : formatCurrency(item.value)}
+                </p>
+              </Card>
+            ))}
+          </div>
+        )}
 
         {unitId && (
           <PaymentManagement
@@ -501,10 +547,12 @@ export function FinanceScreen() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="bg-white/70 backdrop-blur-md shadow-lg">
+          <Card className="border-slate-200 bg-white shadow-sm">
             <CardHeader className="px-4 pt-4 text-center">
               <CardTitle className="text-green-600">Receitas</CardTitle>
-              <p className="text-sm text-gray-500">Total de vendas no mês</p>
+              <p className="text-sm text-gray-500">
+                Recebimentos líquidos por dia
+              </p>
             </CardHeader>
             <CardContent>
               {error ? (
@@ -538,7 +586,7 @@ export function FinanceScreen() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white/70 backdrop-blur-md shadow-lg relative">
+          <Card className="border-slate-200 bg-white shadow-sm relative">
             <CardHeader className="flex flex-col items-center px-4 pt-4">
               <div className="flex items-center gap-3">
                 <CardTitle className="text-red-600">Despesas</CardTitle>
@@ -779,7 +827,7 @@ export function FinanceScreen() {
           </Card>
         </div>
 
-        <Card className="bg-white/70 backdrop-blur-md shadow-lg">
+        <Card className="border-slate-200 bg-white shadow-sm">
           <CardHeader className="px-4 pt-4">
             <CardTitle className="text-gray-700">Despesas do mês</CardTitle>
           </CardHeader>
@@ -862,7 +910,7 @@ export function FinanceScreen() {
             payments={payments}
           />
 
-          <Card className="bg-white/70 backdrop-blur-md shadow-lg">
+          <Card className="border-slate-200 bg-white shadow-sm">
             <CardHeader className="px-4 pt-4 text-center">
               <CardTitle className="text-gray-700">
                 Vendas por forma de pagamento
