@@ -2,7 +2,7 @@
 
 Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Changelog e Semantic Versioning.
 
-## [3.0.0] - Em desenvolvimento
+## [3.0.0] - 2026-10-15 - Integração e pagamentos
 
 ### Adicionado
 

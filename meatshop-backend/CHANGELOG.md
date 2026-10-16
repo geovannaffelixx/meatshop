@@ -12,7 +12,7 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 - Job de integração passa a obter o chatbot na branch correspondente do PR, com fallback para `main` ou `develop`, e reproduz o layout multi-repositório usado pelo Docker Compose.
 
-## [3.0.0] - Em desenvolvimento
+## [3.0.0] - 2026-10-15 - Integração e pagamentos
 
 ### Adicionado
 
