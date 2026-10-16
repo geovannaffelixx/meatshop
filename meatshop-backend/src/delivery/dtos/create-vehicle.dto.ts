@@ -1,4 +1,13 @@
-import { IsEnum, IsInt, IsNotEmpty, IsString, Max, MaxLength, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+  ValidateIf,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { VehicleType } from '../enums/vehicle-type.enum';
 
@@ -26,6 +35,12 @@ export class CreateVehicleDto {
     example: 'ABC1D23',
     maxLength: 10,
   })
+  @ValidateIf(
+    (value: CreateVehicleDto) =>
+      value.type === VehicleType.MOTORCYCLE ||
+      value.type === VehicleType.CAR ||
+      Boolean(value.plate),
+  )
   @IsNotEmpty()
   @IsString()
   @MaxLength(10)

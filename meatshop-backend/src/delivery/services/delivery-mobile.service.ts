@@ -21,6 +21,7 @@ import { UpdateVehicleDto } from '../dtos/update-vehicle.dto';
 import { DeliveryGoal, DeliveryGoalPeriod } from '../entities/delivery-goal.entity';
 import { DeliveryOfferRejection } from '../entities/delivery-offer-rejection.entity';
 import { Vehicle } from '../entities/vehicle.entity';
+import { VehicleType } from '../enums/vehicle-type.enum';
 import { DeliveryPersonStatus } from '../enums/delivery-person-status.enum';
 import { DeliveryAffiliationType } from '../enums/delivery-affiliation-type.enum';
 import { DeliveryPersonAccessService } from './delivery-person-access.service';
@@ -134,6 +135,11 @@ export class DeliveryMobileService {
 
   async updateVehicle(id: number, dto: UpdateVehicleDto, user: User) {
     const vehicle = await this.ownedVehicle(id, user);
+    const type = dto.type ?? vehicle.type;
+    const plate = dto.plate ?? vehicle.plate;
+    if ([VehicleType.MOTORCYCLE, VehicleType.CAR].includes(type) && !plate?.trim()) {
+      throw new BadRequestException('Informe a placa do veículo.');
+    }
     Object.assign(vehicle, dto);
     return this.vehicles.save(vehicle);
   }

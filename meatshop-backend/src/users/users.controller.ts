@@ -1,4 +1,13 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Patch } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Headers,
+  HttpCode,
+  HttpStatus,
+  Patch,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { GetUserProfileUseCase } from './use-cases/get-user-profile.use-case';
@@ -55,7 +64,10 @@ export class UsersController {
     status: 204,
     description: 'Account deleted and personal data anonymized',
   })
-  async deleteMe(@CurrentUser() currentUser: User): Promise<void> {
-    await this.deleteAccountUseCase.execute(currentUser.id);
+  async deleteMe(
+    @CurrentUser() currentUser: User,
+    @Headers('x-firebase-reauth-token') firebaseIdToken?: string,
+  ): Promise<void> {
+    await this.deleteAccountUseCase.execute(currentUser.id, firebaseIdToken);
   }
 }

@@ -67,6 +67,45 @@ describe('FirebaseExchangeUseCase', () => {
     });
   });
 
+  it('synchronizes a verified email for the same Firebase identity', async () => {
+    const user = {
+      id: 1,
+      firebase_uid: identity.uid,
+      email: 'previous@example.com',
+      is_active: true,
+    };
+    const { useCase, users } = fixture([user]);
+    await useCase.execute('firebase-token');
+    expect(users.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 1,
+        email: identity.email,
+        email_verified: true,
+      }),
+    );
+  });
+
+  it('does not replace another account when changing the verified email', async () => {
+    const { useCase, login } = fixture([
+      {
+        id: 1,
+        firebase_uid: identity.uid,
+        email: 'previous@example.com',
+        is_active: true,
+      },
+      {
+        id: 2,
+        firebase_uid: 'another-uid',
+        email: identity.email,
+        is_active: true,
+      },
+    ]);
+    await expect(useCase.execute('firebase-token')).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'EMAIL_ALREADY_EXISTS' }),
+    });
+    expect(login.execute).not.toHaveBeenCalled();
+  });
+
   it('requires the current password before linking an existing local account', async () => {
     const localUser = {
       id: 1,

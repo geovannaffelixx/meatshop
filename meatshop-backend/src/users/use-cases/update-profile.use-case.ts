@@ -1,4 +1,10 @@
-import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as crypto from 'crypto';
@@ -33,6 +39,11 @@ export class UpdateProfileUseCase {
     if (dto.email) {
       const normalizedEmail = dto.email.toLowerCase().trim();
       if (normalizedEmail !== user.email) {
+        if (user.firebase_uid) {
+          throw new BadRequestException(
+            'Confirme a alteração de e-mail pelo provedor de identidade.',
+          );
+        }
         await this.ensureEmailIsUnique(normalizedEmail);
         user.email = normalizedEmail;
         user.email_verified = false;

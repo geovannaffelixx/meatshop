@@ -27,6 +27,22 @@ describe('CartProductPolicyService', () => {
     );
   });
 
+  it.each(['UN', 'PCT'])('rejects fractional quantities for %s', async (unit) => {
+    const products = {
+      findOne: jest.fn<() => Promise<Product | null>>().mockResolvedValue({
+        ...product,
+        unit_of_measure: unit,
+      }),
+    } as unknown as Repository<Product>;
+    const stocks = { findOne: jest.fn() } as unknown as Repository<Stock>;
+    await expect(
+      new CartProductPolicyService(products, stocks).validate(10, 0.5),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'INVALID_PRODUCT_QUANTITY' }),
+    });
+    expect(stocks.findOne).not.toHaveBeenCalled();
+  });
+
   it('rejects quantity above stock with a stable code', async () => {
     const products = {
       findOne: jest.fn<() => Promise<Product | null>>().mockResolvedValue(product),
