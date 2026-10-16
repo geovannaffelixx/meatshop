@@ -2,7 +2,16 @@
 
 Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Changelog e Semantic Versioning.
 
-## [3.0.0] - 2026-10-15 - Integração e pagamentos
+## [3.1.0] - 2026-10-15 - Experiência e estabilidade
+
+### Corrigido
+
+- Atribuição de entregas considera disponibilidade, veículo ativo e ausência de outra entrega em andamento.
+- Pedidos direcionam para validação dos códigos de retirada e entrega, sem atalhos pelo status genérico.
+- Chat identifica clientes e entregadores pelo nome cadastrado e mantém os canais separados por pedido.
+- Avaliações apresentam somente primeiro nome e ícone de pessoa.
+
+## [3.0.0] - 2026-10-13 - Integração e pagamentos
 
 ### Adicionado
 

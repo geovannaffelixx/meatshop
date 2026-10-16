@@ -195,4 +195,28 @@ describe('DeliveryMobileService', () => {
       NotFoundException,
     );
   });
+  it('paginates history instead of truncating it at one hundred deliveries', async () => {
+    await service.history(user, { page: 3, limit: 100 });
+    expect(orders.find).toHaveBeenCalledWith(expect.objectContaining({ skip: 200, take: 100 }));
+  });
+
+  it('does not offer new deliveries while another delivery is active', async () => {
+    jest.mocked(orders.findOne).mockResolvedValue({ id: 80 } as Order);
+    await expect(service.available(user)).resolves.toEqual([]);
+    expect(orders.find).not.toHaveBeenCalled();
+  });
+
+  it('calculates earnings totals from all deliveries independently of the requested page', async () => {
+    const query = jest
+      .fn<(...args: unknown[]) => Promise<unknown[]>>()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ total: '12500.50', deliveries: 500 }]);
+    Object.assign(orders, { manager: { query } });
+    await expect(service.earnings(user, { page: 2, limit: 100 })).resolves.toEqual({
+      entries: [],
+      total: 12500.5,
+      deliveries: 500,
+    });
+    expect(orders.find).toHaveBeenCalledWith(expect.objectContaining({ skip: 100, take: 100 }));
+  });
 });

@@ -1,3 +1,4 @@
+import { DeliveryPageDto } from '../dtos/delivery-page.dto';
 import {
   BadRequestException,
   ConflictException,
@@ -5,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, IsNull, Repository } from 'typeorm';
 import { OrderItem } from '../../orders/entities/order-item.entity';
 import { Order } from '../../orders/entities/order.entity';
 import { DeliveryStatus } from '../../orders/enums/delivery-status.enum';
@@ -155,6 +156,18 @@ export class DeliveryMobileService {
   async available(user: User) {
     const person = await this.access.getOwnActiveDeliveryPerson(user.id);
     if (!person.is_online) return [];
+    const active = await this.orders.findOne({
+      where: {
+        delivery_person_id: person.id,
+        status: In([OrderStatus.READY, OrderStatus.OUT_FOR_DELIVERY]),
+        delivery_status: In(ACTIVE_STATUSES),
+      },
+    });
+    if (active) return [];
+    const vehicle = await this.vehicles.findOne({
+      where: { delivery_person_id: person.id, is_active: true, is_enabled: true },
+    });
+    if (!vehicle) return [];
     const unitIds = await this.servedUnitIds(person);
     if (person.affiliation_type === DeliveryAffiliationType.UNIT && unitIds.length === 0) return [];
     const rejected = await this.rejections.find({
@@ -163,6 +176,7 @@ export class DeliveryMobileService {
     const rejectedIds = new Set(rejected.map((item) => item.order_id));
     const orders = await this.orders.find({
       where: {
+        delivery_person_id: IsNull(),
         delivery_type: DeliveryType.DELIVERY,
         status: OrderStatus.READY,
         delivery_status: DeliveryStatus.WAITING_DELIVERY_PERSON,
@@ -192,7 +206,7 @@ export class DeliveryMobileService {
     return order ? this.mapOrder(order, await this.orderItems(order.id)) : null;
   }
 
-  async history(user: User) {
+  async history(user: User, page = new DeliveryPageDto()) {
     const person = await this.access.getOwnDeliveryPerson(user.id);
     const orders = await this.orders.find({
       where: {
@@ -200,8 +214,9 @@ export class DeliveryMobileService {
         delivery_status: DeliveryStatus.DELIVERED,
       },
       relations: { client: true, unit: true, address: true },
-      order: { updated_at: 'DESC' },
-      take: 100,
+      order: { updated_at: 'DESC', id: 'DESC' },
+      take: page.limit,
+      skip: (page.page - 1) * page.limit,
     });
     return this.mapOrders(orders);
   }
@@ -234,19 +249,20 @@ export class DeliveryMobileService {
     return { rejected: true };
   }
 
-  async earnings(user: User) {
+  async earnings(user: User, page = new DeliveryPageDto()) {
     const person = await this.access.getOwnDeliveryPerson(user.id);
     const delivered = await this.orders.find({
       where: {
         delivery_person_id: person.id,
         delivery_status: DeliveryStatus.DELIVERED,
       },
-      order: { updated_at: 'DESC' },
-      take: 365,
+      order: { updated_at: 'DESC', id: 'DESC' },
+      take: page.limit,
+      skip: (page.page - 1) * page.limit,
     });
     const settled = await this.orders.manager.query(
-      'SELECT order_id,paid_at FROM delivery_settlements WHERE delivery_person_id=$1',
-      [person.id],
+      'SELECT order_id,paid_at FROM delivery_settlements WHERE delivery_person_id=$1 AND order_id=ANY($2::int[])',
+      [person.id, delivered.map((order) => order.id)],
     );
     const entries = delivered.map((order) => ({
       id: String(order.id),
@@ -257,11 +273,11 @@ export class DeliveryMobileService {
       amount: Number(order.delivery_fee),
       created_at: order.updated_at,
     }));
-    return {
-      entries,
-      total: entries.reduce((sum, item) => sum + item.amount, 0),
-      deliveries: entries.length,
-    };
+    const [summary] = await this.orders.manager.query(
+      'SELECT COALESCE(SUM(delivery_fee),0) AS total,COUNT(*)::int AS deliveries FROM orders WHERE delivery_person_id=$1 AND delivery_status=$2',
+      [person.id, DeliveryStatus.DELIVERED],
+    );
+    return { entries, total: Number(summary.total), deliveries: Number(summary.deliveries) };
   }
 
   async listGoals(user: User) {

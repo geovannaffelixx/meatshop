@@ -58,11 +58,18 @@ export class OrderListItemDto {
   })
   scheduled_delivery_date: Date | null;
 
+  delivery_person_name: string | null;
+  delivery_person_user_id: number | null;
+  delivery_person_id: number | null;
+
   static fromEntity(order: Order & { payment_method?: string | null }): OrderListItemDto {
     const dto = new OrderListItemDto();
     dto.id = order.id;
     dto.client_id = order.client_id;
     dto.client_name = order.client?.name ?? null;
+    dto.delivery_person_name = order.delivery_person?.user?.name?.trim() || null;
+    dto.delivery_person_user_id = order.delivery_person?.user_id ?? null;
+    dto.delivery_person_id = order.delivery_person_id;
     dto.unit_id = order.unit_id;
     dto.order_date = order.order_date;
     dto.status = order.status;

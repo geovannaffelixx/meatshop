@@ -275,6 +275,14 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
                 Conversar sobre o pedido
               </Link>
             </Button>
+            {order.delivery_type === "DELIVERY" && ["READY", "OUT_FOR_DELIVERY"].includes(order.status) && (
+              <p className="text-sm text-slate-600">
+                {order.status === "READY"
+                  ? "A retirada deve ser liberada com o código apresentado pelo entregador na área de Entregas."
+                  : "A conclusão deve ser confirmada pelo entregador com o código informado pelo cliente."}
+                {order.status === "READY" && <Link href="/deliveries" className="ml-1 font-semibold text-red-700 underline">Abrir entregas</Link>}
+              </p>
+            )}
             {nextAction && (
               <Button
                 disabled={working}

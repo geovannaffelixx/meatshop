@@ -1,4 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { DeliveryType } from '../enums/delivery-type.enum';
+import { OrderStatus } from '../enums/order-status.enum';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
@@ -27,6 +29,12 @@ export class UpdateOrderStatusUseCase {
     }
 
     await this.orderAuthorizationService.assertCanManageOrder(order, currentUser);
+    if (
+      order.delivery_type === DeliveryType.DELIVERY &&
+      [OrderStatus.OUT_FOR_DELIVERY, OrderStatus.DELIVERED].includes(dto.status)
+    ) {
+      throw new BadRequestException('Use a validação dos códigos de retirada e entrega.');
+    }
     this.transitionValidator.assertValid(order.status, dto.status, order.delivery_type);
 
     return this.orderStatusService.transition(order, dto.status, currentUser.id);

@@ -30,7 +30,7 @@ export class ListOrderChatUseCase {
       where: { id: orderId },
     });
     if (!order) {
-      throw new NotFoundException('Order not found');
+      throw new NotFoundException('Pedido não encontrado.');
     }
 
     await this.chatAuthorizationService.assertCanParticipate(

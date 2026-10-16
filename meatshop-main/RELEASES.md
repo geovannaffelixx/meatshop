@@ -1,8 +1,14 @@
 # Releases do painel web
 
+## 3.1.0 — Experiência e estabilidade
+
+Trabalho realizado em 15 de outubro de 2026.
+
+O painel passa a exigir os fluxos de código para retirada e conclusão das entregas, filtra entregadores aptos para atribuição e identifica os participantes do chat pelos nomes cadastrados. Avaliações exibem apenas o primeiro nome e um ícone de pessoa.
+
 ## 3.0.0 — Integração e pagamentos
 
-Trabalho da versão consolidado em 15 de outubro de 2026.
+Trabalho anterior consolidado até 13 de outubro de 2026.
 
 O painel foi atualizado para Next.js 16, recebeu auditoria automatizada de dependências, testes do controle de acesso, headers de segurança e validações obrigatórias no CI. A navegação, o catálogo, as entregas ao vivo, o chat e os módulos administrativos continuam integrados ao backend, agora com imagens otimizadas e build standalone validado.
 

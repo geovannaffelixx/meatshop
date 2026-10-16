@@ -1,7 +1,11 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
 
 export class ListChatsDto {
+  @IsOptional()
+  @IsIn(['CLIENT', 'DELIVERY', 'UNIT'])
+  profile?: 'CLIENT' | 'DELIVERY' | 'UNIT';
+
   @IsOptional()
   @Type(() => Number)
   @IsInt()

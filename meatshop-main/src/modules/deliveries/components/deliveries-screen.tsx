@@ -236,6 +236,8 @@ export function DeliveriesScreen() {
     () =>
       people.filter(
         (person) =>
+          person.isOnline &&
+          person.vehicle &&
           person.deliveryPersonId &&
           person.membershipStatus === "ACTIVE" &&
           person.profileStatus === "ACTIVE" &&
@@ -611,7 +613,11 @@ export function DeliveriesScreen() {
                         <td className="p-4">
                           {person.activeOrderId
                             ? `Pedido #${person.activeOrderId}`
-                            : "Disponível"}
+                            : !person.isOnline
+                              ? "Offline"
+                              : !person.vehicle
+                                ? "Sem veículo ativo"
+                                : "Disponível"}
                         </td>
                         <td className="p-4 text-right">
                           {canManage &&

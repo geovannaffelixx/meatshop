@@ -26,7 +26,7 @@ export class MarkChatReadUseCase {
     const order = await this.orderRepository.findOne({
       where: { id: orderId },
     });
-    if (!order) throw new NotFoundException('Order not found');
+    if (!order) throw new NotFoundException('Pedido não encontrado.');
 
     const channel = await this.chatAuthorizationService.assertCanParticipate(
       order,

@@ -29,6 +29,8 @@ export class GetOrderUseCase {
       .addSelect('order.delivery_code_ciphertext')
       .leftJoinAndSelect('order.client', 'client')
       .leftJoinAndSelect('order.unit', 'unit')
+      .leftJoinAndSelect('order.delivery_person', 'deliveryPerson')
+      .leftJoinAndSelect('deliveryPerson.user', 'deliveryUser')
       .where('order.id = :orderId', { orderId })
       .getOne();
     if (!order) {

@@ -45,7 +45,7 @@ export class ListUnitDeliveryPeopleUseCase {
     const personIds = people.map(({ id }) => id);
     const vehicles = personIds.length
       ? await this.vehicleRepository.find({
-          where: { delivery_person_id: In(personIds), is_active: true },
+          where: { delivery_person_id: In(personIds), is_active: true, is_enabled: true },
         })
       : [];
     const activeOrders = personIds.length
@@ -77,6 +77,7 @@ export class ListUnitDeliveryPeopleUseCase {
           email: membership.user.email,
         },
         deliveryPersonId: person?.id ?? null,
+        isOnline: person?.is_online ?? false,
         profileStatus: person?.status ?? 'NOT_REGISTERED',
         rating: person?.average_rating == null ? null : Number(person.average_rating),
         vehicle: vehicle

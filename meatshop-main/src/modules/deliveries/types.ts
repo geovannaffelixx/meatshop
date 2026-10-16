@@ -48,6 +48,7 @@ export type UnitDeliveryPerson = {
   membershipStatus: "ACTIVE" | "INACTIVE";
   user: { id: number; name: string; email: string };
   deliveryPersonId: number | null;
+  isOnline: boolean;
   profileStatus: "PENDING" | "ACTIVE" | "INACTIVE" | "NOT_REGISTERED";
   rating: number | null;
   vehicle: {

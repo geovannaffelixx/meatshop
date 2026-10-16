@@ -1,4 +1,6 @@
+import { DeliveryPageDto } from './dtos/delivery-page.dto';
 import {
+  Query,
   Body,
   Controller,
   Delete,
@@ -120,8 +122,8 @@ export class DeliveryController {
   }
 
   @Get('me/orders/history')
-  deliveryHistory(@CurrentUser() currentUser: User) {
-    return this.mobileService.history(currentUser);
+  deliveryHistory(@CurrentUser() currentUser: User, @Query() page: DeliveryPageDto) {
+    return this.mobileService.history(currentUser, page);
   }
 
   @Post('orders/:orderId/reject')
@@ -134,8 +136,8 @@ export class DeliveryController {
   }
 
   @Get('me/earnings')
-  earnings(@CurrentUser() currentUser: User) {
-    return this.mobileService.earnings(currentUser);
+  earnings(@CurrentUser() currentUser: User, @Query() page: DeliveryPageDto) {
+    return this.mobileService.earnings(currentUser, page);
   }
 
   @Get('me/goals')

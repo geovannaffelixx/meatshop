@@ -1,3 +1,4 @@
+import { firstName } from '../../common/utils/first-name';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Review } from '../entities/review.entity';
 
@@ -13,7 +14,7 @@ export class ReviewListItemDto {
 
   @ApiProperty({
     description: 'Name of the customer who submitted the review',
-    example: 'John Smith',
+    example: 'João',
   })
   client_name: string;
 
@@ -45,7 +46,7 @@ export class ReviewListItemDto {
     dto.id = review.id;
     dto.order_id = review.order_id;
     dto.unit_id = review.unit_id;
-    dto.client_name = review.client?.name ?? 'Customer';
+    dto.client_name = firstName(review.client?.name);
     dto.product_id = review.product_id;
     dto.product_name = review.product?.name ?? null;
     dto.rating = review.rating;

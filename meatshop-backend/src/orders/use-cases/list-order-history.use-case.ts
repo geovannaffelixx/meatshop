@@ -38,6 +38,8 @@ export class ListOrderHistoryUseCase {
       .createQueryBuilder('o')
       .addSelect('o.delivery_code_ciphertext')
       .leftJoinAndSelect('o.unit', 'unit')
+      .leftJoinAndSelect('o.delivery_person', 'deliveryPerson')
+      .leftJoinAndSelect('deliveryPerson.user', 'deliveryUser')
       .where('o.client_id=:client', { client: user.id })
       .orderBy("CASE WHEN o.status NOT IN ('DELIVERED','CANCELLED') THEN 0 ELSE 1 END", 'ASC')
       .addOrderBy('o.order_date', 'DESC')
@@ -88,7 +90,7 @@ export class ListOrderHistoryUseCase {
   private async list(currentUser: User): Promise<Order[]> {
     if (currentUser.global_role === GlobalRole.SUPER_ADMIN) {
       return this.orderRepository.find({
-        relations: ['client'],
+        relations: ['client', 'delivery_person', 'delivery_person.user'],
         order: { order_date: 'DESC' },
       });
     }
@@ -98,6 +100,8 @@ export class ListOrderHistoryUseCase {
       return this.orderRepository
         .createQueryBuilder('order')
         .leftJoinAndSelect('order.client', 'client')
+        .leftJoinAndSelect('order.delivery_person', 'deliveryPerson')
+        .leftJoinAndSelect('deliveryPerson.user', 'deliveryUser')
         .where('order.unit_id IN (:...unitIds)', { unitIds: managedUnitIds })
         .orWhere('order.client_id = :userId', { userId: currentUser.id })
         .orderBy('order.order_date', 'DESC')
@@ -106,7 +110,7 @@ export class ListOrderHistoryUseCase {
 
     return this.orderRepository.find({
       where: { client_id: currentUser.id },
-      relations: ['client'],
+      relations: ['client', 'delivery_person', 'delivery_person.user'],
       order: { order_date: 'DESC' },
     });
   }

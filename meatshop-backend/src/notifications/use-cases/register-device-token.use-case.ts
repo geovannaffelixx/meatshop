@@ -13,26 +13,15 @@ export class RegisterDeviceTokenUseCase {
   ) {}
 
   async execute(dto: RegisterDeviceTokenDto, currentUser: User): Promise<void> {
-    const existing = await this.deviceTokenRepository.findOne({
-      where: { fcm_token: dto.fcm_token },
-    });
-
-    if (existing) {
-      existing.user_id = currentUser.id;
-      existing.platform = dto.platform ?? existing.platform;
-      existing.app_version = dto.app_version ?? null;
-      existing.last_seen_at = new Date();
-      await this.deviceTokenRepository.save(existing);
-      return;
-    }
-
-    await this.deviceTokenRepository.save(
-      this.deviceTokenRepository.create({
+    await this.deviceTokenRepository.upsert(
+      {
         user_id: currentUser.id,
         fcm_token: dto.fcm_token,
-        platform: dto.platform ?? 'WEB',
+        ...(dto.platform ? { platform: dto.platform } : {}),
         app_version: dto.app_version ?? null,
-      }),
+        last_seen_at: new Date(),
+      },
+      ['fcm_token'],
     );
   }
 }

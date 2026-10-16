@@ -1,5 +1,7 @@
 "use client"
 
+import { UserRound } from "lucide-react"
+
 import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent } from "@/shared/components/ui/card"
 import { Star, Store } from "lucide-react"
@@ -160,7 +162,8 @@ export function ReviewsScreen() {
                 <CardContent className="p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-3">
-                      <span className="font-semibold text-gray-800">{review.client_name}</span>
+                      <span className="inline-flex size-9 items-center justify-center rounded-full bg-slate-100 text-slate-500"><UserRound className="size-5" aria-label="Pessoa" /></span>
+                      <span className="font-semibold text-gray-800">{review.client_name?.trim().split(/\s+/u)[0] || 'Cliente'}</span>
                       {review.product_name ? (
                         <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
                           {review.product_name}

@@ -29,7 +29,7 @@ export class ChatInboxService {
   ) {}
 
   async list(user: User, query: ListChatsDto) {
-    const conversations = await this.conversations(user);
+    const conversations = await this.conversations(user, query.profile);
     return this.page(conversations, query, conversations.length);
   }
 
@@ -40,8 +40,11 @@ export class ChatInboxService {
     };
   }
 
-  private async conversations(user: User): Promise<ChatConversationResponseDto[]> {
-    const orders = await this.accessibleOrders(user);
+  private async conversations(
+    user: User,
+    profile?: ListChatsDto['profile'],
+  ): Promise<ChatConversationResponseDto[]> {
+    const orders = await this.accessibleOrders(user, profile);
     if (orders.length === 0) return [];
     const messages = await this.messages.find({
       where: { order_id: In(orders.map(({ id }) => id)) },
@@ -63,7 +66,7 @@ export class ChatInboxService {
       .sort((left, right) => right.last_message_at.getTime() - left.last_message_at.getTime());
   }
 
-  private async accessibleOrders(user: User): Promise<Order[]> {
+  private async accessibleOrders(user: User, profile?: ListChatsDto['profile']): Promise<Order[]> {
     const [adminUnits, memberships, person] = await Promise.all([
       this.units.find({ where: { admin_id: user.id }, select: { id: true } }),
       this.memberships.find({
@@ -80,10 +83,15 @@ export class ChatInboxService {
       if (membership.local_role !== LocalRole.DELIVERY) unitIds.add(membership.unit_id);
     }
     const where = [
-      { client_id: user.id },
-      ...(person ? [{ delivery_person_id: person.id }] : []),
-      ...(unitIds.size > 0 ? [{ unit_id: In([...unitIds]) }] : []),
+      ...(profile === undefined || profile === 'CLIENT' ? [{ client_id: user.id }] : []),
+      ...(person && (profile === undefined || profile === 'DELIVERY')
+        ? [{ delivery_person_id: person.id }]
+        : []),
+      ...(unitIds.size > 0 && (profile === undefined || profile === 'UNIT')
+        ? [{ unit_id: In([...unitIds]) }]
+        : []),
     ];
+    if (where.length === 0) return [];
     return this.orders.find({
       where,
       relations: { client: true, unit: true, delivery_person: { user: true } },
@@ -121,8 +129,19 @@ export class ChatInboxService {
       },
       last_message: latest.message,
       last_message_at: latest.sent_at,
-      unread_count: entries.filter((message) => !message.read_at && message.sender_id !== userId)
-        .length,
+      unread_count: entries.filter((message) => {
+        if (message.read_at) return false;
+        if (latest.participant_type === ChatParticipantType.UNIT && order.client_id !== userId) {
+          return message.sender_id === order.client_id;
+        }
+        if (
+          latest.participant_type === ChatParticipantType.UNIT_DELIVERY_PERSON &&
+          order.delivery_person?.user_id !== userId
+        ) {
+          return message.sender_id === order.delivery_person?.user_id;
+        }
+        return message.sender_id !== userId;
+      }).length,
       closed: CLOSED_STATUSES.includes(order.status),
     };
   }
@@ -140,16 +159,16 @@ export class ChatInboxService {
 
   private opponentName(order: Order, type: ChatParticipantType, userId: number): string {
     if (type === ChatParticipantType.UNIT) {
-      return order.client_id === userId ? order.unit.name : (order.client.name ?? 'Customer');
+      return order.client_id === userId ? order.unit.name : (order.client.name ?? 'Cliente');
     }
     if (type === ChatParticipantType.DELIVERY_PERSON) {
       return order.client_id === userId
-        ? (order.delivery_person?.user?.name ?? 'Delivery Person')
-        : (order.client.name ?? 'Customer');
+        ? (order.delivery_person?.user?.name ?? 'Entregador')
+        : (order.client.name ?? 'Cliente');
     }
     return order.delivery_person?.user_id === userId
       ? order.unit.name
-      : (order.delivery_person?.user?.name ?? 'Delivery Person');
+      : (order.delivery_person?.user?.name ?? 'Entregador');
   }
 
   private opponent(
@@ -170,12 +189,12 @@ export class ChatInboxService {
       (type === ChatParticipantType.UNIT_DELIVERY_PERSON && !isDelivery)
     ) {
       return {
-        name: order.delivery_person?.user?.name ?? 'Delivery Person',
+        name: order.delivery_person?.user?.name ?? 'Entregador',
         avatarUrl: order.delivery_person?.user?.avatar_url ?? null,
       };
     }
     return {
-      name: order.client.name ?? 'Customer',
+      name: order.client.name ?? 'Cliente',
       avatarUrl: order.client.avatar_url ?? null,
     };
   }

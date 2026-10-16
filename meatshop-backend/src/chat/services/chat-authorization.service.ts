@@ -70,7 +70,7 @@ export class ChatAuthorizationService {
       }
     }
 
-    throw new ForbiddenException('You are not a participant of this conversation');
+    throw new ForbiddenException('Você não participa desta conversa.');
   }
 
   async resolveChannelForSending(
@@ -79,7 +79,7 @@ export class ChatAuthorizationService {
     currentUser: User,
   ): Promise<ChatChannel> {
     if (CLOSED_STATUSES.includes(order.status)) {
-      throw new BadRequestException('Chat is closed for this order');
+      throw new BadRequestException('A conversa deste pedido está encerrada.');
     }
     return this.assertCanParticipate(order, participantType, currentUser);
   }
@@ -89,20 +89,20 @@ export class ChatAuthorizationService {
       where: { id: order.unit_id },
     });
     if (!unit) {
-      throw new NotFoundException('Unit not found');
+      throw new NotFoundException('Unidade não encontrada.');
     }
     return unit.admin_id;
   }
 
   private async getDeliveryPersonUserId(order: Order): Promise<number> {
     if (!order.delivery_person_id) {
-      throw new BadRequestException('This order has no delivery person assigned yet');
+      throw new BadRequestException('Este pedido ainda não tem entregador atribuído.');
     }
     const deliveryPerson = await this.deliveryPersonRepository.findOne({
       where: { id: order.delivery_person_id },
     });
     if (!deliveryPerson) {
-      throw new NotFoundException('Delivery person not found');
+      throw new NotFoundException('Entregador não encontrado.');
     }
     return deliveryPerson.user_id;
   }
@@ -122,7 +122,7 @@ export class ChatAuthorizationService {
       },
     });
     if (!membership || membership.local_role === LocalRole.DELIVERY) {
-      throw new ForbiddenException('You are not a participant of this conversation');
+      throw new ForbiddenException('Você não participa desta conversa.');
     }
   }
 }

@@ -2,17 +2,22 @@
 
 Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Changelog e Semantic Versioning.
 
-## [Não lançado]
+## [3.1.0] - 2026-10-15 - Experiência e estabilidade
 
-### Segurança
+### Corrigido
 
-- Dependências transitivas de produção atualizadas para eliminar vulnerabilidades conhecidas em `proxy-addr`, `js-yaml` e `uuid`.
+- Contratos de autenticação mobile, reautenticação para exclusão de conta, sincronização de e-mail verificado e validações de veículos, quantidades e horários.
+- Atribuição transacional de entregas com uma entrega ativa por entregador, disponibilidade e veículo ativo obrigatórios.
+- Retirada e conclusão protegidas por códigos; histórico paginado e totais de ganhos sem truncamento.
+- Registro atômico de tokens de notificação para evitar conflitos em logins simultâneos.
+- Chat com nomes reais, mensagens em português e conversas filtradas pelo perfil ativo.
+- Avaliações expõem apenas o primeiro nome do autor, sem foto ou objeto de usuário.
 
-### CI
+### Qualidade
 
-- Job de integração passa a obter o chatbot na branch correspondente do PR, com fallback para `main` ou `develop`, e reproduz o layout multi-repositório usado pelo Docker Compose.
+- Testes de concorrência de atribuição e tokens de notificação com PostgreSQL isolado.
 
-## [3.0.0] - 2026-10-15 - Integração e pagamentos
+## [3.0.0] - 2026-10-13 - Integração e pagamentos
 
 ### Adicionado
 
@@ -34,30 +39,6 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 - Validação opcional de Firebase App Check para chamadas identificadas como mobile, sem afetar o painel web.
 - Metadados de plataforma e versão do aplicativo nos dispositivos FCM, com migration reversível.
 - Evento Socket.IO `delivery:unsubscribe-order` para encerrar corretamente a assinatura de tracking.
-
-### Alterado
-
-- Runtime atualizado para NestJS 11.2.3, Express 5, Mercado Pago 3, Nodemailer 10, Firebase Admin 14 e TypeORM 0.3.31.
-- Envio de e-mail passou a usar Nodemailer diretamente, reduzindo dependências intermediárias sem alterar o contrato do domínio.
-- Manifests do backend e do painel alinhados à versão cumulativa 3.0.0 da integração mobile.
-- Integração mobile concluída sem persistência operacional no Firebase; PostgreSQL é a fonte única para todos os domínios.
-
-- Push de eventos reais inclui somente identificador, tipo e rota; textos de tela bloqueada são genéricos e sem códigos ou conversa.
-- Tokens FCM inválidos são eliminados pelo retorno do provedor e registros inativos há 90 dias são descartados.
-
-### Segurança
-
-- Rotas de IA excluídas da auditoria genérica para impedir retenção de prompts e respostas; eventos próprios registram somente metadados.
-- Credencial do chatbot permanece exclusivamente no backend e respostas inválidas ou produtos não autorizados são rejeitados.
-- App Check agora é decidido exclusivamente pelas rotas protegidas no servidor; cabeçalhos informados pelo cliente não podem mais contornar a validação.
-- Exclusão LGPD também remove a identidade Firebase, e conexões Socket.IO recusam contas inativas e origens não autorizadas.
-- DTOs rejeitam propriedades desconhecidas e a aplicação não inicia em produção com secrets fracos, HTTP, sincronização de schema ou Firebase Admin ausente.
-- Dados públicos do entregador somente são revelados ao cliente de um pedido atribuído; exclusão remove identificadores, contato, credencial local, avatar e vínculo Firebase.
-
-- Códigos de retirada e confirmação deixaram de aparecer em notificações persistidas ou push.
-- App Check retorna códigos estáveis sem registrar o atestado, tokens ou dados pessoais.
-
-### Adicionado
 
 - Modalidades explícitas de entregador autônomo e vinculado, com regras de oferta por afiliação e provisionamento Firebase das contas criadas pela unidade.
 - Upload autenticado de até quatro fotos por veículo, validado por MIME, assinatura binária, tamanho e propriedade.
@@ -91,6 +72,14 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ### Alterado
 
+- Runtime atualizado para NestJS 11.2.3, Express 5, Mercado Pago 3, Nodemailer 10, Firebase Admin 14 e TypeORM 0.3.31.
+- Envio de e-mail passou a usar Nodemailer diretamente, reduzindo dependências intermediárias sem alterar o contrato do domínio.
+- Manifests do backend e do painel alinhados à versão cumulativa 3.0.0 da integração mobile.
+- Integração mobile concluída sem persistência operacional no Firebase; PostgreSQL é a fonte única para todos os domínios.
+
+- Push de eventos reais inclui somente identificador, tipo e rota; textos de tela bloqueada são genéricos e sem códigos ou conversa.
+- Tokens FCM inválidos são eliminados pelo retorno do provedor e registros inativos há 90 dias são descartados.
+
 - Criação de pedidos exige `Idempotency-Key` UUID v4, bloqueia carrinho/estoque e confirma todos os pedidos ou nenhum na mesma transação PostgreSQL.
 - Preço, desconto, cupom por unidade, frete e total são sempre recalculados no servidor; cancelamento restaura estoque e cupom atomicamente.
 - Webhook Mercado Pago valida assinatura, janela temporal, consulta oficial, moeda e valor e impede regressão de pagamentos aprovados.
@@ -107,6 +96,24 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 - Logger HTTP deixa de registrar query strings e associa o usuário autenticado quando disponível.
 - Respostas legadas de `SUPER_ADMIN` agora também utilizam o histórico imutável de mensagens.
 - Dados antigos de descrição e resposta são migrados para a nova conversa sem perda de conteúdo.
+
+### Segurança
+
+- Rotas de IA excluídas da auditoria genérica para impedir retenção de prompts e respostas; eventos próprios registram somente metadados.
+- Credencial do chatbot permanece exclusivamente no backend e respostas inválidas ou produtos não autorizados são rejeitados.
+- App Check agora é decidido exclusivamente pelas rotas protegidas no servidor; cabeçalhos informados pelo cliente não podem mais contornar a validação.
+- Exclusão LGPD também remove a identidade Firebase, e conexões Socket.IO recusam contas inativas e origens não autorizadas.
+- DTOs rejeitam propriedades desconhecidas e a aplicação não inicia em produção com secrets fracos, HTTP, sincronização de schema ou Firebase Admin ausente.
+- Dados públicos do entregador somente são revelados ao cliente de um pedido atribuído; exclusão remove identificadores, contato, credencial local, avatar e vínculo Firebase.
+
+- Códigos de retirada e confirmação deixaram de aparecer em notificações persistidas ou push.
+- App Check retorna códigos estáveis sem registrar o atestado, tokens ou dados pessoais.
+
+- Dependências transitivas de produção atualizadas para eliminar vulnerabilidades conhecidas em `proxy-addr`, `js-yaml` e `uuid`.
+
+### CI
+
+- Job de integração passa a obter o chatbot na branch correspondente do PR, com fallback para `main` ou `develop`, e reproduz o layout multi-repositório usado pelo Docker Compose.
 
 ## [2.3.0] - 2026-08-26
 

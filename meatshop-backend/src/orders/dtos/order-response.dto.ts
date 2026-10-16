@@ -230,6 +230,9 @@ export class OrderResponseDto {
   })
   delivery_code: string | null;
 
+  delivery_person_name: string | null;
+  delivery_person_user_id: number | null;
+
   static fromEntity(
     order: Order,
     items: OrderItem[],
@@ -240,6 +243,8 @@ export class OrderResponseDto {
     dto.id = order.id;
     dto.client_id = order.client_id;
     dto.client_name = order.client?.name ?? null;
+    dto.delivery_person_name = order.delivery_person?.user?.name?.trim() || null;
+    dto.delivery_person_user_id = order.delivery_person?.user_id ?? null;
     dto.unit_id = order.unit_id;
     dto.unit_name = order.unit?.name ?? null;
     dto.unit_logo_url = order.unit?.image_url ?? null;
