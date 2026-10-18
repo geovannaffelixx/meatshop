@@ -78,7 +78,7 @@ export class UnitsUploadController {
     const unit = await this.units.findOne({ where: { id } });
     if (!unit) throw new NotFoundException('Unit not found');
 
-    this.unitAuthorizationService.assertCanManageUnit(unit, currentUser);
+    await this.unitAuthorizationService.assertCanManageUnit(unit, currentUser);
 
     const previousUrl = unit.image_url;
     unit.image_url = await this.storage.upload(file, 'units');

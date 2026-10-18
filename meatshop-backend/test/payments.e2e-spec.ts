@@ -1,3 +1,4 @@
+import type { LegalPolicyService } from '../src/legal/services/legal-policy.service';
 import { RepeatOrderUseCase } from '../src/orders/use-cases/repeat-order.use-case';
 import { CartAccessService } from '../src/cart/services/cart-access.service';
 import { CreateOrderUseCase } from '../src/orders/use-cases/create-order.use-case';
@@ -288,6 +289,7 @@ const enabled = process.env.PAYMENTS_TEST_DATABASE === 'meatshop_payments_test';
       .save({ user_id: user.id, unit_id: unit.id, local_role: LocalRole.OWNER });
     const config = new ConfigService({ JWT_SECRET: 'http-payment-test-secret' });
     const realUnits = new UnitAuthorizationService(
+      { assertUnit: async () => undefined } as unknown as LegalPolicyService,
       db.getRepository(Unit),
       db.getRepository(UserUnit),
       new UnitPermissionPolicy(),

@@ -3,6 +3,8 @@
 > [!IMPORTANT]
 > Para subir banco, migrations, backend e frontend após um clone novo, use o guia oficial [SETUP.md](./SETUP.md). O ambiente Docker é autocontido e não exige criar arquivos `.env`.
 
+Termos e privacidade 3.2.0: consulte [arquitetura, contratos e implantação](./docs/TERMS_AND_PRIVACY.md).
+
 Pagamentos: consulte [configuração e homologação Mercado Pago](./docs/PAYMENTS_SETUP.md).
 
 ```powershell

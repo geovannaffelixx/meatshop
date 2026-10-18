@@ -1,3 +1,5 @@
+import { LegalDocument } from '../legal/entities/legal-document.entity';
+import { LegalAcceptance } from '../legal/entities/legal-acceptance.entity';
 import * as dotenv from 'dotenv';
 import { DataSource } from 'typeorm';
 import { User } from '../users/entities/user.entity';
@@ -62,6 +64,8 @@ export default new DataSource({
     ? [`${__dirname}/../entities/*.js`]
     : [
         User,
+        LegalDocument,
+        LegalAcceptance,
         Order,
         Expense,
         RefreshTokenEntity,

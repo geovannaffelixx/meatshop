@@ -1,5 +1,13 @@
 # Releases do backend
 
+## 3.2.0 — Termos e privacidade
+
+Trabalho preparado em 18 de outubro de 2026.
+
+A versão inclui confirmação explícita dos documentos legais, identificação das versões e histórico de registros. Os responsáveis por unidades confirmam também sua autorização de representação e os termos aplicáveis ao estabelecimento. Contas existentes passam pela regularização, preservando acesso a documentos, suporte e opções da conta.
+
+A implantação deve coordenar a migration, a API, o painel web e o aplicativo 3.2.0. O contato provisório do criador é viniciusrodri0809@gmail.com. Esta preparação local não representa publicação ou deploy.
+
 ## 3.1.0 — Experiência e estabilidade
 
 Trabalho realizado em 15 de outubro de 2026.

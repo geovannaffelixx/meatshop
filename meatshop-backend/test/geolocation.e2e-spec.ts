@@ -1,3 +1,4 @@
+import type { LegalPolicyService } from '../src/legal/services/legal-policy.service';
 import 'reflect-metadata';
 import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
@@ -88,6 +89,7 @@ const enabled = process.env.GEO_TEST_DATABASE === 'meatshop_geo_test';
       is_online: true,
     });
     const units = new UnitAuthorizationService(
+      { assertUnit: async () => undefined } as unknown as LegalPolicyService,
       dataSource.getRepository(Unit),
       dataSource.getRepository(UserUnit),
       new UnitPermissionPolicy(),

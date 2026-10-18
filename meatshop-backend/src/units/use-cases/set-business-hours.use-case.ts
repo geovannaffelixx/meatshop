@@ -29,7 +29,7 @@ export class SetBusinessHoursUseCase {
     if (!unit) {
       throw new NotFoundException('Unit not found');
     }
-    this.unitAuthorizationService.assertCanManageUnit(unit, currentUser);
+    await this.unitAuthorizationService.assertCanManageUnit(unit, currentUser);
 
     dto.days.forEach((day) => this.assertValidTimeRange(day));
     await Promise.all(dto.days.map((day) => this.upsertDay(unitId, day)));

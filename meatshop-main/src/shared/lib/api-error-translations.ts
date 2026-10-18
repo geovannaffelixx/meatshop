@@ -6,6 +6,10 @@ type ApiErrorPayload = {
 };
 
 const ERROR_CODE_MESSAGES: Record<string, string> = {
+  LEGAL_ACCEPTANCE_REQUIRED: "Leia e confirme os documentos vigentes para continuar.",
+  UNIT_LEGAL_ACCEPTANCE_REQUIRED: "O responsável da unidade precisa confirmar os termos do estabelecimento.",
+  LEGAL_DOCUMENTS_CHANGED: "Os documentos foram atualizados. Consulte e confirme as novas versões.",
+  LEGAL_DOCUMENTS_UNAVAILABLE: "Documentos temporariamente indisponíveis. Tente novamente.",
   DELIVERY_LOCATION_REQUIRED: "Confirme no mapa a localização da unidade e do endereço de entrega.",
   DELIVERY_LOCATION_CONFIRMATION_REQUIRED: "Marque a entrada da unidade e o endereço de entrega no mapa.",
   OUTSIDE_DELIVERY_AREA: "O endereço está fora da área de entrega desta unidade.",

@@ -2,6 +2,21 @@
 
 Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Changelog e Semantic Versioning.
 
+## [3.2.0] - 2026-10-18 - Termos e privacidade
+
+### Alterado
+
+- Modal de documentos com cabeçalho e rodapé fixos, rolagem interna, seções destacadas e controles nas cores padrão do painel.
+
+- Tela de Termos e privacidade, histórico, aceite e leitura dos documentos alinhados ao padrão visual do painel, com cabeçalho compartilhado, cards, cores e espaçamento responsivo.
+
+### Adicionado
+
+- Aceite explícito dos termos e ciência da política de privacidade no cadastro de unidade, com declaração de representação.
+- Regularização das contas existentes e versões atualizadas, com proteção correspondente no backend.
+- Consulta aos documentos dentro do painel e histórico das versões registradas.
+- Acesso aos documentos, suporte, dados da conta e saída preservado durante a regularização.
+
 ## [3.1.0] - 2026-10-15 - Experiência e estabilidade
 
 ### Corrigido

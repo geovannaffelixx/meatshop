@@ -1,3 +1,4 @@
+import { LegalPolicyService } from '../../legal/services/legal-policy.service';
 import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -12,6 +13,7 @@ import { UnitPermissionPolicy } from './unit-permission.policy';
 @Injectable()
 export class UnitAuthorizationService {
   constructor(
+    private readonly legal: LegalPolicyService,
     @InjectRepository(Unit)
     private readonly unitRepository: Repository<Unit>,
     @InjectRepository(UserUnit)
@@ -27,13 +29,14 @@ export class UnitAuthorizationService {
       throw new ForbiddenException('Delivery membership inactive');
   }
 
-  assertCanManageUnit(unit: Unit, currentUser: User): void {
+  async assertCanManageUnit(unit: Unit, currentUser: User): Promise<void> {
     const isOwner = unit.admin_id === currentUser.id;
     const isSuperAdmin = currentUser.global_role === GlobalRole.SUPER_ADMIN;
 
     if (!isOwner && !isSuperAdmin) {
       throw new ForbiddenException('Only the unit admin or a super admin can perform this action');
     }
+    if (!isSuperAdmin) await this.legal.assertUnit(unit.id);
   }
 
   async getManagedUnitIds(
@@ -74,6 +77,7 @@ export class UnitAuthorizationService {
     if (!membership || !this.permissionPolicy.has(membership.local_role, permission)) {
       throw new ForbiddenException('Insufficient unit permissions');
     }
+    await this.legal.assertUnit(unitId);
   }
 
   async getActivePanelMemberships(userId: number): Promise<UserUnit[]> {
@@ -97,6 +101,7 @@ export class UnitAuthorizationService {
       if (!requestedUnitId) {
         throw new BadRequestException('unit_id is required');
       }
+      await this.legal.assertUnit(requestedUnitId);
       return requestedUnitId;
     }
 
@@ -106,6 +111,7 @@ export class UnitAuthorizationService {
       if (!managedUnitIds.includes(requestedUnitId)) {
         throw new ForbiddenException('You do not manage this unit');
       }
+      await this.legal.assertUnit(requestedUnitId);
       return requestedUnitId;
     }
 
@@ -115,6 +121,7 @@ export class UnitAuthorizationService {
     if (managedUnitIds.length > 1) {
       throw new BadRequestException('unit_id is required: you manage more than one unit');
     }
+    await this.legal.assertUnit(managedUnitIds[0]);
     return managedUnitIds[0];
   }
 }

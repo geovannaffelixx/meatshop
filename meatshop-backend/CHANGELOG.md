@@ -2,6 +2,17 @@
 
 Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Changelog e Semantic Versioning.
 
+## [3.2.0] - 2026-10-18 - Termos e privacidade
+
+### Adicionado
+
+- Documentos legais com versão própria, conteúdo preservado e hash SHA-256; histórico de aceites e ciência de privacidade por usuário e unidade.
+- Validação transacional nos cadastros, registro idempotente e proteção dos registros contra alteração ou exclusão.
+- Endpoints de documentos vigentes, versões históricas, pendências e registros do usuário autenticado.
+- Exigência ativa para contas existentes e novos cadastros, com preservação do acesso a suporte, perfil e encerramento.
+- Termos do estabelecimento vinculados ao representante responsável e à unidade, independentes do uso pessoal.
+- Testes de contrato, política, proteção de rotas e integração com PostgreSQL isolado.
+
 ## [3.1.0] - 2026-10-15 - Experiência e estabilidade
 
 ### Corrigido

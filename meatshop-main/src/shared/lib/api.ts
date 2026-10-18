@@ -101,6 +101,9 @@ async function request(path: string, init: RequestInit, options: RequestOptions 
         ? error.message
         : translateApiError(error instanceof Error ? error.message : error);
 
+    if (error instanceof ApiError && (error.payload as { code?: string } | undefined)?.code === 'LEGAL_ACCEPTANCE_REQUIRED') {
+      window.dispatchEvent(new Event('legal:required'));
+    }
     if (!options.silent) toast.error(message);
 
     if (error instanceof ApiError) throw error;

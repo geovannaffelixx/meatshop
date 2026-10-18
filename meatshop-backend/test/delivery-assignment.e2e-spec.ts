@@ -1,3 +1,4 @@
+import type { LegalPolicyService } from '../src/legal/services/legal-policy.service';
 import { Chat } from '../src/chat/entities/chat.entity';
 import { ChatParticipantType } from '../src/chat/enums/chat-participant-type.enum';
 import { ChatInboxService } from '../src/chat/services/chat-inbox.service';
@@ -164,6 +165,7 @@ describe('Delivery assignment concurrency (PostgreSQL)', () => {
       .update(orders[0].id, { client_id: customer.id, delivery_person_id: person.id });
     const courier = await db.getRepository(User).findOneByOrFail({ id: person.user_id });
     const authorization = new ChatAuthorizationService(
+      { assertUser: async () => undefined } as unknown as LegalPolicyService,
       db.getRepository(Unit),
       db.getRepository(DeliveryPerson),
       db.getRepository(UserUnit),

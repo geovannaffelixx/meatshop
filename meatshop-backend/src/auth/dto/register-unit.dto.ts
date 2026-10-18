@@ -1,10 +1,11 @@
+import { LegalSubmissionDto } from '../../legal/dto/legal-acceptance.dto';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { ValidateNested } from 'class-validator';
 import { RegisterUnitDetailsDto } from './register-unit-details.dto';
 import { RegisterUnitOwnerDto } from './register-unit-owner.dto';
 
-export class RegisterUnitDto {
+export class RegisterUnitDto extends LegalSubmissionDto {
   @ApiProperty({ type: () => RegisterUnitOwnerDto })
   @ValidateNested()
   @Type(() => RegisterUnitOwnerDto)

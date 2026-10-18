@@ -1,3 +1,5 @@
+import { LegalDocument } from './legal/entities/legal-document.entity';
+import { LegalAcceptance } from './legal/entities/legal-acceptance.entity';
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import type { TypeOrmModuleOptions } from '@nestjs/typeorm';
@@ -113,6 +115,8 @@ import { AiModule } from './ai/ai.module';
               : config.get<string>('DB_PATH') || 'data/meatshop.db',
           entities: [
             User,
+            LegalDocument,
+            LegalAcceptance,
             Order,
             Expense,
             RefreshTokenEntity,

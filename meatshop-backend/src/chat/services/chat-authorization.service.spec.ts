@@ -1,3 +1,4 @@
+import type { LegalPolicyService } from '../../legal/services/legal-policy.service';
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import type { Repository } from 'typeorm';
@@ -23,7 +24,9 @@ describe('ChatAuthorizationService', () => {
     findOne: jest.fn(),
   } as unknown as Repository<UserUnit>;
 
+  const legal = { assertUser: jest.fn<() => Promise<void>>().mockResolvedValue(undefined) };
   const service = new ChatAuthorizationService(
+    legal as unknown as LegalPolicyService,
     unitRepository,
     deliveryPersonRepository,
     userUnitRepository,
@@ -44,6 +47,14 @@ describe('ChatAuthorizationService', () => {
       id: 7,
       user_id: 4,
     } as DeliveryPerson);
+  });
+
+  it('rejects realtime participation while legal acceptance is pending', async () => {
+    legal.assertUser.mockRejectedValueOnce(new ForbiddenException('LEGAL_ACCEPTANCE_REQUIRED'));
+    await expect(
+      service.assertCanParticipate(order, ChatParticipantType.UNIT, { id: 1 } as User),
+    ).rejects.toThrow('LEGAL_ACCEPTANCE_REQUIRED');
+    expect(unitRepository.findOne).not.toHaveBeenCalled();
   });
 
   it('connects the customer to the administrator in the unit channel', async () => {

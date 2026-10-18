@@ -203,6 +203,12 @@ const navGroups: NavGroup[] = [
         permission: unitPermissions.manageMembers,
       },
       {
+        title: "Termos e privacidade",
+        url: "/settings/legal",
+        icon: UserIcon,
+        permission: null,
+      },
+      {
         title: "Minha conta",
         url: "/settings/account",
         icon: UserIcon,

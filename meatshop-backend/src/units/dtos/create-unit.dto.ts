@@ -1,9 +1,10 @@
+import { LegalSubmissionDto } from '../../legal/dto/legal-acceptance.dto';
 import { Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 import { IsLatitude, IsLongitude, IsNumber, Min, Max } from 'class-validator';
 
-export class CreateUnitDto {
+export class CreateUnitDto extends LegalSubmissionDto {
   @Transform(({ obj, key }) => obj[key]) @IsOptional() @IsNumber() @IsLatitude() latitude?: number;
   @Transform(({ obj, key }) => obj[key])
   @IsOptional()

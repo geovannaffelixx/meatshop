@@ -25,7 +25,7 @@ export class UpdateUnitUseCase {
       throw new NotFoundException('Unit not found');
     }
 
-    this.unitAuthorizationService.assertCanManageUnit(unit, currentUser);
+    await this.unitAuthorizationService.assertCanManageUnit(unit, currentUser);
 
     const coordinates = await this.unitAddressService.coordinatesFor(dto, unit);
     Object.assign(unit, dto, coordinates);

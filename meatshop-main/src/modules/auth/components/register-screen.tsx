@@ -1,5 +1,9 @@
 'use client';
 
+import { LegalRegistration } from '@/shared/components/legal/legal-registration';
+import { ApiError } from '@/shared/lib/api-error-translations';
+import type { LegalAcceptance } from '@/shared/legal/legal-api';
+
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useRef, useState } from "react";
@@ -97,6 +101,8 @@ export function RegisterScreen() {
     password: "",
     confirmPassword: "",
   });
+  const [legalRevision, setLegalRevision] = useState(0);
+  const [legalAcceptance, setLegalAcceptance] = useState<LegalAcceptance | null>(null);
   const [withoutNumber, setWithoutNumber] = useState(false);
   const [logo, setLogo] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -211,11 +217,13 @@ export function RegisterScreen() {
     setAlertType("");
 
     if (!validate()) return;
+    if (!legalAcceptance) { setMsg("Confirme os documentos e sua autorização para representar a unidade."); setAlertType("error"); return; }
 
     setSubmitting(true);
 
     try {
       const data = await apiPost("/auth/register-unit", {
+        legal_acceptance: legalAcceptance,
         owner: {
           name: form.ownerName,
           email: form.email,
@@ -252,6 +260,7 @@ export function RegisterScreen() {
 
       setTimeout(() => router.push("/dashboard"), 1200);
     } catch (err) {
+      if (err instanceof ApiError && (err.payload as { code?: string } | undefined)?.code === "LEGAL_DOCUMENTS_CHANGED") { setLegalAcceptance(null); setLegalRevision((value) => value + 1); }
       setMsg(err instanceof Error ? err.message : "Erro ao cadastrar açougue.");
       setAlertType("error");
     } finally {
@@ -503,9 +512,10 @@ export function RegisterScreen() {
               </div>
             </div>
 
+            <LegalRegistration key={legalRevision} onChange={setLegalAcceptance} />
             <Button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || !legalAcceptance}
               className="w-full bg-[#BE2C1B] hover:bg-[#BE2C1B]/70"
             >
               {submitting && <Spinner />}

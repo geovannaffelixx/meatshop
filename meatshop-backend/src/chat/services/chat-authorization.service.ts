@@ -1,3 +1,4 @@
+import { LegalPolicyService } from '../../legal/services/legal-policy.service';
 import {
   BadRequestException,
   ForbiddenException,
@@ -26,6 +27,7 @@ const CLOSED_STATUSES = [OrderStatus.DELIVERED, OrderStatus.CANCELLED];
 @Injectable()
 export class ChatAuthorizationService {
   constructor(
+    private readonly legal: LegalPolicyService,
     @InjectRepository(Unit)
     private readonly unitRepository: Repository<Unit>,
     @InjectRepository(DeliveryPerson)
@@ -39,6 +41,7 @@ export class ChatAuthorizationService {
     participantType: ChatParticipantType,
     currentUser: User,
   ): Promise<ChatChannel> {
+    await this.legal.assertUser(currentUser.id);
     const unitAdminId = await this.getUnitAdminId(order);
 
     switch (participantType) {
