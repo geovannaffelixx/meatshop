@@ -29,11 +29,11 @@ export function RouteGuard({ children }: RouteGuardProps) {
   const redirectTo = useMemo(() => {
     if (publicRoute || !initialized || loading) return null;
     if (!user) return "/login";
-    if (!panel?.can_access) return "/no-panel-access";
 
     const requiredPermissions = getRoutePermissions(pathname);
 
     if (!requiredPermissions) return "/no-panel-access";
+    if (!panel?.can_access && !requiredPermissions.includes("AUTHENTICATED")) return "/no-panel-access";
 
     const allowed = requiredPermissions.some((permission) => {
       if (permission === "AUTHENTICATED") return true;

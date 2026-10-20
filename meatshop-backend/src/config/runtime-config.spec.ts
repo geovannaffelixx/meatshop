@@ -29,9 +29,15 @@ describe('runtime config', () => {
     ).toThrow();
   });
 
-  it('accepts a complete production configuration', () => {
-    expect(() =>
-      validateEnvironment({
+  it.each([
+    ['production', 'true'],
+    ['production', 'false'],
+    ['sandbox', 'true'],
+    ['sandbox', 'false'],
+  ])(
+    'validates a secure production server with MP_ENV=%s and PAYMENTS_ENABLED=%s',
+    (mpEnv, enabled) => {
+      const environment = {
         NODE_ENV: 'production',
         DB_TYPE: 'postgres',
         DB_HOST: 'database.internal',
@@ -42,6 +48,7 @@ describe('runtime config', () => {
         DB_SSL: 'true',
         CORS_ORIGINS: 'https://app.example.com',
         BACKEND_PUBLIC_URL: 'https://api.example.com',
+        FRONTEND_URL: 'https://app.example.com',
         COOKIE_SECURE: 'true',
         FIREBASE_SERVICE_ACCOUNT: JSON.stringify({
           project_id: 'example',
@@ -49,9 +56,12 @@ describe('runtime config', () => {
           private_key: 'private-key',
         }),
         FIREBASE_APP_CHECK_ENFORCED: 'true',
-        MP_ENV: 'production',
-        PAYMENTS_ENABLED: 'true',
-        MP_ACCESS_TOKEN: 'access-token',
+        MP_ENV: mpEnv,
+        PAYMENTS_ENABLED: enabled,
+        MP_CLIENT_ID: 'app-id',
+        MP_CLIENT_SECRET: 'client-secret',
+        MP_OAUTH_REDIRECT_URI: 'https://api.example.com/payments/sellers/oauth/callback',
+        MP_CREDENTIAL_ENCRYPTION_KEY: 'f'.repeat(32),
         MP_WEBHOOK_SECRET: 'e'.repeat(32),
         MAIL_HOST: 'smtp.example.com',
         MAIL_USER: 'mailer',
@@ -64,7 +74,20 @@ describe('runtime config', () => {
         JWT_REFRESH_SECRET: 'b'.repeat(32),
         DELIVERY_CODE_SECRET: 'c'.repeat(32),
         DELIVERY_CODE_ENCRYPTION_KEY: 'd'.repeat(32),
-      }),
-    ).not.toThrow();
-  });
+      };
+      expect(() => validateEnvironment(environment)).not.toThrow();
+      for (const invalid of [undefined, '', 'test', 'prod']) {
+        expect(() => validateEnvironment({ ...environment, MP_ENV: invalid })).toThrow(
+          'MP_ENV must be sandbox or production',
+        );
+      }
+      expect(() => validateEnvironment({ ...environment, MP_WEBHOOK_SECRET: 'short' })).toThrow();
+      expect(() =>
+        validateEnvironment({ ...environment, MP_CREDENTIAL_ENCRYPTION_KEY: 'short' }),
+      ).toThrow();
+      expect(() =>
+        validateEnvironment({ ...environment, MP_OAUTH_REDIRECT_URI: 'http://localhost' }),
+      ).toThrow();
+    },
+  );
 });

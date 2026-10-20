@@ -1,6 +1,27 @@
 groups:
   - name: meatshop-api
     rules:
+      - alert: MeatshopRefundRequiresAttention
+        expr: max(payment_refund_queue{status="FAILED"}) > 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Estorno precisa de atendimento financeiro
+      - alert: MeatshopRefundProcessingDelayed
+        expr: max(payment_oldest_pending_refund_seconds) > 900
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Estorno pendente há mais de 15 minutos
+      - alert: MeatshopPaymentMaintenanceStopped
+        expr: time() - max(payment_maintenance_last_success_timestamp_seconds) > 180
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Manutenção de pagamentos parou de atualizar
       - alert: MeatshopBackendUnavailable
         expr: up{job="meatshop-backend"} == 0
         for: 2m

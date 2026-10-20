@@ -45,6 +45,8 @@ export function ChatThread({ orderId, participantType, participantLabel, current
   const [otherIsTyping, setOtherIsTyping] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTypingRef = useRef<number | null>(null);
+  const otherTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const markRead = useCallback(async () => {
@@ -57,6 +59,8 @@ export function ChatThread({ orderId, participantType, participantLabel, current
 
   useEffect(() => {
     const controller = new AbortController();
+    lastTypingRef.current = null;
+    setOtherIsTyping(false);
     setLoading(true);
     setMessages([]);
     void apiGet(
@@ -99,12 +103,18 @@ export function ChatThread({ orderId, participantType, participantLabel, current
     });
     socket.on('chat:typing', (event: TypingEvent) => {
       const sameRoom = event.order_id === orderId && event.participant_type === participantType;
-      if (sameRoom && event.user_id !== currentUserId) setOtherIsTyping(event.typing);
+      if (!sameRoom || event.user_id === currentUserId) return;
+      if (otherTypingTimeoutRef.current) clearTimeout(otherTypingTimeoutRef.current);
+      setOtherIsTyping(event.typing);
+      if (event.typing) {
+        otherTypingTimeoutRef.current = setTimeout(() => setOtherIsTyping(false), 3000);
+      }
     });
     socket.on('chat:error', () => toast.error('Não foi possível conectar à conversa.'));
     return () => {
       controller.abort();
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      if (otherTypingTimeoutRef.current) clearTimeout(otherTypingTimeoutRef.current);
       socket.emit('chat:leave', room);
       socket.disconnect();
       socketRef.current = null;
@@ -120,10 +130,15 @@ export function ChatThread({ orderId, participantType, participantLabel, current
     const socket = socketRef.current;
     if (!socket?.connected) return;
     const payload = { order_id: orderId, participant_type: participantType };
-    socket.emit('chat:typing', { ...payload, typing: Boolean(value.trim()) });
+    const now = Date.now();
+    if (value.trim() && (lastTypingRef.current === null || now - lastTypingRef.current >= 1000)) {
+      socket.emit('chat:typing', { ...payload, typing: true });
+      lastTypingRef.current = now;
+    }
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => {
       socket.emit('chat:typing', { ...payload, typing: false });
+      lastTypingRef.current = null;
     }, 1200);
   }
 
@@ -137,6 +152,8 @@ export function ChatThread({ orderId, participantType, participantLabel, current
       })) as ChatMessage;
       setMessages((current) => mergeMessage(current, sent));
       setDraft('');
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      lastTypingRef.current = null;
       socketRef.current?.emit('chat:typing', {
         order_id: orderId, participant_type: participantType, typing: false,
       });
@@ -210,7 +227,7 @@ export function ChatThread({ orderId, participantType, participantLabel, current
               }}
               maxLength={2000}
               rows={2}
-              placeholder={`Escreva para ${participantLabel.toLowerCase()}...`}
+              placeholder={`Escreva para ${participantLabel}...`}
               className='max-h-32 min-h-11 resize-none'
               aria-label={`Mensagem para ${participantLabel}`}
             />

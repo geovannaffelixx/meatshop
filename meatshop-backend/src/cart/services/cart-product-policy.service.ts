@@ -24,6 +24,17 @@ export class CartProductPolicyService {
         message: 'Product is unavailable for purchase.',
       });
     }
+    const unit = product.unit_of_measure?.trim().toUpperCase();
+    if (
+      !Number.isFinite(desiredQuantity) ||
+      desiredQuantity <= 0 ||
+      (['UN', 'PCT'].includes(unit) && !Number.isInteger(desiredQuantity))
+    ) {
+      throw new BadRequestException({
+        code: 'INVALID_PRODUCT_QUANTITY',
+        message: 'Informe uma quantidade válida para a unidade de medida do produto.',
+      });
+    }
     const stock = await this.stocks.findOne({
       where: { product_id: productId },
     });

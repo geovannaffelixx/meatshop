@@ -2,6 +2,9 @@ export type DeliveryLocation = {
   latitude: number;
   longitude: number;
   recordedAt: string;
+  capturedAt?: string;
+  accuracy?: number | null;
+  pointId?: number;
 };
 
 export type DeliveryVerification = {
@@ -45,6 +48,7 @@ export type UnitDeliveryPerson = {
   membershipStatus: "ACTIVE" | "INACTIVE";
   user: { id: number; name: string; email: string };
   deliveryPersonId: number | null;
+  isOnline: boolean;
   profileStatus: "PENDING" | "ACTIVE" | "INACTIVE" | "NOT_REGISTERED";
   rating: number | null;
   vehicle: {
@@ -67,7 +71,7 @@ export type LiveDeliveriesSnapshot = {
   generatedAt: string;
 };
 
-export type LocationUpdatedEvent = {
+export type LocationUpdatedEvent = DeliveryLocation & {
   orderId: number;
   unitId: number;
   deliveryPersonId: number | null;

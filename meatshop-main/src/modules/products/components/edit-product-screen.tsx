@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, ImagePlus, X } from "lucide-react"
-import { apiGet, apiPatch, apiDelete, API_URL, resolveAssetUrl } from "@/shared/lib/api"
+import { apiGet, apiPatch, apiDelete, apiUpload, resolveAssetUrl } from "@/shared/lib/api"
 import { Spinner } from "@/shared/components/ui/spinner"
 import { toast } from "@/shared/lib/toast"
 import { RequiredMark } from "@/shared/components/ui/required-mark"
@@ -63,13 +63,7 @@ export function EditProductScreen() {
     const body = new FormData()
     Array.from(files).forEach((file) => body.append("files", file))
     try {
-      const response = await fetch(`${API_URL}/products/${product.id}/images`, {
-        method: "POST",
-        body,
-        credentials: "include",
-      })
-      if (!response.ok) throw new Error("Não foi possível enviar as fotos.")
-      const data = await response.json()
+      const data = await apiUpload(`/products/${product.id}/images`, body, { silent: true })
       setImages((prev) => [...prev, ...(data.images ?? [])])
       toast.success("Fotos adicionadas com sucesso.")
     } catch (err) {

@@ -1,37 +1,36 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { GlobalRole } from '../../common/enums/global-role.enum';
+import { MoreThanOrEqual, Repository } from 'typeorm';
 import { Order } from '../../orders/entities/order.entity';
-import { OrderAuthorizationService } from '../../orders/services/order-authorization.service';
+import { UnitAuthorizationService } from '../../units/services/unit-authorization.service';
 import { User } from '../../users/entities/user.entity';
 import { DeliveryTracking } from '../entities/delivery-tracking.entity';
+import { DeliveryPerson } from '../entities/delivery-person.entity';
+import { assertTrackingAccess, isTrackable } from '../services/tracking-policy';
 
 @Injectable()
 export class GetDeliveryTrackingUseCase {
   constructor(
-    @InjectRepository(Order)
-    private readonly orderRepository: Repository<Order>,
-    @InjectRepository(DeliveryTracking)
-    private readonly trackingRepository: Repository<DeliveryTracking>,
-    private readonly orderAuthorizationService: OrderAuthorizationService,
+    @InjectRepository(Order) private readonly orders: Repository<Order>,
+    @InjectRepository(DeliveryTracking) private readonly tracking: Repository<DeliveryTracking>,
+    @InjectRepository(DeliveryPerson) private readonly people: Repository<DeliveryPerson>,
+    private readonly units: UnitAuthorizationService,
   ) {}
 
-  async execute(orderId: number, currentUser: User): Promise<DeliveryTracking[]> {
-    const order = await this.orderRepository.findOne({
-      where: { id: orderId },
-    });
-    if (!order) {
-      throw new NotFoundException('Order not found');
-    }
-
-    if (order.client_id !== currentUser.id && currentUser.global_role !== GlobalRole.SUPER_ADMIN) {
-      await this.orderAuthorizationService.assertCanManageOrder(order, currentUser);
-    }
-
-    return this.trackingRepository.find({
-      where: { order_id: orderId },
-      order: { created_at: 'DESC' },
+  async execute(orderId: number, user: User): Promise<DeliveryTracking[]> {
+    const order = await this.orders.findOne({ where: { id: orderId } });
+    if (!order) throw new NotFoundException('Order not found');
+    await assertTrackingAccess(order, user, this.people, this.units);
+    if (!isTrackable(order) || order.tracking_revoked_at || !order.tracking_consent_at) return [];
+    const sender = await this.people.findOne({ where: { id: order.delivery_person_id! } });
+    if (!sender?.is_online || sender.status !== 'ACTIVE') return [];
+    return this.tracking.find({
+      where: {
+        order_id: orderId,
+        delivery_person_id: order.delivery_person_id!,
+        created_at: MoreThanOrEqual(order.tracking_consent_at),
+      },
+      order: { created_at: 'DESC', id: 'DESC' },
       take: 1,
     });
   }

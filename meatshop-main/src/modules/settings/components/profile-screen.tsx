@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { AddressPinPicker, type AddressPin } from '@/shared/components/maps/address-pin-picker';
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
 import { Spinner } from "@/shared/components/ui/spinner";
 import {
-  API_URL,
+  apiUpload,
   apiGet,
   apiPatch,
   apiPost,
@@ -26,6 +27,10 @@ type UnitForm = {
   city: string;
   state: string;
   image_url?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  coordinate_source?: string;
+  delivery_radius_km?: number;
 };
 type Day = {
   weekday: string;
@@ -71,6 +76,9 @@ function UnitSettings() {
   const [saving, setSaving] = useState(false);
   const [lookingUpCep, setLookingUpCep] = useState(false);
   const [cepResolved, setCepResolved] = useState(false);
+  const [pin,setPin] = useState<AddressPin|null>(null);
+  const [approximate,setApproximate] = useState<AddressPin|null>(null);
+  const cepVersion = useRef(0);
 
   const load = useCallback(async () => {
     if (!unitId) return;
@@ -81,6 +89,10 @@ function UnitSettings() {
         apiGet(`/units/${unitId}/business-hours`),
       ]);
       setUnit({ ...emptyUnit, ...unitData });
+      const point = unitData.latitude != null && unitData.longitude != null ?
+        {latitude:Number(unitData.latitude),longitude:Number(unitData.longitude)} : null;
+      setApproximate(point);
+      setPin(unitData.coordinate_source==='USER_PIN'?point:null);
       setDays(
         weekdays.map(
           ([weekday]) =>
@@ -108,12 +120,16 @@ function UnitSettings() {
       toast.warning("Informe um CEP válido com 8 dígitos.");
       return;
     }
+    const version=++cepVersion.current;
     setLookingUpCep(true);
     setCepResolved(false);
     try {
       const address = (await apiPost("/geocoding/resolve", {
         zip_code: cep,
       })) as CepLookup;
+      if(version!==cepVersion.current)return;
+      setPin(null);
+      setApproximate(address.latitude!=null&&address.longitude!=null?{latitude:Number(address.latitude),longitude:Number(address.longitude)}:null);
       setUnit((current) => ({
         ...current,
         zip_code: address.zip_code,
@@ -145,6 +161,8 @@ function UnitSettings() {
         neighborhood: unit.neighborhood || null,
         city: unit.city,
         state: unit.state.toUpperCase(),
+        delivery_radius_km: Number(unit.delivery_radius_km ?? 25),
+        ...(pin ?? {}),
       });
       toast.success("Dados da unidade atualizados.");
       await Promise.all([refresh(), load()]);
@@ -188,12 +206,7 @@ function UnitSettings() {
     const body = new FormData();
     body.append("file", file);
     try {
-      const response = await fetch(`${API_URL}/units/${unitId}/logo`, {
-        method: "POST",
-        body,
-        credentials: "include",
-      });
-      if (!response.ok) throw new Error("Não foi possível enviar a imagem.");
+      await apiUpload(`/units/${unitId}/logo`, body, { silent: true });
       toast.success("Logo da unidade atualizada.");
       await Promise.all([load(), refresh()]);
     } catch (error) {
@@ -214,7 +227,8 @@ function UnitSettings() {
         disabled={disabled}
         value={unit[key] ?? ""}
         onChange={(event) =>
-          setUnit((current) => ({ ...current, [key]: event.target.value }))
+          { if(['street','number','city','state','neighborhood'].includes(key))setPin(null);
+            setUnit((current) => ({ ...current, [key]: event.target.value })); }
         }
         className="mt-1 w-full rounded-md border px-3 py-2 disabled:bg-gray-100"
       />
@@ -277,6 +291,8 @@ function UnitSettings() {
                     digits.length > 5
                       ? `${digits.slice(0, 5)}-${digits.slice(5)}`
                       : digits;
+                  ++cepVersion.current;
+                  setPin(null);setApproximate(null);
                   setCepResolved(false);
                   setUnit((current) => ({ ...current, zip_code: formatted }));
                 }}
@@ -311,11 +327,19 @@ function UnitSettings() {
           {field("neighborhood", "Bairro")}
           {field("city", "Cidade")}
           {field("state", "Estado (UF)")}
+          <label className="text-sm">Raio máximo de entrega (km, distância em linha reta)
+            <input type="number" min="0.1" max="500" step="0.1" value={unit.delivery_radius_km??25}
+              className="mt-1 w-full rounded border p-2"
+              onChange={e=>setUnit(current=>({...current,delivery_radius_km:Number(e.target.value)}))} />
+          </label>
+          <div className="md:col-span-2 space-y-2">
+            <AddressPinPicker initial={pin??approximate} onConfirm={setPin} />
+            <p className="text-sm text-gray-600">{pin?'Entrada confirmada no mapa.':'Confirme a entrada da unidade para calcular a área de entrega com mais precisão.'}</p>
+          </div>
           {cepResolved && (
             <div className="md:col-span-2 flex items-center gap-2 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
               <CheckCircle2 className="h-4 w-4" />
-              Endereço encontrado. As coordenadas serão salvas automaticamente e
-              não precisam ser informadas.
+              Região do CEP encontrada. Confira o endereço e ajuste o ponto no mapa.
             </div>
           )}
           <div className="md:col-span-2">

@@ -24,6 +24,8 @@ async function bootstrap() {
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.use(helmet());
+  // Uploaded images are also displayed by the separately hosted frontend.
+  app.use('/uploads', helmet.crossOriginResourcePolicy({ policy: 'cross-origin' }));
   if (process.env.TRUST_PROXY === 'true') {
     app.set('trust proxy', 1);
   }

@@ -60,7 +60,15 @@ export function ChatScreen() {
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
-    return () => controller.abort();
+    const refreshTimer = setInterval(() => {
+      void apiGet("/orders", { signal: controller.signal, silent: true })
+        .then((data: unknown) => {
+          if (Array.isArray(data) && !controller.signal.aborted) {
+            setOrders((data as ChatOrder[]).filter((order) => unitId === null || order.unit_id === unitId));
+          }
+        }).catch(() => undefined);
+    }, 10000);
+    return () => { clearInterval(refreshTimer); controller.abort(); };
   }, [searchParams, unitId]);
 
   const filteredOrders = useMemo(() => {
@@ -196,7 +204,7 @@ export function ChatScreen() {
                 key={`${selectedOrder.id}:${channel}`}
                 orderId={selectedOrder.id}
                 participantType={channel}
-                participantLabel={channel === "UNIT" ? "Cliente" : "Entregador"}
+                participantLabel={channel === "UNIT" ? selectedOrder.client_name?.trim() || "Cliente" : selectedOrder.delivery_person_name?.trim() || "Entregador"}
                 currentUserId={user.id}
                 closed={terminalStatuses.has(selectedOrder.status)}
               />

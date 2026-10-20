@@ -3,11 +3,14 @@ import {
   IsDateString,
   IsEnum,
   IsInt,
+  IsIn,
+  IsNumber,
   IsOptional,
   IsString,
   Min,
   ValidateNested,
   ValidateIf,
+  MaxLength,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
@@ -25,7 +28,37 @@ export class UnitCouponDto {
   code: string;
 }
 
+export class UnitPaymentMethodDto {
+  @IsInt() @Min(1) unit_id: number;
+  @IsIn([
+    PaymentMethod.PIX,
+    PaymentMethod.CREDIT,
+    PaymentMethod.DEBIT,
+    PaymentMethod.CASH,
+    PaymentMethod.CARD_ON_DELIVERY,
+  ])
+  method: PaymentMethod;
+
+  @IsOptional() @IsNumber({ maxDecimalPlaces: 2 }) @Min(0) change_for?: number;
+}
+
+export function paymentForUnit(dto: CreateOrderDto, unitId: number) {
+  const selection = dto.unit_payment_methods?.find((m) => m.unit_id === unitId);
+  return {
+    method: selection?.method ?? dto.payment_method,
+    change_for: selection ? selection.change_for : dto.change_for,
+  };
+}
+
 export class CreateOrderDto {
+  @IsOptional() @IsString() @MaxLength(200) quote_token?: string;
+
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => UnitPaymentMethodDto)
+  @ArrayUnique((m: UnitPaymentMethodDto) => m.unit_id)
+  unit_payment_methods?: UnitPaymentMethodDto[];
+
   @ApiProperty({
     description: 'Order delivery type',
     enum: DeliveryType,
@@ -74,6 +107,22 @@ export class CreateOrderDto {
     description: 'Payment method selected by the customer',
   })
   @IsOptional()
-  @IsEnum(PaymentMethod)
+  @IsIn([
+    PaymentMethod.PIX,
+    PaymentMethod.CREDIT,
+    PaymentMethod.DEBIT,
+    PaymentMethod.CASH,
+    PaymentMethod.CARD_ON_DELIVERY,
+  ])
   payment_method?: PaymentMethod;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  change_for?: number;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  expected_total?: number;
 }

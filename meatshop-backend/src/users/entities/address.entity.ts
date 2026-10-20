@@ -4,6 +4,9 @@ import { User } from './user.entity';
 
 @Entity('addresses')
 export class Address {
+  @Column({ type: 'varchar', length: 20, default: 'POSTAL_CODE' })
+  coordinate_source: string;
+
   @PrimaryGeneratedColumn()
   id: number;
 

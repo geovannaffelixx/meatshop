@@ -15,9 +15,9 @@ export function getNextAction(status: string, deliveryType: string): NextAction 
     case "READY":
       return deliveryType === "PICKUP"
         ? { label: "Marcar como entregue", endpoint: "status", targetStatus: "DELIVERED" }
-        : { label: "Saiu para entrega", endpoint: "status", targetStatus: "OUT_FOR_DELIVERY" }
+        : null
     case "OUT_FOR_DELIVERY":
-      return { label: "Marcar como entregue", endpoint: "status", targetStatus: "DELIVERED" }
+      return null
     default:
       return null
   }

@@ -1,3 +1,5 @@
+import { LegalAccessGuard } from '../legal/legal-access.guard';
+import { LegalModule } from '../legal/legal.module';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
@@ -29,6 +31,7 @@ import { FirebaseExchangeUseCase } from './use-cases/firebase-exchange.use-case'
 
 @Module({
   imports: [
+    LegalModule,
     ConfigModule,
     EmailModule,
     UnitsModule,
@@ -56,6 +59,7 @@ import { FirebaseExchangeUseCase } from './use-cases/firebase-exchange.use-case'
     RolesGuard,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_GUARD, useClass: LegalAccessGuard },
     RegisterUseCase,
     RegisterUnitUseCase,
     LoginUseCase,

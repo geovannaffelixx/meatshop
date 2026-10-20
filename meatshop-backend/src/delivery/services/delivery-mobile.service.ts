@@ -1,3 +1,4 @@
+import { DeliveryPageDto } from '../dtos/delivery-page.dto';
 import {
   BadRequestException,
   ConflictException,
@@ -5,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, IsNull, Repository } from 'typeorm';
 import { OrderItem } from '../../orders/entities/order-item.entity';
 import { Order } from '../../orders/entities/order.entity';
 import { DeliveryStatus } from '../../orders/enums/delivery-status.enum';
@@ -21,6 +22,7 @@ import { UpdateVehicleDto } from '../dtos/update-vehicle.dto';
 import { DeliveryGoal, DeliveryGoalPeriod } from '../entities/delivery-goal.entity';
 import { DeliveryOfferRejection } from '../entities/delivery-offer-rejection.entity';
 import { Vehicle } from '../entities/vehicle.entity';
+import { VehicleType } from '../enums/vehicle-type.enum';
 import { DeliveryPersonStatus } from '../enums/delivery-person-status.enum';
 import { DeliveryAffiliationType } from '../enums/delivery-affiliation-type.enum';
 import { DeliveryPersonAccessService } from './delivery-person-access.service';
@@ -112,7 +114,16 @@ export class DeliveryMobileService {
     }
     person.is_online = isOnline;
     person.availability_updated_at = new Date();
-    return this.access.deliveryPersonRepository.save(person);
+    const saved = await this.access.deliveryPersonRepository.save(person);
+    if (!isOnline)
+      await this.orders.update(
+        { delivery_person_id: person.id },
+        {
+          tracking_session_id: null,
+          tracking_revoked_at: new Date(),
+        },
+      );
+    return saved;
   }
 
   async listVehicles(user: User) {
@@ -125,6 +136,11 @@ export class DeliveryMobileService {
 
   async updateVehicle(id: number, dto: UpdateVehicleDto, user: User) {
     const vehicle = await this.ownedVehicle(id, user);
+    const type = dto.type ?? vehicle.type;
+    const plate = dto.plate ?? vehicle.plate;
+    if ([VehicleType.MOTORCYCLE, VehicleType.CAR].includes(type) && !plate?.trim()) {
+      throw new BadRequestException('Informe a placa do veículo.');
+    }
     Object.assign(vehicle, dto);
     return this.vehicles.save(vehicle);
   }
@@ -140,6 +156,18 @@ export class DeliveryMobileService {
   async available(user: User) {
     const person = await this.access.getOwnActiveDeliveryPerson(user.id);
     if (!person.is_online) return [];
+    const active = await this.orders.findOne({
+      where: {
+        delivery_person_id: person.id,
+        status: In([OrderStatus.READY, OrderStatus.OUT_FOR_DELIVERY]),
+        delivery_status: In(ACTIVE_STATUSES),
+      },
+    });
+    if (active) return [];
+    const vehicle = await this.vehicles.findOne({
+      where: { delivery_person_id: person.id, is_active: true, is_enabled: true },
+    });
+    if (!vehicle) return [];
     const unitIds = await this.servedUnitIds(person);
     if (person.affiliation_type === DeliveryAffiliationType.UNIT && unitIds.length === 0) return [];
     const rejected = await this.rejections.find({
@@ -148,6 +176,7 @@ export class DeliveryMobileService {
     const rejectedIds = new Set(rejected.map((item) => item.order_id));
     const orders = await this.orders.find({
       where: {
+        delivery_person_id: IsNull(),
         delivery_type: DeliveryType.DELIVERY,
         status: OrderStatus.READY,
         delivery_status: DeliveryStatus.WAITING_DELIVERY_PERSON,
@@ -177,7 +206,7 @@ export class DeliveryMobileService {
     return order ? this.mapOrder(order, await this.orderItems(order.id)) : null;
   }
 
-  async history(user: User) {
+  async history(user: User, page = new DeliveryPageDto()) {
     const person = await this.access.getOwnDeliveryPerson(user.id);
     const orders = await this.orders.find({
       where: {
@@ -185,8 +214,9 @@ export class DeliveryMobileService {
         delivery_status: DeliveryStatus.DELIVERED,
       },
       relations: { client: true, unit: true, address: true },
-      order: { updated_at: 'DESC' },
-      take: 100,
+      order: { updated_at: 'DESC', id: 'DESC' },
+      take: page.limit,
+      skip: (page.page - 1) * page.limit,
     });
     return this.mapOrders(orders);
   }
@@ -219,29 +249,35 @@ export class DeliveryMobileService {
     return { rejected: true };
   }
 
-  async earnings(user: User) {
+  async earnings(user: User, page = new DeliveryPageDto()) {
     const person = await this.access.getOwnDeliveryPerson(user.id);
     const delivered = await this.orders.find({
       where: {
         delivery_person_id: person.id,
         delivery_status: DeliveryStatus.DELIVERED,
       },
-      order: { updated_at: 'DESC' },
-      take: 365,
+      order: { updated_at: 'DESC', id: 'DESC' },
+      take: page.limit,
+      skip: (page.page - 1) * page.limit,
     });
+    const settled = await this.orders.manager.query(
+      'SELECT order_id,paid_at FROM delivery_settlements WHERE delivery_person_id=$1 AND order_id=ANY($2::int[])',
+      [person.id, delivered.map((order) => order.id)],
+    );
     const entries = delivered.map((order) => ({
       id: String(order.id),
       delivery_person_id: String(person.id),
       order_id: String(order.id),
       label: `Order #${order.id}`,
+      paid_at: settled.find((s: { order_id: number }) => s.order_id === order.id)?.paid_at ?? null,
       amount: Number(order.delivery_fee),
       created_at: order.updated_at,
     }));
-    return {
-      entries,
-      total: entries.reduce((sum, item) => sum + item.amount, 0),
-      deliveries: entries.length,
-    };
+    const [summary] = await this.orders.manager.query(
+      'SELECT COALESCE(SUM(delivery_fee),0) AS total,COUNT(*)::int AS deliveries FROM orders WHERE delivery_person_id=$1 AND delivery_status=$2',
+      [person.id, DeliveryStatus.DELIVERED],
+    );
+    return { entries, total: Number(summary.total), deliveries: Number(summary.deliveries) };
   }
 
   async listGoals(user: User) {
@@ -335,8 +371,10 @@ export class DeliveryMobileService {
   }
 
   private mapOrder(order: Order, items: OrderItem[], includeDestination = true) {
-    const address = order.address;
+    const address = order.destination_snapshot ?? order.address;
     const unit = order.unit;
+    const pickupPoint = this.navigationPoint(unit);
+    const destinationPoint = this.navigationPoint(includeDestination ? address : null);
     return {
       id: order.id,
       client_id: String(order.client_id),
@@ -348,12 +386,14 @@ export class DeliveryMobileService {
         .join(', '),
       total_amount: Number(order.total_amount),
       delivery_fee: Number(order.delivery_fee),
+      status: order.status,
+      sharing_enabled: Boolean(order.tracking_consent_at && !order.tracking_revoked_at),
       delivery_status: order.delivery_status,
       delivery_step: order.delivery_step,
-      unit_lat: unit?.latitude === null ? null : Number(unit?.latitude),
-      unit_lng: unit?.longitude === null ? null : Number(unit?.longitude),
-      dest_lat: includeDestination && address?.latitude != null ? Number(address.latitude) : null,
-      dest_lng: includeDestination && address?.longitude != null ? Number(address.longitude) : null,
+      unit_lat: pickupPoint.latitude,
+      unit_lng: pickupPoint.longitude,
+      dest_lat: destinationPoint.latitude,
+      dest_lng: destinationPoint.longitude,
       unit_address: unit ? this.address(unit) : {},
       delivery_address: address
         ? includeDestination
@@ -368,14 +408,44 @@ export class DeliveryMobileService {
     };
   }
 
+  private navigationPoint(
+    value:
+      | {
+          latitude?: number | string | null;
+          longitude?: number | string | null;
+          coordinate_source?: string;
+        }
+      | null
+      | undefined,
+  ) {
+    if (
+      value?.coordinate_source !== 'USER_PIN' ||
+      value.latitude == null ||
+      value.longitude == null
+    ) {
+      return { latitude: null, longitude: null };
+    }
+    const latitude = Number(value.latitude);
+    const longitude = Number(value.longitude);
+    if (
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude) ||
+      Math.abs(latitude) > 90 ||
+      Math.abs(longitude) > 180
+    ) {
+      return { latitude: null, longitude: null };
+    }
+    return { latitude, longitude };
+  }
+
   private address(value: {
-    street: string | null;
-    number: string | null;
-    complement: string | null;
-    neighborhood: string | null;
-    city: string;
-    state: string;
-    zip_code: string;
+    street?: string | null;
+    number?: string | null;
+    complement?: string | null;
+    neighborhood?: string | null;
+    city?: string;
+    state?: string;
+    zip_code?: string;
   }) {
     return {
       street: value.street ?? '',

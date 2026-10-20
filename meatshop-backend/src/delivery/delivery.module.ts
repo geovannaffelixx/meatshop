@@ -1,3 +1,5 @@
+import { DeliveryAssignmentService } from './services/delivery-assignment.service';
+import { MetricsModule } from '../metrics/metrics.module';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { OrdersModule } from '../orders/orders.module';
@@ -40,6 +42,7 @@ import { DeliveryTrackingRetentionService } from './services/delivery-tracking-r
 
 @Module({
   imports: [
+    MetricsModule,
     TypeOrmModule.forFeature([
       DeliveryPerson,
       Vehicle,
@@ -59,6 +62,7 @@ import { DeliveryTrackingRetentionService } from './services/delivery-tracking-r
   ],
   controllers: [DeliveryController, DeliveryUploadController],
   providers: [
+    DeliveryAssignmentService,
     DeliveryPersonAccessService,
     RegisterDeliveryPersonUseCase,
     ApproveDeliveryPersonUseCase,

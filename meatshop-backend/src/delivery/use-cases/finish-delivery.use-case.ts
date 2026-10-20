@@ -41,6 +41,8 @@ export class FinishDeliveryUseCase {
     }
 
     await this.deliveryCodeService.verify(order, 'DELIVERY', dto.code);
+    order.tracking_session_id = null;
+    order.tracking_revoked_at = new Date();
     order.delivery_status = DeliveryStatus.DELIVERED;
     order.delivery_step = null;
 

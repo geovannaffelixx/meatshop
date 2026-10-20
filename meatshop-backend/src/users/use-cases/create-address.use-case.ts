@@ -9,47 +9,33 @@ import { UnitAddressService } from '../../units/services/unit-address.service';
 @Injectable()
 export class CreateAddressUseCase {
   constructor(
-    @InjectRepository(Address)
-    private readonly addressRepository: Repository<Address>,
-    private readonly unitAddressService: UnitAddressService,
+    @InjectRepository(Address) private readonly addresses: Repository<Address>,
+    private readonly geocoding: UnitAddressService,
   ) {}
 
-  async execute(dto: CreateAddressDto, currentUser: User): Promise<Address> {
-    const resolved = await this.unitAddressService.lookupByCep(dto.zip_code);
-    const isFirstAddress = await this.isUsersFirstAddress(currentUser.id);
-    const shouldBeDefault = isFirstAddress || dto.is_default === true;
-
-    if (shouldBeDefault) {
-      await this.unsetCurrentDefault(currentUser.id);
-    }
-
-    const address = this.addressRepository.create({
-      ...dto,
-      user_id: currentUser.id,
-      is_default: shouldBeDefault,
-      zip_code: resolved.zip_code,
-      street: resolved.street || dto.street.trim(),
-      neighborhood: resolved.neighborhood || dto.neighborhood.trim(),
-      city: resolved.city,
-      state: resolved.state,
-      latitude: resolved.latitude,
-      longitude: resolved.longitude,
+  async execute(dto: CreateAddressDto, user: User): Promise<Address> {
+    const coordinates = await this.geocoding.coordinatesFor(dto);
+    return this.addresses.manager.transaction(async (manager) => {
+      await manager.findOne(User, { where: { id: user.id }, lock: { mode: 'pessimistic_write' } });
+      const first = (await manager.count(Address, { where: { user_id: user.id } })) === 0;
+      const isDefault = first || dto.is_default === true;
+      if (isDefault)
+        await manager.update(
+          Address,
+          { user_id: user.id, is_default: true },
+          { is_default: false },
+        );
+      return manager.save(
+        Address,
+        manager.create(Address, {
+          ...dto,
+          ...coordinates,
+          user_id: user.id,
+          is_default: isDefault,
+          state: dto.state.trim().toUpperCase(),
+          zip_code: dto.zip_code.replace(/\D/g, ''),
+        }),
+      );
     });
-
-    return this.addressRepository.save(address);
-  }
-
-  private async isUsersFirstAddress(userId: number): Promise<boolean> {
-    const count = await this.addressRepository.count({
-      where: { user_id: userId },
-    });
-    return count === 0;
-  }
-
-  private async unsetCurrentDefault(userId: number): Promise<void> {
-    await this.addressRepository.update(
-      { user_id: userId, is_default: true },
-      { is_default: false },
-    );
   }
 }

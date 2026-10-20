@@ -34,7 +34,13 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       throw err ?? new UnauthorizedException('Invalid or expired token');
     }
     const path = context.switchToHttp().getRequest<{ path?: string }>().path;
-    if (!user.profile_complete && !JwtAuthGuard.incompleteProfilePaths.has(path ?? '')) {
+    if (
+      !user.profile_complete &&
+      !path?.startsWith('/legal/') &&
+      !path?.startsWith('/support') &&
+      !path?.startsWith('/auth/') &&
+      !JwtAuthGuard.incompleteProfilePaths.has(path ?? '')
+    ) {
       throw new ForbiddenException({
         code: 'PROFILE_INCOMPLETE',
         message: 'Complete the required profile fields before continuing.',

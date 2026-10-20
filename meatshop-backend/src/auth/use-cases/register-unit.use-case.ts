@@ -1,3 +1,5 @@
+import type { EntityManager } from 'typeorm';
+import { LegalPolicyService } from '../../legal/services/legal-policy.service';
 import { ConflictException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
@@ -8,6 +10,7 @@ import { AppProfile } from '../../common/enums/app-profile.enum';
 import { LocalRole } from '../../common/enums/local-role.enum';
 import { EmailService } from '../../email/email.service';
 import { verifyEmailTemplate } from '../../email/templates/verify-email.template';
+import { UnitAddressService } from '../../units/services/unit-address.service';
 import { Unit } from '../../units/entities/unit.entity';
 import { UserUnit } from '../../units/entities/user-unit.entity';
 import { User } from '../../users/entities/user.entity';
@@ -21,6 +24,7 @@ export class RegisterUnitUseCase {
   private readonly logger = new Logger(RegisterUnitUseCase.name);
 
   constructor(
+    private readonly legal: LegalPolicyService,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(Unit)
@@ -30,31 +34,24 @@ export class RegisterUnitUseCase {
     private readonly emailService: EmailService,
     private readonly configService: ConfigService,
     private readonly loginUseCase: LoginUseCase,
+    private readonly geocoding: UnitAddressService,
   ) {}
 
   async execute(dto: RegisterUnitDto) {
+    await this.legal.validate(dto.legal_acceptance, true);
     await this.ensureEmailIsUnique(dto.owner.email);
     await this.ensureCpfIsUnique(dto.owner.cpf);
     await this.ensureCnpjIsUnique(dto.unit.cnpj);
 
+    const coordinates = await this.geocoding.coordinatesFor(dto.unit);
     const { user, unit } = await this.dataSource.transaction(async (manager) => {
-      const user = await manager.save(
-        User,
-        manager.create(User, {
-          name: dto.owner.name,
-          email: dto.owner.email.toLowerCase().trim(),
-          cpf: dto.owner.cpf,
-          password_hash: await bcrypt.hash(dto.owner.password, SALT_ROUNDS),
-          app_profile: AppProfile.CLIENT,
-          profile_complete: true,
-          email_verification_token: crypto.randomBytes(32).toString('hex'),
-        }),
-      );
+      const user = await this.createOwner(manager, dto.owner);
 
       const unit = await manager.save(
         Unit,
         manager.create(Unit, {
           ...dto.unit,
+          ...coordinates,
           admin_id: user.id,
         }),
       );
@@ -68,6 +65,7 @@ export class RegisterUnitUseCase {
         }),
       );
 
+      await this.legal.record(manager, user.id, dto.legal_acceptance, unit.id);
       return { user, unit };
     });
 
@@ -78,6 +76,24 @@ export class RegisterUnitUseCase {
     const tokens = await this.loginUseCase.execute(user);
 
     return { ...tokens, unit };
+  }
+
+  private async createOwner(
+    manager: EntityManager,
+    owner: RegisterUnitDto['owner'],
+  ): Promise<User> {
+    return manager.save(
+      User,
+      manager.create(User, {
+        name: owner.name,
+        email: owner.email.toLowerCase().trim(),
+        cpf: owner.cpf,
+        password_hash: await bcrypt.hash(owner.password, SALT_ROUNDS),
+        app_profile: AppProfile.CLIENT,
+        profile_complete: true,
+        email_verification_token: crypto.randomBytes(32).toString('hex'),
+      }),
+    );
   }
 
   private async ensureEmailIsUnique(email: string): Promise<void> {

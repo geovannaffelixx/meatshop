@@ -6,6 +6,15 @@ type ApiErrorPayload = {
 };
 
 const ERROR_CODE_MESSAGES: Record<string, string> = {
+  LEGAL_ACCEPTANCE_REQUIRED: "Leia e confirme os documentos vigentes para continuar.",
+  UNIT_LEGAL_ACCEPTANCE_REQUIRED: "O responsável da unidade precisa confirmar os termos do estabelecimento.",
+  LEGAL_DOCUMENTS_CHANGED: "Os documentos foram atualizados. Consulte e confirme as novas versões.",
+  LEGAL_DOCUMENTS_UNAVAILABLE: "Documentos temporariamente indisponíveis. Tente novamente.",
+  DELIVERY_LOCATION_REQUIRED: "Confirme no mapa a localização da unidade e do endereço de entrega.",
+  DELIVERY_LOCATION_CONFIRMATION_REQUIRED: "Marque a entrada da unidade e o endereço de entrega no mapa.",
+  OUTSIDE_DELIVERY_AREA: "O endereço está fora da área de entrega desta unidade.",
+  PIN_TOO_FAR: "O ponto está muito distante do CEP. Confira o endereço e o mapa.",
+  CEP_PROVIDER_UNAVAILABLE: "A consulta de CEP está indisponível. Preencha o endereço e marque o ponto no mapa.",
   EMAIL_ALREADY_EXISTS: "Já existe uma conta cadastrada com este e-mail.",
   CPF_ALREADY_EXISTS: "Já existe uma conta cadastrada com este CPF.",
   CNPJ_ALREADY_EXISTS: "Já existe um açougue cadastrado com este CNPJ.",
@@ -21,6 +30,13 @@ const ERROR_CODE_MESSAGES: Record<string, string> = {
   COUPON_USER_LIMIT_REACHED: "Você já atingiu o limite de uso deste cupom.",
   COUPON_MINIMUM_NOT_REACHED: "O valor mínimo exigido por este cupom não foi atingido.",
   COUPON_INVALID_PERIOD: "O período de validade do cupom é inválido.",
+  AI_RATE_LIMITED: "Muitas solicitações para a IA. Aguarde um momento e tente novamente.",
+  AI_UPSTREAM_UNAVAILABLE: "O auxiliar está indisponível no momento. Tente novamente em instantes.",
+  AI_NOT_CONFIGURED: "O auxiliar ainda não está configurado neste ambiente.",
+  AI_INVALID_RESPONSE: "A IA retornou um rascunho inválido. Tente gerar novamente.",
+  AI_INVALID_PRODUCTS: "Um dos produtos selecionados não pertence à unidade ou está inativo.",
+  AI_INVALID_DRAFT: "O rascunho associou um produto não autorizado e foi rejeitado.",
+  AI_UNSAFE_INPUT: "Essa solicitação não pode ser processada pelo auxiliar.",
 };
 
 const STATUS_MESSAGES: Record<number, string> = {

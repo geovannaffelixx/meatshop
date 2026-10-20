@@ -10,6 +10,15 @@ import { Order } from '../../orders/entities/order.entity';
 
 @Entity('delivery_tracking')
 export class DeliveryTracking {
+  @Column({ type: 'int', nullable: true })
+  delivery_person_id: number | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  sample_id: string | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  captured_at: Date | null;
+
   @PrimaryGeneratedColumn()
   id: number;
 

@@ -1,0 +1,764 @@
+---
+config:
+  layout: elk
+---
+erDiagram
+    direction TB
+
+    Address {
+        int id PK
+        int user_id FK
+        string street
+        string number
+        string complement "opcional"
+        string neighborhood
+        string city
+        string state
+        string zip_code
+        string label "Casa | Trabalho | Outro"
+        boolean is_default
+        decimal latitude "opcional"
+        decimal longitude "opcional"
+        string coordinate_source
+    }
+
+    AiConversation {
+        uuid id PK
+        int user_id FK
+        datetime created_at "com fuso horario"
+        datetime expires_at "com fuso horario"
+    }
+
+    AiMessage {
+        bigint id PK
+        uuid conversation_id FK
+        string role
+        text content
+        datetime created_at "com fuso horario"
+    }
+
+    AiRateLimit {
+        int user_id PK,FK
+        datetime window_started_at "com fuso horario"
+        int request_count
+        datetime updated_at "com fuso horario"
+    }
+
+    AuditLog {
+        int id PK
+        int user_id FK "opcional"
+        string action
+        string entity
+        string entity_id "opcional"
+        text old_data "opcional"
+        text new_data "opcional"
+        datetime created_at
+        int unit_id FK "opcional"
+        string actor_type
+        string actor_identifier "opcional"
+        string description
+        string outcome "SUCCESS | FAILURE"
+        string method "opcional"
+        string path "opcional"
+        string correlation_id "opcional"
+        string ip_address "opcional"
+        string user_agent "opcional"
+        int status_code "opcional"
+    }
+
+    BusinessHours {
+        int id PK
+        int unit_id FK
+        string weekday "SUNDAY | MONDAY | TUESDAY | WEDNESDAY | THURSDAY | FRIDAY | SATURDAY"
+        time opening_time "opcional"
+        time closing_time "opcional"
+        boolean is_open
+    }
+
+    Cart {
+        int id PK
+        int user_id FK,UK
+        datetime created_at
+    }
+
+    CartItem {
+        int id PK
+        int cart_id FK
+        int product_id FK
+        decimal quantity
+        decimal unit_price
+    }
+
+    Category {
+        int id PK
+        string name
+        string description "opcional"
+        boolean active
+        int unit_id FK
+    }
+
+    Chat {
+        int id PK
+        int order_id FK
+        int sender_id FK
+        int receiver_id FK
+        string participant_type "UNIT | DELIVERY_PERSON | UNIT_DELIVERY_PERSON"
+        text message
+        datetime sent_at
+        datetime read_at "opcional"
+    }
+
+    CouponRedemption {
+        int id PK
+        int coupon_id FK
+        int user_id FK
+        int order_id FK,UK
+        int unit_id FK
+        decimal discount_amount
+        string status "REDEEMED | RELEASED"
+        datetime redeemed_at
+        datetime released_at "opcional"
+    }
+
+    CouponUnit {
+        int coupon_id PK,FK
+        int unit_id PK,FK
+    }
+
+    Coupon {
+        int id PK
+        string code UK
+        datetime expires_at
+        boolean active
+        datetime created_at
+        string name
+        text description "opcional"
+        string type "PLATFORM | UNIT"
+        int unit_id FK "opcional"
+        string discount_type "PERCENTAGE | FIXED"
+        decimal discount_amount
+        decimal maximum_discount "opcional"
+        decimal minimum_order_value
+        datetime starts_at
+        int total_usage_limit "opcional"
+        int usage_limit_per_user "opcional"
+        int current_usage_count
+        int created_by FK
+        datetime updated_at
+    }
+
+    DeliveryGoal {
+        int id PK
+        int delivery_person_id FK
+        string period "daily | weekly | monthly"
+        decimal target
+        datetime updated_at
+    }
+
+    DeliveryOfferRejection {
+        int id PK
+        int delivery_person_id FK
+        int order_id FK
+        jsonb reasons
+        datetime created_at
+    }
+
+    DeliveryPerson {
+        int id PK
+        int user_id FK,UK
+        string vehicle "MOTORCYCLE | BIKE | CAR | ON_FOOT"
+        string status "PENDING | ACTIVE | INACTIVE"
+        decimal average_rating "opcional"
+        datetime created_at
+        boolean is_online
+        datetime availability_updated_at "opcional"
+        string affiliation_type "AUTONOMOUS | UNIT"
+    }
+
+    DeliveryReview {
+        int id PK
+        int order_id FK,UK
+        int client_id FK
+        int delivery_person_id FK
+        int rating
+        text comment "opcional"
+        datetime created_at
+    }
+
+    DeliverySettlement {
+        int order_id PK,FK
+        int delivery_person_id FK
+        int actor_id FK
+        decimal amount
+        string reference
+        datetime paid_at "com fuso horario"
+    }
+
+    DeliveryTracking {
+        int id PK
+        int order_id FK
+        decimal latitude
+        decimal longitude
+        datetime created_at
+        decimal accuracy "opcional"
+        int delivery_person_id "opcional"
+        uuid sample_id "opcional"
+        datetime captured_at "opcional; com fuso horario"
+    }
+
+    Expense {
+        int id PK
+        string supplierName
+        text type
+        decimal amount
+        decimal discount
+        decimal paidAmount
+        text postedAt "opcional"
+        text paidAt "opcional"
+        text paymentMethod
+        text notes "opcional"
+        text cpfCnpj "opcional"
+        text supplierId "opcional"
+        datetime createdAt
+        datetime updatedAt
+        int unit_id FK
+    }
+
+    LegalAcceptance {
+        int id PK
+        int user_id FK
+        int document_id FK
+        int unit_id FK "opcional"
+        string channel
+        boolean authorized_representative
+        datetime accepted_at "com fuso horario"
+    }
+
+    LegalDocument {
+        int id PK
+        string kind
+        string version
+        string title
+        text content
+        string content_hash
+        datetime published_at "com fuso horario"
+        boolean is_current
+    }
+
+    Notification {
+        int id PK
+        int user_id FK
+        text message
+        string type "ORDER | DELIVERY | PROMOTION | SYSTEM"
+        boolean read
+        datetime created_at
+        int unit_id FK "opcional"
+        string title
+        string action_url "opcional"
+    }
+
+    OrderItem {
+        int id PK
+        int order_id FK
+        int product_id FK
+        decimal quantity
+        decimal unit_price
+        jsonb product_snapshot "opcional"
+    }
+
+    OrderStatusHistory {
+        int id PK
+        int order_id FK
+        int updated_by FK "opcional"
+        string status "PENDING | CONFIRMED | PREPARING | READY | OUT_FOR_DELIVERY | DELIVERED | CANCELLED"
+        datetime created_at
+    }
+
+    Order {
+        int id PK
+        int client_id FK
+        int unit_id FK
+        int delivery_person_id FK "opcional"
+        datetime order_date
+        string status "PENDING | CONFIRMED | PREPARING | READY | OUT_FOR_DELIVERY | DELIVERED | CANCELLED"
+        string delivery_status "opcional; WAITING_DELIVERY_PERSON | PICKUP | ON_THE_WAY | DELIVERED"
+        string delivery_step "opcional; PICKUP | DELIVERING"
+        decimal total_amount
+        decimal subtotal
+        decimal discount_amount
+        decimal delivery_fee
+        text cancellation_reason "opcional"
+        datetime cancelled_at "opcional"
+        string cancelled_by "opcional; CLIENT | UNIT | SYSTEM"
+        int address_id FK "opcional"
+        int coupon_id FK "opcional"
+        datetime scheduled_delivery_date "opcional"
+        boolean is_scheduled
+        string delivery_type "DELIVERY | PICKUP"
+        string payment_status "PENDING | PAID | REJECTED | REFUNDED | CANCELLED | PARTIALLY_REFUNDED | CHARGED_BACK"
+        datetime updated_at
+        string pickup_code_hash "opcional"
+        string delivery_code_hash "opcional"
+        datetime pickup_code_expires_at "opcional"
+        datetime delivery_code_expires_at "opcional"
+        int pickup_code_attempts
+        int delivery_code_attempts
+        datetime pickup_code_locked_until "opcional"
+        datetime delivery_code_locked_until "opcional"
+        datetime pickup_verified_at "opcional"
+        datetime delivery_verified_at "opcional"
+        uuid checkout_id "opcional"
+        string delivery_code_ciphertext "opcional"
+        jsonb destination_snapshot "opcional"
+        uuid tracking_session_id "opcional"
+        int tracking_consent_user_id "opcional"
+        datetime tracking_consent_at "opcional; com fuso horario"
+        datetime tracking_revoked_at "opcional; com fuso horario"
+        datetime payment_due_at "opcional; com fuso horario"
+        decimal change_for "opcional"
+        string checkout_request_hash "opcional"
+    }
+
+    PaymentManualEvent {
+        uuid id PK
+        int order_id FK
+        int actor_id FK
+        string kind
+        decimal amount
+        string reference
+        datetime created_at "com fuso horario"
+    }
+
+    PaymentNotification {
+        int id PK
+        int order_id FK
+        string status
+        datetime sent_at "opcional; com fuso horario"
+        datetime next_attempt_at "com fuso horario"
+        datetime created_at "com fuso horario"
+    }
+
+    PaymentOAuthState {
+        string state_hash PK
+        int unit_id FK
+        int user_id FK
+        text verifier
+        datetime expires_at "com fuso horario"
+    }
+
+    PaymentRefundAttempt {
+        bigint id PK
+        uuid refund_id FK
+        uuid attempt_key
+        string provider_id "opcional"
+        string status
+        int actor_id FK "opcional"
+        datetime created_at "com fuso horario"
+    }
+
+    PaymentRefund {
+        uuid id PK
+        string payment_id
+        int unit_id FK
+        int order_id FK "opcional"
+        decimal amount
+        string status
+        string reason
+        int requested_by "opcional"
+        string provider_id "opcional"
+        int attempts
+        datetime next_attempt_at "com fuso horario"
+        string last_error "opcional"
+        datetime created_at "com fuso horario"
+        datetime updated_at "com fuso horario"
+        uuid attempt_key
+        int retry_requested_by FK "opcional"
+    }
+
+    PaymentSellerEvent {
+        bigint id PK
+        int unit_id FK
+        int actor_id FK "opcional"
+        string kind
+        string collector_id "opcional"
+        datetime created_at "com fuso horario"
+    }
+
+    PaymentSeller {
+        int unit_id PK,FK
+        string collector_id
+        text access_token
+        text refresh_token
+        datetime expires_at "com fuso horario"
+        boolean enabled
+        string last_error "opcional"
+        datetime updated_at "com fuso horario"
+    }
+
+    PaymentTransaction {
+        string id PK
+        int unit_id FK
+        string reference
+        string status
+        decimal amount
+        decimal refunded_amount
+        datetime provider_updated_at "opcional; com fuso horario"
+        datetime updated_at "com fuso horario"
+    }
+
+    Payment {
+        int id PK
+        int order_id FK,UK
+        string method "opcional; Pix | Credit | Debit | Cash | Bank Slip | Mercado Pago Balance | Card on Delivery"
+        string status "PENDING | PAID | REJECTED | REFUNDED | CANCELLED | PARTIALLY_REFUNDED | CHARGED_BACK"
+        datetime payment_date "opcional; com fuso horario"
+        string transaction_id "opcional"
+        string mp_preference_id "opcional"
+        string mp_status_detail "opcional"
+        datetime mp_last_event_at "opcional"
+        datetime created_at
+        datetime updated_at
+        string mp_checkout_url "opcional"
+        decimal refunded_amount
+        decimal fee_amount
+        string refund_status "opcional"
+        datetime reconcile_after "com fuso horario"
+        int received_by "opcional"
+        string receipt_reference "opcional"
+        string payment_reference "opcional"
+    }
+
+    ProductImage {
+        int id PK
+        int product_id FK
+        string image_url
+        datetime created_at
+    }
+
+    Product {
+        int id PK
+        string name
+        text description "opcional"
+        decimal price
+        string unit_of_measure
+        boolean active
+        int unit_id FK
+        int category_id FK
+        string brand "opcional"
+        string image_url "opcional"
+    }
+
+    Promotion {
+        int id PK
+        int unit_id FK
+        int product_id FK
+        string title
+        text description "opcional"
+        decimal discount_percentage "opcional"
+        decimal promotional_price "opcional"
+        datetime starts_at
+        datetime ends_at
+        boolean active
+        datetime created_at
+        int created_by FK
+    }
+
+    RecipeIngredient {
+        int id PK
+        int recipe_id FK
+        string name
+        string quantity
+        string tip "opcional"
+    }
+
+    RecipeProduct {
+        int id PK
+        int recipe_id FK
+        int product_id FK
+        string call_to_action
+    }
+
+    RecipeStep {
+        int id PK
+        int recipe_id FK
+        int step_number
+        text description
+        text tip "opcional"
+    }
+
+    Recipe {
+        int id PK
+        int unit_id FK
+        string title
+        text description "opcional"
+        string image_url "opcional"
+        string video_url "opcional"
+        string tag "opcional"
+        boolean active
+        int display_order
+        datetime week_start "opcional"
+        datetime created_at
+    }
+
+    RefreshToken {
+        int id PK
+        text token_hash
+        int user_id FK
+        boolean revoked
+        datetime expires_at
+        datetime created_at
+    }
+
+    Review {
+        int id PK
+        int order_id FK
+        int client_id FK
+        int unit_id FK
+        int product_id FK "opcional"
+        int rating
+        text comment "opcional"
+        datetime created_at
+    }
+
+    Sale {
+        int id PK
+        string name
+        string image_url
+        decimal discountValue
+        boolean active
+        datetime starts_at "opcional"
+        datetime ends_at "opcional"
+        datetime created_at
+        datetime updated_at
+    }
+
+    SavedPaymentMethod {
+        int id PK
+        int user_id FK
+        string mp_card_id
+        string mp_customer_id
+        string brand
+        string last_four
+        string holder_name
+        string expiration_month
+        string expiration_year
+        boolean is_default
+        datetime created_at
+    }
+
+    Stock {
+        int id PK
+        int product_id FK,UK
+        decimal quantity
+        datetime updated_at
+        decimal min_quantity
+    }
+
+    SupportAttachment {
+        int id PK
+        int message_id FK
+        string file_url
+        string original_name
+        string mime_type
+        int size_bytes
+        datetime created_at
+    }
+
+    SupportMessage {
+        int id PK
+        int ticket_id FK
+        int sender_id FK
+        text message "opcional"
+        datetime created_at
+    }
+
+    SupportTicket {
+        int id PK
+        int user_id FK
+        string subject
+        text description "opcional"
+        string status "OPEN | ANSWERED | CLOSED | WAITING_SUPPORT | WAITING_USER"
+        text response "opcional"
+        int responded_by FK "opcional"
+        datetime responded_at "opcional"
+        datetime created_at
+        int unit_id FK "opcional"
+        int order_id FK "opcional"
+        int assigned_to FK "opcional"
+        string category "ACCOUNT | BILLING | ORDER | TECHNICAL | SUGGESTION | OTHER"
+        string priority "LOW | NORMAL | HIGH | URGENT"
+        datetime closed_at "opcional"
+        datetime last_message_at
+        datetime updated_at
+    }
+
+    Unit {
+        int id PK
+        string name
+        string cnpj UK
+        string city
+        string zip_code
+        string state
+        int admin_id FK
+        datetime created_at
+        string street "opcional"
+        string number "opcional"
+        string complement "opcional"
+        string neighborhood "opcional"
+        decimal latitude "opcional"
+        decimal longitude "opcional"
+        string image_url "opcional"
+        string cover_url "opcional"
+        string coordinate_source
+        decimal delivery_radius_km
+    }
+
+    UserDeviceToken {
+        int id PK
+        int user_id FK
+        string fcm_token UK
+        string platform
+        datetime created_at
+        datetime last_seen_at
+        string app_version "opcional"
+    }
+
+    UserUnit {
+        int id PK
+        int user_id FK
+        int unit_id FK
+        string local_role "OWNER | MANAGER | OPERATOR | DELIVERY"
+        string status "ACTIVE | INACTIVE"
+        datetime created_at
+    }
+
+    User {
+        int id PK
+        string name "opcional"
+        string email UK
+        string cpf UK "opcional"
+        string password_hash "opcional"
+        string global_role "SUPER_ADMIN | USER"
+        string app_profile "opcional; CLIENT | DELIVERY | BOTH"
+        int failed_login_attempts
+        datetime locked_until "opcional"
+        boolean email_verified
+        string email_verification_token "opcional"
+        string password_reset_token "opcional"
+        datetime password_reset_expires_at "opcional"
+        datetime created_at
+        string avatar_url "opcional"
+        string firebase_uid "opcional"
+        string phone "opcional"
+        boolean profile_complete
+        boolean is_active
+    }
+
+    Vehicle {
+        int id PK
+        int delivery_person_id FK
+        string type "MOTORCYCLE | BIKE | CAR | SCOOTER"
+        string model
+        string plate
+        string color
+        int year
+        boolean is_active
+        datetime created_at
+        boolean is_enabled
+        jsonb photo_urls
+    }
+
+    User ||--o{ Address : "user_id"
+    User ||--o{ AiConversation : "user_id"
+    AiConversation ||--o{ AiMessage : "conversation_id"
+    User ||--o| AiRateLimit : "user_id"
+    Unit o|--o{ AuditLog : "unit_id"
+    User o|--o{ AuditLog : "user_id"
+    Unit ||--o{ BusinessHours : "unit_id"
+    User ||--o| Cart : "user_id"
+    Cart ||--o{ CartItem : "cart_id"
+    Product ||--o{ CartItem : "product_id"
+    Unit ||--o{ Category : "unit_id"
+    Order ||--o{ Chat : "order_id"
+    User ||--o{ Chat : "receiver_id"
+    User ||--o{ Chat : "sender_id"
+    Coupon ||--o{ CouponRedemption : "coupon_id"
+    Order ||--o| CouponRedemption : "order_id"
+    Unit ||--o{ CouponRedemption : "unit_id"
+    User ||--o{ CouponRedemption : "user_id"
+    Coupon ||--o{ CouponUnit : "coupon_id"
+    Unit ||--o{ CouponUnit : "unit_id"
+    User ||--o{ Coupon : "created_by"
+    Unit o|--o{ Coupon : "unit_id"
+    DeliveryPerson ||--o{ DeliveryGoal : "delivery_person_id"
+    DeliveryPerson ||--o{ DeliveryOfferRejection : "delivery_person_id"
+    Order ||--o{ DeliveryOfferRejection : "order_id"
+    User ||--o| DeliveryPerson : "user_id"
+    User ||--o{ DeliveryReview : "client_id"
+    DeliveryPerson ||--o{ DeliveryReview : "delivery_person_id"
+    Order ||--o| DeliveryReview : "order_id"
+    User ||--o{ DeliverySettlement : "actor_id"
+    DeliveryPerson ||--o{ DeliverySettlement : "delivery_person_id"
+    Order ||--o| DeliverySettlement : "order_id"
+    Order ||--o{ DeliveryTracking : "order_id"
+    Unit ||--o{ Expense : "unit_id"
+    LegalDocument ||--o{ LegalAcceptance : "document_id"
+    Unit o|--o{ LegalAcceptance : "unit_id"
+    User ||--o{ LegalAcceptance : "user_id"
+    Unit o|--o{ Notification : "unit_id"
+    User ||--o{ Notification : "user_id"
+    Order ||--o{ OrderItem : "order_id"
+    Product ||--o{ OrderItem : "product_id"
+    Order ||--o{ OrderStatusHistory : "order_id"
+    User o|--o{ OrderStatusHistory : "updated_by"
+    Address o|--o{ Order : "address_id"
+    User ||--o{ Order : "client_id"
+    Coupon o|--o{ Order : "coupon_id"
+    DeliveryPerson o|--o{ Order : "delivery_person_id"
+    Unit ||--o{ Order : "unit_id"
+    User ||--o{ PaymentManualEvent : "actor_id"
+    Order ||--o{ PaymentManualEvent : "order_id"
+    Order ||--o{ PaymentNotification : "order_id"
+    Unit ||--o{ PaymentOAuthState : "unit_id"
+    User ||--o{ PaymentOAuthState : "user_id"
+    User o|--o{ PaymentRefundAttempt : "actor_id"
+    PaymentRefund ||--o{ PaymentRefundAttempt : "refund_id"
+    Order o|--o{ PaymentRefund : "order_id"
+    User o|--o{ PaymentRefund : "retry_requested_by"
+    Unit ||--o{ PaymentRefund : "unit_id"
+    User o|--o{ PaymentSellerEvent : "actor_id"
+    Unit ||--o{ PaymentSellerEvent : "unit_id"
+    Unit ||--o| PaymentSeller : "unit_id"
+    Unit ||--o{ PaymentTransaction : "unit_id"
+    Order ||--o| Payment : "order_id"
+    Product ||--o{ ProductImage : "product_id"
+    Category ||--o{ Product : "category_id"
+    Unit ||--o{ Product : "unit_id"
+    User ||--o{ Promotion : "created_by"
+    Product ||--o{ Promotion : "product_id"
+    Unit ||--o{ Promotion : "unit_id"
+    Recipe ||--o{ RecipeIngredient : "recipe_id"
+    Product ||--o{ RecipeProduct : "product_id"
+    Recipe ||--o{ RecipeProduct : "recipe_id"
+    Recipe ||--o{ RecipeStep : "recipe_id"
+    Unit ||--o{ Recipe : "unit_id"
+    User ||--o{ RefreshToken : "user_id"
+    User ||--o{ Review : "client_id"
+    Order ||--o{ Review : "order_id"
+    Product o|--o{ Review : "product_id"
+    Unit ||--o{ Review : "unit_id"
+    User ||--o{ SavedPaymentMethod : "user_id"
+    Product ||--o| Stock : "product_id"
+    SupportMessage ||--o{ SupportAttachment : "message_id"
+    User ||--o{ SupportMessage : "sender_id"
+    SupportTicket ||--o{ SupportMessage : "ticket_id"
+    User o|--o{ SupportTicket : "assigned_to"
+    Order o|--o{ SupportTicket : "order_id"
+    User o|--o{ SupportTicket : "responded_by"
+    Unit o|--o{ SupportTicket : "unit_id"
+    User ||--o{ SupportTicket : "user_id"
+    User ||--o{ Unit : "admin_id"
+    User ||--o{ UserDeviceToken : "user_id"
+    Unit ||--o{ UserUnit : "unit_id"
+    User ||--o{ UserUnit : "user_id"
+    DeliveryPerson ||--o{ Vehicle : "delivery_person_id"

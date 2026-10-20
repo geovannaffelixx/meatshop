@@ -16,6 +16,8 @@ package-lock.json.old
 .next
 out
 coverage
+cypress
+cypress.geo.config.cjs
 build
 dist
 

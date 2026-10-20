@@ -35,7 +35,7 @@ export class ChatController {
     status: 403,
     description: 'User is not a participant in this conversation',
   })
-  @ApiResponse({ status: 404, description: 'Order not found' })
+  @ApiResponse({ status: 404, description: 'Pedido não encontrado.' })
   @Get()
   list(
     @Param('orderId', ParseIntPipe) orderId: number,

@@ -11,6 +11,8 @@ describe('route audit info', () => {
 
   it('audits authentication and restricts queryable tables', () => {
     expect(isExcludedPath('/auth/login')).toBe(false);
+    expect(isExcludedPath('/ai/chat')).toBe(true);
+    expect(isExcludedPath('/ai/recipe-drafts')).toBe(true);
     expect(tableNameFor('users; DROP TABLE users')).toBeNull();
     expect(tableNameFor('products')).toBe('products');
   });

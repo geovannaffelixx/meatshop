@@ -6,6 +6,7 @@ import {
 export const publicRoutes = [
   "/",
   "/login",
+  "/payment-return",
   "/register",
   "/forgot-password",
   "/reset-password",
@@ -32,7 +33,8 @@ export const routePermissions = {
   "/finance": [unitPermissions.viewFinance],
   "/audit": ["SUPER_ADMIN"],
   "/notifications": [unitPermissions.viewDashboard],
-  "/settings/account": [unitPermissions.viewDashboard],
+  "/settings/account": ["AUTHENTICATED"],
+  "/settings/legal": ["AUTHENTICATED"],
   "/settings/security": [unitPermissions.viewDashboard],
   "/settings/unit": [unitPermissions.manageUnit],
   "/settings/users": [unitPermissions.manageMembers],

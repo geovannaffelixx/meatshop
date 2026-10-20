@@ -10,6 +10,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { apiGet, apiPost } from "@/shared/lib/api";
 import { toast } from "@/shared/lib/toast";
+import { APP_VERSION } from "@/shared/config/app-version";
 
 export function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -57,8 +58,9 @@ export function LoginScreen() {
         />
       </section>
 
-      <section className="flex min-h-screen items-center justify-center bg-white px-5 py-10 sm:px-8">
-        <div className="w-full max-w-md">
+      <section className="flex min-h-screen flex-col bg-white px-5 py-6 sm:px-8 sm:py-8">
+        <div className="flex w-full flex-1 items-center justify-center py-4">
+          <div className="w-full max-w-md">
           <div className="mb-8 text-center">
             <h2 className="text-3xl font-bold tracking-tight text-slate-950">
               Bem-vindo
@@ -115,13 +117,18 @@ export function LoginScreen() {
             </button>
           </form>
 
-          <p className="mt-7 text-center text-sm text-slate-600">
-            Não tem uma conta?{" "}
-            <Link href="/register" className="font-semibold text-red-700 hover:underline">
-              Criar unidade
-            </Link>
-          </p>
+            <p className="mt-7 text-center text-sm text-slate-600">
+              Não tem uma conta?{" "}
+              <Link href="/register" className="font-semibold text-red-700 hover:underline">
+                Criar unidade
+              </Link>
+            </p>
+          </div>
         </div>
+
+        <p className="mt-4 text-center text-xs font-medium text-slate-400">
+          Versão {APP_VERSION}
+        </p>
       </section>
     </main>
   );

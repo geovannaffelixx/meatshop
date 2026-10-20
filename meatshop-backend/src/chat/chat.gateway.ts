@@ -62,13 +62,13 @@ export class ChatGateway implements OnGatewayConnection {
         where: { id: payload.sub },
       });
       if (!user?.is_active) {
-        throw new Error('User not found or inactive');
+        throw new Error('Usuário não encontrado ou inativo.');
       }
       client.data.user = user;
       client.emit('chat:ready', { user_id: user.id });
     } catch (error) {
       this.logger.warn(`Chat connection rejected: ${(error as Error).message}`);
-      client.emit('chat:error', { message: 'Unauthorized' });
+      client.emit('chat:error', { message: 'Acesso não autorizado.' });
       client.disconnect(true);
     }
   }
@@ -87,7 +87,7 @@ export class ChatGateway implements OnGatewayConnection {
     @MessageBody() dto: ChatTypingDto,
   ): Promise<void> {
     try {
-      this.assertThrottle(client, 'typing', 250);
+      if (!this.allowEvent(client, 'typing', 250)) return;
       const order = await this.loadOrder(dto.order_id);
       await this.chatAuthorizationService.assertCanParticipate(
         order,
@@ -185,7 +185,7 @@ export class ChatGateway implements OnGatewayConnection {
       where: { id: orderId },
     });
     if (!order) {
-      throw new Error('Order not found');
+      throw new Error('Pedido não encontrado.');
     }
     return order;
   }
@@ -200,15 +200,21 @@ export class ChatGateway implements OnGatewayConnection {
       .map((cookie: string): string[] => cookie.trim().split('='))
       .find((parts: string[]) => parts[0] === 'access_token');
 
-    if (!accessCookie?.[1]) throw new Error('Missing authentication token');
+    if (!accessCookie?.[1]) throw new Error('Token de autenticação ausente.');
     return decodeURIComponent(accessCookie.slice(1).join('='));
   }
 
   private assertThrottle(client: Socket, action: string, intervalMs: number): void {
+    if (!this.allowEvent(client, action, intervalMs))
+      throw new WsException('Muitos eventos em tempo real. Aguarde e tente novamente.');
+  }
+
+  private allowEvent(client: Socket, action: string, intervalMs: number): boolean {
     const now = Date.now();
     const key = `chat:${action}`;
-    const previous = Number(client.data[key] ?? 0);
-    if (now - previous < intervalMs) throw new WsException('Too many realtime events');
+    const previous = client.data[key] as number | undefined;
+    if (previous !== undefined && now - previous < intervalMs) return false;
     client.data[key] = now;
+    return true;
   }
 }

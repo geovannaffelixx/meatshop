@@ -1,3 +1,4 @@
+import { LegalSubmissionDto } from '../../legal/dto/legal-acceptance.dto';
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsEmail,
@@ -10,7 +11,7 @@ import {
 } from 'class-validator';
 import { AppProfile } from '../../common/enums/app-profile.enum';
 
-export class RegisterDto {
+export class RegisterDto extends LegalSubmissionDto {
   @ApiProperty({
     description: 'User full name',
     example: 'John Smith',

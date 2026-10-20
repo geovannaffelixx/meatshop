@@ -26,4 +26,7 @@ export class OrderItem {
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   unit_price: number;
+
+  @Column({ type: 'jsonb', nullable: true })
+  product_snapshot: { name: string; unit_of_measure: string; image_url: string | null } | null;
 }

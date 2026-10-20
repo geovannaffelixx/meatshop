@@ -1,8 +1,9 @@
+import { LegalPolicyService } from '../../legal/services/legal-policy.service';
 import { ConflictException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { RegisterDto } from '../dto/register.dto';
 import { ConfigService } from '@nestjs/config';
@@ -16,6 +17,8 @@ export class RegisterUseCase {
   private readonly logger = new Logger(RegisterUseCase.name);
 
   constructor(
+    private readonly legal: LegalPolicyService,
+    private readonly dataSource: DataSource,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
 
@@ -25,6 +28,7 @@ export class RegisterUseCase {
   ) {}
 
   async execute(dto: RegisterDto): Promise<{ message: string }> {
+    await this.legal.validate(dto.legal_acceptance, false);
     await this.ensureEmailIsUnique(dto.email);
     await this.ensureCpfIsUnique(dto.cpf);
     const user = this.userRepository.create({
@@ -37,12 +41,21 @@ export class RegisterUseCase {
       email_verification_token: crypto.randomBytes(32).toString('hex'),
     });
 
-    await this.userRepository.save(user);
+    await this.dataSource.transaction(async (manager) => {
+      await manager.save(User, user);
+      await this.legal.record(manager, user.id, dto.legal_acceptance);
+    });
+    await this.sendVerificationEmail(user);
+
+    return { message: 'Account created. Please verify your email.' };
+  }
+
+  private async sendVerificationEmail(user: User): Promise<void> {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
 
     const verificationUrl = `${frontendUrl}/verify-email?token=${user.email_verification_token}`;
 
-    const template = verifyEmailTemplate(user.name ?? dto.name, verificationUrl);
+    const template = verifyEmailTemplate(user.name ?? '', verificationUrl);
 
     try {
       await this.emailService.sendEmail({
@@ -57,8 +70,6 @@ export class RegisterUseCase {
         error instanceof Error ? error.stack : undefined,
       );
     }
-
-    return { message: 'Account created. Please verify your email.' };
   }
 
   private async ensureEmailIsUnique(email: string): Promise<void> {

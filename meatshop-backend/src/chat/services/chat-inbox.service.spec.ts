@@ -66,4 +66,15 @@ describe('ChatInboxService', () => {
     const result = await service.unreadCount(client);
     expect(result).toEqual({ count: 1 });
   });
+  it('uses the delivery profile without mixing customer conversations', async () => {
+    jest.mocked(deliveryPeople.findOne).mockResolvedValue({ id: 19 } as DeliveryPerson);
+    await service.list(client, { profile: 'DELIVERY' });
+    expect(orders.find).toHaveBeenCalledWith(
+      expect.objectContaining({ where: [{ delivery_person_id: 19 }] }),
+    );
+  });
+  it('does not query every order when an unauthorized profile has no accessible scope', async () => {
+    await expect(service.list(client, { profile: 'UNIT' })).resolves.toMatchObject({ total: 0 });
+    expect(orders.find).not.toHaveBeenCalled();
+  });
 });

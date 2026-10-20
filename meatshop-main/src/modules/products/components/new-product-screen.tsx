@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, ImagePlus, X } from "lucide-react"
-import { apiGet, apiPatch, apiPost, API_URL } from "@/shared/lib/api"
+import { apiGet, apiPatch, apiPost, apiUpload } from "@/shared/lib/api"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
 import { Spinner } from "@/shared/components/ui/spinner"
 import { toast } from "@/shared/lib/toast"
@@ -72,12 +72,7 @@ export function NewProductScreen() {
     const body = new FormData()
     stagedImages.forEach((file) => body.append("files", file))
     try {
-      const response = await fetch(`${API_URL}/products/${productId}/images`, {
-        method: "POST",
-        body,
-        credentials: "include",
-      })
-      if (!response.ok) throw new Error("Não foi possível enviar as fotos do produto.")
+      await apiUpload(`/products/${productId}/images`, body, { silent: true })
     } catch (error) {
       toast.error(
         error instanceof Error

@@ -14,6 +14,8 @@
 # Testes e cobertura
 # ==============================
 /coverage
+/cypress/screenshots
+/cypress/videos
 *.lcov
 
 # ==============================

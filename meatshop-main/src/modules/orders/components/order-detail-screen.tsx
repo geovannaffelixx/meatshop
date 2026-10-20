@@ -1,5 +1,6 @@
 "use client"
 
+import { PaymentActions } from "@/modules/finance/components/payment-management"
 import React, { useEffect, useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, MessageSquare } from "lucide-react"
@@ -45,13 +46,14 @@ type Order = {
   delivery_fee: number
   delivery_type: string
   payment_status: string
+  delivery_paid_at:string|null
   is_scheduled: boolean
   scheduled_delivery_date: string | null
   cancellation_reason: string | null
   cancelled_at: string | null
   cancelled_by: string | null
   items: OrderItem[]
-  payment: { method: string | null; status: string; payment_date: string | null } | null
+  payment: { method: string | null; status: string; payment_date: string | null; refunded_amount: number; fee_amount: number; refund_status: string | null;transaction_id:string|null;receipt_reference:string|null } | null
 }
 
 interface OrderDetailScreenProps {
@@ -147,7 +149,8 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
       </div>
     )
 
-  const nextAction = getNextAction(order.status, order.delivery_type)
+  const allowsPreparation = ["PAID","PARTIALLY_REFUNDED"].includes(order.payment_status) || (order.payment_status === "PENDING" && ["Cash", "Card on Delivery"].includes(order.payment?.method ?? ""))
+  const nextAction = allowsPreparation ? getNextAction(order.status, order.delivery_type) : null
 
   return (
     <div className="page-surface p-4 sm:p-6">
@@ -203,6 +206,8 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
           </div>
         </div>
 
+        {order.payment && <PaymentActions order={{...order,...order.payment,payment_status:order.payment_status,status:order.status}} onChange={loadOrder} />}
+        {!allowsPreparation && order.status !== "CANCELLED" && <p className="text-amber-700">O preparo depende da confirmação do pagamento.</p>}
         <div className="overflow-x-auto">
           <table className="data-table">
             <caption className="sr-only">Itens do pedido</caption>
@@ -270,6 +275,14 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
                 Conversar sobre o pedido
               </Link>
             </Button>
+            {order.delivery_type === "DELIVERY" && ["READY", "OUT_FOR_DELIVERY"].includes(order.status) && (
+              <p className="text-sm text-slate-600">
+                {order.status === "READY"
+                  ? "A retirada deve ser liberada com o código apresentado pelo entregador na área de Entregas."
+                  : "A conclusão deve ser confirmada pelo entregador com o código informado pelo cliente."}
+                {order.status === "READY" && <Link href="/deliveries" className="ml-1 font-semibold text-red-700 underline">Abrir entregas</Link>}
+              </p>
+            )}
             {nextAction && (
               <Button
                 disabled={working}

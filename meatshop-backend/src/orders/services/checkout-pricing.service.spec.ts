@@ -55,17 +55,23 @@ describe('CheckoutPricingService', () => {
     expect(service.amounts(100, 0, DeliveryType.PICKUP).delivery_fee).toBe(0);
   });
 
-  it('uses the configured fallback when delivery coordinates are unavailable', () => {
+  it('blocks delivery with unknown coordinates but still permits pickup', () => {
     const unit = { latitude: null, longitude: null } as unknown as Unit;
     const address = { latitude: -16.3285, longitude: -48.9534 } as Address;
 
-    expect(service.deliveryFee(unit, address, DeliveryType.DELIVERY)).toBe(8.5);
+    expect(() => service.deliveryFee(unit, address, DeliveryType.DELIVERY)).toThrow(
+      BadRequestException,
+    );
     expect(service.deliveryFee(unit, address, DeliveryType.PICKUP)).toBe(0);
   });
 
   it('calculates distance delivery fee from unit and destination coordinates', () => {
-    const unit = { latitude: -16.3285, longitude: -48.9534 } as Unit;
-    const address = { latitude: -16.3385, longitude: -48.9634 } as Address;
+    const unit = { latitude: -16.3285, longitude: -48.9534, coordinate_source: 'USER_PIN' } as Unit;
+    const address = {
+      latitude: -16.3385,
+      longitude: -48.9634,
+      coordinate_source: 'USER_PIN',
+    } as Address;
     const weekday = new Date('2026-09-02T15:00:00-03:00');
 
     expect(service.deliveryFee(unit, address, DeliveryType.DELIVERY, weekday)).toBe(4.9);

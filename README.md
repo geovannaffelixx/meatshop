@@ -3,11 +3,18 @@
 > [!IMPORTANT]
 > Para subir banco, migrations, backend e frontend após um clone novo, use o guia oficial [SETUP.md](./SETUP.md). O ambiente Docker é autocontido e não exige criar arquivos `.env`.
 
+Termos e privacidade 3.2.0: consulte [arquitetura, contratos e implantação](./docs/TERMS_AND_PRIVACY.md).
+
+Pagamentos: consulte [configuração e homologação Mercado Pago](./docs/PAYMENTS_SETUP.md).
+
 ```powershell
 git clone --branch develop --single-branch https://github.com/geovannaffelixx/meatshop.git
 cd meatshop
 docker compose up -d --build
 ```
+
+O assistente de IA também requer o repositório `meatshop-chatbot` clonado ao lado deste e a
+variável local `GROQ_API_KEY`. Consulte [SETUP.md](./SETUP.md).
 
 ![Build Status](https://img.shields.io/github/actions/workflow/status/geovannaffelixx/meatshop/ci.yml?label=CI%2FCD&logo=github)
 ![Último Commit](https://img.shields.io/github/last-commit/geovannaffelixx/meatshop)
@@ -82,7 +89,7 @@ Local: `/meatshop-main`
 
 ### ✔ Infraestrutura
 
-- Docker Compose (db + backend + frontend + prometheus + grafana)
+- Docker Compose (db + migrations + backend + frontend + chatbot + prometheus + grafana)
 - Prometheus: scrape `backend:3001/metrics`
 - Grafana: dashboards prontos para métricas HTTP
 

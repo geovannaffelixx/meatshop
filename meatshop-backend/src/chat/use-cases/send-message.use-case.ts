@@ -32,7 +32,7 @@ export class SendMessageUseCase {
       where: { id: orderId },
     });
     if (!order) {
-      throw new NotFoundException('Order not found');
+      throw new NotFoundException('Pedido não encontrado.');
     }
 
     const channel = await this.chatAuthorizationService.resolveChannelForSending(
@@ -56,13 +56,13 @@ export class SendMessageUseCase {
       relations: ['sender', 'receiver'],
     });
     if (!chat) {
-      throw new NotFoundException('Message not found after creation');
+      throw new NotFoundException('Não foi possível recuperar a mensagem enviada.');
     }
 
     await this.sendNotificationUseCase
       .execute({
         user_id: channel.receiverId,
-        message: `New message about order #${orderId}: ${dto.message}`,
+        message: `Nova mensagem sobre o pedido #${orderId}: ${dto.message}`,
         type: NotificationType.ORDER,
       })
       .catch((error) =>

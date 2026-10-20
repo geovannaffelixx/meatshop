@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { FirebaseService } from '../../integrations/firebase/firebase.service';
@@ -10,11 +10,20 @@ export class DeleteAccountUseCase {
     private readonly firebase: FirebaseService,
   ) {}
 
-  async execute(userId: number): Promise<void> {
+  async execute(userId: number, firebaseIdToken?: string): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
       const user = await manager.findOne(User, { where: { id: userId } });
       if (!user) throw new NotFoundException('User not found');
-      if (user.firebase_uid) await this.firebase.deleteUser(user.firebase_uid);
+      if (user.firebase_uid) {
+        if (!firebaseIdToken)
+          throw new UnauthorizedException('Confirme sua identidade para excluir a conta.');
+        const identity = await this.firebase.verifyIdToken(firebaseIdToken);
+        const age = Math.floor(Date.now() / 1000) - identity.auth_time;
+        if (identity.uid !== user.firebase_uid || !Number.isFinite(age) || age < -30 || age > 300) {
+          throw new UnauthorizedException('Confirme sua identidade novamente.');
+        }
+        await this.firebase.deleteUser(user.firebase_uid);
+      }
 
       await manager.update(
         'addresses',
@@ -32,6 +41,17 @@ export class DeleteAccountUseCase {
           longitude: null,
           is_default: false,
         },
+      );
+      await manager.query(
+        'DELETE FROM delivery_tracking WHERE order_id IN (SELECT id FROM orders WHERE client_id=$1 OR delivery_person_id IN (SELECT id FROM delivery_persons WHERE user_id=$1))',
+        [userId],
+      );
+      await manager.query('UPDATE orders SET destination_snapshot=NULL WHERE client_id=$1', [
+        userId,
+      ]);
+      await manager.query(
+        'UPDATE orders SET tracking_session_id=NULL, tracking_revoked_at=now() WHERE client_id=$1 OR tracking_consent_user_id=$1',
+        [userId],
       );
       await manager.delete('refresh_tokens', { user_id: userId });
       await manager.delete('user_device_tokens', { user_id: userId });

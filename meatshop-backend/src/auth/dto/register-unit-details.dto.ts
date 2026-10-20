@@ -1,7 +1,16 @@
+import { Transform } from 'class-transformer';
+import { IsNumber, IsLatitude, IsLongitude } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 export class RegisterUnitDetailsDto {
+  @Transform(({ obj, key }) => obj[key]) @IsOptional() @IsNumber() @IsLatitude() latitude?: number;
+  @Transform(({ obj, key }) => obj[key])
+  @IsOptional()
+  @IsNumber()
+  @IsLongitude()
+  longitude?: number;
+
   @ApiProperty({
     description: 'Butcher shop name',
     example: 'Joe Butcher Shop',

@@ -10,8 +10,40 @@ const SENSITIVE_KEYS = [
   'password_reset_token',
   'authorization',
   'secret',
+  'session_id',
+  'tracking_session_id',
+  'latitude',
+  'longitude',
+  'lat',
+  'lng',
+  'dest_lat',
+  'dest_lng',
+  'unit_lat',
+  'unit_lng',
+  'street',
+  'number',
+  'complement',
+  'zip_code',
 ];
-const PERSONAL_KEYS = ['cpf', 'cnpj', 'email', 'phone', 'telephone'];
+const PERSONAL_KEYS = [
+  'cpf',
+  'cnpj',
+  'email',
+  'phone',
+  'telephone',
+  'latitude',
+  'longitude',
+  'lat',
+  'lng',
+  'dest_lat',
+  'dest_lng',
+  'unit_lat',
+  'unit_lng',
+  'street',
+  'number',
+  'complement',
+  'zip_code',
+];
 const MAX_STRING_LENGTH = 500;
 
 export function sanitizePayload(value: unknown, depth = 0): unknown {

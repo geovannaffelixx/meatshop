@@ -1,3 +1,5 @@
+import { LegalDocument } from '../legal/entities/legal-document.entity';
+import { LegalAcceptance } from '../legal/entities/legal-acceptance.entity';
 import * as dotenv from 'dotenv';
 import { DataSource } from 'typeorm';
 import { User } from '../users/entities/user.entity';
@@ -41,6 +43,9 @@ import { Unit } from '../units/entities/unit.entity';
 import { UserUnit } from '../units/entities/user-unit.entity';
 import { DeliveryGoal } from '../delivery/entities/delivery-goal.entity';
 import { DeliveryOfferRejection } from '../delivery/entities/delivery-offer-rejection.entity';
+import { AiConversation } from '../ai/entities/ai-conversation.entity';
+import { AiMessage } from '../ai/entities/ai-message.entity';
+import { AiRateLimit } from '../ai/entities/ai-rate-limit.entity';
 
 dotenv.config({
   path: process.env.DOTENV_CONFIG_PATH || '.env',
@@ -59,6 +64,8 @@ export default new DataSource({
     ? [`${__dirname}/../entities/*.js`]
     : [
         User,
+        LegalDocument,
+        LegalAcceptance,
         Order,
         Expense,
         RefreshTokenEntity,
@@ -99,6 +106,9 @@ export default new DataSource({
         Chat,
         DeliveryGoal,
         DeliveryOfferRejection,
+        AiConversation,
+        AiMessage,
+        AiRateLimit,
       ],
   migrations: [`${__dirname}/migrations/*.{ts,js}`],
   synchronize: false,

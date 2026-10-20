@@ -59,8 +59,8 @@ export class ChatMessageResponseDto {
     dto.order_id = entity.order_id;
     dto.sender_id = entity.sender_id;
     dto.receiver_id = entity.receiver_id;
-    dto.sender_name = entity.sender?.name ?? `User #${entity.sender_id}`;
-    dto.receiver_name = entity.receiver?.name ?? `User #${entity.receiver_id}`;
+    dto.sender_name = entity.sender?.name ?? `Usuário #${entity.sender_id}`;
+    dto.receiver_name = entity.receiver?.name ?? `Usuário #${entity.receiver_id}`;
     dto.participant_type = entity.participant_type;
     dto.message = entity.message;
     dto.sent_at = entity.sent_at;

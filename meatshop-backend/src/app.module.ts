@@ -1,3 +1,5 @@
+import { LegalDocument } from './legal/entities/legal-document.entity';
+import { LegalAcceptance } from './legal/entities/legal-acceptance.entity';
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import type { TypeOrmModuleOptions } from '@nestjs/typeorm';
@@ -45,6 +47,9 @@ import { SavedPaymentMethod } from './saved-payment-methods/entities/saved-payme
 import { BusinessHours } from './units/entities/business-hours.entity';
 import { Unit } from './units/entities/unit.entity';
 import { UserUnit } from './units/entities/user-unit.entity';
+import { AiConversation } from './ai/entities/ai-conversation.entity';
+import { AiMessage } from './ai/entities/ai-message.entity';
+import { AiRateLimit } from './ai/entities/ai-rate-limit.entity';
 
 import { LoggerModule } from './common/logger/logger.module';
 import { MetricsModule } from './metrics/metrics.module';
@@ -76,6 +81,7 @@ import { AppCheckMiddleware } from './integrations/firebase/app-check.middleware
 import { ScheduleModule } from '@nestjs/schedule';
 import { RateLimitMiddleware } from './common/middleware/rate-limit.middleware';
 import { StorageModule } from './storage/storage.module';
+import { AiModule } from './ai/ai.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -109,6 +115,8 @@ import { StorageModule } from './storage/storage.module';
               : config.get<string>('DB_PATH') || 'data/meatshop.db',
           entities: [
             User,
+            LegalDocument,
+            LegalAcceptance,
             Order,
             Expense,
             RefreshTokenEntity,
@@ -146,6 +154,9 @@ import { StorageModule } from './storage/storage.module';
             Notification,
             UserDeviceToken,
             Chat,
+            AiConversation,
+            AiMessage,
+            AiRateLimit,
           ],
           autoLoadEntities: true,
           synchronize: config.get<string>('DB_SYNCHRONIZE') === 'true',
@@ -181,6 +192,7 @@ import { StorageModule } from './storage/storage.module';
     SeedModule,
     MercadoPagoModule,
     SearchModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [AppService, AllExceptionsFilter, RateLimitMiddleware],

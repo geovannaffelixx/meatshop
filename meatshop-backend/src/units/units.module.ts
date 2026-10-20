@@ -1,3 +1,4 @@
+import { LegalModule } from '../legal/legal.module';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../users/entities/user.entity';
@@ -27,6 +28,7 @@ import { ListPublicUnitsUseCase } from './use-cases/list-public-units.use-case';
 
 @Module({
   imports: [
+    LegalModule,
     TypeOrmModule.forFeature([Unit, UserUnit, BusinessHours, User, DeliveryPerson, Review]),
   ],
   controllers: [UnitsController, UnitsUploadController],

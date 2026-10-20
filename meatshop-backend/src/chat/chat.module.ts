@@ -1,3 +1,4 @@
+import { LegalModule } from '../legal/legal.module';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from '../auth/auth.module';
@@ -19,6 +20,7 @@ import { MarkChatReadUseCase } from './use-cases/mark-chat-read.use-case';
 
 @Module({
   imports: [
+    LegalModule,
     TypeOrmModule.forFeature([Chat, Order, Unit, UserUnit, DeliveryPerson, User]),
     AuthModule,
     NotificationsModule,

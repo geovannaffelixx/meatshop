@@ -8,24 +8,33 @@ type Props = {
   payments: PaymentBreakdown[]
 }
 
-export function FinanceSummary({ revenueTotal, expenseTotal, payments }: Props) {
+export function FinanceSummary({
+  revenueTotal,
+  expenseTotal,
+  payments,
+}: Props) {
   const comparisonBase = Math.max(revenueTotal, expenseTotal, 1)
   const revenuePercentage = (revenueTotal / comparisonBase) * 100
   const expensePercentage = (expenseTotal / comparisonBase) * 100
-  const paymentTotal = payments.reduce((total, payment) => total + payment.value, 0)
+  const paymentTotal = payments.reduce(
+    (total, payment) => total + payment.value,
+    0,
+  )
 
   const formatCurrency = (v: number) =>
     v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 
   return (
-    <div className="bg-white/70 backdrop-blur-md rounded-lg p-6 shadow-lg">
-      <h3 className="mb-4 text-2xl font-bold text-slate-950">Resultados</h3>
+    <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+      <h3 className="mb-5 text-lg font-semibold text-slate-950">Resultados</h3>
 
       <div className="space-y-4">
         <div>
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-700">Receitas</span>
-            <span className="text-sm font-semibold text-gray-700">{formatCurrency(revenueTotal)}</span>
+            <span className="text-sm font-semibold text-gray-700">
+              {formatCurrency(revenueTotal)}
+            </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-8 overflow-hidden">
             <div
@@ -42,7 +51,9 @@ export function FinanceSummary({ revenueTotal, expenseTotal, payments }: Props) 
         <div>
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-700">Despesas</span>
-            <span className="text-sm font-semibold text-gray-700">{formatCurrency(expenseTotal)}</span>
+            <span className="text-sm font-semibold text-gray-700">
+              {formatCurrency(expenseTotal)}
+            </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-8 overflow-hidden">
             <div
@@ -59,21 +70,27 @@ export function FinanceSummary({ revenueTotal, expenseTotal, payments }: Props) 
         <div className="pt-2">
           <div className="text-sm text-gray-600">
             Saldo:{" "}
-            <span className={`font-semibold ${revenueTotal - expenseTotal >= 0 ? "text-green-600" : "text-red-600"}`}>
+            <span
+              className={`font-semibold ${revenueTotal - expenseTotal >= 0 ? "text-green-600" : "text-red-600"}`}
+            >
               {formatCurrency(revenueTotal - expenseTotal)}
             </span>
           </div>
         </div>
 
         <div className="pt-4">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Formas de pagamento</h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-2">
+            Formas de pagamento
+          </h4>
           <div className="grid grid-cols-1 gap-2">
             {payments.map((p) => {
               const percentage = (p.value / Math.max(paymentTotal, 1)) * 100
               return (
                 <div key={p.name} className="flex items-center gap-3">
-                  <div className="w-28 text-sm text-gray-700">{p.name}</div>
-                  <div className="flex-1 bg-gray-200 h-3 rounded-full overflow-hidden">
+                  <div className="w-24 shrink-0 text-xs text-slate-600 sm:w-28 sm:text-sm">
+                    {p.name}
+                  </div>
+                  <div className="min-w-0 flex-1 bg-gray-200 h-3 rounded-full overflow-hidden">
                     <div
                       style={{
                         width: `${Math.min(percentage, 100)}%`,
@@ -82,8 +99,11 @@ export function FinanceSummary({ revenueTotal, expenseTotal, payments }: Props) 
                       }}
                     />
                   </div>
-                  <div className="w-28 text-right text-sm font-semibold">
-                    {p.value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                  <div className="shrink-0 text-right text-xs font-semibold tabular-nums sm:text-sm">
+                    {p.value.toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    })}
                   </div>
                 </div>
               )

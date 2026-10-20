@@ -10,6 +10,12 @@ import { User } from '../../users/entities/user.entity';
 
 @Entity('units')
 export class Unit {
+  @Column({ type: 'varchar', length: 20, default: 'POSTAL_CODE' })
+  coordinate_source: string;
+
+  @Column({ type: 'numeric', precision: 7, scale: 2, default: 25 })
+  delivery_radius_km: number;
+
   @PrimaryGeneratedColumn()
   id: number;
 

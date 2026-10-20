@@ -1,6 +1,24 @@
 # Releases do painel web
 
-## 3.0.0 — Qualidade e segurança para produção
+## 3.2.0 — Termos e privacidade
+
+Trabalho preparado em 18 de outubro de 2026.
+
+A tela de Termos e privacidade segue o padrão visual das configurações, com cards de documentos, histórico organizado e destaques nas cores da aplicação.
+
+A versão inclui confirmação explícita dos documentos legais, identificação das versões e histórico de registros. Os responsáveis por unidades confirmam também sua autorização de representação e os termos aplicáveis ao estabelecimento. Contas existentes passam pela regularização, preservando acesso a documentos, suporte e opções da conta.
+
+A implantação deve coordenar a migration, a API, o painel web e o aplicativo 3.2.0. O contato provisório do criador é viniciusrodri0809@gmail.com. Esta preparação local não representa publicação ou deploy.
+
+## 3.1.0 — Experiência e estabilidade
+
+Trabalho realizado em 15 de outubro de 2026.
+
+O painel passa a exigir os fluxos de código para retirada e conclusão das entregas, filtra entregadores aptos para atribuição e identifica os participantes do chat pelos nomes cadastrados. Avaliações exibem apenas o primeiro nome e um ícone de pessoa.
+
+## 3.0.0 — Integração e pagamentos
+
+Trabalho anterior consolidado até 13 de outubro de 2026.
 
 O painel foi atualizado para Next.js 16, recebeu auditoria automatizada de dependências, testes do controle de acesso, headers de segurança e validações obrigatórias no CI. A navegação, o catálogo, as entregas ao vivo, o chat e os módulos administrativos continuam integrados ao backend, agora com imagens otimizadas e build standalone validado.
 

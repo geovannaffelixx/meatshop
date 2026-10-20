@@ -58,6 +58,19 @@ export class FirebaseExchangeUseCase {
     }
 
     this.assertAccountCanAuthenticate(user);
+    if (user.email !== email) {
+      const owner = await this.users.findOne({ where: { email } });
+      if (owner && owner.id !== user.id) {
+        throw new ConflictException({
+          code: 'EMAIL_ALREADY_EXISTS',
+          message: 'Este e-mail já está vinculado a outra conta.',
+        });
+      }
+      user.email = email;
+      user.email_verified = true;
+      user.email_verification_token = null;
+      await this.users.save(user);
+    }
     const tokens = await this.login.execute(user);
     return { ...tokens, user: UserResponseDto.fromEntity(user) };
   }

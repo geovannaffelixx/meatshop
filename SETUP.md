@@ -6,6 +6,7 @@ Este é o fluxo recomendado para apresentação e avaliação do projeto. Ele so
 - migrations do banco;
 - backend NestJS;
 - frontend Next.js.
+- chatbot FastAPI conectado somente ao backend.
 
 Não é necessário instalar Node.js, executar `npm install` ou criar arquivos `.env`. As variáveis locais de demonstração já estão declaradas no `docker-compose.yml`.
 
@@ -23,7 +24,8 @@ O script valida o projeto, injeta a credencial somente no processo Docker e nunc
 
 - Git;
 - Docker Desktop aberto e com o engine em execução;
-- portas `3000`, `3001` e `5433` disponíveis.
+- repositório `meatshop-chatbot` clonado ao lado deste repositório;
+- portas `3000`, `3001`, `5433` e `8000` disponíveis.
 
 Confira rapidamente:
 
@@ -36,7 +38,9 @@ docker compose version
 
 ```powershell
 git clone --branch develop --single-branch https://github.com/geovannaffelixx/meatshop.git
+git clone --branch develop --single-branch https://github.com/VIN1RM/meatshop-chatbot.git
 cd meatshop
+$env:GROQ_API_KEY="sua-chave-local"
 docker compose up -d --build
 ```
 
@@ -53,6 +57,7 @@ O resultado esperado é:
 - `meatshop-postgres`: `healthy`;
 - `meatshop-backend`: `healthy`;
 - `meatshop-frontend`: `healthy`;
+- `meatshop-chatbot`: `healthy`;
 - `meatshop-migrator`: `Exited (0)` — isso significa que as migrations terminaram corretamente.
 
 ## Endereços
@@ -64,6 +69,7 @@ O resultado esperado é:
 | API | http://localhost:3001 |
 | Swagger | http://localhost:3001/docs |
 | Health check | http://localhost:3001/health |
+| Chatbot (health local) | http://localhost:8000/health/live |
 
 ## Preparar a demonstração
 
@@ -110,6 +116,7 @@ Ver apenas backend ou frontend:
 ```powershell
 docker compose logs -f backend
 docker compose logs -f frontend
+docker compose logs -f chatbot
 ```
 
 Validar a configuração antes de subir:
@@ -121,7 +128,7 @@ docker compose config --quiet
 Se alguma porta estiver ocupada no Windows:
 
 ```powershell
-Get-NetTCPConnection -State Listen -LocalPort 3000,3001,5433
+Get-NetTCPConnection -State Listen -LocalPort 3000,3001,5433,8000
 ```
 
 ## Recomeçar com banco vazio
@@ -154,9 +161,14 @@ O `docker-compose.yml` é autocontido para desenvolvimento:
 - banco interno: `db:5432`;
 - API acessada pelo navegador: `http://localhost:3001`;
 - frontend: `http://localhost:3000`;
+- chatbot interno: `http://chatbot:8000`;
 - migrations automáticas antes do backend;
 - `DB_SYNCHRONIZE=false`, garantindo que o schema seja controlado apenas pelas migrations;
 - integrações externas (Mercado Pago, e-mail e Firebase) ficam desativadas quando não configuradas e não impedem o restante da aplicação de funcionar.
+
+O chatbot sobe sem gravar segredos no Compose, mas só gera respostas quando `GROQ_API_KEY`
+está definida no terminal. A chave interna entre backend e chatbot já possui um valor exclusivo
+de desenvolvimento e nunca deve ser reutilizada em produção.
 
 Para criar pelo painel uma conta que também fará login no aplicativo (inclusive entregadores vinculados), informe `FIREBASE_SERVICE_ACCOUNT` como o JSON da conta de serviço em uma única linha antes de executar o Compose. A ausência dessa credencial não impede a inicialização, mas esse cadastro específico retorna indisponibilidade para evitar uma conta parcialmente criada somente no PostgreSQL.
 
