@@ -32,7 +32,7 @@ import { AlertTriangle, ArrowRight, PackageOpen, ShoppingBag, TrendingUp } from 
 import Autoplay from "embla-carousel-autoplay"
 
 const chartConfig = {
-  vendas: { label: "Receita", color: "#525252" },
+  vendas: { label: "Receita confirmada", color: "#525252" },
 } satisfies ChartConfig
 
 const WEEKDAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"]
@@ -123,7 +123,7 @@ export function DashboardScreen() {
           <Card className="border-0 shadow-sm">
             <CardContent className="flex items-center justify-between p-5">
               <div>
-                <p className="text-sm text-slate-500">Receita no mês</p>
+                <p className="text-sm text-slate-500">Recebimentos líquidos no mês</p>
                 <strong className="mt-1 block text-2xl text-slate-950">
                   {formatCurrency(dashboard?.revenueThisMonth)}
                 </strong>
@@ -220,9 +220,9 @@ export function DashboardScreen() {
           <Card className="h-80 min-w-0 overflow-hidden border-0 shadow-sm">
             <Link href="/finance" className="block">
                 <CardHeader>
-                  <CardTitle className="text-lg font-bold text-slate-950">Receita semanal</CardTitle>
+                  <CardTitle className="text-lg font-bold text-slate-950">Recebimentos líquidos semanais</CardTitle>
                   <CardDescription>
-                    Consulte o detalhamento financeiro da unidade.
+                    Pagamentos confirmados, descontados estornos e taxas.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>

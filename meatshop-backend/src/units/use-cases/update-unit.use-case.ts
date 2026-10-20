@@ -6,6 +6,7 @@ import { UpdateUnitDto } from '../dtos/update-unit.dto';
 import { Unit } from '../entities/unit.entity';
 import { UnitAuthorizationService } from '../services/unit-authorization.service';
 import { UnitAddressService } from '../services/unit-address.service';
+import { assertSchedulingConfiguration } from '../utils/scheduling-configuration.util';
 
 @Injectable()
 export class UpdateUnitUseCase {
@@ -26,6 +27,13 @@ export class UpdateUnitUseCase {
     }
 
     await this.unitAuthorizationService.assertCanManageUnit(unit, currentUser);
+
+    assertSchedulingConfiguration(
+      dto.scheduling_slot_minutes === undefined
+        ? unit.scheduling_slot_minutes
+        : dto.scheduling_slot_minutes,
+      dto.scheduling_capacity === undefined ? unit.scheduling_capacity : dto.scheduling_capacity,
+    );
 
     const coordinates = await this.unitAddressService.coordinatesFor(dto, unit);
     Object.assign(unit, dto, coordinates);

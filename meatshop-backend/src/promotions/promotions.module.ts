@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProductsModule } from '../products/products.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { UnitsModule } from '../units/units.module';
 import { CouponsController } from './coupons.controller';
 import { Coupon } from './entities/coupon.entity';
@@ -30,6 +31,7 @@ import { ListCouponRedemptionsUseCase } from './use-cases/list-coupon-redemption
     TypeOrmModule.forFeature([Promotion, Coupon, CouponUnit, CouponRedemption]),
     UnitsModule,
     ProductsModule,
+    NotificationsModule,
   ],
   controllers: [PromotionsController, CouponsController],
   providers: [

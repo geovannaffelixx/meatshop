@@ -25,7 +25,7 @@ variável local `GROQ_API_KEY`. Consulte [SETUP.md](./SETUP.md).
 ![Frontend NextJS](https://img.shields.io/badge/Next.js-Frontend-black?logo=next.js)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-blue?logo=postgresql)
 ![Docker Ready](https://img.shields.io/badge/Docker-ready-0db7ed?logo=docker)
-![Versão](https://img.shields.io/badge/versão-1.0.0-green)
+![Versão](https://img.shields.io/badge/versão-3.3.0-green)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow?logo=open-source-initiative&logoColor=white)
 
 

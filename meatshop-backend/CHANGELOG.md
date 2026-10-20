@@ -2,6 +2,24 @@
 
 Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Changelog e Semantic Versioning.
 
+## [3.3.0] - 2026-10-20 - Fechamento de lacunas funcionais
+
+### Adicionado
+
+- Busca pública combinada por texto, categoria, marca e faixa de preço, com endpoint de marcas disponíveis e paginação preservada.
+- Preferências de notificações persistidas no PostgreSQL para pedidos, entregas, promoções e sistema.
+- Agendamento configurável por unidade, com duração do intervalo, capacidade máxima, consulta dos horários comuns do carrinho e bloqueio transacional da última vaga.
+- Notificação de promoções novas ou reativadas somente para clientes ativos, com compra concluída na unidade e promoções habilitadas.
+
+### Alterado
+
+- Receita dos gráficos e do financeiro passa a representar exclusivamente recebimentos confirmados, líquidos de estornos e taxas, sem misturar o estado operacional dos pedidos.
+- Notificações continuam disponíveis na caixa de entrada quando o push da categoria estiver desabilitado; somente o envio ao dispositivo é suprimido.
+
+### Qualidade
+
+- Testes para busca, preferências, promoções, semântica financeira, configuração de agenda, capacidade e bloqueio concorrente.
+
 ## [3.2.0] - 2026-10-18 - Termos e privacidade
 
 ### Adicionado

@@ -43,6 +43,7 @@ import { RecipeProduct } from './recipes/entities/recipe-product.entity';
 import { Chat } from './chat/entities/chat.entity';
 import { Notification } from './notifications/entities/notification.entity';
 import { UserDeviceToken } from './notifications/entities/user-device-token.entity';
+import { NotificationPreference } from './notifications/entities/notification-preference.entity';
 import { SavedPaymentMethod } from './saved-payment-methods/entities/saved-payment-method.entity';
 import { BusinessHours } from './units/entities/business-hours.entity';
 import { Unit } from './units/entities/unit.entity';
@@ -153,6 +154,7 @@ import { AiModule } from './ai/ai.module';
             BusinessHours,
             Notification,
             UserDeviceToken,
+            NotificationPreference,
             Chat,
             AiConversation,
             AiMessage,

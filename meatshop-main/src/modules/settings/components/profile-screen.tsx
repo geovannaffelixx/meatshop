@@ -31,6 +31,8 @@ type UnitForm = {
   longitude?: number | null;
   coordinate_source?: string;
   delivery_radius_km?: number;
+  scheduling_slot_minutes?: number | null;
+  scheduling_capacity?: number | null;
 };
 type Day = {
   weekday: string;
@@ -186,14 +188,40 @@ function UnitSettings() {
       toast.warning("Confira os horários: o fechamento deve ser posterior à abertura.");
       return;
     }
+    const slotMinutes = unit.scheduling_slot_minutes;
+    const schedulingCapacity = unit.scheduling_capacity;
+    const schedulingEnabled = slotMinutes != null && schedulingCapacity != null;
+    if (
+      slotMinutes != null &&
+      schedulingCapacity != null &&
+      (!Number.isInteger(slotMinutes) ||
+        slotMinutes < 5 ||
+        slotMinutes > 240 ||
+        !Number.isInteger(schedulingCapacity) ||
+        schedulingCapacity < 1 ||
+        schedulingCapacity > 1000)
+    ) {
+      toast.warning("Informe um intervalo entre 5 e 240 minutos e uma capacidade entre 1 e 1000 pedidos.");
+      return;
+    }
     setSaving(true);
     try {
-      await apiPut(`/units/${unitId}/business-hours`, {
-        days: days.map((day) =>
-          day.is_open ? day : { weekday: day.weekday, is_open: false },
-        ),
-      });
-      toast.success("Horários de funcionamento atualizados.");
+      await Promise.all([
+        apiPut(`/units/${unitId}/business-hours`, {
+          days: days.map((day) =>
+            day.is_open ? day : { weekday: day.weekday, is_open: false },
+          ),
+        }),
+        apiPatch(`/units/${unitId}`, {
+          scheduling_slot_minutes: schedulingEnabled
+            ? unit.scheduling_slot_minutes
+            : null,
+          scheduling_capacity: schedulingEnabled
+            ? unit.scheduling_capacity
+            : null,
+        }),
+      ]);
+      toast.success("Horários e capacidade de agendamento atualizados.");
     } catch {
       return;
     } finally {
@@ -355,6 +383,69 @@ function UnitSettings() {
       </section>
       <section className="rounded-xl border bg-white p-6">
         <h2 className="text-xl font-semibold">Horários de funcionamento</h2>
+        <div className="mt-4 rounded-md border bg-gray-50 p-4">
+          <label className="flex items-center gap-2 font-medium">
+            <input
+              type="checkbox"
+              checked={
+                unit.scheduling_slot_minutes != null &&
+                unit.scheduling_capacity != null
+              }
+              onChange={(event) =>
+                setUnit((current) => ({
+                  ...current,
+                  scheduling_slot_minutes: event.target.checked ? 30 : null,
+                  scheduling_capacity: event.target.checked ? 5 : null,
+                }))
+              }
+            />
+            Oferecer agendamento de pedidos
+          </label>
+          <p className="mt-1 text-sm text-gray-600">
+            Sem esta configuração, a unidade não aparece como disponível para agendamento.
+          </p>
+          {unit.scheduling_slot_minutes != null &&
+            unit.scheduling_capacity != null && (
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Duração do intervalo (minutos)
+                  <input
+                    aria-label="Duração do intervalo de agendamento"
+                    type="number"
+                    min="5"
+                    max="240"
+                    step="1"
+                    value={unit.scheduling_slot_minutes}
+                    onChange={(event) =>
+                      setUnit((current) => ({
+                        ...current,
+                        scheduling_slot_minutes: Number(event.target.value),
+                      }))
+                    }
+                    className="mt-1 w-full rounded border p-2"
+                  />
+                </label>
+                <label className="text-sm font-medium text-gray-700">
+                  Pedidos por intervalo
+                  <input
+                    aria-label="Capacidade de pedidos por intervalo"
+                    type="number"
+                    min="1"
+                    max="1000"
+                    step="1"
+                    value={unit.scheduling_capacity}
+                    onChange={(event) =>
+                      setUnit((current) => ({
+                        ...current,
+                        scheduling_capacity: Number(event.target.value),
+                      }))
+                    }
+                    className="mt-1 w-full rounded border p-2"
+                  />
+                </label>
+              </div>
+            )}
+        </div>
         <div className="mt-4 space-y-3">
           {days.map((day, index) => (
             <div
@@ -422,7 +513,7 @@ function UnitSettings() {
           className="mt-5 flex items-center gap-2 rounded-md bg-red-600 px-5 py-2 font-semibold text-white disabled:opacity-50"
         >
           {saving && <Spinner />}
-          {saving ? "Salvando..." : "Salvar horários"}
+          {saving ? "Salvando..." : "Salvar horários e agendamento"}
         </button>
       </section>
     </div>

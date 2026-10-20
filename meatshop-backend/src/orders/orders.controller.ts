@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Public } from '../common/decorators/public.decorator';
 import { User } from '../users/entities/user.entity';
 import { CancelOrderDto } from './dtos/cancel-order.dto';
 import { CheckoutResponseDto } from './dtos/checkout-response.dto';
@@ -19,6 +20,7 @@ import { CreateOrderDto } from './dtos/create-order.dto';
 import { OrderListItemDto } from './dtos/order-list-item.dto';
 import { OrderResponseDto } from './dtos/order-response.dto';
 import { ScheduleOrderDto } from './dtos/schedule-order.dto';
+import { AvailableScheduleSlotsQueryDto } from './dtos/available-schedule-slots-query.dto';
 import { UpdateOrderStatusDto } from './dtos/update-order-status.dto';
 import { CancelOrderUseCase } from './use-cases/cancel-order.use-case';
 import { ConfirmOrderUseCase } from './use-cases/confirm-order.use-case';
@@ -28,6 +30,7 @@ import { ListOrderHistoryUseCase } from './use-cases/list-order-history.use-case
 import { RepeatOrderUseCase } from './use-cases/repeat-order.use-case';
 import { ScheduleOrderUseCase } from './use-cases/schedule-order.use-case';
 import { UpdateOrderStatusUseCase } from './use-cases/update-order-status.use-case';
+import { SchedulingAvailabilityService } from './services/scheduling-availability.service';
 
 @ApiTags('Orders')
 @ApiBearerAuth('access-token')
@@ -42,7 +45,16 @@ export class OrdersController {
     private readonly cancelOrderUseCase: CancelOrderUseCase,
     private readonly scheduleOrderUseCase: ScheduleOrderUseCase,
     private readonly repeatOrderUseCase: RepeatOrderUseCase,
+    private readonly schedulingAvailabilityService: SchedulingAvailabilityService,
   ) {}
+
+  @Public()
+  @ApiOperation({ summary: 'Lists scheduling intervals with capacity for one or more units' })
+  @ApiResponse({ status: 200, description: 'Available scheduling intervals returned' })
+  @Get('available-slots')
+  availableSlots(@Query() query: AvailableScheduleSlotsQueryDto) {
+    return this.schedulingAvailabilityService.listAvailable(query.unit_ids, query.date);
+  }
 
   @ApiOperation({
     summary: 'Creates a new order for the authenticated customer',

@@ -16,6 +16,12 @@ export class Unit {
   @Column({ type: 'numeric', precision: 7, scale: 2, default: 25 })
   delivery_radius_km: number;
 
+  @Column({ type: 'int', nullable: true })
+  scheduling_slot_minutes: number | null;
+
+  @Column({ type: 'int', nullable: true })
+  scheduling_capacity: number | null;
+
   @PrimaryGeneratedColumn()
   id: number;
 

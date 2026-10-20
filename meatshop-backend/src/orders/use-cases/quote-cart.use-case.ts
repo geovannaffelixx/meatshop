@@ -14,7 +14,7 @@ import { CreateOrderDto, paymentForUnit } from '../dtos/create-order.dto';
 import { CheckoutQuoteService } from '../services/checkout-quote.service';
 import { DeliveryType } from '../enums/delivery-type.enum';
 import { CheckoutPricingService } from '../services/checkout-pricing.service';
-import { BusinessHoursValidator } from '../validators/business-hours.validator';
+import { SchedulingAvailabilityService } from '../services/scheduling-availability.service';
 import { StockAvailabilityValidator } from '../validators/stock-availability.validator';
 
 @Injectable()
@@ -30,7 +30,7 @@ export class QuoteCartUseCase {
     private readonly pricing: CheckoutPricingService,
     private readonly coupons: CouponRedemptionService,
     private readonly stock: StockAvailabilityValidator,
-    private readonly businessHours: BusinessHoursValidator,
+    private readonly schedulingAvailability: SchedulingAvailabilityService,
     private readonly dataSource: DataSource,
     private readonly sellers: SellerAccountsService,
     private readonly quotes: CheckoutQuoteService,
@@ -74,7 +74,7 @@ export class QuoteCartUseCase {
       const date = new Date(dto.scheduled_delivery_date);
       if (date <= new Date()) throw new BadRequestException('Schedule must be in the future');
       await Promise.all(
-        groups.map((group) => this.businessHours.assertWithinBusinessHours(group.unitId, date)),
+        groups.map((group) => this.schedulingAvailability.assertAvailable(group.unitId, date)),
       );
     }
 

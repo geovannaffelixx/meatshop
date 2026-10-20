@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UnitPermission } from '../../common/enums/unit-permission.enum';
 import { Product } from '../../products/entities/product.entity';
+import { SendPromotionNotificationUseCase } from '../../notifications/use-cases/send-promotion-notification.use-case';
 import { Unit } from '../../units/entities/unit.entity';
 import { UnitAuthorizationService } from '../../units/services/unit-authorization.service';
 import { User } from '../../users/entities/user.entity';
@@ -21,6 +22,7 @@ export class CreatePromotionUseCase {
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
     private readonly unitAuthorizationService: UnitAuthorizationService,
+    private readonly sendPromotionNotification: SendPromotionNotificationUseCase,
   ) {}
 
   async execute(dto: CreatePromotionDto, currentUser: User): Promise<Promotion> {
@@ -46,6 +48,14 @@ export class CreatePromotionUseCase {
       created_by: currentUser.id,
     });
     await this.promotionRepository.save(promotion);
+
+    await this.sendPromotionNotification
+      .execute(promotion)
+      .catch((error: Error) =>
+        this.logger.warn(
+          `Promotion ${promotion.id} was created, but its audience could not be notified: ${error.message}`,
+        ),
+      );
 
     this.logger.log(`Promotion ${promotion.id} created by user ${currentUser.id}`);
 

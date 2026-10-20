@@ -1,8 +1,20 @@
 import { LegalSubmissionDto } from '../../legal/dto/legal-acceptance.dto';
 import { Transform } from 'class-transformer';
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
-import { IsLatitude, IsLongitude, IsNumber, Min, Max } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsInt,
+  IsLatitude,
+  IsLongitude,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Matches,
+  Max,
+  MaxLength,
+  Min,
+  MinLength,
+} from 'class-validator';
 
 export class CreateUnitDto extends LegalSubmissionDto {
   @Transform(({ obj, key }) => obj[key]) @IsOptional() @IsNumber() @IsLatitude() latitude?: number;
@@ -13,6 +25,28 @@ export class CreateUnitDto extends LegalSubmissionDto {
   longitude?: number;
 
   @IsOptional() @IsNumber() @Min(0.1) @Max(500) delivery_radius_km?: number;
+
+  @ApiPropertyOptional({
+    description: 'Scheduling interval duration in minutes. Null disables scheduling',
+    example: 30,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(5)
+  @Max(240)
+  scheduling_slot_minutes?: number | null;
+
+  @ApiPropertyOptional({
+    description: 'Maximum number of non-cancelled orders per scheduling interval',
+    example: 5,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(1000)
+  scheduling_capacity?: number | null;
 
   @ApiProperty({
     description: 'Unit name',

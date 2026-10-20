@@ -8,6 +8,7 @@ import { CreateUnitDto } from '../dtos/create-unit.dto';
 import { Unit } from '../entities/unit.entity';
 import { UserUnit } from '../entities/user-unit.entity';
 import { UnitAddressService } from '../services/unit-address.service';
+import { assertSchedulingConfiguration } from '../utils/scheduling-configuration.util';
 
 @Injectable()
 export class CreateUnitUseCase {
@@ -23,6 +24,7 @@ export class CreateUnitUseCase {
   ) {}
 
   async execute(dto: CreateUnitDto, currentUser: User): Promise<Unit> {
+    assertSchedulingConfiguration(dto.scheduling_slot_minutes, dto.scheduling_capacity);
     await this.legal.validate(dto.legal_acceptance, true);
     await this.ensureCnpjIsUnique(dto.cnpj);
     const { legal_acceptance: acceptance, ...details } = dto;

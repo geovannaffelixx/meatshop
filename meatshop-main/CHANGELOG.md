@@ -2,6 +2,17 @@
 
 Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Changelog e Semantic Versioning.
 
+## [3.3.0] - 2026-10-20 - Fechamento de lacunas funcionais
+
+### Adicionado
+
+- Configuração de agendamento na unidade, com ativação explícita, duração do intervalo e capacidade de pedidos por intervalo; os valores iniciais sugeridos são 30 minutos e 5 pedidos.
+
+### Alterado
+
+- Painel financeiro e gráfico do dashboard identificam com clareza a receita confirmada, os recebimentos líquidos, as taxas e os estornos.
+- Salvamento de horários passa a atualizar também a disponibilidade de agendamento da unidade.
+
 ## [3.2.0] - 2026-10-18 - Termos e privacidade
 
 ### Alterado
