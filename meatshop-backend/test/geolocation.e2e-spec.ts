@@ -1,4 +1,7 @@
 import type { LegalPolicyService } from '../src/legal/services/legal-policy.service';
+import { applyFunctionalGapsMigrations } from './apply-functional-gaps-migrations';
+import { Payment } from '../src/orders/entities/payment.entity';
+import { PaymentMethod } from '../src/orders/enums/payment-method.enum';
 import 'reflect-metadata';
 import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
@@ -63,6 +66,7 @@ const enabled = process.env.GEO_TEST_DATABASE === 'meatshop_geo_test';
       logging: false,
     });
     await dataSource.initialize();
+    await applyFunctionalGapsMigrations(dataSource);
     const users = dataSource.getRepository(User);
     [customer, courier, other] = await users.save(
       ['customer', 'courier', 'other'].map((name) =>
@@ -211,12 +215,16 @@ const enabled = process.env.GEO_TEST_DATABASE === 'meatshop_geo_test';
       total_amount: 10,
       subtotal: 10,
     });
+    await dataSource
+      .getRepository(Payment)
+      .save({ order_id: order.id, method: PaymentMethod.CASH });
     session = (await update.sharing(order.id, { enabled: true }, courier)).session_id!;
   });
   afterEach(async () => {
     if (order) {
       await dataSource.getRepository(DeliveryTracking).delete({ order_id: order.id });
       await dataSource.getRepository(OrderStatusHistory).delete({ order_id: order.id });
+      await dataSource.getRepository(Payment).delete({ order_id: order.id });
       await dataSource.getRepository(Order).delete(order.id);
     }
   });

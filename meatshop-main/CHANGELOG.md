@@ -12,6 +12,7 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 - Painel financeiro e gráfico do dashboard identificam com clareza a receita confirmada, os recebimentos líquidos, as taxas e os estornos.
 - Salvamento de horários passa a atualizar também a disponibilidade de agendamento da unidade.
+- Horários e capacidade enviados em uma única requisição transacional, com mensagem explícita em caso de falha e botão compartilhado do painel.
 
 ## [3.2.0] - 2026-10-18 - Termos e privacidade
 

@@ -62,7 +62,7 @@ export default new DataSource({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
   entities: isCompiled
-    ? [`${__dirname}/../entities/*.js`]
+    ? [`${__dirname}/../**/*.entity.js`]
     : [
         User,
         LegalDocument,

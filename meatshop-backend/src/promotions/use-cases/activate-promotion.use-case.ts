@@ -33,8 +33,12 @@ export class ActivatePromotionUseCase {
     );
 
     if (promotion.active) return promotion;
-    promotion.active = true;
-    const saved = await this.promotionRepository.save(promotion);
+    const result = await this.promotionRepository.update(
+      { id: promotionId, active: false },
+      { active: true, notification_sent_at: null },
+    );
+    const saved = await this.promotionRepository.findOneByOrFail({ id: promotionId });
+    if (result.affected !== 1) return saved;
     await this.sendPromotionNotification
       .execute(saved)
       .catch((error: Error) =>

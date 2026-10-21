@@ -36,8 +36,8 @@ export class BusinessHoursResponseDto {
     dto.id = entity.id;
     dto.weekday = entity.weekday;
     dto.is_open = entity.is_open;
-    dto.opening_time = entity.opening_time;
-    dto.closing_time = entity.closing_time;
+    dto.opening_time = entity.opening_time?.slice(0, 5) ?? null;
+    dto.closing_time = entity.closing_time?.slice(0, 5) ?? null;
     return dto;
   }
 

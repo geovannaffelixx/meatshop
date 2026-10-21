@@ -1,4 +1,5 @@
 import type { LegalPolicyService } from '../src/legal/services/legal-policy.service';
+import { applyFunctionalGapsMigrations } from './apply-functional-gaps-migrations';
 import { RepeatOrderUseCase } from '../src/orders/use-cases/repeat-order.use-case';
 import { CartAccessService } from '../src/cart/services/cart-access.service';
 import { CreateOrderUseCase } from '../src/orders/use-cases/create-order.use-case';
@@ -102,6 +103,7 @@ const enabled = process.env.PAYMENTS_TEST_DATABASE === 'meatshop_payments_test';
       logging: false,
     });
     await db.initialize();
+    await applyFunctionalGapsMigrations(db);
     const runner = db.createQueryRunner();
     if (!(await runner.hasTable('payment_transactions')))
       await new HardenPayments1790550000000().up(runner);

@@ -20,6 +20,7 @@ import { UnregisterDeviceTokenUseCase } from './use-cases/unregister-device-toke
 import { NotificationPreference } from './entities/notification-preference.entity';
 import { ManageNotificationPreferencesUseCase } from './use-cases/manage-notification-preferences.use-case';
 import { SendPromotionNotificationUseCase } from './use-cases/send-promotion-notification.use-case';
+import { Promotion } from '../promotions/entities/promotion.entity';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { SendPromotionNotificationUseCase } from './use-cases/send-promotion-not
       Unit,
       UserUnit,
       User,
+      Promotion,
     ]),
   ],
   controllers: [NotificationsController],

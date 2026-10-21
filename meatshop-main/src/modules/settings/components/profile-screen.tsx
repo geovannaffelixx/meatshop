@@ -5,6 +5,7 @@ import Image from "next/image";
 import { AddressPinPicker, type AddressPin } from '@/shared/components/maps/address-pin-picker';
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
 import { Spinner } from "@/shared/components/ui/spinner";
+import { Button } from "@/shared/components/ui/button";
 import {
   apiUpload,
   apiGet,
@@ -206,24 +207,25 @@ function UnitSettings() {
     }
     setSaving(true);
     try {
-      await Promise.all([
-        apiPut(`/units/${unitId}/business-hours`, {
+      await apiPut(`/units/${unitId}/business-hours`, {
           days: days.map((day) =>
-            day.is_open ? day : { weekday: day.weekday, is_open: false },
+            day.is_open ? {
+              weekday: day.weekday,
+              is_open: true,
+              opening_time: day.opening_time?.slice(0, 5),
+              closing_time: day.closing_time?.slice(0, 5),
+            } : { weekday: day.weekday, is_open: false },
           ),
-        }),
-        apiPatch(`/units/${unitId}`, {
           scheduling_slot_minutes: schedulingEnabled
             ? unit.scheduling_slot_minutes
             : null,
           scheduling_capacity: schedulingEnabled
             ? unit.scheduling_capacity
             : null,
-        }),
-      ]);
+      });
       toast.success("Horários e capacidade de agendamento atualizados.");
     } catch {
-      return;
+      toast.error("Não foi possível salvar os horários e o agendamento. Tente novamente.");
     } finally {
       setSaving(false);
     }
@@ -506,15 +508,15 @@ function UnitSettings() {
             </div>
           ))}
         </div>
-        <button
+        <Button
           type="button"
           onClick={() => void saveHours()}
           disabled={saving}
-          className="mt-5 flex items-center gap-2 rounded-md bg-red-600 px-5 py-2 font-semibold text-white disabled:opacity-50"
+          className="mt-5 h-auto whitespace-normal text-left"
         >
           {saving && <Spinner />}
           {saving ? "Salvando..." : "Salvar horários e agendamento"}
-        </button>
+        </Button>
       </section>
     </div>
     </div>

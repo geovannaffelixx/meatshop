@@ -9,7 +9,8 @@ describe('ActivatePromotionUseCase', () => {
     const promotion = { id: 3, unit_id: 7, active: false } as Promotion;
     const repository = {
       findOne: jest.fn(async () => promotion),
-      save: jest.fn(async (value: Promotion) => value),
+      update: jest.fn(async () => ({ affected: 1 })),
+      findOneByOrFail: jest.fn(async () => ({ ...promotion, active: true })),
     };
     const authorization = { assertHasPermission: jest.fn(async () => undefined) };
     const notifier = { execute: jest.fn(async () => 4) };
@@ -20,8 +21,11 @@ describe('ActivatePromotionUseCase', () => {
     );
 
     await expect(useCase.execute(3, user)).resolves.toMatchObject({ active: true });
-    expect(repository.save).toHaveBeenCalledTimes(1);
-    expect(notifier.execute).toHaveBeenCalledWith(promotion);
+    expect(repository.update).toHaveBeenCalledWith(
+      { id: 3, active: false },
+      { active: true, notification_sent_at: null },
+    );
+    expect(notifier.execute).toHaveBeenCalledWith(expect.objectContaining({ id: 3, active: true }));
   });
 
   it('does not notify again when the promotion is already active', async () => {

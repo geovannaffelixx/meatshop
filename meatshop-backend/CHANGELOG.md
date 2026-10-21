@@ -19,6 +19,9 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 ### Qualidade
 
 - Testes para busca, preferências, promoções, semântica financeira, configuração de agenda, capacidade e bloqueio concorrente.
+- Horários e capacidade gravados em uma única transação, com validação de dias duplicados e retorno de horários em HH:mm.
+- Campanhas futuras processadas na vigência por agendador com reivindicação atômica; preferências ausentes seguem o padrão habilitado e opt-out explícito é respeitado.
+- Migration adicional fortalece a configuração de capacidade e cria índice para reservas; testes PostgreSQL cobrem rollback, última vaga e campanhas concorrentes.
 
 ## [3.2.0] - 2026-10-18 - Termos e privacidade
 

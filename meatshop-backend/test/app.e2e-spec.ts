@@ -3,7 +3,8 @@ import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
 import { AppModule } from '../src/app.module';
 
-describe('App Smoke Test', () => {
+const enabled = process.env.E2E_TEST_DATABASE === 'meatshop_gaps_test_330';
+(enabled ? describe : describe.skip)('App Smoke Test (isolated PostgreSQL)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
