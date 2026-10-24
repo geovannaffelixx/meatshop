@@ -77,6 +77,11 @@ describe('runtime config', () => {
         DELIVERY_CODE_ENCRYPTION_KEY: 'd'.repeat(32),
       };
       expect(() => validateEnvironment(environment)).not.toThrow();
+      for (const missingKey of [undefined, '', '   ']) {
+        expect(() =>
+          validateEnvironment({ ...environment, FIREBASE_WEB_API_KEY: missingKey }),
+        ).toThrow('FIREBASE_WEB_API_KEY is required in production');
+      }
       for (const invalid of [undefined, '', 'test', 'prod']) {
         expect(() => validateEnvironment({ ...environment, MP_ENV: invalid })).toThrow(
           'MP_ENV must be sandbox or production',

@@ -4,6 +4,7 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ## Panel pagination and unit gallery - 2026-10-24
 
+- Declare the required Firebase Web API key in the Render blueprint and document recovery from missing production configuration.
 - Reject non-array upload parameters before reading file counts, with regression coverage for parameter tampering (CodeQL alert #6).
 - Server-side search and paginated panel lists with filtered totals and preserved legacy array contracts.
 - Product management filters and unit-scoped order pagination with actor authorization.

@@ -66,6 +66,8 @@ services:
         sync: false
       - key: FIREBASE_SERVICE_ACCOUNT
         sync: false
+      - key: FIREBASE_WEB_API_KEY
+        sync: false
       - key: FIREBASE_APP_CHECK_ENFORCED
         value: "true"
       - key: PAYMENTS_ENABLED
