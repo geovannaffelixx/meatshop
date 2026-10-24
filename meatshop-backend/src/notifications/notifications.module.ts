@@ -17,12 +17,24 @@ import { RegisterDeviceTokenUseCase } from './use-cases/register-device-token.us
 import { SendNotificationUseCase } from './use-cases/send-notification.use-case';
 import { SendOrderStatusNotificationUseCase } from './use-cases/send-order-status-notification.use-case';
 import { UnregisterDeviceTokenUseCase } from './use-cases/unregister-device-token.use-case';
+import { NotificationPreference } from './entities/notification-preference.entity';
+import { ManageNotificationPreferencesUseCase } from './use-cases/manage-notification-preferences.use-case';
+import { SendPromotionNotificationUseCase } from './use-cases/send-promotion-notification.use-case';
+import { Promotion } from '../promotions/entities/promotion.entity';
 
 @Module({
   imports: [
     AuthModule,
     UnitsModule,
-    TypeOrmModule.forFeature([Notification, UserDeviceToken, Unit, UserUnit, User]),
+    TypeOrmModule.forFeature([
+      Notification,
+      NotificationPreference,
+      UserDeviceToken,
+      Unit,
+      UserUnit,
+      User,
+      Promotion,
+    ]),
   ],
   controllers: [NotificationsController],
   providers: [
@@ -35,7 +47,14 @@ import { UnregisterDeviceTokenUseCase } from './use-cases/unregister-device-toke
     MarkAllAsReadUseCase,
     RegisterDeviceTokenUseCase,
     UnregisterDeviceTokenUseCase,
+    ManageNotificationPreferencesUseCase,
+    SendPromotionNotificationUseCase,
   ],
-  exports: [TypeOrmModule, SendNotificationUseCase, SendOrderStatusNotificationUseCase],
+  exports: [
+    TypeOrmModule,
+    SendNotificationUseCase,
+    SendOrderStatusNotificationUseCase,
+    SendPromotionNotificationUseCase,
+  ],
 })
 export class NotificationsModule {}

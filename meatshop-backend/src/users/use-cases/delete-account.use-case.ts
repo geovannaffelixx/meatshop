@@ -53,6 +53,10 @@ export class DeleteAccountUseCase {
         'UPDATE orders SET tracking_session_id=NULL, tracking_revoked_at=now() WHERE client_id=$1 OR tracking_consent_user_id=$1',
         [userId],
       );
+      await manager.query(
+        "UPDATE delivery_expenses SET description='Data removed' WHERE user_id=$1",
+        [userId],
+      );
       await manager.delete('refresh_tokens', { user_id: userId });
       await manager.delete('user_device_tokens', { user_id: userId });
       await manager.update(User, userId, {

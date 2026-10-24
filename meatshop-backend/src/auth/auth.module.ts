@@ -1,3 +1,4 @@
+import { VerifyMobilePasswordUseCase } from './use-cases/verify-mobile-password.use-case';
 import { LegalAccessGuard } from '../legal/legal-access.guard';
 import { LegalModule } from '../legal/legal.module';
 import { Module } from '@nestjs/common';
@@ -52,6 +53,7 @@ import { FirebaseExchangeUseCase } from './use-cases/firebase-exchange.use-case'
   controllers: [AuthController],
   providers: [
     AuthService,
+    VerifyMobilePasswordUseCase,
     JwtStrategy,
     LocalStrategy,
     JwtAuthGuard,

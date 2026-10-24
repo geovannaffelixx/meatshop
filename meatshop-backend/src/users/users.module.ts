@@ -1,3 +1,5 @@
+import { ExportPersonalDataUseCase } from './use-cases/export-personal-data.use-case';
+import { PersonalDataRetentionService } from './services/personal-data-retention.service';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AddressesController } from './addresses.controller';
@@ -25,6 +27,8 @@ import { DeleteAccountUseCase } from './use-cases/delete-account.use-case';
   imports: [TypeOrmModule.forFeature([User, Address, Unit, Order]), UnitsModule, EmailModule],
   controllers: [UsersController, UsersUploadController, AddressesController, GeocodingController],
   providers: [
+    ExportPersonalDataUseCase,
+    PersonalDataRetentionService,
     GetUserProfileUseCase,
     GetPanelContextUseCase,
     UpdateProfileUseCase,

@@ -1,3 +1,4 @@
+import { isValidProductQuantity } from '../../cart/services/product-availability.policy';
 import { SellerAccountsService } from '../../payments/seller-accounts.service';
 import { isOfflinePayment } from '../../payments/payment-policy';
 import { PaymentMethod } from '../enums/payment-method.enum';
@@ -27,7 +28,7 @@ import { DeliveryStatus } from '../enums/delivery-status.enum';
 import { DeliveryType } from '../enums/delivery-type.enum';
 import { CheckoutPricingService, ICheckoutGroup } from '../services/checkout-pricing.service';
 import { DeliveryCodeService } from '../services/delivery-code.service';
-import { BusinessHoursValidator } from '../validators/business-hours.validator';
+import { SchedulingAvailabilityService } from '../services/scheduling-availability.service';
 
 type CreatedOrder = {
   order: Order;
@@ -48,7 +49,7 @@ export class CreateOrderUseCase {
     private readonly cartAccessService: CartAccessService,
     private readonly couponRedemption: CouponRedemptionService,
     private readonly pricing: CheckoutPricingService,
-    private readonly businessHours: BusinessHoursValidator,
+    private readonly schedulingAvailability: SchedulingAvailabilityService,
     private readonly sendOrderStatusNotificationUseCase: SendOrderStatusNotificationUseCase,
     private readonly deliveryCodeService: DeliveryCodeService,
     @InjectDataSource()
@@ -101,7 +102,7 @@ export class CreateOrderUseCase {
       const items = await this.loadItems(manager, cart.id);
       this.assertCart(items);
       const groups = this.pricing.group(items, dto);
-      await this.validateSchedule(dto, groups);
+      await this.validateSchedule(dto, groups, manager);
       for (const group of groups)
         if (!isOfflinePayment(paymentForUnit(dto, group.unitId).method))
           await this.mp.assertAcceptingPayments(group.unitId, manager);
@@ -293,7 +294,10 @@ export class CreateOrderUseCase {
       });
     }
     const unavailable = items.filter(
-      (item) => !item.product.active || !item.product.category?.active,
+      (item) =>
+        !item.product.active ||
+        !item.product.category?.active ||
+        !isValidProductQuantity(item.product, Number(item.quantity)),
     );
     if (unavailable.length > 0) {
       throw new BadRequestException({
@@ -337,15 +341,20 @@ export class CreateOrderUseCase {
     return address;
   }
 
-  private async validateSchedule(dto: CreateOrderDto, groups: ICheckoutGroup[]): Promise<void> {
+  private async validateSchedule(
+    dto: CreateOrderDto,
+    groups: ICheckoutGroup[],
+    manager: EntityManager,
+  ): Promise<void> {
     if (!dto.scheduled_delivery_date) return;
     const date = new Date(dto.scheduled_delivery_date);
     if (date <= new Date()) {
       throw new BadRequestException('scheduled_delivery_date must be in the future');
     }
-    await Promise.all(
-      groups.map((group) => this.businessHours.assertWithinBusinessHours(group.unitId, date)),
-    );
+    const unitIds = [...new Set(groups.map((group) => group.unitId))].sort((a, b) => a - b);
+    for (const unitId of unitIds) {
+      await this.schedulingAvailability.assertAvailable(unitId, date, manager);
+    }
   }
 
   private async findCheckout(userId: number, checkoutId: string): Promise<Order[]> {

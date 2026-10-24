@@ -1,5 +1,9 @@
 'use client';
 
+import { formatDateValue } from "@/shared/lib/date-time";
+
+import { DataSkeleton } from "@/shared/components/data-skeleton";
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check, CheckCheck, MessageCircle, Send, Wifi, WifiOff } from 'lucide-react';
 import { io, type Socket } from 'socket.io-client';
@@ -32,9 +36,6 @@ function mergeMessage(current: ChatMessage[], incoming: ChatMessage): ChatMessag
   );
 }
 
-const timeFormatter = new Intl.DateTimeFormat('pt-BR', {
-  hour: '2-digit', minute: '2-digit',
-});
 
 export function ChatThread({ orderId, participantType, participantLabel, currentUserId, closed }: ChatThreadProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -176,9 +177,7 @@ export function ChatThread({ orderId, participantType, participantLabel, current
       </header>
       <div className='min-h-0 flex-1 space-y-3 overflow-y-auto p-5' aria-live='polite'>
         {loading ? (
-          <div className='flex h-full items-center justify-center gap-2 text-sm text-slate-500'>
-            <Spinner /> Carregando conversa...
-          </div>
+          <DataSkeleton label="Carregando conversa..." />
         ) : messages.length === 0 ? (
           <div className='flex h-full flex-col items-center justify-center text-center text-slate-500'>
             <span className='mb-3 rounded-full bg-white p-4 shadow-sm'>
@@ -197,7 +196,7 @@ export function ChatThread({ orderId, participantType, participantLabel, current
                     {!mine && <p className='mb-1 text-xs font-semibold text-slate-500'>{item.sender_name}</p>}
                     <p className='whitespace-pre-wrap break-words text-sm leading-relaxed'>{item.message}</p>
                     <span className={mine ? 'mt-1 flex items-center justify-end gap-1 text-[10px] text-red-100' : 'mt-1 flex justify-end text-[10px] text-slate-400'}>
-                      {timeFormatter.format(new Date(item.sent_at))}
+                      {formatDateValue(item.sent_at, { hour: '2-digit', minute: '2-digit' })}
                       {mine && (item.read_at ? <CheckCheck className='size-3.5' /> : <Check className='size-3.5' />)}
                     </span>
                   </div>

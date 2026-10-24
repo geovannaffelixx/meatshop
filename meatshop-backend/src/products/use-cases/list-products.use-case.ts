@@ -1,11 +1,15 @@
+import { searchPattern } from '../../common/dtos/panel-list-query.dto';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { ILike, Raw, Repository, In } from 'typeorm';
 import { ProductListItemDto } from '../dtos/product-list-item.dto';
 import { Product } from '../entities/product.entity';
 import { Stock } from '../entities/stock.entity';
 
 export interface IListProductsFilters {
+  search?: string;
+  category?: string;
+  id?: string;
   unitId?: number;
   categoryId?: number;
   active?: boolean;
@@ -26,6 +30,12 @@ export class ListProductsUseCase {
   async execute(filters: IListProductsFilters) {
     if (filters.available) return this.listAvailable(filters);
     const where: Record<string, unknown> = {};
+    if (filters.search?.trim()) where.name = ILike(searchPattern(filters.search));
+    if (filters.category?.trim()) where.category = { name: ILike(searchPattern(filters.category)) };
+    if (filters.id?.trim())
+      where.id = Raw((alias) => `CAST(${alias} AS TEXT) LIKE :productId`, {
+        productId: searchPattern(filters.id),
+      });
     if (filters.unitId) where.unit_id = filters.unitId;
     if (filters.categoryId) where.category_id = filters.categoryId;
     if (filters.active !== undefined) where.active = filters.active;

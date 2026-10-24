@@ -37,6 +37,7 @@ import { RecipeProduct } from '../recipes/entities/recipe-product.entity';
 import { Chat } from '../chat/entities/chat.entity';
 import { Notification } from '../notifications/entities/notification.entity';
 import { UserDeviceToken } from '../notifications/entities/user-device-token.entity';
+import { NotificationPreference } from '../notifications/entities/notification-preference.entity';
 import { SavedPaymentMethod } from '../saved-payment-methods/entities/saved-payment-method.entity';
 import { BusinessHours } from '../units/entities/business-hours.entity';
 import { Unit } from '../units/entities/unit.entity';
@@ -61,7 +62,7 @@ export default new DataSource({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
   entities: isCompiled
-    ? [`${__dirname}/../entities/*.js`]
+    ? [`${__dirname}/../**/*.entity.js`]
     : [
         User,
         LegalDocument,
@@ -103,6 +104,7 @@ export default new DataSource({
         BusinessHours,
         Notification,
         UserDeviceToken,
+        NotificationPreference,
         Chat,
         DeliveryGoal,
         DeliveryOfferRejection,

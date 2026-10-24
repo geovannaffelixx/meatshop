@@ -1,24 +1,23 @@
 "use client";
 
+import { formatDateValue } from "@/shared/lib/date-time";
+
+import { DataSkeleton } from "@/shared/components/data-skeleton";
+
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, MessageSquare, Search, Truck, UserRound } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { ORDER_STATUS_LABELS } from "@/modules/orders/utils/status-labels";
 import { Input } from "@/shared/components/ui/input";
-import { Spinner } from "@/shared/components/ui/spinner";
+
 import { apiGet } from "@/shared/lib/api";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
+import { PageHeader } from "@/shared/components/page-header";
 import { ChatThread } from "./chat-thread";
 import type { ChatOrder, ChatParticipantType } from "../types";
 
 const terminalStatuses = new Set(["DELIVERED", "CANCELLED"]);
 
-const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
-  day: "2-digit",
-  month: "short",
-  hour: "2-digit",
-  minute: "2-digit",
-});
 
 export function ChatScreen() {
   const searchParams = useSearchParams();
@@ -93,10 +92,8 @@ export function ChatScreen() {
   return (
     <main className="flex min-h-[calc(100dvh-5rem)] flex-col bg-slate-50 p-4 sm:p-6">
       <div className="mb-5">
-        <h1 className="text-2xl font-bold text-slate-950">Mensagens</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Converse com clientes e entregadores em canais separados por pedido.
-        </p>
+        <PageHeader eyebrow="Operação" title="Mensagens"
+          description="Converse com clientes e entregadores em canais separados por pedido." />
       </div>
 
       <div className="grid min-h-[36rem] flex-1 overflow-hidden rounded-2xl border bg-white shadow-sm lg:grid-cols-[21rem_1fr]">
@@ -114,9 +111,7 @@ export function ChatScreen() {
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto">
             {loading ? (
-              <div className="flex items-center justify-center gap-2 p-8 text-sm text-slate-500">
-                <Spinner /> Carregando pedidos...
-              </div>
+              <DataSkeleton label="Carregando pedidos..." />
             ) : error ? (
               <p className="p-6 text-sm text-red-600">{error}</p>
             ) : filteredOrders.length === 0 ? (
@@ -147,7 +142,7 @@ export function ChatScreen() {
                     </span>
                     <span className="mt-1 flex items-center justify-between gap-2 text-xs text-slate-500">
                       <span>{ORDER_STATUS_LABELS[order.status] ?? order.status}</span>
-                      <time>{dateFormatter.format(new Date(order.order_date))}</time>
+                      <time>{formatDateValue(order.order_date, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</time>
                     </span>
                   </button>
                 );

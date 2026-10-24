@@ -1,3 +1,8 @@
+import {
+  isPurchasableProduct,
+  isValidProductQuantity,
+  hasSufficientStock,
+} from './product-availability.policy';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -18,18 +23,13 @@ export class CartProductPolicyService {
       where: { id: productId },
       relations: ['category', 'unit'],
     });
-    if (!product || !product.active || !product.category?.active) {
+    if (!isPurchasableProduct(product)) {
       throw new NotFoundException({
         code: 'PRODUCT_NOT_AVAILABLE',
         message: 'Product is unavailable for purchase.',
       });
     }
-    const unit = product.unit_of_measure?.trim().toUpperCase();
-    if (
-      !Number.isFinite(desiredQuantity) ||
-      desiredQuantity <= 0 ||
-      (['UN', 'PCT'].includes(unit) && !Number.isInteger(desiredQuantity))
-    ) {
+    if (!isValidProductQuantity(product, desiredQuantity)) {
       throw new BadRequestException({
         code: 'INVALID_PRODUCT_QUANTITY',
         message: 'Informe uma quantidade válida para a unidade de medida do produto.',
@@ -39,7 +39,7 @@ export class CartProductPolicyService {
       where: { product_id: productId },
     });
     const available = Number(stock?.quantity ?? 0);
-    if (desiredQuantity > available) {
+    if (!hasSufficientStock(available, desiredQuantity)) {
       throw new BadRequestException({
         code: 'INSUFFICIENT_STOCK',
         message: 'Insufficient stock for the requested quantity.',

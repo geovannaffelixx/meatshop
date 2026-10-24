@@ -1,3 +1,4 @@
+import { AuditContextSubscriber } from './audit-context.subscriber';
 import { Global, Module } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -15,6 +16,7 @@ import { ExportAuditLogsUseCase } from './use-cases/export-audit-logs.use-case';
   imports: [TypeOrmModule.forFeature([AuditLog])],
   controllers: [AuditController],
   providers: [
+    AuditContextSubscriber,
     ListAuditLogsUseCase,
     AuditTrailService,
     GetAuditLogUseCase,

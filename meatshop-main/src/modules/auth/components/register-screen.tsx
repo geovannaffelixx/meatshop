@@ -1,5 +1,8 @@
 'use client';
 
+import { maskCNPJ, maskCEP, maskCPF } from "@/shared/lib/input-masks";
+import { validateCPF, validateCNPJ, validateEmail, validateName, validateUF, validateCEP, validatePassword as isPasswordValid, validateRequiredText, normalizeCNPJ } from "@/shared/lib/validators";
+
 import { LegalRegistration } from '@/shared/components/legal/legal-registration';
 import { ApiError } from '@/shared/lib/api-error-translations';
 import type { LegalAcceptance } from '@/shared/legal/legal-api';
@@ -55,34 +58,13 @@ const REQUIRED_FIELDS: (keyof FormData)[] = [
   "ownerName", "email", "cpf", "password", "confirmPassword",
 ];
 
-function maskCNPJ(value: string) {
-  return value
-    .replace(/\D/g, "")
-    .replace(/^(\d{2})(\d)/, "$1.$2")
-    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
-    .replace(/\.(\d{3})(\d)/, ".$1/$2")
-    .replace(/(\d{4})(\d)/, "$1-$2")
-    .slice(0, 18);
-}
 
-function maskCEP(value: string) {
-  return value
-    .replace(/\D/g, "")
-    .replace(/^(\d{5})(\d)/, "$1-$2")
-    .slice(0, 9);
-}
 
-function maskCPF(value: string) {
-  const digits = value.replace(/\D/g, "").slice(0, 11);
-  return digits
-    .replace(/^(\d{3})(\d)/, "$1.$2")
-    .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
-    .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-}
 
-function isPasswordValid(password: string) {
-  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/.test(password);
-}
+
+
+
+
 
 export function RegisterScreen() {
   const [form, setForm] = useState<FormData>({
@@ -121,7 +103,7 @@ export function RegisterScreen() {
   const lookupCep = async () => {
     if (lookingUpCep) return;
     const cep = form.zipCode.replace(/\D/g, "");
-    if (cep.length !== 8) {
+    if (!validateCEP(form.zipCode)) {
       setErrors((previous) => ({ ...previous, zipCode: true }));
       setMsg("Informe um CEP válido com 8 dígitos.");
       setAlertType("error");
@@ -192,9 +174,13 @@ export function RegisterScreen() {
       if (!form[field].trim()) newErrors[field] = true;
     });
 
-    if (form.state && !/^[A-Za-z]{2}$/.test(form.state)) {
-      newErrors.state = true;
-    }
+    if (!validateRequiredText(form.unitName, 100, 3)) newErrors.unitName = true;
+    if (!validateName(form.ownerName)) newErrors.ownerName = true;
+    if (!validateCPF(form.cpf)) newErrors.cpf = true;
+    if (!validateCNPJ(form.cnpj)) newErrors.cnpj = true;
+    if (!validateEmail(form.email)) newErrors.email = true;
+    if (!validateUF(form.state)) newErrors.state = true;
+    if (!validateCEP(form.zipCode)) newErrors.zipCode = true;
 
     if (form.password !== form.confirmPassword) {
       newErrors.password = true;
@@ -207,6 +193,10 @@ export function RegisterScreen() {
       );
     }
 
+    if (Object.keys(newErrors).length) {
+      setMsg('Revise os campos destacados: documento, nome, e-mail, UF, CEP e senha devem ser válidos.');
+      setAlertType('error');
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -225,17 +215,17 @@ export function RegisterScreen() {
       const data = await apiPost("/auth/register-unit", {
         legal_acceptance: legalAcceptance,
         owner: {
-          name: form.ownerName,
-          email: form.email,
+          name: form.ownerName.trim(),
+          email: form.email.trim().toLowerCase(),
           cpf: form.cpf.replace(/\D/g, ""),
           password: form.password,
         },
         unit: {
           ...(pin ?? {}),
-          name: form.unitName,
-          cnpj: form.cnpj.replace(/\D/g, ""),
+          name: form.unitName.trim(),
+          cnpj: normalizeCNPJ(form.cnpj),
           city: form.city,
-          state: form.state.toUpperCase(),
+          state: form.state.trim().toUpperCase(),
           zip_code: form.zipCode,
           street: form.street,
           number: form.number || undefined,
@@ -299,7 +289,7 @@ export function RegisterScreen() {
                 <RequiredLabel htmlFor="unit-cnpj" label="CNPJ" required />
                 <Input
                   id="unit-cnpj"
-                  inputMode="numeric"
+                  inputMode="text"
                   value={form.cnpj}
                   onInput={(e) => {
                     const value = maskCNPJ(e.currentTarget.value);

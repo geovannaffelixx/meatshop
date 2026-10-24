@@ -1,3 +1,4 @@
+import { paginatedResult, searchPattern } from '../../common/dtos/panel-list-query.dto';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -52,6 +53,36 @@ export class ListPromotionsUseCase {
           totalPages: Math.max(Math.ceil(total / filters.limit), 1),
         },
       };
+    }
+    if (filters.paginated === 'true') {
+      const query = this.promotionRepository
+        .createQueryBuilder('promotion')
+        .leftJoinAndSelect('promotion.product', 'product');
+      if (filters.unit_id)
+        query.andWhere('promotion.unit_id = :unitId', { unitId: filters.unit_id });
+      if (filters.product_id)
+        query.andWhere('promotion.product_id = :productId', { productId: filters.product_id });
+      if (filters.active !== undefined)
+        query.andWhere('promotion.active = :active', { active: filters.active === 'true' });
+      if (filters.search?.trim())
+        query.andWhere('(promotion.title ILIKE :search OR product.name ILIKE :search)', {
+          search: searchPattern(filters.search),
+        });
+      const status = filters.status;
+      if (status)
+        query.andWhere('promotion.active = :statusActive', { statusActive: status !== 'Inativa' });
+      if (status === 'Ativa')
+        query.andWhere('promotion.starts_at <= :now AND promotion.ends_at >= :now', {
+          now: new Date(),
+        });
+      if (status === 'Agendada') query.andWhere('promotion.starts_at > :now', { now: new Date() });
+      if (status === 'Expirada') query.andWhere('promotion.ends_at < :now', { now: new Date() });
+      const [data, total] = await query
+        .orderBy('promotion.id', 'ASC')
+        .skip((filters.page - 1) * filters.limit)
+        .take(filters.limit)
+        .getManyAndCount();
+      return paginatedResult(data, total, filters);
     }
     const where: Record<string, unknown> = {};
     if (filters.unit_id) where.unit_id = filters.unit_id;

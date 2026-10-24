@@ -1,3 +1,5 @@
+import { AuditRequestContextMiddleware } from './audit/audit-request-context';
+import { MonitoringModule } from './monitoring/monitoring.module';
 import { LegalDocument } from './legal/entities/legal-document.entity';
 import { LegalAcceptance } from './legal/entities/legal-acceptance.entity';
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
@@ -43,6 +45,7 @@ import { RecipeProduct } from './recipes/entities/recipe-product.entity';
 import { Chat } from './chat/entities/chat.entity';
 import { Notification } from './notifications/entities/notification.entity';
 import { UserDeviceToken } from './notifications/entities/user-device-token.entity';
+import { NotificationPreference } from './notifications/entities/notification-preference.entity';
 import { SavedPaymentMethod } from './saved-payment-methods/entities/saved-payment-method.entity';
 import { BusinessHours } from './units/entities/business-hours.entity';
 import { Unit } from './units/entities/unit.entity';
@@ -87,6 +90,7 @@ import { AiModule } from './ai/ai.module';
     ConfigModule.forRoot({ isGlobal: true }),
     LoggerModule,
     MetricsModule,
+    MonitoringModule,
     FirebaseModule,
     ScheduleModule.forRoot(),
     StorageModule,
@@ -153,6 +157,7 @@ import { AiModule } from './ai/ai.module';
             BusinessHours,
             Notification,
             UserDeviceToken,
+            NotificationPreference,
             Chat,
             AiConversation,
             AiMessage,
@@ -199,6 +204,8 @@ import { AiModule } from './ai/ai.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(RateLimitMiddleware, AppCheckMiddleware).forRoutes('*');
+    consumer
+      .apply(AuditRequestContextMiddleware, RateLimitMiddleware, AppCheckMiddleware)
+      .forRoutes('*');
   }
 }

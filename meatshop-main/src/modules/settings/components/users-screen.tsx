@@ -1,11 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { maskCPF } from "@/shared/lib/input-masks";
+import { validateName, validateEmail, validateCPF, validatePassword } from "@/shared/lib/validators";
+
+import { ReusableTable, type TableColumn } from "@/shared/components/reusable-table";
+import { DataPagination } from "@/shared/components/data-pagination";
+import { useServerList } from "@/shared/hooks/use-server-list";
+import { SearchField } from "@/shared/components/search-field";
+import { PageHeader } from "@/shared/components/page-header";
+
+
+
+
+import { useState } from "react";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
 import { PasswordInput } from "@/shared/components/ui/password-input";
 import { Spinner } from "@/shared/components/ui/spinner";
 import { RequiredMark } from "@/shared/components/ui/required-mark";
-import { apiDelete, apiGet, apiPatch, apiPost } from "@/shared/lib/api";
+import { apiDelete, apiPatch, apiPost } from "@/shared/lib/api";
 import { toast } from "@/shared/lib/toast";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -50,9 +62,7 @@ const labels: Record<Role, string> = {
 
 function TeamManager() {
   const { unitId, selectedMembership } = usePanelAccess();
-  const [members, setMembers] = useState<Member[]>([]);
   const [form, setForm] = useState<NewMember>(emptyMember);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState<Member | null>(null);
   const [confirmingRemoval, setConfirmingRemoval] = useState(false);
@@ -60,27 +70,21 @@ function TeamManager() {
   const canAssignManager =
     selectedMembership?.role === "OWNER" || selectedMembership?.role === null;
 
-  const load = useCallback(async () => {
-    if (!unitId) return;
-    setLoading(true);
-    try {
-      setMembers(await apiGet(`/units/${unitId}/members`));
-    } finally {
-      setLoading(false);
-    }
-  }, [unitId]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const [search, setSearch] = useState('');
+  const query = useServerList<Member>(unitId ? `/units/${unitId}/members` : null, search);
+  const { isPending: loading, refetch: load, error, pagination } = query;
 
   async function createMember(event: React.FormEvent) {
     event.preventDefault();
     if (!unitId) return;
+    const validationError = !validateName(form.name) ? 'Informe um nome válido.' : !validateEmail(form.email) ? 'Informe um e-mail válido.' : !validateCPF(form.cpf) ? 'Informe um CPF válido.' : !validatePassword(form.password) ? 'Use senha de 8 a 64 caracteres com maiúscula, minúscula, número e especial.' : null;
+    if (validationError) { toast.warning(validationError); return; }
     setSaving(true);
     try {
       await apiPost(`/units/${unitId}/members/create`, {
         ...form,
+        name: form.name.trim(),
+        email: form.email.trim().toLowerCase(),
         cpf: form.cpf.replace(/\D/g, ""),
         vehicle: form.local_role === "DELIVERY" ? form.vehicle : undefined,
       });
@@ -130,7 +134,7 @@ function TeamManager() {
         <PasswordInput
           value={form[key]}
           onChange={(event) =>
-            setForm((current) => ({ ...current, [key]: event.target.value }))
+            setForm((current) => ({ ...current, [key]: key === "cpf" ? maskCPF(event.target.value) : event.target.value }))
           }
           className="mt-1 w-full"
           placeholder="Digite uma senha temporária"
@@ -141,7 +145,7 @@ function TeamManager() {
           type={type}
           value={form[key]}
           onChange={(event) =>
-            setForm((current) => ({ ...current, [key]: event.target.value }))
+            setForm((current) => ({ ...current, [key]: key === "cpf" ? maskCPF(event.target.value) : event.target.value }))
           }
           className="mt-1 w-full rounded-md border px-3 py-2"
           placeholder={key === "name" ? "Ex.: João da Silva" : key === "email" ? "nome@empresa.com.br" : "000.000.000-00"}
@@ -151,11 +155,21 @@ function TeamManager() {
     </label>
   );
 
+  const columns: TableColumn<Member>[] = [
+    { id: 'user', header: 'Usuário', accessor: row => <><strong>{row.user.name}</strong><div className="text-slate-500">{row.user.email}</div></> },
+    { id: 'role', header: 'Cargo', accessor: row => row.local_role === 'OWNER' || row.local_role === 'DELIVERY' ? labels[row.local_role] : <select aria-label={`Cargo de ${row.user.name}`} value={row.local_role} disabled={busyId === row.id} onChange={event => void updateMember(row, { local_role: event.target.value as 'MANAGER' | 'OPERATOR' })} className="rounded-lg border px-2 py-1"><option value="OPERATOR">Operador</option>{canAssignManager && <option value="MANAGER">Gerente</option>}</select> },
+    { id: 'status', header: 'Status', accessor: row => <span className={`rounded-full px-2 py-1 text-xs font-medium ${row.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>{row.status === 'ACTIVE' ? 'Ativo' : 'Inativo'}</span> },
+    { id: 'actions', header: 'Ações', textAlign: 'end', accessor: row => row.local_role !== 'OWNER' && <div className="flex justify-end gap-3">
+      <Button type="button" variant="ghost" size="sm" disabled={busyId === row.id} onClick={() => void updateMember(row, { status: row.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' })}>{busyId === row.id ? 'Atualizando...' : row.status === 'ACTIVE' ? 'Desativar' : 'Ativar'}</Button>
+      <Button type="button" variant="ghost" size="sm" disabled={busyId === row.id} onClick={() => setRemoving(row)}>Remover</Button>
+    </div> },
+  ];
+
   return (
     <div className="page-surface">
     <div className="page-container max-w-6xl">
       <section className="rounded-xl border bg-white p-6">
-        <h1 className="text-2xl font-bold text-gray-900">Equipe e acessos</h1>
+        <PageHeader eyebrow="Configurações" title="Equipe e acessos" />
         <p className="mt-1 text-sm text-gray-600">
           Crie contas para funcionários e determine o que cada pessoa pode
           administrar nesta unidade.
@@ -223,102 +237,16 @@ function TeamManager() {
         </p>
       </section>
 
-      <section className="overflow-x-auto rounded-xl border bg-white">
-        <div className="border-b p-5">
+      <section className="space-y-4">
+        <div>
           <h2 className="text-lg font-semibold">Usuários vinculados</h2>
           <p className="text-sm text-gray-500">
             Proprietários não podem ser removidos nem ter o cargo alterado.
           </p>
         </div>
-        <table className="w-full text-left text-sm">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="p-3">Usuário</th>
-              <th className="p-3">Cargo</th>
-              <th className="p-3">Status</th>
-              <th className="p-3 text-right">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {members.map((member) => (
-              <tr key={member.id} className="border-t">
-                <td className="p-3">
-                  <strong>{member.user.name}</strong>
-                  <div className="text-gray-500">{member.user.email}</div>
-                </td>
-                <td className="p-3">
-                  {member.local_role === "OWNER" ||
-                  member.local_role === "DELIVERY" ? (
-                    labels[member.local_role]
-                  ) : (
-                    <select
-                      aria-label={`Cargo de ${member.user.name}`}
-                      value={member.local_role}
-                      onChange={(event) =>
-                        void updateMember(member, {
-                          local_role: event.target.value as
-                            "MANAGER" | "OPERATOR",
-                        })
-                      }
-                      className="rounded border px-2 py-1"
-                    >
-                      <option value="OPERATOR">Operador</option>
-                      {canAssignManager && (
-                        <option value="MANAGER">Gerente</option>
-                      )}
-                    </select>
-                  )}
-                </td>
-                <td className="p-3">
-                  <span
-                    className={`rounded-full px-2 py-1 text-xs font-medium ${member.status === "ACTIVE" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}`}
-                  >
-                    {member.status === "ACTIVE" ? "Ativo" : "Inativo"}
-                  </span>
-                </td>
-                <td className="space-x-3 p-3 text-right">
-                  {member.local_role !== "OWNER" && (
-                    <>
-                      <button
-                        disabled={busyId === member.id}
-                        onClick={() =>
-                          void updateMember(member, {
-                            status:
-                              member.status === "ACTIVE"
-                                ? "INACTIVE"
-                                : "ACTIVE",
-                          })
-                        }
-                        className="text-blue-700 hover:underline disabled:opacity-50"
-                      >
-                        {busyId === member.id
-                          ? "Atualizando..."
-                          : member.status === "ACTIVE"
-                            ? "Desativar"
-                            : "Ativar"}
-                      </button>
-                      <button
-                        disabled={busyId === member.id}
-                        onClick={() => setRemoving(member)}
-                        className="text-red-700 hover:underline disabled:opacity-50"
-                      >
-                        Remover
-                      </button>
-                    </>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {loading && (
-          <p className="p-6 text-center text-gray-500">Carregando equipe...</p>
-        )}
-        {!loading && members.length === 0 && (
-          <p className="p-6 text-center text-gray-500">
-            Nenhum usuário vinculado.
-          </p>
-        )}
+        <SearchField value={search} onValueChange={setSearch} label="Buscar equipe" placeholder="Buscar por nome ou e-mail" className="mb-4 max-w-xl" />
+        <ReusableTable data={query.rows} columns={columns} caption="Equipe e acessos" keyExtractor={row => row.id} isLoading={loading} emptyMessage="Nenhum usuário vinculado." footer={<DataPagination {...pagination} isLoading={loading} />} />
+        {error && <p role="alert" className="p-6 text-red-700">{error.message}</p>}
       </section>
 
       <Dialog open={Boolean(removing)} onOpenChange={(nextOpen) => !nextOpen && setRemoving(null)}>

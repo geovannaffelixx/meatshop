@@ -35,11 +35,22 @@ import { OrderStatusTransitionValidator } from './validators/order-status-transi
 import { StockAvailabilityValidator } from './validators/stock-availability.validator';
 import { CheckoutPricingService } from './services/checkout-pricing.service';
 import { QuoteCartUseCase } from './use-cases/quote-cart.use-case';
+import { SchedulingAvailabilityService } from './services/scheduling-availability.service';
+import { BusinessHours } from '../units/entities/business-hours.entity';
+import { Unit } from '../units/entities/unit.entity';
 
 @Module({
   imports: [
     MetricsModule,
-    TypeOrmModule.forFeature([Order, OrderItem, Payment, OrderStatusHistory, DeliveryPerson]),
+    TypeOrmModule.forFeature([
+      Order,
+      OrderItem,
+      Payment,
+      OrderStatusHistory,
+      DeliveryPerson,
+      BusinessHours,
+      Unit,
+    ]),
     UnitsModule,
     ProductsModule,
     UsersModule,
@@ -69,6 +80,7 @@ import { QuoteCartUseCase } from './use-cases/quote-cart.use-case';
     CancelOrderUseCase,
     ScheduleOrderUseCase,
     RepeatOrderUseCase,
+    SchedulingAvailabilityService,
   ],
   exports: [
     SellerAccountsService,

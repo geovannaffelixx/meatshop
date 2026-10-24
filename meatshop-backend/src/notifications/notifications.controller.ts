@@ -20,12 +20,14 @@ import { CreateNotificationDto } from './dtos/create-notification.dto';
 import { ListNotificationsQueryDto } from './dtos/list-notifications-query.dto';
 import { RegisterDeviceTokenDto } from './dtos/register-device-token.dto';
 import { UnregisterDeviceTokenDto } from './dtos/unregister-device-token.dto';
+import { UpdateNotificationPreferencesDto } from './dtos/update-notification-preferences.dto';
 import { ListNotificationsUseCase } from './use-cases/list-notifications.use-case';
 import { MarkAllAsReadUseCase } from './use-cases/mark-all-as-read.use-case';
 import { MarkAsReadUseCase } from './use-cases/mark-as-read.use-case';
 import { RegisterDeviceTokenUseCase } from './use-cases/register-device-token.use-case';
 import { SendNotificationUseCase } from './use-cases/send-notification.use-case';
 import { UnregisterDeviceTokenUseCase } from './use-cases/unregister-device-token.use-case';
+import { ManageNotificationPreferencesUseCase } from './use-cases/manage-notification-preferences.use-case';
 
 @ApiTags('Notifications')
 @ApiBearerAuth('access-token')
@@ -38,7 +40,35 @@ export class NotificationsController {
     private readonly registerDeviceTokenUseCase: RegisterDeviceTokenUseCase,
     private readonly unregisterDeviceTokenUseCase: UnregisterDeviceTokenUseCase,
     private readonly sendNotificationUseCase: SendNotificationUseCase,
+    private readonly manageNotificationPreferencesUseCase: ManageNotificationPreferencesUseCase,
   ) {}
+
+  @ApiOperation({
+    summary: 'Gets the authenticated user notification preferences',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Notification preferences returned successfully',
+  })
+  @Get('preferences')
+  preferences(@CurrentUser() currentUser: User) {
+    return this.manageNotificationPreferencesUseCase.get(currentUser);
+  }
+
+  @ApiOperation({
+    summary: 'Updates the authenticated user notification preferences',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Notification preferences updated successfully',
+  })
+  @Patch('preferences')
+  updatePreferences(
+    @Body() dto: UpdateNotificationPreferencesDto,
+    @CurrentUser() currentUser: User,
+  ) {
+    return this.manageNotificationPreferencesUseCase.update(dto, currentUser);
+  }
 
   @ApiOperation({ summary: 'Lists the authenticated user notifications' })
   @ApiResponse({

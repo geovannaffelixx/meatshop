@@ -1,4 +1,16 @@
 "use client"
+
+import { formatDate as formatLocalDate } from "@/shared/lib/formatters";
+
+import { maskCPFOrCNPJ as formatCpfCnpj } from "@/shared/lib/input-masks";
+import { validateDocument } from "@/shared/lib/validators";
+import { isValidDate, toDateInput } from "@/shared/lib/date-time";
+
+import { Skeleton } from "@/shared/components/ui/skeleton";
+
+import { useApiQuery } from "@/shared/hooks/use-api-query";
+
+import { DataSkeleton } from "@/shared/components/data-skeleton";
 import React, { useState, useEffect, useRef, ChangeEvent } from "react"
 import { Button } from "@/shared/components/ui/button"
 import {
@@ -23,7 +35,7 @@ import { Spinner } from "@/shared/components/ui/spinner"
 import { Plus } from "lucide-react"
 import { PaymentManagement } from "./payment-management"
 import { FinanceSummary } from "./finance-summary"
-import { apiGet, apiPost, apiPut, apiDelete } from "@/shared/lib/api"
+import { apiPost, apiPut, apiDelete } from "@/shared/lib/api"
 import { toast } from "@/shared/lib/toast"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
 import { PageHeader } from "@/shared/components/page-header"
@@ -123,44 +135,8 @@ function formatCurrency(value: number) {
   })
 }
 
-function formatCpfCnpj(raw: string) {
-  const digits = raw.replace(/\D/g, "").slice(0, 14)
-  if (digits.length <= 11) {
-    const p1 = digits.slice(0, 3)
-    const p2 = digits.slice(3, 6)
-    const p3 = digits.slice(6, 9)
-    const p4 = digits.slice(9, 11)
-    let s = p1
-    if (p2) s += "." + p2
-    if (p3) s += "." + p3
-    if (p4) s += "-" + p4
-    return s
-  } else {
-    const p1 = digits.slice(0, 2)
-    const p2 = digits.slice(2, 5)
-    const p3 = digits.slice(5, 8)
-    const p4 = digits.slice(8, 12)
-    const p5 = digits.slice(12, 14)
-    let s = p1
-    if (p2) s += "." + p2
-    if (p3) s += "." + p3
-    if (p4) s += "/" + p4
-    if (p5) s += "-" + p5
-    return s
-  }
-}
-function getMonthParam() {
-  const d = new Date()
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, "0")
-  return `${y}-${m}`
-}
-function formatLocalDate(iso?: string) {
-  if (!iso) return "-"
-  const [y, m, d] = iso.split("-")
-  if (!y || !m || !d) return iso
-  return `${d}/${m}/${y}`
-}
+
+function getMonthParam() { return toDateInput(new Date()).slice(0, 7); }
 function mapExpenses(list: ExpenseApi[]): Expense[] {
   return list.map((e) => ({
     id: String(e.id),
@@ -179,21 +155,25 @@ function mapExpenses(list: ExpenseApi[]): Expense[] {
 }
 
 export function FinanceScreen() {
-  const { units, unitId, setUnitId, loading: unitsLoading } = useManagedUnits()
+  const { units, unitId, loading: unitsLoading } = useManagedUnits()
   const [open, setOpen] = useState(false)
   const [month, setMonth] = useState(getMonthParam())
 
-  const [expenses, setExpenses] = useState<Expense[]>([])
-  const [revenueSeries, setRevenueSeries] = useState<RevenuePoint[]>([])
-  const [revenueTotal, setRevenueTotal] = useState(0)
-  const [expenseTotal, setExpenseTotal] = useState(0)
-  const [payments, setPayments] = useState<PaymentSlice[]>([])
-  const [expenseSeries, setExpenseSeries] = useState<RevenuePoint[]>([])
-  const [financeRevision, setFinanceRevision] = useState(0)
-
-  const [loading, setLoading] = useState(false)
+  const queryParams = `month=${month}&unit_id=${unitId}`;
+  const expensesQuery = useApiQuery<ExpenseApi[]>(unitId ? `/finance/expenses?${queryParams}` : null, { refetchInterval: 30000 });
+  const summaryQuery = useApiQuery<SummaryApi>(unitId ? `/finance/summary?${queryParams}` : null, { refetchInterval: 30000 });
+  const revenueQuery = useApiQuery<RevenueApi>(unitId ? `/finance/revenue?${queryParams}` : null, { refetchInterval: 30000 });
+  const expenses = mapExpenses(expensesQuery.data ?? []);
+  const summary = summaryQuery.data;
+  const expenseTotal = parseFloat(summary?.expensesTotal?.toString().replace(',', '.') ?? '') || 0;
+  const expenseSeries = summary?.expensesByDay ?? [];
+  const payments: PaymentSlice[] = (summary?.payments ?? []).map(p => ({ name: p.name === 'Mercado Pago Balance' ? 'Mercado Pago' : p.name, value: roundMoney(parseFloat(p.value?.toString().replace(',', '.') ?? '') || 0) }));
+  const revenueTotal = revenueQuery.data?.revenueTotal ?? 0;
+  const revenueDaysInMonth = new Date(Number(month.split('-')[0]), Number(month.split('-')[1]), 0).getDate();
+  const revenueSeries: RevenuePoint[] = Array.from({ length: revenueDaysInMonth }, (_, i) => ({ day: i + 1, value: revenueQuery.data?.series.find(p => p.day === i + 1)?.value ?? 0 }));
+  const loading = expensesQuery.isPending || summaryQuery.isPending || revenueQuery.isPending;
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const error = expensesQuery.error?.message ?? summaryQuery.error?.message ?? revenueQuery.error?.message;
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [removing, setRemoving] = useState<Expense | null>(null)
@@ -225,86 +205,9 @@ export function FinanceScreen() {
     }
   }, [])
 
-  const reloadExpensesAndSummary = async (
-    isCurrent: () => boolean = () => true,
-  ) => {
-    if (!unitId) return
-    const query = `month=${month}&unit_id=${unitId}`
-    const [expensesApi, summary]: [ExpenseApi[], SummaryApi] =
-      await Promise.all([
-        apiGet(`/finance/expenses?${query}`),
-        apiGet(`/finance/summary?${query}`),
-      ])
-
-    if (!isCurrent() || activeScope.current !== `${unitId}:${month}`) return
-    setExpenses(mapExpenses(expensesApi))
-    setExpenseTotal(
-      parseFloat(summary.expensesTotal?.toString().replace(",", ".")) || 0,
-    )
-    setExpenseSeries(summary.expensesByDay ?? [])
-    setPayments(
-      (summary.payments ?? []).map((p) => ({
-        name: p.name === "Mercado Pago Balance" ? "Mercado Pago" : p.name,
-        value: roundMoney(
-          parseFloat(p.value?.toString().replace(",", ".")) || 0,
-        ),
-      })),
-    )
-  }
-
-  useEffect(() => {
-    if (!unitId) return
-    let active = true
-    let fetching = false
-
-    const load = async (background = false) => {
-      if (fetching) return
-      fetching = true
-      try {
-        if (!background) setLoading(true)
-        setError(null)
-
-        const query = `month=${month}&unit_id=${unitId}`
-
-        const revenue: RevenueApi = await apiGet(`/finance/revenue?${query}`)
-        if (!active) return
-
-        const byDay = new Map<number, number>()
-        revenue.series.forEach((s) => byDay.set(s.day, s.value))
-
-        const daysInMonth = new Date(
-          Number(month.split("-")[0]),
-          Number(month.split("-")[1]),
-          0,
-        ).getDate()
-
-        const series: RevenuePoint[] = Array.from(
-          { length: daysInMonth },
-          (_, i) => ({
-            day: i + 1,
-            value: byDay.get(i + 1) ?? 0,
-          }),
-        )
-        setRevenueSeries(series)
-        setRevenueTotal(revenue.revenueTotal || 0)
-
-        await reloadExpensesAndSummary(() => active)
-      } catch (err) {
-        console.error(err)
-        if (active) setError("Falha ao carregar dados do Financeiro.")
-      } finally {
-        fetching = false
-        if (active) setLoading(false)
-      }
-    }
-    void load()
-    const timer = setInterval(() => void load(true), 30_000)
-    return () => {
-      active = false
-      clearInterval(timer)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [month, unitId, financeRevision])
+  const reloadExpensesAndSummary = async () => {
+    await Promise.all([expensesQuery.refetch(), summaryQuery.refetch(), revenueQuery.refetch()]);
+  };
 
   useEffect(() => {
     const amount = parseCurrencyToNumber(form.amount)
@@ -379,6 +282,8 @@ export function FinanceScreen() {
       return
     }
 
+    if (form.cpfCnpj && !validateDocument(form.cpfCnpj)) { toast.warning('Informe um CPF ou CNPJ válido.'); return; }
+    if ((form.postedAt && !isValidDate(form.postedAt)) || (form.paidAt && !isValidDate(form.paidAt))) { toast.warning('Informe datas válidas.'); return; }
     setSaving(true)
 
     try {
@@ -467,22 +372,7 @@ export function FinanceScreen() {
               className="input mt-1 w-full sm:min-w-48"
             />
           </label>
-          {units.length > 1 && (
-            <label className="text-sm font-medium text-slate-700">
-              Unidade
-              <select
-                value={unitId ?? ""}
-                onChange={(e) => setUnitId(Number(e.target.value))}
-                className="input mt-1 w-full sm:min-w-48"
-              >
-                {units.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
+
         </div>
 
         {unitId && (
@@ -517,15 +407,15 @@ export function FinanceScreen() {
                 <p className="text-sm font-medium text-slate-500">
                   {item.label}
                 </p>
-                <p
+                <div
                   className={`break-words text-2xl font-semibold tracking-tight tabular-nums ${item.color}`}
                 >
                   {loading
-                    ? "—"
+                    ? <Skeleton className="h-8 w-28" />
                     : error
                       ? "Indisponível"
                       : formatCurrency(item.value)}
-                </p>
+                </div>
               </Card>
             ))}
           </div>
@@ -536,7 +426,7 @@ export function FinanceScreen() {
             key={`${unitId}:${month}`}
             unitId={unitId}
             month={month}
-            onFinancialChange={() => setFinanceRevision((v) => v + 1)}
+            onFinancialChange={() => void reloadExpensesAndSummary()}
           />
         )}
 
@@ -851,7 +741,7 @@ export function FinanceScreen() {
                         colSpan={6}
                         className="p-6 text-center italic text-gray-500"
                       >
-                        Carregando despesas...
+                        <DataSkeleton label="Carregando despesas..." />
                       </td>
                     </tr>
                   ) : expenses.length === 0 ? (

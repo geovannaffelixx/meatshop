@@ -1,4 +1,7 @@
 "use client";
+import { formatDateValue } from '@/shared/lib/date-time';
+
+import { DataSkeleton } from "@/shared/components/data-skeleton";
 
 import Link from "next/link";
 import { mergeSnapshot, newerPoint, pointTime } from '../location-state';
@@ -75,11 +78,11 @@ function signalFor(delivery: LiveDelivery, now: number) {
 
 function formatLastSignal(delivery: LiveDelivery) {
   if (!delivery.location) return "Nenhuma posição recebida";
-  return `Atualizado às ${new Intl.DateTimeFormat("pt-BR", {
+  return `Atualizado às ${formatDateValue(delivery.location.recordedAt, {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
-  }).format(new Date(delivery.location.recordedAt))}`;
+  })}`;
 }
 
 export function DeliveriesScreen() {
@@ -115,7 +118,7 @@ export function DeliveriesScreen() {
       if (!unitId) return;
       const data = (await apiGet(
         `/delivery/units/${unitId}/people`,
-        silent ? { silent: true } : undefined,
+        silent ? { silent: true, cache: false } : undefined,
       )) as UnitDeliveryPerson[];
       if (latestUnit.current === unitId) setPeople(data);
     },
@@ -130,7 +133,7 @@ export function DeliveriesScreen() {
       try {
         const data = (await apiGet(
           `/delivery/units/${unitId}/live`,
-          silent ? { silent: true } : undefined,
+          silent ? { silent: true, cache: false } : undefined,
         )) as LiveDeliveriesSnapshot;
         if (latestUnit.current !== unitId || version !== requestVersion.current) return;
         setSnapshot(current => mergeSnapshot(current, data));
@@ -319,9 +322,7 @@ export function DeliveriesScreen() {
 
   if (accessLoading || loading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center text-slate-500">
-        Carregando operação de entregas...
-      </div>
+      <DataSkeleton label="Carregando operação de entregas..." />
     );
   }
 

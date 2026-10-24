@@ -57,6 +57,9 @@ export class Promotion {
   @Column({ type: 'boolean', default: true })
   active: boolean;
 
+  @Column({ type: 'timestamptz', nullable: true })
+  notification_sent_at: Date | null;
+
   @CreateDateColumn()
   created_at: Date;
 }

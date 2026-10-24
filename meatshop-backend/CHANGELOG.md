@@ -2,6 +2,46 @@
 
 Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Changelog e Semantic Versioning.
 
+## Panel pagination and unit gallery - 2026-10-24
+
+- Reject non-array upload parameters before reading file counts, with regression coverage for parameter tampering (CodeQL alert #6).
+- Server-side search and paginated panel lists with filtered totals and preserved legacy array contracts.
+- Product management filters and unit-scoped order pagination with actor authorization.
+- Unit cover/gallery uploads, protected removal, transactional capacity checks and storage cleanup.
+- Additive unit gallery migration and public gallery URLs; existing mobile logo/cover contracts preserved.
+- Regression tests for pagination bounds, query scopes and media persistence/authorization.
+
+## [3.3.0] - 2026-10-20 - Fechamento de lacunas funcionais
+
+### Complemento da especificacao original (23/10/2026)
+
+- Contratos de criação de unidade aceitam CNPJ numérico ou alfanumérico normalizado, preservando as duas posições finais numéricas.
+
+- Bloqueio de login central, auditoria transacional com ator e protecao contra TRUNCATE.
+- Despesas do entregador, exportacao dos proprios dados e retencao configuravel.
+- Catalogo publico protegido, filtros por cidade/regiao, paginacao SQL e validacao de estoque numerico.
+- Alertas somente no painel, adaptador Socket.IO PostgreSQL, CI de integracao e jornadas concorrentes.
+- Evidencias e decisoes: [implementacao dos 18 pontos](../docs/IMPLEMENTACAO_GAPS_330.md).
+
+### Adicionado
+
+- Busca pública combinada por texto, categoria, marca e faixa de preço, com endpoint de marcas disponíveis e paginação preservada.
+- Preferências de notificações persistidas no PostgreSQL para pedidos, entregas, promoções e sistema.
+- Agendamento configurável por unidade, com duração do intervalo, capacidade máxima, consulta dos horários comuns do carrinho e bloqueio transacional da última vaga.
+- Notificação de promoções novas ou reativadas somente para clientes ativos, com compra concluída na unidade e promoções habilitadas.
+
+### Alterado
+
+- Receita dos gráficos e do financeiro passa a representar exclusivamente recebimentos confirmados, líquidos de estornos e taxas, sem misturar o estado operacional dos pedidos.
+- Notificações continuam disponíveis na caixa de entrada quando o push da categoria estiver desabilitado; somente o envio ao dispositivo é suprimido.
+
+### Qualidade
+
+- Testes para busca, preferências, promoções, semântica financeira, configuração de agenda, capacidade e bloqueio concorrente.
+- Horários e capacidade gravados em uma única transação, com validação de dias duplicados e retorno de horários em HH:mm.
+- Campanhas futuras processadas na vigência por agendador com reivindicação atômica; preferências ausentes seguem o padrão habilitado e opt-out explícito é respeitado.
+- Migration adicional fortalece a configuração de capacidade e cria índice para reservas; testes PostgreSQL cobrem rollback, última vaga e campanhas concorrentes.
+
 ## [3.2.0] - 2026-10-18 - Termos e privacidade
 
 ### Adicionado

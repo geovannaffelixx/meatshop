@@ -1,5 +1,13 @@
 # Releases do painel web
 
+## 3.3.0 — Fechamento de lacunas funcionais
+
+Trabalho preparado em 20 de outubro de 2026.
+
+O responsável pela unidade pode habilitar o agendamento e configurar sua duração e capacidade junto aos horários de funcionamento. Uma unidade sem essa configuração deixa de oferecer horários no aplicativo. O dashboard e o financeiro também passam a diferenciar pedidos operacionais de receita confirmada, com textos explícitos para taxas, estornos e valores líquidos.
+
+A implantação deve ser coordenada com a API e o aplicativo 3.3.0. Esta preparação local não representa publicação ou deploy.
+
 ## 3.2.0 — Termos e privacidade
 
 Trabalho preparado em 18 de outubro de 2026.

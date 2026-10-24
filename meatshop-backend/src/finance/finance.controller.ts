@@ -36,7 +36,8 @@ export class FinanceController {
   ) {}
 
   @ApiOperation({
-    summary: 'Returns daily revenue for a month from delivered orders for a unit',
+    summary:
+      'Returns daily net revenue from paid and partially refunded payment receipts for a unit',
   })
   @ApiResponse({
     status: 200,

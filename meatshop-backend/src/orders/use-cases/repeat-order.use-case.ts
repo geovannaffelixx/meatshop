@@ -1,3 +1,8 @@
+import {
+  isPurchasableProduct,
+  isValidProductQuantity,
+  hasSufficientStock,
+} from '../../cart/services/product-availability.policy';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -33,14 +38,21 @@ export class RepeatOrderUseCase {
       const skippedItems: string[] = [];
       let added = 0;
       for (const item of items) {
-        const product = await manager.findOneBy(Product, { id: item.product_id });
+        const product = await manager.findOne(Product, {
+          where: { id: item.product_id },
+          relations: ['category'],
+        });
         const stock = await manager.findOneBy(Stock, { product_id: item.product_id });
         const existing = await manager.findOneBy(CartItem, {
           cart_id: cart.id,
           product_id: item.product_id,
         });
         const quantity = Math.max(Number(item.quantity), Number(existing?.quantity ?? 0));
-        if (!product?.active || !stock || Number(stock.quantity) < quantity) {
+        if (
+          !isPurchasableProduct(product) ||
+          !isValidProductQuantity(product, quantity) ||
+          !hasSufficientStock(Number(stock?.quantity ?? 0), quantity)
+        ) {
           skippedItems.push(product?.name ?? `Product #${item.product_id}`);
           continue;
         }
@@ -57,7 +69,6 @@ export class RepeatOrderUseCase {
         added++;
       }
       if (!added) throw new BadRequestException('None of the items are currently available');
-      // Review prices, address and payment before creating another order.
       return { cart_updated: true, skippedItems };
     });
   }

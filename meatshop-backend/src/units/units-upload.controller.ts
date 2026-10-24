@@ -1,7 +1,13 @@
+import { UnitPermission } from '../common/enums/unit-permission.enum';
+import { UnitMediaService } from './services/unit-media.service';
+import { IsString, MaxLength } from 'class-validator';
 import type { Express } from 'express';
 import {
   BadRequestException,
   Controller,
+  Delete,
+  Query,
+  UploadedFiles,
   NotFoundException,
   Param,
   ParseIntPipe,
@@ -9,7 +15,7 @@ import {
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { memoryStorage } from 'multer';
@@ -35,6 +41,10 @@ function imageFileFilter(_req: any, file: Express.Multer.File, cb: any) {
   cb(null, true);
 }
 
+class RemoveUnitImageQueryDto {
+  @IsString() @MaxLength(2048) url: string;
+}
+
 @ApiTags('Units')
 @Controller('units')
 export class UnitsUploadController {
@@ -42,6 +52,7 @@ export class UnitsUploadController {
     @InjectRepository(Unit) private readonly units: Repository<Unit>,
     private readonly unitAuthorizationService: UnitAuthorizationService,
     private readonly storage: MediaStorageService,
+    private readonly media: UnitMediaService,
   ) {}
 
   @Post(':id/logo')
@@ -78,7 +89,11 @@ export class UnitsUploadController {
     const unit = await this.units.findOne({ where: { id } });
     if (!unit) throw new NotFoundException('Unit not found');
 
-    await this.unitAuthorizationService.assertCanManageUnit(unit, currentUser);
+    await this.unitAuthorizationService.assertHasPermission(
+      currentUser,
+      unit.id,
+      UnitPermission.MANAGE_UNIT,
+    );
 
     const previousUrl = unit.image_url;
     unit.image_url = await this.storage.upload(file, 'units');
@@ -86,5 +101,54 @@ export class UnitsUploadController {
     await this.storage.delete(previousUrl);
 
     return { ok: true, image_url: unit.image_url };
+  }
+
+  @Post(':id/cover')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Replaces the unit cover shown in the marketplace' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      fileFilter: imageFileFilter,
+      limits: { fileSize: 2 * 1024 * 1024 },
+    }),
+  )
+  cover(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() actor: User,
+  ) {
+    return this.media.upload(id, actor, file ? [file] : [], true);
+  }
+
+  @Post(':id/images')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Adds images to the unit gallery (maximum 10, 2 MB per image)' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FilesInterceptor('files', 10, {
+      storage: memoryStorage(),
+      fileFilter: imageFileFilter,
+      limits: { fileSize: 2 * 1024 * 1024 },
+    }),
+  )
+  images(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFiles() files: Express.Multer.File[],
+    @CurrentUser() actor: User,
+  ) {
+    return this.media.upload(id, actor, files);
+  }
+
+  @Delete(':id/images')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Removes a gallery image belonging to this unit' })
+  removeImage(
+    @Param('id', ParseIntPipe) id: number,
+    @Query() query: RemoveUnitImageQueryDto,
+    @CurrentUser() actor: User,
+  ) {
+    return this.media.remove(id, actor, query.url);
   }
 }

@@ -16,7 +16,7 @@ export function LegalGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, selectedMembership, unitId } = usePanelAccess();
   const scope = selectedMembership?.role === 'OWNER' ? (unitId ?? undefined) : undefined;
-  const key = `${user?.id}:${scope ?? ''}:${pathname}`;
+  const key = `${user?.id}:${scope ?? ''}`;
   const exempt =
     isPublicRoute(pathname) ||
     ['/support', '/settings/account', '/settings/legal'].some(

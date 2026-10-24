@@ -1,10 +1,12 @@
-import { Spinner } from "@/shared/components/ui/spinner";
+import { Loading } from '@/shared/components/loading';
+import { DataSkeleton } from '@/shared/components/data-skeleton';
 
 type LoadingOverlayProps = {
   title: string;
+  variant?: 'skeleton' | 'progress';
 };
 
-export function LoadingOverlay({ title }: LoadingOverlayProps) {
+export function LoadingOverlay({ title, variant = 'skeleton' }: LoadingOverlayProps) {
   return (
     <div
       className="fixed inset-0 z-[100] grid place-items-center bg-white/80 p-6 backdrop-blur-sm"
@@ -12,11 +14,13 @@ export function LoadingOverlay({ title }: LoadingOverlayProps) {
       aria-live="polite"
       aria-busy="true"
     >
-      <div className="flex min-w-56 flex-col items-center gap-4 rounded-2xl border border-slate-200 bg-white px-8 py-7 text-center shadow-xl shadow-slate-950/10">
-        <div className="grid size-12 place-items-center rounded-full bg-red-50 text-red-700">
-          <Spinner className="size-6" />
-        </div>
-        <p className="text-sm font-semibold text-slate-800">{title}</p>
+      <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-950/10">
+        {variant === 'progress' ? <Loading variant="dots" label={title} /> : (
+          <>
+            <DataSkeleton variant="form" label={title} />
+            <p className="text-sm font-semibold text-slate-800">{title}</p>
+          </>
+        )}
       </div>
     </div>
   );

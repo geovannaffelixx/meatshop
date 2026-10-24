@@ -1,3 +1,4 @@
+import { PostgresIoAdapter } from './common/adapters/postgres-io.adapter';
 import type { Request, Response, NextFunction } from 'express';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
@@ -74,6 +75,12 @@ async function bootstrap() {
   if (swaggerEnabled) {
     setupSwagger(app);
     appLogger.info('Swagger available at /docs');
+  }
+
+  if (process.env.SOCKET_IO_SHARED === 'true') {
+    const adapter = new PostgresIoAdapter(app);
+    await adapter.initialize();
+    app.useWebSocketAdapter(adapter);
   }
 
   const port = Number(process.env.PORT ?? 3001);

@@ -66,7 +66,12 @@ x-backend-environment: &backend-environment
   FIREBASE_SERVICE_ACCOUNT: ${FIREBASE_SERVICE_ACCOUNT:-}
   FIREBASE_PROJECT_ID: meatshop-3c78f
   FIREBASE_APP_CHECK_ENFORCED: "false"
-  FIREBASE_APP_CHECK_PROTECTED_PATHS: /auth/firebase-exchange
+  MONITORING_WEBHOOK_TOKEN: ${MONITORING_WEBHOOK_TOKEN:-}
+  BACKEND_REPLICAS: ${BACKEND_REPLICAS:-1}
+  AUTH_ATTEMPTS_RETENTION_DAYS: ${AUTH_ATTEMPTS_RETENTION_DAYS:-30}
+  SOCKET_IO_SHARED: ${SOCKET_IO_SHARED:-false}
+  FIREBASE_WEB_API_KEY: ${FIREBASE_WEB_API_KEY:-}
+  FIREBASE_APP_CHECK_PROTECTED_PATHS: /auth/firebase-exchange,/auth/firebase/exchange,/auth/mobile/password
   RATE_LIMIT_WINDOW_MS: "60000"
   RATE_LIMIT_MAX: "120"
   AI_RATE_LIMIT_WINDOW_MS: "60000"
@@ -215,6 +220,17 @@ services:
       timeout: 5s
       retries: 20
       start_period: 10s
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    profiles: ["observability"]
+    command: ["--config.file=/etc/alertmanager/alertmanager.yml"]
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ./secrets/monitoring-token.txt:/run/secrets/monitoring_token:ro
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true

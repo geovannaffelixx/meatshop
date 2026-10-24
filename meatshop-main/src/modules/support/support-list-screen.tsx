@@ -1,9 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { formatDateTime } from "@/shared/lib/formatters";
+
+import { useApiQuery } from "@/shared/hooks/use-api-query";
+
+import { DataSkeleton } from "@/shared/components/data-skeleton";
+
+import { useState } from "react";
 import { ImagePlus, LifeBuoy, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { apiGet, apiPost, apiUpload } from "@/shared/lib/api";
+import { apiPost, apiUpload } from "@/shared/lib/api";
 import { Spinner } from "@/shared/components/ui/spinner";
 import { RequiredMark } from "@/shared/components/ui/required-mark";
 import { Button } from "@/shared/components/ui/button";
@@ -45,31 +51,13 @@ export function SupportListScreen() {
   const router = useRouter();
   const { user, unitId } = usePanelAccess();
   const isAdmin = user?.global_role === "SUPER_ADMIN";
-  const [result, setResult] = useState<SearchResult>({ data: [], total: 0 });
   const [status, setStatus] = useState<SupportStatus | "">("");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(initialForm);
   const [images, setImages] = useState<File[]>([]);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const query = status ? `?status=${status}` : "";
-      setResult(
-        await apiGet(`/support-tickets/search${query}`, { silent: true }),
-      );
-    } catch {
-      toast.error("Não foi possível carregar os chamados.");
-    } finally {
-      setLoading(false);
-    }
-  }, [status]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const { data: result = { data: [], total: 0 }, isPending: loading, refetch: load, error } = useApiQuery<SearchResult>(`/support-tickets/search${status ? `?status=${status}` : ''}`);
 
   async function createTicket(event: React.FormEvent) {
     event.preventDefault();
@@ -92,6 +80,8 @@ export function SupportListScreen() {
       setSaving(false);
     }
   }
+
+  if (error) return <div className="p-8 text-red-700" role="alert">{error.message}<Button onClick={() => void load()}>Tentar novamente</Button></div>;
 
   return (
     <div className="page-surface">
@@ -139,9 +129,7 @@ export function SupportListScreen() {
 
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         {loading ? (
-          <p className="p-10 text-center text-slate-500">
-            Carregando chamados...
-          </p>
+          <DataSkeleton label="Carregando chamados..." />
         ) : result.data.length === 0 ? (
           <EmptyState
             icon={LifeBuoy}
@@ -183,7 +171,7 @@ export function SupportListScreen() {
                 {priorityLabels[ticket.priority]}
               </span>
               <time className="self-center text-xs text-slate-400">
-                {new Date(ticket.last_message_at).toLocaleString("pt-BR")}
+                {formatDateTime(ticket.last_message_at)}
               </time>
             </button>
           ))

@@ -1,4 +1,6 @@
 "use client";
+
+import { DataSkeleton } from "@/shared/components/data-skeleton";
 import { useEffect, useRef, useState } from 'react';
 import type { Map, Marker } from 'maplibre-gl';
 import { mapStyle, validPoint } from './map-style';
@@ -84,8 +86,10 @@ function PinMap({initial,onConfirm}:{initial?:AddressPin|null;onConfirm:(point:A
     },{enableHighAccuracy:true,timeout:20000,maximumAge:10000});
   }
   return <>
-    <div ref={host} className="h-80 w-full rounded-lg" aria-label="Escolha o ponto do endereço" />
-    {!ready&&!error&&<p role="status">Carregando mapa…</p>}
+    <div className="relative h-80">
+      <div ref={host} className="h-full w-full rounded-lg" aria-label="Escolha o ponto do endereço" />
+      {!ready&&!error&&<DataSkeleton label="Carregando mapa…" className="absolute inset-0 bg-slate-50" />}
+    </div>
     {message&&<p role="status" className="text-sm text-emerald-700">{message}</p>}
     {error&&<p role="alert" className="text-sm text-red-700">{error}</p>}
     <div className="flex justify-between gap-3">

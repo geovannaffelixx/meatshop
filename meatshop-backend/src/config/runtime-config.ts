@@ -30,6 +30,10 @@ export function readPositiveInteger(
 
 export function validateEnvironment(environment: Environment): void {
   getAllowedOrigins(environment);
+  const replicas = readPositiveInteger(environment, 'BACKEND_REPLICAS', 1);
+  if (replicas > 1 && environment.SOCKET_IO_SHARED !== 'true')
+    throw new Error('Multiple backend replicas require SOCKET_IO_SHARED=true');
+  readPositiveInteger(environment, 'AUTH_ATTEMPTS_RETENTION_DAYS', 30);
   readPositiveInteger(environment, 'RATE_LIMIT_WINDOW_MS', 60_000);
   readPositiveInteger(environment, 'RATE_LIMIT_MAX', 120);
   readPositiveInteger(environment, 'DELIVERY_TRACKING_RETENTION_DAYS', 30);
@@ -53,6 +57,7 @@ export function validateEnvironment(environment: Environment): void {
   }
   assertFirebaseServiceAccount(environment.FIREBASE_SERVICE_ACCOUNT);
   [
+    'FIREBASE_WEB_API_KEY',
     'DB_HOST',
     'DB_USERNAME',
     'DB_PASSWORD',

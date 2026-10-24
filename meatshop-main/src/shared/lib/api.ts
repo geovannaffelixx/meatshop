@@ -1,5 +1,6 @@
 import { ApiError, translateApiError } from "@/shared/lib/api-error-translations";
 import { toast } from "@/shared/lib/toast";
+import { apiQueryKey, canCacheApiPath, invalidateApiCache, panelQueryClient, resetApiCache } from './query-cache';
 
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -69,6 +70,7 @@ async function handleResponse(res: Response) {
 }
 
 type RequestOptions = {
+  cache?: boolean;
   silent?: boolean;
   retried?: boolean;
   signal?: AbortSignal;
@@ -92,7 +94,12 @@ async function request(path: string, init: RequestInit, options: RequestOptions 
       window.dispatchEvent(new Event("auth:session-expired"));
     }
 
-    return await handleResponse(res);
+    const result = await handleResponse(res);
+    if (init.method !== 'GET') {
+      if (path.startsWith('/auth/')) resetApiCache();
+      else await invalidateApiCache();
+    }
+    return result;
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") throw error;
 
@@ -112,6 +119,12 @@ async function request(path: string, init: RequestInit, options: RequestOptions 
 }
 
 export async function apiGet(path: string, options?: RequestOptions) {
+  if (typeof window !== 'undefined' && options?.cache !== false && !options?.signal && canCacheApiPath(path)) {
+    return panelQueryClient.fetchQuery({
+      queryKey: apiQueryKey(path),
+      queryFn: ({ signal }) => request(path, { method: 'GET' }, { ...options, signal }),
+    });
+  }
   return request(path, { method: "GET", signal: options?.signal }, options);
 }
 

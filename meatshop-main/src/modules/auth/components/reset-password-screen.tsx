@@ -1,5 +1,9 @@
 'use client';
 
+import { validatePassword as isPasswordValid } from "@/shared/lib/validators";
+
+import { DataSkeleton } from "@/shared/components/data-skeleton";
+
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PasswordInput } from "@/shared/components/ui/password-input";
@@ -12,15 +16,7 @@ import Link from "next/link";
 import { apiPost } from "@/shared/lib/api";
 import { RequiredMark } from "@/shared/components/ui/required-mark";
 
-function isPasswordValid(password: string) {
-  return (
-    password.length >= 8 &&
-    /[a-z]/.test(password) &&
-    /[A-Z]/.test(password) &&
-    /\d/.test(password) &&
-    /[\W_]/.test(password)
-  );
-}
+
 
 function ResetPasswordFormContent() {
   const router = useRouter();
@@ -148,7 +144,7 @@ function ResetPasswordFormContent() {
 
 export function ResetPasswordScreen() {
   return (
-    <Suspense fallback={<div className="grid min-h-screen place-items-center text-slate-500">Carregando...</div>}>
+    <Suspense fallback={<DataSkeleton label="Carregando..." />}>
       <ResetPasswordFormContent />
     </Suspense>
   );

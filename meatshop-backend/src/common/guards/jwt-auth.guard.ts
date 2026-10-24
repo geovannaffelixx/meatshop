@@ -10,7 +10,12 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
-  private static readonly incompleteProfilePaths = new Set(['/users/me', '/geocoding/resolve']);
+  private static readonly incompleteProfilePaths = new Set([
+    '/users/me',
+    '/users/me/export',
+    '/users/me/retention-policy',
+    '/geocoding/resolve',
+  ]);
 
   constructor(private readonly reflector: Reflector) {
     super();

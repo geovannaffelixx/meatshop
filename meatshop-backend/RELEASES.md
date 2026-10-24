@@ -1,5 +1,15 @@
 # Releases do backend
 
+## 3.3.0 — Fechamento de lacunas funcionais
+
+Trabalho preparado em 20 de outubro de 2026.
+
+A API passa a oferecer busca combinada por categoria, marca e preço, preferências de notificações persistidas e agendamento autoritativo por unidade. Cada unidade define a duração dos intervalos e a capacidade; sem configuração, não oferece agendamento. A reserva da vaga é revalidada e bloqueada dentro da transação do checkout.
+
+Promoções novas e reativadas notificam somente clientes ativos que concluíram uma compra naquela unidade e mantêm promoções habilitadas. Os indicadores financeiros distinguem volume operacional de pedidos e receita efetivamente recebida.
+
+A implantação exige executar as migrations de preferências e capacidade de agendamento antes de disponibilizar backend, painel web e aplicativo 3.3.0. Esta preparação local não representa publicação ou deploy.
+
 ## 3.2.0 — Termos e privacidade
 
 Trabalho preparado em 18 de outubro de 2026.

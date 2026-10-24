@@ -27,7 +27,7 @@ export class DashboardController {
 
   @ApiOperation({
     summary:
-      'Returns the unit dashboard overview with monthly revenue, weekly chart, recent orders, stock alerts, and top-selling products',
+      'Returns the unit dashboard with operational order metrics and net revenue from settled payments',
   })
   @ApiResponse({
     status: 200,
@@ -43,7 +43,8 @@ export class DashboardController {
   }
 
   @ApiOperation({
-    summary: 'Returns daily order count and revenue, plus totals by status',
+    summary:
+      'Returns operational order counts by creation date and net revenue by settled payment date',
   })
   @ApiResponse({
     status: 200,

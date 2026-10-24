@@ -1,5 +1,11 @@
 "use client"
 
+import { toDateInput, isValidDate } from "@/shared/lib/date-time";
+
+import { peekApiData } from "@/shared/lib/query-cache";
+
+import { DataSkeleton } from "@/shared/components/data-skeleton";
+
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -42,10 +48,7 @@ type RecipeDetail = {
 const EMPTY_STEP: StepDraft = { description: "", tip: "" }
 const EMPTY_INGREDIENT: IngredientDraft = { name: "", quantity: "", tip: "" }
 
-function toDateInput(iso: string | null) {
-  if (!iso) return ""
-  return iso.slice(0, 10)
-}
+
 
 const fieldClass = "input"
 
@@ -53,21 +56,22 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
   const router = useRouter()
   const { unitId } = useManagedUnits()
   const isEditing = recipeId !== undefined
+  const cachedRecipe = recipeId ? peekApiData<RecipeDetail>(`/recipes/${recipeId}`) : undefined
 
-  const [products, setProducts] = useState<Product[]>([])
-  const [loadingRecipe, setLoadingRecipe] = useState(isEditing)
+  const [products, setProducts] = useState<Product[]>(() => unitId ? peekApiData<{ data: Product[] }>(`/products/manage?unit_id=${unitId}&limit=200`)?.data ?? [] : [])
+  const [loadingRecipe, setLoadingRecipe] = useState(isEditing && !cachedRecipe)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
-  const [title, setTitle] = useState("")
-  const [description, setDescription] = useState("")
-  const [tag, setTag] = useState("")
-  const [videoUrl, setVideoUrl] = useState("")
-  const [active, setActive] = useState(true)
-  const [weekStart, setWeekStart] = useState("")
-  const [steps, setSteps] = useState<StepDraft[]>([{ ...EMPTY_STEP }])
-  const [ingredients, setIngredients] = useState<IngredientDraft[]>([{ ...EMPTY_INGREDIENT }])
-  const [productDrafts, setProductDrafts] = useState<ProductDraft[]>([])
+  const [title, setTitle] = useState(cachedRecipe?.title ?? "")
+  const [description, setDescription] = useState(cachedRecipe?.description ?? "")
+  const [tag, setTag] = useState(cachedRecipe?.tag ?? "")
+  const [videoUrl, setVideoUrl] = useState(cachedRecipe?.video_url ?? "")
+  const [active, setActive] = useState(cachedRecipe?.active ?? true)
+  const [weekStart, setWeekStart] = useState(toDateInput(cachedRecipe?.week_start ?? null))
+  const [steps, setSteps] = useState<StepDraft[]>(() => cachedRecipe?.steps.length ? [...cachedRecipe.steps].sort((a,b) => a.step_number - b.step_number).map(step => ({ description: step.description, tip: step.tip ?? "" })) : [{ ...EMPTY_STEP }])
+  const [ingredients, setIngredients] = useState<IngredientDraft[]>(() => cachedRecipe?.ingredients.length ? cachedRecipe.ingredients.map(item => ({ name: item.name, quantity: item.quantity, tip: item.tip ?? "" })) : [{ ...EMPTY_INGREDIENT }])
+  const [productDrafts, setProductDrafts] = useState<ProductDraft[]>(() => cachedRecipe?.products ?? [])
   const [aiBrief, setAiBrief] = useState("")
   const [aiServings, setAiServings] = useState(4)
   const [aiProductIds, setAiProductIds] = useState<number[]>([])
@@ -75,14 +79,14 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
   const [aiDraftRequestId, setAiDraftRequestId] = useState<string | null>(null)
   const [generatingDraft, setGeneratingDraft] = useState(false)
 
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [imageUrl, setImageUrl] = useState<string | null>(cachedRecipe?.image_url ?? null)
   const [stagedImage, setStagedImage] = useState<File | null>(null)
   const [stagedPreview, setStagedPreview] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
 
   useEffect(() => {
     if (!unitId) return
-    apiGet(`/products?unit_id=${unitId}&limit=200`)
+    apiGet(`/products/manage?unit_id=${unitId}&limit=200`)
       .then((res) => setProducts(Array.isArray(res?.data) ? res.data : []))
       .catch(() => {})
   }, [unitId])
@@ -100,7 +104,7 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
         setImageUrl(recipe.image_url)
         setSteps(
           recipe.steps.length
-            ? recipe.steps
+            ? [...recipe.steps]
                 .sort((a, b) => a.step_number - b.step_number)
                 .map((s) => ({ description: s.description, tip: s.tip ?? "" }))
             : [{ ...EMPTY_STEP }],
@@ -208,6 +212,7 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
   }
 
   const validate = (): string | null => {
+    if (weekStart && !isValidDate(weekStart)) return "Informe uma data válida para a semana.";
     if (!title.trim()) return "Informe o título da receita."
     if (steps.some((s) => !s.description.trim())) return "Preencha todos os passos do modo de preparo, ou remova os vazios."
     if (ingredients.some((i) => !i.name.trim() || !i.quantity.trim())) return "Preencha nome e quantidade de todos os ingredientes, ou remova os vazios."
@@ -273,9 +278,7 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
 
   if (loadingRecipe) {
     return (
-      <div className="grid min-h-[60vh] place-items-center text-slate-500">
-        Carregando receita...
-      </div>
+      <DataSkeleton label="Carregando receita..." />
     )
   }
 

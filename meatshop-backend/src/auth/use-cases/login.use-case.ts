@@ -1,15 +1,14 @@
-import { Injectable, UnauthorizedException, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
+import { CredentialAttemptsService } from '../services/credential-attempts.service';
 import { User } from '../../users/entities/user.entity';
 import { RefreshTokenEntity } from '../entities/refresh-token.entity';
 
-const MAX_FAILED_ATTEMPTS = 5;
-const LOCK_DURATION_MINUTES = 15;
 const REFRESH_TOKEN_DAYS = 7;
 
 interface IAuthTokens {
@@ -20,35 +19,19 @@ interface IAuthTokens {
 @Injectable()
 export class LoginUseCase {
   constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
     @InjectRepository(RefreshTokenEntity)
     private readonly refreshTokenRepository: Repository<RefreshTokenEntity>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly dataSource: DataSource,
   ) {}
 
   async validateCredentials(email: string, password: string): Promise<User | null> {
-    const user = await this.userRepository.findOne({
-      where: { email: email.toLowerCase().trim() },
+    return new CredentialAttemptsService(this.dataSource).authenticate(email, async (manager) => {
+      const user = await manager.findOne(User, { where: { email: email.trim().toLowerCase() } });
+      if (!user?.is_active || !user.password_hash) return null;
+      return (await bcrypt.compare(password, user.password_hash)) ? user : null;
     });
-
-    if (!user) return null;
-
-    if (!user.is_active) return null;
-
-    this.assertAccountNotLocked(user);
-
-    if (!user.password_hash) return null;
-    const passwordMatches = await bcrypt.compare(password, user.password_hash);
-
-    if (!passwordMatches) {
-      await this.incrementFailedAttempts(user);
-      return null;
-    }
-
-    await this.resetFailedAttempts(user);
-    return user;
   }
 
   async execute(user: User): Promise<IAuthTokens> {
@@ -61,36 +44,6 @@ export class LoginUseCase {
     ]);
 
     return { access_token: accessToken, refresh_token: refreshToken };
-  }
-
-  private assertAccountNotLocked(user: User): void {
-    if (user.locked_until && user.locked_until > new Date()) {
-      throw new HttpException(
-        `Account locked. Try again after ${user.locked_until.toISOString()}`,
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
-    }
-  }
-
-  private async incrementFailedAttempts(user: User): Promise<void> {
-    user.failed_login_attempts += 1;
-
-    if (user.failed_login_attempts >= MAX_FAILED_ATTEMPTS) {
-      const lockUntil = new Date();
-      lockUntil.setMinutes(lockUntil.getMinutes() + LOCK_DURATION_MINUTES);
-      user.locked_until = lockUntil;
-      user.failed_login_attempts = 0;
-    }
-
-    await this.userRepository.save(user);
-  }
-
-  private async resetFailedAttempts(user: User): Promise<void> {
-    if (user.failed_login_attempts > 0 || user.locked_until) {
-      user.failed_login_attempts = 0;
-      user.locked_until = null;
-      await this.userRepository.save(user);
-    }
   }
 
   private generateAccessToken(user: User): Promise<string> {
