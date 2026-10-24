@@ -2,15 +2,13 @@
 
 import * as React from 'react';
 import Image from 'next/image';
-import { UserAvatar } from '@/shared/components/user-avatar';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { BadgePercent, BarChart3, Boxes, Building2, ChevronDown, CircleHelp, ClipboardList, House, LogOut, MessageSquare, PackageSearch, Percent, PiggyBank, ScrollText, Settings, ShoppingBag, Star, Tags, TicketPercent, Truck, User as UserIcon, Users, UtensilsCrossed, X, type LucideIcon } from 'lucide-react';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarRail, useSidebar } from '@/shared/components/ui/sidebar';
+import { usePathname } from 'next/navigation';
+import { BadgePercent, BarChart3, Boxes, Building2, ChevronDown, CircleHelp, ClipboardList, House, MessageSquare, PackageSearch, Percent, PiggyBank, ScrollText, Settings, ShoppingBag, Star, Tags, TicketPercent, Truck, User as UserIcon, Users, UtensilsCrossed, X, type LucideIcon } from 'lucide-react';
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarRail, useSidebar } from '@/shared/components/ui/sidebar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from '@/shared/components/ui/dropdown-menu';
 import { unitPermissions, type UnitPermission } from '@/shared/auth/panel-access';
-import { apiPost, resolveAssetUrl } from '@/shared/lib/api';
-import { resetApiCache } from '@/shared/lib/query-cache';
+import { resolveAssetUrl } from '@/shared/lib/api';
 import { usePanelAccess } from '@/shared/providers/panel-access-provider';
 
 type NavItem = {
@@ -170,24 +168,12 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar>;
 
 export function AppSidebar(props: AppSidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const { setOpenMobile } = useSidebar();
   const { user, panel, selectedMembership, unitId, setUnitId, hasPermission } = usePanelAccess();
   const memberships = panel?.memberships ?? [];
   const unitLogo = resolveAssetUrl(selectedMembership?.unit_image_url);
   const canSee = (item: NavItem) => (!item.adminOnly || user?.global_role === 'SUPER_ADMIN') && (!item.permission || hasPermission(item.permission));
   const groups = navGroups.map(group => ({ ...group, items: group.items.filter(canSee) })).filter(group => group.items.length);
-
-  async function logout() {
-    try { await apiPost('/auth/logout', {}); }
-    finally {
-      resetApiCache();
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('currentUser');
-      window.dispatchEvent(new Event('currentUserUpdated'));
-      router.push('/login');
-    }
-  }
 
   function itemLink(item: NavItem) {
     const active = pathname === item.url || pathname.startsWith(`${item.url}/`);
@@ -243,15 +229,7 @@ export function AppSidebar(props: AppSidebarProps) {
       </SidebarGroup>)}
       <SidebarGroup className="py-2"><SidebarGroupContent><SidebarMenu>{itemLink(supportItem)}</SidebarMenu></SidebarGroupContent></SidebarGroup>
     </SidebarContent>
-    <SidebarFooter className="gap-1 border-t border-slate-200 bg-white p-3">
-      <SidebarMenu>{itemLink({ title: 'Minha conta', url: '/settings/account', icon: UserIcon, permission: null })}
-        <SidebarMenuItem><SidebarMenuButton type="button" tooltip="Sair" onClick={() => void logout()} className="h-9 rounded-xl px-3 text-slate-500 hover:bg-red-50 hover:text-red-700"><LogOut /><span>Sair</span></SidebarMenuButton></SidebarMenuItem>
-      </SidebarMenu>
-      <div className="mt-2 flex items-center gap-2 border-t border-slate-100 px-3 pt-3 group-data-[collapsible=icon]:hidden">
-        <UserAvatar name={user?.name ?? "Sua conta"} src={user?.avatar_url} />
-        <span className="min-w-0"><span className="block truncate text-xs font-medium text-slate-700">{user?.name ?? 'Sua conta'}</span><span className="block truncate text-[11px] text-slate-400">{user?.email}</span></span>
-      </div>
-    </SidebarFooter>
+
     <SidebarRail />
   </Sidebar>;
 }

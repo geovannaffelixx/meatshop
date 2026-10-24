@@ -11,13 +11,13 @@ import Link from "next/link"
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent } from "@/shared/components/ui/card"
 import { Spinner } from "@/shared/components/ui/spinner"
-import { CalendarDays, Plus, Search, UtensilsCrossed } from "lucide-react"
+import { CalendarDays, Plus, UtensilsCrossed } from "lucide-react"
 import { apiDelete, resolveAssetUrl } from "@/shared/lib/api"
 import { toast } from "@/shared/lib/toast"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
+import { SearchField } from "@/shared/components/search-field";
 import { PageHeader } from "@/shared/components/page-header"
 import { EmptyState } from "@/shared/components/empty-state"
-import { Input } from "@/shared/components/ui/input"
 import {
   Dialog,
   DialogContent,
@@ -111,11 +111,7 @@ export function RecipesScreen() {
           <div className="text-center text-red-600">Nenhuma unidade encontrada para este usuário.</div>
         )}
 
-        <label className="relative block max-w-xl">
-          <span className="sr-only">Buscar receitas</span>
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-          <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por título ou tag" className="pl-9" />
-        </label>
+        <SearchField value={search} onValueChange={setSearch} label="Buscar receitas" placeholder="Buscar por título ou tag" className="max-w-xl" />
 
         {loading ? (
           <DataSkeleton label="Carregando receitas..." />

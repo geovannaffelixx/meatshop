@@ -7,7 +7,7 @@ import { DataSkeleton } from "@/shared/components/data-skeleton";
 import { useApiQuery } from "@/shared/hooks/use-api-query";
 
 import { useMemo, useState } from "react";
-import { BadgePercent, History, Plus, Search, TicketPercent } from "lucide-react";
+import { BadgePercent, History, Plus, TicketPercent } from "lucide-react";
 import { apiGet, apiPatch, apiPost } from "@/shared/lib/api";
 import { formatCurrency } from "@/shared/lib/formatters";
 import { toast } from "@/shared/lib/toast";
@@ -25,6 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { SearchField } from "@/shared/components/search-field";
 import { PageHeader } from "@/shared/components/page-header";
 import { EmptyState } from "@/shared/components/empty-state";
 import { DataPagination } from "@/shared/components/data-pagination";
@@ -194,19 +195,7 @@ export function CouponsScreen() {
         </section>
 
         <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <label className="relative block max-w-xl">
-            <span className="sr-only">Buscar cupons</span>
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-            <Input
-              value={search}
-              onChange={(event) => {
-                setSearch(event.target.value);
-                setPage(1);
-              }}
-              placeholder="Buscar por código ou nome"
-              className="pl-9"
-            />
-          </label>
+          <SearchField value={search} onValueChange={value => { setSearch(value); setPage(1); }} label="Buscar cupons" placeholder="Buscar por código ou nome" className="max-w-xl" />
         </section>
 
         <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">

@@ -22,9 +22,10 @@ import { Input } from "@/shared/components/ui/input"
 import { Textarea } from "@/shared/components/ui/textarea"
 import { RequiredMark } from "@/shared/components/ui/required-mark"
 import { Spinner } from "@/shared/components/ui/spinner"
-import { Plus, Search } from "lucide-react"
+import { Plus } from "lucide-react"
 import { apiPatch, apiPost } from "@/shared/lib/api"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
+import { SearchField } from "@/shared/components/search-field";
 import { PageHeader } from "@/shared/components/page-header"
 
 import { toast } from "@/shared/lib/toast"
@@ -236,16 +237,7 @@ export function CategoriesScreen() {
             </div>
           )}
 
-          <label className="relative block max-w-xl">
-            <span className="sr-only">Buscar categorias</span>
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-            <Input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Buscar por nome ou descrição"
-              className="pl-9"
-            />
-          </label>
+          <SearchField value={search} onValueChange={setSearch} label="Buscar categorias" placeholder="Buscar por nome ou descrição" className="max-w-xl" />
 
           {error ? <div className="p-6 text-red-700" role="alert">{error}<button type="button" onClick={() => { setError(null); void query.refetch(); }} className="ml-3 underline">Tentar novamente</button></div> : <ReusableTable data={pagination.pageData} columns={columns} caption="Categorias cadastradas" keyExtractor={row => row.id} isLoading={loading} emptyMessage="Nenhuma categoria encontrada." footer={<DataPagination {...pagination} isLoading={loading} />} />}
       </div>

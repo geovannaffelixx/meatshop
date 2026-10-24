@@ -27,7 +27,7 @@ Abra [http://localhost:3000/login](http://localhost:3000/login) no seu navegador
 
 ## Navegação e carregamento do painel
 
-A sidebar usa links diretos agrupados por assunto, com um único acesso à conta. A unidade é selecionada no topo do menu; a troca bloqueia toda a interface por três segundos e reinicia o contexto das telas, incluindo formulários, notificações e cache.
+A sidebar usa links diretos agrupados por assunto. O perfil fica no cabeçalho, ao lado das notificações, e abre um drawer à direita com os acessos à conta, senha e saída. A unidade é selecionada no topo do menu; a troca bloqueia toda a interface por três segundos e reinicia o contexto das telas, incluindo formulários, notificações e cache.
 
 Consultas usam TanStack Query em memória, com validade de cinco minutos e descarte após dez minutos sem uso. O cache é separado por sessão/unidade e pelos parâmetros da consulta. Alterações invalidam as leituras; logout, expiração de sessão e troca de unidade limpam o cache. Dados pessoais exportados, autenticação, pedidos e consultas de conversa/rastreamento não são reutilizados pelo cache geral. As atualizações periódicas de financeiro e entregas continuam buscando dados novos.
 
@@ -52,7 +52,7 @@ As regras de `StatusDTO` do exemplo pertencem a etapas de venda configuráveis. 
 
 ## Ajustes de interface e validação
 
-A identidade na sidebar mostra `avatar_url`, com a inicial como alternativa quando não há foto ou quando ela falha. Mensagens usa o cabeçalho de Operação.
+A identidade no cabeçalho e no drawer mostra `avatar_url`, com a inicial como alternativa quando não há foto ou quando ela falha. Mensagens usa o cabeçalho de Operação.
 
 A exportação na conta é temporariamente uma prévia: abre um modal com Excel, JSON e PDF e mostra um toast de demonstração. Nenhum desses botões faz requisição ou baixa arquivo nesta etapa. O endpoint de exportação permanece no backend para a integração futura.
 
@@ -61,3 +61,11 @@ A exportação na conta é temporariamente uma prévia: abre um modal com Excel,
 `validation-schemas.ts` usa [Zod](https://zod.dev/api) e reaproveita as regras de documento e negócio de `validation-rules.ts`. A API de `validators.ts` usa `safeParse`, mantendo os formulários existentes integrados. A conta também usa um schema de objeto com erros por campo e normalização. O backend mantém sua validação com class-validator.
 
 `Loading` e `LoadingPointer` adaptam os exemplos de progresso para Tailwind, com paleta vermelha, sem Chakra/Emotion e respeitando movimento reduzido. A troca de unidade usa os pontos animados; leituras continuam com skeleton. `LoadingOverlay` permite progresso opcional sem alterar o skeleton padrão.
+
+## Busca e perfil compartilhados
+
+`SearchField` é o campo de busca controlado de Categorias, Promoções, Cupons e Receitas, com label acessível, foco vermelho e botão de limpar que devolve o foco ao campo. Cada tela preserva seu filtro/paginação; Cupons reinicia na primeira página ao digitar ou limpar.
+
+`UserProfileDrawer` usa o Sheet/Radix existente, sem Chakra ou Emotion. O botão de avatar ao lado das notificações abre foto, nome, e-mail, unidade atual, função e versão. Telefone e equipes do exemplo não são exibidos porque não fazem parte desse contexto. Alterar senha direciona para a seção de segurança existente; o drawer fecha ao seguir links, usar Escape ou clicar fora. A sidebar não duplica a identidade ou os botões de conta/saída. Falha de logout mantém a sessão e permite nova tentativa; sucesso limpa o estado privado local e volta ao login.
+
+Para conferir: testar digitação e limpeza nas quatro buscas; em Cupons, testar após navegar para outra página. Abrir o perfil por teclado, conferir foto/unidade/função, seguir Minha conta e Alterar senha, fechar com Escape e testar Sair. Conferir também no viewport de 390 px.

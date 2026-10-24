@@ -25,10 +25,11 @@ import { Input } from "@/shared/components/ui/input"
 import { Textarea } from "@/shared/components/ui/textarea"
 import { RequiredMark } from "@/shared/components/ui/required-mark"
 import { Spinner } from "@/shared/components/ui/spinner"
-import { Plus, Search } from "lucide-react"
+import { Plus } from "lucide-react"
 import { apiPatch, apiPost } from "@/shared/lib/api"
 import { toast } from "@/shared/lib/toast"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
+import { SearchField } from "@/shared/components/search-field";
 import { PageHeader } from "@/shared/components/page-header"
 
 type Product = { id: number; name: string; active: boolean }
@@ -401,11 +402,7 @@ export function PromotionsScreen() {
         )}
 
         <div className="grid gap-3 sm:grid-cols-[1fr_13rem]">
-          <label className="relative">
-            <span className="sr-only">Buscar promoções</span>
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-            <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar promoção ou produto" className="pl-9" />
-          </label>
+          <SearchField value={search} onValueChange={setSearch} label="Buscar promoções" placeholder="Buscar promoção ou produto" />
           <select aria-label="Filtrar por status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="input">
             <option value="">Todos os status</option>
             <option value="Ativa">Ativas</option>

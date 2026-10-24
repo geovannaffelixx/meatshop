@@ -4,6 +4,13 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ## [3.3.0] - 2026-10-20 - Fechamento de lacunas funcionais
 
+### Busca e perfil (24/10/2026)
+
+- Busca compartilhada em Categorias, Promoções, Cupons e Receitas, com foco acessível e limpeza.
+- Perfil no cabeçalho com drawer à direita, foto, contexto de unidade/função e versão.
+- Acessos de conta, senha e saída centralizados no drawer; removido o rodapé de usuário da sidebar.
+- Testes de busca, navegação do perfil e logout com sucesso/falha.
+
 ### Ajustes do painel (23/10/2026)
 
 - Foto do usuário na sidebar com alternativa em caso de falha.
