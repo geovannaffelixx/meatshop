@@ -19,7 +19,7 @@ export function SearchField({ value, onValueChange, label, placeholder = 'Digite
     <div className={cn('group flex h-11 w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-3.5 shadow-sm transition focus-within:border-red-400 focus-within:ring-2 focus-within:ring-red-100 hover:border-slate-300', className)}>
       <label htmlFor={id} className="sr-only">{label}</label>
       <Search aria-hidden="true" className="size-4 shrink-0 text-slate-400 group-focus-within:text-red-600" />
-      <input ref={input} id={id} type="search" value={value} onChange={event => onValueChange(event.target.value)}
+      <input ref={input} id={id} type="search" maxLength={150} value={value} onChange={event => onValueChange(event.target.value)}
         placeholder={placeholder} className="min-w-0 flex-1 bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400 [&::-webkit-search-cancel-button]:appearance-none" />
       {value && <button type="button" aria-label={`Limpar ${label.toLocaleLowerCase('pt-BR')}`}
         onClick={() => { onValueChange(''); input.current?.focus(); }}

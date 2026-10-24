@@ -4,6 +4,14 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ## [3.3.0] - 2026-10-20 - Fechamento de lacunas funcionais
 
+### Listas no servidor e imagens da unidade (24/10/2026)
+
+- Busca/paginação de dez registros no backend, com total filtrado e reinício ao trocar busca/filtros.
+- Ajuda no grupo Configurações, cabeçalho consistente em Unidade/Equipe e drawer com um acesso único à conta.
+- Formulário da unidade organizado por assunto; upload de logo, capa e galeria com até dez fotos.
+- Modal de produto ao clicar na linha, com galeria e estoque; edição preservada no botão Editar.
+- Regressões de consulta por página, busca, detalhes e gerenciamento de imagens.
+
 ### Busca e perfil (24/10/2026)
 
 - Busca compartilhada em Categorias, Promoções, Cupons e Receitas, com foco acessível e limpeza.

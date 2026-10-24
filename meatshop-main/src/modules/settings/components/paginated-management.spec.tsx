@@ -18,21 +18,41 @@ describe.each([CategoriesScreen, PromotionsScreen, UsersScreen])('Management tab
   beforeEach(() => {
     resetApiCache();
     Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-    jest.mocked(apiGet).mockImplementation(async path => path.startsWith('/products') ? { data: [{ id: 1, name: 'Produto' }] } : items);
+    jest.mocked(apiGet).mockImplementation(async path => {
+      if (path.startsWith('/products')) return { data: [{ id: 1, name: 'Produto' }] };
+      const params = new URL(path, 'http://localhost').searchParams;
+      const page = Number(params.get('page') ?? 1);
+      const search = params.get('search');
+      const filtered = search ? items.filter(item => item.id === 21) : items;
+      return { data: filtered.slice((page - 1) * 10, page * 10), meta: { page, limit: 10, total: filtered.length, totalPages: Math.max(1, Math.ceil(filtered.length / 10)) } };
+    });
     container = document.createElement('div'); document.body.append(container); root = createRoot(container);
   });
   afterEach(async () => { await act(async () => root.unmount()); resetApiCache(); container.remove(); });
-  it('shows ten, ten and one rows without refetching for each page', async () => {
+  it('loads each page from the backend and resets pagination after a remote search', async () => {
     jest.mocked(apiGet).mockClear();
     await act(async () => root.render(<Screen />));
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 30)); });
     expect(container.querySelectorAll('tbody tr')).toHaveLength(10);
     const requests = jest.mocked(apiGet).mock.calls.length;
     await act(async () => (container.querySelector('[aria-label="Próxima página"]') as HTMLButtonElement).click());
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 30)); });
     expect(container.querySelectorAll('tbody tr')).toHaveLength(10);
     await act(async () => (container.querySelector('[aria-label="Próxima página"]') as HTMLButtonElement).click());
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 30)); });
     expect(container.querySelectorAll('tbody tr')).toHaveLength(1);
     expect(container.textContent).toContain('21–21 de 21');
-    expect(jest.mocked(apiGet).mock.calls).toHaveLength(requests);
+    expect(jest.mocked(apiGet).mock.calls).toHaveLength(requests + 2);
+    expect(jest.mocked(apiGet).mock.calls.some(([path]) => path.includes('page=3') && path.includes('limit=10'))).toBe(true);
+    const input = container.querySelector('input[type="search"]')!;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, '21');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      await new Promise(resolve => setTimeout(resolve, 350));
+    });
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 30)); });
+    expect(container.querySelectorAll('tbody tr')).toHaveLength(1);
+    expect(container.textContent).toContain('1–1 de 1');
+    expect(jest.mocked(apiGet).mock.calls.some(([path]) => path.includes('search=21') && path.includes('page=1'))).toBe(true);
   });
 });

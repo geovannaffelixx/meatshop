@@ -2,13 +2,12 @@
 
 import { ReusableTable, type TableColumn } from "@/shared/components/reusable-table";
 import { DataPagination } from "@/shared/components/data-pagination";
-import { useTablePagination } from "@/shared/hooks/use-table-pagination";
-
-import { useApiQuery } from "@/shared/hooks/use-api-query";
+import { useServerList } from "@/shared/hooks/use-server-list";
 
 
 
-import { useMemo, useState } from "react"
+
+import { useState } from "react"
 import { Button } from "@/shared/components/ui/button"
 
 import {
@@ -49,8 +48,9 @@ const EMPTY_FORM: FormState = { name: "", description: "", active: true }
 export function CategoriesScreen() {
   const { units, unitId, loading: unitsLoading } = useManagedUnits()
 
-  const query = useApiQuery<Category[]>(unitId ? `/categories?unit_id=${unitId}` : null);
-  const categories = useMemo(() => query.data ?? [], [query.data]);
+  const [search, setSearch] = useState("");
+  const query = useServerList<Category>(unitId ? `/categories?unit_id=${unitId}` : null, search);
+  const pagination = query.pagination;
   const loading = query.isPending;
   const [actionError, setError] = useState<string | null>(null);
   const error = actionError ?? query.error?.message;
@@ -62,18 +62,6 @@ export function CategoriesScreen() {
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [togglingId, setTogglingId] = useState<number | null>(null)
-  const [search, setSearch] = useState("")
-
-  const filteredCategories = useMemo(() => {
-    const term = search.trim().toLocaleLowerCase("pt-BR")
-    if (!term) return categories
-    return categories.filter((category) =>
-      `${category.name} ${category.description ?? ""}`
-        .toLocaleLowerCase("pt-BR")
-        .includes(term),
-    )
-  }, [categories, search])
-
 
   const openCreate = () => {
     setEditingId(null)
@@ -143,7 +131,6 @@ export function CategoriesScreen() {
     }
   }
 
-  const pagination = useTablePagination(filteredCategories, `${unitId}:${search}`);
   const columns: TableColumn<Category>[] = [
     { id: 'name', header: 'Nome', accessor: 'name', className: 'font-medium' },
     { id: 'description', header: 'Descrição', accessor: row => row.description ?? '—', className: 'text-slate-600' },
@@ -239,7 +226,7 @@ export function CategoriesScreen() {
 
           <SearchField value={search} onValueChange={setSearch} label="Buscar categorias" placeholder="Buscar por nome ou descrição" className="max-w-xl" />
 
-          {error ? <div className="p-6 text-red-700" role="alert">{error}<button type="button" onClick={() => { setError(null); void query.refetch(); }} className="ml-3 underline">Tentar novamente</button></div> : <ReusableTable data={pagination.pageData} columns={columns} caption="Categorias cadastradas" keyExtractor={row => row.id} isLoading={loading} emptyMessage="Nenhuma categoria encontrada." footer={<DataPagination {...pagination} isLoading={loading} />} />}
+          {error ? <div className="p-6 text-red-700" role="alert">{error}<button type="button" onClick={() => { setError(null); void query.refetch(); }} className="ml-3 underline">Tentar novamente</button></div> : <ReusableTable data={query.rows} columns={columns} caption="Categorias cadastradas" keyExtractor={row => row.id} isLoading={loading} emptyMessage="Nenhuma categoria encontrada." footer={<DataPagination {...pagination} isLoading={loading} />} />}
       </div>
     </div>
   )

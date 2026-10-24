@@ -16,7 +16,7 @@ import {
   DialogTitle,
 } from "@/shared/components/ui/dialog";
 
-const emptyResult: AuditResult = { data: [], meta: { page: 1, limit: 20, total: 0, totalPages: 1 } };
+const emptyResult: AuditResult = { data: [], meta: { page: 1, limit: 10, total: 0, totalPages: 1 } };
 const outcomeLabels = { SUCCESS: "Sucesso", FAILURE: "Falha" } as const;
 
 export function AuditScreen() {
@@ -40,7 +40,7 @@ export function AuditScreen() {
 }
 
 function buildQuery(filters: Record<string, string>, page: number): string {
-  const params = new URLSearchParams({ page: String(page), limit: "20" });
+  const params = new URLSearchParams({ page: String(page), limit: "10" });
   Object.entries(filters).forEach(([key, value]) => { if (value) params.set(key, key.startsWith("date_") ? new Date(`${value}${key === "date_to" ? "T23:59:59" : "T00:00:00"}`).toISOString() : value); });
   return params.toString();
 }

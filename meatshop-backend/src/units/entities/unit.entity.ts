@@ -64,6 +64,9 @@ export class Unit {
   @Column({ type: 'varchar', nullable: true })
   cover_url: string | null;
 
+  @Column({ type: 'jsonb', default: () => "'[]'::jsonb" })
+  gallery_urls: string[];
+
   @Column()
   admin_id: number;
 

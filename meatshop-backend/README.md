@@ -374,3 +374,11 @@ Usar **Conventional Commits**.
 # 📜 16. LICENÇA
 
 Licença MIT — uso livre para fins acadêmicos e profissionais.
+
+## Panel lists and unit media (3.3.0)
+
+Web list queries use `page=1&limit=10`, with SQL filtering before count/offset. Categories, promotions, recipes, members and orders opt in with `paginated=true` and return `{ data, meta: { page, limit, total, totalPages } }`. Calls without that flag preserve legacy array contracts. Product management, coupons and audit already return paginated results. Search text is parameterized; shared list filters validate positive pages, bounded limits and text lengths. Order scope always intersects requested filters with the actor's accessible units/customer scope.
+
+Apply migrations before starting the updated backend (`npm run migration:run:prod` in the built environment). `AddUnitGallery1792800000000` adds `units.gallery_urls` as a non-null JSON array, without rewriting existing logo/cover data.
+
+Authenticated media routes require `MANAGE_UNIT`: `POST /units/:id/logo` (`file`), `POST /units/:id/cover` (`file`), `POST /units/:id/images` (`files`), and `DELETE /units/:id/images?url=...`. Gallery uploads allow ten photos total, two MB each, PNG/JPEG/WebP/GIF. Transactional unit locks serialize gallery changes; failed uploads clean new files. Removal checks stored unit ownership before deleting media. Public unit DTOs expose `gallery_urls` in addition to `image_url`/`cover_url`. Existing mobile clients continue reading logo/cover; rendering the new gallery needs a client integration.

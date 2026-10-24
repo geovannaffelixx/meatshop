@@ -142,6 +142,7 @@ const navGroups: NavGroup[] = [
     title: "Configurações",
     icon: Settings,
     items: [
+      supportItem,
       {
         title: "Unidade",
         url: "/settings/unit",
@@ -227,7 +228,6 @@ export function AppSidebar(props: AppSidebarProps) {
         <SidebarGroupLabel className="px-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{group.title}</SidebarGroupLabel>
         <SidebarGroupContent><SidebarMenu className="gap-1">{group.items.map(itemLink)}</SidebarMenu></SidebarGroupContent>
       </SidebarGroup>)}
-      <SidebarGroup className="py-2"><SidebarGroupContent><SidebarMenu>{itemLink(supportItem)}</SidebarMenu></SidebarGroupContent></SidebarGroup>
     </SidebarContent>
 
     <SidebarRail />

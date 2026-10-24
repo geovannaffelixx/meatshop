@@ -7,18 +7,17 @@ import { peekApiData } from "@/shared/lib/query-cache";
 import { DataSkeleton } from "@/shared/components/data-skeleton";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Image from "next/image";
+import { PageHeader } from "@/shared/components/page-header";
+import { UnitImages } from "./unit-images";
 import { AddressPinPicker, type AddressPin } from '@/shared/components/maps/address-pin-picker';
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
 import { Spinner } from "@/shared/components/ui/spinner";
 import { Button } from "@/shared/components/ui/button";
 import {
-  apiUpload,
   apiGet,
   apiPatch,
   apiPost,
   apiPut,
-  resolveAssetUrl,
 } from "@/shared/lib/api";
 import { toast } from "@/shared/lib/toast";
 import { CheckCircle2, Search } from "lucide-react";
@@ -34,6 +33,8 @@ type UnitForm = {
   city: string;
   state: string;
   image_url?: string | null;
+  cover_url?: string | null;
+  gallery_urls?: string[];
   latitude?: number | null;
   longitude?: number | null;
   coordinate_source?: string;
@@ -242,23 +243,6 @@ function UnitSettings() {
     }
   }
 
-  async function uploadLogo(file?: File) {
-    if (!file || !unitId) return;
-    const body = new FormData();
-    body.append("file", file);
-    try {
-      await apiUpload(`/units/${unitId}/logo`, body, { silent: true });
-      toast.success("Logo da unidade atualizada.");
-      await Promise.all([load(), refresh()]);
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Não foi possível enviar a imagem.",
-      );
-    }
-  }
-
   if (loading)
     return <DataSkeleton label="Carregando configurações..." />;
   const field = (key: keyof UnitForm, label: string, disabled = false) => (
@@ -279,45 +263,22 @@ function UnitSettings() {
   return (
     <div className="page-surface">
     <div className="page-container max-w-6xl">
-      <section className="rounded-xl border bg-white p-6">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Configurações da unidade
-        </h1>
-        <p className="mt-1 text-sm text-gray-600">
-          Informações públicas e operacionais do açougue selecionado.
-        </p>
-        <div className="mt-5 flex items-center gap-4">
-          <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg bg-gray-100">
-            {unit.image_url ? (
-              <Image
-                src={resolveAssetUrl(unit.image_url)}
-                alt="Logo da unidade"
-                width={80}
-                height={80}
-                unoptimized
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <span className="text-2xl font-bold text-gray-400">
-                {unit.name.charAt(0)}
-              </span>
-            )}
-          </div>
-          <label className="cursor-pointer rounded-md border px-4 py-2 text-sm font-semibold hover:bg-gray-50">
-            Alterar logo
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(event) => void uploadLogo(event.target.files?.[0])}
-            />
-          </label>
-        </div>
+      <PageHeader eyebrow="Configurações" title="Unidade" description="Gerencie a apresentação do açougue, o endereço e a operação de entrega." />
+      {unitId && <UnitImages unitId={unitId} logo={unit.image_url} cover={unit.cover_url} gallery={unit.gallery_urls ?? []}
+        onSaved={async () => {
+          const updated = await apiGet(`/units/${unitId}/settings`);
+          setUnit(current => ({ ...current, image_url: updated.image_url, cover_url: updated.cover_url, gallery_urls: updated.gallery_urls }));
+          await refresh();
+        }} />}
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+        <h2 className="text-lg font-semibold text-slate-900">Dados da unidade</h2>
+        <p className="mt-1 text-sm text-slate-500">Identificação pública do açougue.</p>
         <form onSubmit={saveUnit} className="mt-6 grid gap-4 md:grid-cols-2">
           <div className="md:col-span-2">
             {field("name", "Nome do açougue")}
           </div>
-          {field("cnpj", "CNPJ", true)}
+          <div className="md:col-span-2 max-w-md">{field("cnpj", "CNPJ", true)}</div>
+          <div className="md:col-span-2 mt-4 border-t pt-6"><h3 className="font-semibold text-slate-900">Endereço da unidade</h3><p className="mt-1 text-sm text-slate-500">Busque pelo CEP e confira o endereço completo.</p></div>
           <label className="text-sm font-medium text-gray-700">
             CEP
             <div className="mt-1 flex gap-2">
@@ -368,6 +329,7 @@ function UnitSettings() {
           {field("neighborhood", "Bairro")}
           {field("city", "Cidade")}
           {field("state", "Estado (UF)")}
+          <div className="md:col-span-2 mt-4 border-t pt-6"><h3 className="font-semibold text-slate-900">Área de entrega</h3><p className="mt-1 text-sm text-slate-500">Defina o alcance e confirme a entrada do açougue no mapa.</p></div>
           <label className="text-sm">Raio máximo de entrega (km, distância em linha reta)
             <input type="number" min="0.1" max="500" step="0.1" value={unit.delivery_radius_km??25}
               className="mt-1 w-full rounded border p-2"
@@ -394,7 +356,7 @@ function UnitSettings() {
           </div>
         </form>
       </section>
-      <section className="rounded-xl border bg-white p-6">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
         <h2 className="text-xl font-semibold">Horários de funcionamento</h2>
         <div className="mt-4 rounded-md border bg-gray-50 p-4">
           <label className="flex items-center gap-2 font-medium">

@@ -4,11 +4,13 @@ import { useApiQuery } from "@/shared/hooks/use-api-query";
 
 import { DataSkeleton } from "@/shared/components/data-skeleton";
 
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useManagedUnits } from "@/shared/hooks/use-managed-units";
 import { ReusableTable, type TableColumn } from "@/shared/components/reusable-table";
+import type { PageResult } from "@/shared/hooks/use-server-list";
+import { ProductDetailsDialog } from "./product-details-dialog";
 import { DataPagination } from "@/shared/components/data-pagination";
 import { formatCurrency } from "@/shared/lib/formatters";
 import { AlertTriangle } from "lucide-react";
@@ -44,34 +46,16 @@ export function ProductsTable({
   const router = useRouter();
   const { unitId } = useManagedUnits();
 
-  const query = useApiQuery<{ data: Product[] }>(unitId ? `/products/manage?unit_id=${unitId}&limit=200` : null);
-  const products = useMemo(() => query.data?.data ?? [], [query.data]);
+  const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
+  const params = new URLSearchParams({ unit_id: String(unitId), page: String(currentPage), limit: '10', search: filters.name, category: filters.category, id: filters.id });
+  if (filters.status) params.set('active', String(filters.status === 'ATIVO'));
+  const query = useApiQuery<PageResult<Product>>(unitId ? `/products/manage?${params}` : null);
   const loading = query.isPending;
   const error = query.error?.message;
-
-  const filtered = useMemo(() => {
-    return products.filter((p) => {
-      const idOk = filters.id ? p.id.toString().includes(filters.id) : true;
-      const nameMatches = filters.name
-        ? p.name.toLowerCase().includes(filters.name.toLowerCase())
-        : true;
-      const categoryMatches = filters.category
-        ? (p.category_name ?? "").toLowerCase().includes(filters.category.toLowerCase())
-        : true;
-      const statusMatches = filters.status
-        ? (filters.status === "ATIVO") === p.active
-        : true;
-
-      return idOk && nameMatches && categoryMatches && statusMatches;
-    });
-  }, [filters, products]);
-
-  const itemsPerPage = 10;
-  const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
-  const safePage = Math.min(Math.max(currentPage, 1), totalPages);
-  const start = (safePage - 1) * itemsPerPage;
-  const pageData = filtered.slice(start, start + itemsPerPage);
-
+  const totalPages = query.data?.meta.totalPages ?? 1;
+  useEffect(() => {
+    if (query.data && currentPage > totalPages) onPageChange(totalPages);
+  }, [currentPage, onPageChange, query.data, totalPages]);
   if (loading) {
     return <DataSkeleton label="Carregando produtos..." />;
   }
@@ -89,7 +73,9 @@ export function ProductsTable({
     { id: 'actions', header: 'Ações', textAlign: 'end', accessor: product => <button type="button" onClick={() => router.push(`/products/${product.id}`)} className="font-semibold text-red-700 hover:underline">Editar</button> },
   ];
 
-  return <ReusableTable data={pageData} columns={columns} caption="Produtos e níveis de estoque" keyExtractor={product => product.id}
-    emptyMessage="Nenhum produto encontrado com os filtros aplicados."
-    footer={<DataPagination page={safePage} pageSize={itemsPerPage} totalItems={filtered.length} totalPages={totalPages} onPageChange={onPageChange} />} />;
+  return <><ReusableTable data={query.data?.data ?? []} columns={columns} caption="Produtos e níveis de estoque" keyExtractor={product => product.id}
+    onRowClick={product => setSelectedProductId(product.id)} emptyMessage="Nenhum produto encontrado com os filtros aplicados."
+    footer={<DataPagination page={currentPage} pageSize={10} totalItems={query.data?.meta.total ?? 0} totalPages={totalPages} onPageChange={onPageChange} />} />
+    {selectedProductId !== null && <ProductDetailsDialog key={selectedProductId} productId={selectedProductId} onClose={() => setSelectedProductId(null)} />}
+  </>;
 }

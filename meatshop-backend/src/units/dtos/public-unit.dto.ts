@@ -19,6 +19,8 @@ export class PublicUnitDto {
   @ApiProperty() average_rating: number;
   @ApiProperty() review_count: number;
 
+  @ApiPropertyOptional({ type: [String] }) gallery_urls: string[];
+
   static fromEntity(
     unit: Unit,
     distanceKm?: number | null,
@@ -38,6 +40,7 @@ export class PublicUnitDto {
     dto.longitude = unit.longitude == null ? null : Number(unit.longitude);
     dto.image_url = unit.image_url;
     dto.cover_url = unit.cover_url;
+    dto.gallery_urls = unit.gallery_urls ?? [];
     if (distanceKm !== undefined) dto.distance_km = distanceKm;
     dto.average_rating = ratings.average;
     dto.review_count = ratings.count;

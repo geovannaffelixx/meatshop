@@ -1,3 +1,4 @@
+import { FilterManagedProductsDto } from './dtos/filter-managed-products.dto';
 import { UnitAuthorizationService } from '../units/services/unit-authorization.service';
 import { UnitPermission } from '../common/enums/unit-permission.enum';
 import {
@@ -65,22 +66,19 @@ export class ProductsController {
   }
 
   @Get('manage')
-  async manage(
-    @CurrentUser() user: User,
-    @Query('unit_id') unitId?: string,
-    @Query('active') active?: string,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-  ) {
-    const id = Number(unitId);
+  async manage(@CurrentUser() user: User, @Query() filters: FilterManagedProductsDto) {
+    const id = filters.unit_id;
     if (!Number.isSafeInteger(id) || id <= 0) throw new BadRequestException('Choose a unit');
     await this.authorization.assertHasPermission(user, id, UnitPermission.MANAGE_PRODUCTS);
     return this.listProductsUseCase.execute({
       unitId: id,
-      active: active === undefined ? undefined : active === 'true',
+      active: filters.active === undefined ? undefined : filters.active === 'true',
       available: false,
-      page: Math.max(Number(page) || 1, 1),
-      limit: Math.min(Math.max(Number(limit) || 50, 1), 200),
+      page: filters.page,
+      limit: filters.limit,
+      search: filters.search,
+      category: filters.category,
+      id: filters.id,
     });
   }
 

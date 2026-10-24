@@ -37,7 +37,7 @@ Para conferir: com uma conta que administra duas unidades, visitar Produtos → 
 
 `DataPagination` usa total conhecido de páginas, números, reticências e controles de primeira/anterior/próxima/última página; mantém a API usada pelas telas existentes. `ReusableTable<T>` centraliza apresentação de colunas, alinhamento, células personalizadas, identificação de linhas, skeleton, estado vazio e rodapé. Produtos usa a tabela sem ação na linha; apenas o botão Editar abre o formulário. Linhas interativas aceitam Enter/Espaço; botões e links internos mantêm a ação própria. As tabelas específicas restantes podem adotar a base conforme forem revisadas.
 
-Categorias, Promoções e Equipe e acessos também usam `ReusableTable`, com dez registros por página. `useTablePagination` reinicia a página ao mudar filtros/contexto e ajusta o limite quando uma exclusão reduz os resultados. Nessas três telas, a paginação usa os registros retornados pela API em memória.
+Categorias, Promoções e Equipe e acessos também usam `ReusableTable`, com dez registros por página. `useTablePagination` reinicia a página ao mudar filtros/contexto e ajusta o limite quando uma exclusão reduz os resultados. As listas usam paginação e busca no backend, com contagem dos resultados filtrados.
 
 ## Validações e datas compartilhadas
 
@@ -66,6 +66,18 @@ A exportação na conta é temporariamente uma prévia: abre um modal com Excel,
 
 `SearchField` é o campo de busca controlado de Categorias, Promoções, Cupons e Receitas, com label acessível, foco vermelho e botão de limpar que devolve o foco ao campo. Cada tela preserva seu filtro/paginação; Cupons reinicia na primeira página ao digitar ou limpar.
 
-`UserProfileDrawer` usa o Sheet/Radix existente, sem Chakra ou Emotion. O botão de avatar ao lado das notificações abre foto, nome, e-mail, unidade atual, função e versão. Telefone e equipes do exemplo não são exibidos porque não fazem parte desse contexto. Alterar senha direciona para a seção de segurança existente; o drawer fecha ao seguir links, usar Escape ou clicar fora. A sidebar não duplica a identidade ou os botões de conta/saída. Falha de logout mantém a sessão e permite nova tentativa; sucesso limpa o estado privado local e volta ao login.
+`UserProfileDrawer` usa o Sheet/Radix existente, sem Chakra ou Emotion. O botão de avatar ao lado das notificações abre foto, nome, e-mail, unidade atual, função e versão. Telefone e equipes do exemplo não são exibidos porque não fazem parte desse contexto. Um único link Gerenciar minha conta reúne dados pessoais e segurança; o drawer fecha ao seguir links, usar Escape ou clicar fora. A sidebar não duplica a identidade ou os botões de conta/saída. Falha de logout mantém a sessão e permite nova tentativa; sucesso limpa o estado privado local e volta ao login.
 
-Para conferir: testar digitação e limpeza nas quatro buscas; em Cupons, testar após navegar para outra página. Abrir o perfil por teclado, conferir foto/unidade/função, seguir Minha conta e Alterar senha, fechar com Escape e testar Sair. Conferir também no viewport de 390 px.
+Para conferir: testar digitação e limpeza nas quatro buscas; em Cupons, testar após navegar para outra página. Abrir o perfil por teclado, conferir foto/unidade/função, seguir Gerenciar minha conta, fechar com Escape e testar Sair. Conferir também no viewport de 390 px.
+
+## Paginação no servidor e imagens (24/10/2026)
+
+Categorias, Promoções, Receitas, Equipe, Produtos, Pedidos, Cupons e Auditoria solicitam dez registros por página. O backend filtra antes de contar e paginar. `useServerList` compartilha a consulta de listas, aplica debounce de 300 ms, reinicia a página ao trocar filtros e corrige a página após uma remoção. Produtos e Pedidos mantêm seus formulários de filtros aplicados. As consultas em cache continuam válidas por cinco minutos, separadas por unidade, filtros e página; Pedidos sempre busca novamente.
+
+Ajuda e suporte pertence ao grupo Configurações da sidebar. Equipe e Unidade usam o mesmo cabeçalho de configurações. O drawer centraliza Gerenciar minha conta e Sair, sem dois links para a mesma tela.
+
+Unidade separa imagens, identificação, endereço, entrega e horários/agendamento. O upload de imagens não descarta alterações ainda não salvas nos campos. Há logo, capa e até dez fotos adicionais (JPG/PNG/WebP/GIF, 2 MB por arquivo). A capa usa `cover_url`, já consumida pelo mobile; fotos adicionais usam `gallery_urls`, retornado pela API pública. O aplicativo mobile atual exibe logo/capa e não foi alterado para renderizar essa nova galeria.
+
+Clicar numa linha de produto abre detalhes em modal e busca `/products/manage/:id`, inclusive para produtos inativos. A galeria reúne capa e fotos extras sem duplicatas. Editar continua abrindo o formulário sem acionar o modal.
+
+Para testar no Network: visitar Categorias, avançar e conferir `page=2&limit=10`. Buscar um nome de outro conjunto de resultados: deve solicitar `search` e voltar à página 1; o total vem da API. Repetir em Promoções, Receitas, Equipe e Produtos. Em Pedidos, conferir também filtros de data, cliente, status e unidade. Enviar uma foto à galeria, atualizar a tela e remover a mesma foto. Conferir a capa em `/units/:id` e no mobile. Em Produtos, clicar na linha, trocar miniaturas, fechar com Escape e clicar em Editar. Conferir esses fluxos com rede lenta e viewport de 390 px.

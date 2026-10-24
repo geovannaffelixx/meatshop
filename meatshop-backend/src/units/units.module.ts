@@ -1,3 +1,4 @@
+import { UnitMediaService } from './services/unit-media.service';
 import { LegalModule } from '../legal/legal.module';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -33,6 +34,7 @@ import { ListPublicUnitsUseCase } from './use-cases/list-public-units.use-case';
   ],
   controllers: [UnitsController, UnitsUploadController],
   providers: [
+    UnitMediaService,
     CreateUnitUseCase,
     UpdateUnitUseCase,
     AddUserToUnitUseCase,

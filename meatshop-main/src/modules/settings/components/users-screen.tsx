@@ -5,9 +5,10 @@ import { validateName, validateEmail, validateCPF, validatePassword } from "@/sh
 
 import { ReusableTable, type TableColumn } from "@/shared/components/reusable-table";
 import { DataPagination } from "@/shared/components/data-pagination";
-import { useTablePagination } from "@/shared/hooks/use-table-pagination";
+import { useServerList } from "@/shared/hooks/use-server-list";
+import { SearchField } from "@/shared/components/search-field";
+import { PageHeader } from "@/shared/components/page-header";
 
-import { useApiQuery } from "@/shared/hooks/use-api-query";
 
 
 
@@ -69,7 +70,9 @@ function TeamManager() {
   const canAssignManager =
     selectedMembership?.role === "OWNER" || selectedMembership?.role === null;
 
-  const { data: members = [], isPending: loading, refetch: load, error } = useApiQuery<Member[]>(unitId ? `/units/${unitId}/members` : null);
+  const [search, setSearch] = useState('');
+  const query = useServerList<Member>(unitId ? `/units/${unitId}/members` : null, search);
+  const { isPending: loading, refetch: load, error, pagination } = query;
 
   async function createMember(event: React.FormEvent) {
     event.preventDefault();
@@ -152,7 +155,6 @@ function TeamManager() {
     </label>
   );
 
-  const pagination = useTablePagination(members, String(unitId));
   const columns: TableColumn<Member>[] = [
     { id: 'user', header: 'Usuário', accessor: row => <><strong>{row.user.name}</strong><div className="text-slate-500">{row.user.email}</div></> },
     { id: 'role', header: 'Cargo', accessor: row => row.local_role === 'OWNER' || row.local_role === 'DELIVERY' ? labels[row.local_role] : <select aria-label={`Cargo de ${row.user.name}`} value={row.local_role} disabled={busyId === row.id} onChange={event => void updateMember(row, { local_role: event.target.value as 'MANAGER' | 'OPERATOR' })} className="rounded-lg border px-2 py-1"><option value="OPERATOR">Operador</option>{canAssignManager && <option value="MANAGER">Gerente</option>}</select> },
@@ -167,7 +169,7 @@ function TeamManager() {
     <div className="page-surface">
     <div className="page-container max-w-6xl">
       <section className="rounded-xl border bg-white p-6">
-        <h1 className="text-2xl font-bold text-gray-900">Equipe e acessos</h1>
+        <PageHeader eyebrow="Configurações" title="Equipe e acessos" />
         <p className="mt-1 text-sm text-gray-600">
           Crie contas para funcionários e determine o que cada pessoa pode
           administrar nesta unidade.
@@ -242,7 +244,8 @@ function TeamManager() {
             Proprietários não podem ser removidos nem ter o cargo alterado.
           </p>
         </div>
-        <ReusableTable data={pagination.pageData} columns={columns} caption="Equipe e acessos" keyExtractor={row => row.id} isLoading={loading} emptyMessage="Nenhum usuário vinculado." footer={<DataPagination {...pagination} isLoading={loading} />} />
+        <SearchField value={search} onValueChange={setSearch} label="Buscar equipe" placeholder="Buscar por nome ou e-mail" className="mb-4 max-w-xl" />
+        <ReusableTable data={query.rows} columns={columns} caption="Equipe e acessos" keyExtractor={row => row.id} isLoading={loading} emptyMessage="Nenhum usuário vinculado." footer={<DataPagination {...pagination} isLoading={loading} />} />
         {error && <p role="alert" className="p-6 text-red-700">{error.message}</p>}
       </section>
 

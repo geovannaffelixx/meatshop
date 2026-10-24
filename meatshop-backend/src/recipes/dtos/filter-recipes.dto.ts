@@ -1,8 +1,9 @@
+import { PanelListQueryDto } from '../../common/dtos/panel-list-query.dto';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, IsString } from 'class-validator';
 
-export class FilterRecipesDto {
+export class FilterRecipesDto extends PanelListQueryDto {
   @ApiPropertyOptional({ description: 'Filters recipes by unit', example: 1 })
   @IsOptional()
   @Type(() => Number)

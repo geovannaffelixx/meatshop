@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronDown, KeyRound, LogOut, UserRound } from 'lucide-react';
+import { ArrowRight, Building2, ChevronDown, LogOut, ShieldCheck, UserRound } from 'lucide-react';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '@/shared/components/ui/sheet';
 import { Button } from '@/shared/components/ui/button';
 import { UserAvatar } from '@/shared/components/user-avatar';
@@ -50,27 +50,24 @@ export function UserProfileDrawer() {
           <ChevronDown className="size-3.5 text-slate-300" aria-hidden="true" />
         </button>
       </SheetTrigger>
-      <SheetContent side="right" className="w-full gap-0 overflow-y-auto bg-slate-50 sm:max-w-sm">
-        <SheetHeader className="border-b border-slate-200 bg-white px-6 py-6">
+      <SheetContent side="right" className="w-full gap-0 overflow-y-auto bg-white sm:max-w-sm">
+        <SheetHeader className="border-b border-slate-100 px-6 py-6">
           <SheetTitle>Meu perfil</SheetTitle>
-          <SheetDescription>Seus dados e acesso à conta.</SheetDescription>
+          <SheetDescription>Sua identidade e acesso nesta unidade.</SheetDescription>
         </SheetHeader>
         <div className="space-y-5 p-6">
-          <section className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5">
+          <section className="flex flex-col items-center gap-4 rounded-2xl bg-slate-50 p-6 text-center">
             <UserAvatar name={user.name} src={user.avatar_url} size="lg" />
             <div><p className="break-words font-semibold text-slate-900">{user.name}</p><p className="mt-1 break-all text-sm text-slate-500">{user.email}</p></div>
           </section>
-          <dl className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 text-sm">
-            <div><dt className="text-slate-500">Unidade atual</dt><dd className="mt-1 break-words font-medium text-slate-900">{selectedMembership?.unit_name ?? 'Nenhuma unidade selecionada'}</dd></div>
-            <div><dt className="text-slate-500">Cargo/Função</dt><dd className="mt-1 font-medium text-slate-900">{role}</dd></div>
+          <dl className="space-y-5 px-1 text-sm">
+            <div><dt className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-slate-400"><Building2 className="size-4" />Unidade atual</dt><dd className="mt-1 break-words font-medium text-slate-900">{selectedMembership?.unit_name ?? 'Nenhuma unidade selecionada'}</dd></div>
+            <div><dt className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-slate-400"><ShieldCheck className="size-4" />Cargo/Função</dt><dd className="mt-1 font-medium text-slate-900">{role}</dd></div>
           </dl>
-          <div className="grid gap-3">
-            <SheetClose asChild><Button asChild variant="outline" className="justify-start gap-2"><Link href="/settings/account"><UserRound className="size-4" />Minha conta</Link></Button></SheetClose>
-            <SheetClose asChild><Button asChild variant="outline" className="justify-start gap-2"><Link href="/settings/account#security"><KeyRound className="size-4" />Alterar senha</Link></Button></SheetClose>
-          </div>
+          <SheetClose asChild><Button asChild variant="outline" className="h-auto w-full justify-start gap-3 rounded-xl px-4 py-4 text-left"><Link href="/settings/account"><UserRound className="size-5 shrink-0 text-red-600" /><span className="min-w-0 flex-1"><span className="block font-semibold">Gerenciar minha conta</span><span className="mt-1 block text-xs font-normal text-slate-500">Dados pessoais, foto e segurança</span></span><ArrowRight className="size-4 shrink-0 text-slate-400" /></Link></Button></SheetClose>
         </div>
-        <SheetFooter className="gap-4 px-6 pb-6">
-          <Button type="button" onClick={() => void logout()} disabled={loggingOut} className="gap-2 bg-red-600 text-white hover:bg-red-700"><LogOut className="size-4" />{loggingOut ? 'Saindo...' : 'Sair'}</Button>
+        <SheetFooter className="gap-4 border-t border-slate-100 px-6 py-5">
+          <Button type="button" onClick={() => void logout()} disabled={loggingOut} variant="ghost" className="justify-start gap-3 rounded-xl text-red-700 hover:bg-red-50 hover:text-red-800"><LogOut className="size-4" />{loggingOut ? 'Saindo...' : 'Sair'}</Button>
           <p className="text-right text-xs text-slate-400">v{packageJson.version}</p>
         </SheetFooter>
       </SheetContent>

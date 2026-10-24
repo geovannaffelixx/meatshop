@@ -32,7 +32,9 @@ describe('Product catalog access', () => {
       {} as never,
       authorization as never,
     );
-    await expect(controller.manage({ id: 2 } as never, '7')).rejects.toThrow('forbidden');
+    await expect(
+      controller.manage({ id: 2 } as never, { unit_id: 7, page: 1, limit: 10 }),
+    ).rejects.toThrow('forbidden');
     expect(list.execute).not.toHaveBeenCalled();
   });
 });

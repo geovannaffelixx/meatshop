@@ -1,3 +1,4 @@
+import { FilterPanelOrdersDto } from './dtos/filter-panel-orders.dto';
 import {
   Body,
   Controller,
@@ -87,7 +88,11 @@ export class OrdersController {
     isArray: true,
   })
   @Get()
-  async list(@CurrentUser() currentUser: User) {
+  async list(@CurrentUser() currentUser: User, @Query() filters: FilterPanelOrdersDto) {
+    if (filters.paginated === 'true') {
+      const result = await this.listOrderHistoryUseCase.panel(currentUser, filters);
+      return { ...result, data: result.data.map((order) => OrderListItemDto.fromEntity(order)) };
+    }
     const orders = await this.listOrderHistoryUseCase.execute(currentUser);
     return orders.map((order) => OrderListItemDto.fromEntity(order));
   }

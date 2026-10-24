@@ -5,7 +5,7 @@ import { formatDateTime as formatDateTimeBR } from "@/shared/lib/formatters";
 
 import { ReusableTable, type TableColumn } from "@/shared/components/reusable-table";
 import { DataPagination } from "@/shared/components/data-pagination";
-import { useTablePagination } from "@/shared/hooks/use-table-pagination";
+import { useServerList } from "@/shared/hooks/use-server-list";
 
 import { useApiQuery } from "@/shared/hooks/use-api-query";
 
@@ -45,6 +45,7 @@ type Promotion = {
   starts_at: string
   ends_at: string
   active: boolean
+  product?: Product
 }
 
 type DiscountMode = "percentage" | "price"
@@ -86,9 +87,11 @@ function promotionStatus(promotion: Promotion) {
 export function PromotionsScreen() {
   const { units, unitId, loading: unitsLoading } = useManagedUnits()
 
-  const promotionsQuery = useApiQuery<Promotion[]>(unitId ? `/promotions?unit_id=${unitId}` : null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const promotionsQuery = useServerList<Promotion>(unitId ? `/promotions?unit_id=${unitId}` : null, search, { status: statusFilter });
+  const pagination = promotionsQuery.pagination;
   const productsQuery = useApiQuery<{ data: Product[] }>(unitId ? `/products/manage?unit_id=${unitId}&limit=200` : null);
-  const promotions = useMemo(() => promotionsQuery.data ?? [], [promotionsQuery.data]);
   const products = useMemo(() => productsQuery.data?.data ?? [], [productsQuery.data]);
   const loading = promotionsQuery.isPending || productsQuery.isPending;
   const error = promotionsQuery.error?.message ?? productsQuery.error?.message;
@@ -99,27 +102,11 @@ export function PromotionsScreen() {
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [togglingId, setTogglingId] = useState<number | null>(null)
-  const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState("")
 
   const productName = useMemo(() => {
     const map = new Map(products.map((p) => [p.id, p.name]))
     return (id: number) => map.get(id) ?? `Produto #${id}`
   }, [products])
-
-  const filteredPromotions = useMemo(() => {
-    const term = search.trim().toLocaleLowerCase("pt-BR")
-    return promotions.filter((promotion) => {
-      const status = promotionStatus(promotion).label
-      const searchMatches =
-        !term ||
-        `${promotion.title} ${productName(promotion.product_id)}`
-          .toLocaleLowerCase("pt-BR")
-          .includes(term)
-      const statusMatches = !statusFilter || status === statusFilter
-      return searchMatches && statusMatches
-    })
-  }, [productName, promotions, search, statusFilter])
 
   const openCreate = () => {
     setEditingId(null)
@@ -217,10 +204,9 @@ export function PromotionsScreen() {
     }
   }
 
-  const pagination = useTablePagination(filteredPromotions, `${unitId}:${search}:${statusFilter}`);
   const columns: TableColumn<Promotion>[] = [
     { id: 'title', header: 'Título', accessor: 'title', className: 'font-medium' },
-    { id: 'product', header: 'Produto', accessor: row => productName(row.product_id) },
+    { id: 'product', header: 'Produto', accessor: row => row.product?.name ?? productName(row.product_id) },
     { id: 'discount', header: 'Desconto', accessor: row => row.promotional_price != null ? Number(row.promotional_price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : `${row.discount_percentage}%` },
     { id: 'period', header: 'Período', accessor: row => <>{formatDateTimeBR(row.starts_at)} — {formatDateTimeBR(row.ends_at)}</> },
     { id: 'status', header: 'Status', accessor: row => { const status = promotionStatus(row); return <span className={`font-semibold ${status.className}`}>{status.label}</span>; } },
@@ -412,7 +398,7 @@ export function PromotionsScreen() {
           </select>
         </div>
 
-        {error ? <div className="p-6 text-red-700" role="alert">{error}</div> : <ReusableTable data={pagination.pageData} columns={columns} caption="Promoções cadastradas" keyExtractor={row => row.id} isLoading={loading} emptyMessage="Nenhuma promoção encontrada." footer={<DataPagination {...pagination} isLoading={loading} />} />}
+        {error ? <div className="p-6 text-red-700" role="alert">{error}</div> : <ReusableTable data={promotionsQuery.rows} columns={columns} caption="Promoções cadastradas" keyExtractor={row => row.id} isLoading={loading} emptyMessage="Nenhuma promoção encontrada." footer={<DataPagination {...pagination} isLoading={loading} />} />}
       </div>
     </div>
   )

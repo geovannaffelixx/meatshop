@@ -1,3 +1,4 @@
+import { paginatedResult, searchPattern } from '../../common/dtos/panel-list-query.dto';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { LessThanOrEqual, Repository } from 'typeorm';
@@ -12,7 +13,31 @@ export class ListRecipesUseCase {
     private readonly recipeRepository: Repository<Recipe>,
   ) {}
 
-  async execute(filters: FilterRecipesDto): Promise<RecipeSummaryResponseDto[]> {
+  async execute(filters: FilterRecipesDto) {
+    if (filters.paginated === 'true') {
+      const query = this.recipeRepository.createQueryBuilder('recipe');
+      if (filters.unit_id) query.andWhere('recipe.unit_id = :unitId', { unitId: filters.unit_id });
+      if (filters.tag) query.andWhere('recipe.tag = :tag', { tag: filters.tag });
+      if (filters.active !== undefined)
+        query.andWhere('recipe.active = :active', { active: filters.active === 'true' });
+      if (filters.current_week === 'true')
+        query.andWhere('recipe.week_start <= :now', { now: new Date() });
+      if (filters.search?.trim())
+        query.andWhere('(recipe.title ILIKE :search OR recipe.tag ILIKE :search)', {
+          search: searchPattern(filters.search),
+        });
+      const [data, total] = await query
+        .orderBy('recipe.display_order', 'ASC')
+        .addOrderBy('recipe.id', 'ASC')
+        .skip((filters.page - 1) * filters.limit)
+        .take(filters.limit)
+        .getManyAndCount();
+      return paginatedResult(
+        data.map((recipe) => RecipeSummaryResponseDto.fromEntity(recipe)),
+        total,
+        filters,
+      );
+    }
     const where: Record<string, unknown> = {};
     if (filters.unit_id) where.unit_id = filters.unit_id;
     if (filters.tag) where.tag = filters.tag;

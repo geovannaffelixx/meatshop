@@ -1,3 +1,4 @@
+import { PanelListQueryDto } from '../common/dtos/panel-list-query.dto';
 import {
   Body,
   Controller,
@@ -169,8 +170,12 @@ export class UnitsController {
 
   @ApiOperation({ summary: 'Lists administrative members of a unit' })
   @Get(':unitId/members')
-  listMembers(@Param('unitId', ParseIntPipe) unitId: number, @CurrentUser() currentUser: User) {
-    return this.listUnitMembersUseCase.execute(unitId, currentUser);
+  listMembers(
+    @Param('unitId', ParseIntPipe) unitId: number,
+    @CurrentUser() currentUser: User,
+    @Query() filters: PanelListQueryDto,
+  ) {
+    return this.listUnitMembersUseCase.execute(unitId, currentUser, filters);
   }
 
   @ApiOperation({ summary: 'Changes the role or status of a unit member' })

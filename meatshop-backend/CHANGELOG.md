@@ -2,6 +2,14 @@
 
 Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Changelog e Semantic Versioning.
 
+## Panel pagination and unit gallery - 2026-10-24
+
+- Server-side search and paginated panel lists with filtered totals and preserved legacy array contracts.
+- Product management filters and unit-scoped order pagination with actor authorization.
+- Unit cover/gallery uploads, protected removal, transactional capacity checks and storage cleanup.
+- Additive unit gallery migration and public gallery URLs; existing mobile logo/cover contracts preserved.
+- Regression tests for pagination bounds, query scopes and media persistence/authorization.
+
 ## [3.3.0] - 2026-10-20 - Fechamento de lacunas funcionais
 
 ### Complemento da especificacao original (23/10/2026)

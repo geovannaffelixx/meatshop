@@ -1,4 +1,4 @@
-﻿import React, { act } from 'react';
+import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { UserProfileDrawer } from './user-profile-drawer';
 import { apiPost } from '@/shared/lib/api';
@@ -29,7 +29,8 @@ describe('Header profile drawer', () => {
     expect(drawer.textContent).toContain('Loja A');
     expect(drawer.textContent).toContain('Gerente');
     expect(drawer.querySelector('[href="/settings/account"]')).not.toBeNull();
-    expect(drawer.querySelector('[href="/settings/account#security"]')).not.toBeNull();
+    expect(drawer.querySelectorAll('a')).toHaveLength(1);
+    expect(drawer.querySelector('a')?.textContent).toContain('Gerenciar minha conta');
     await act(async () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     expect(document.querySelector('[role="dialog"]')).toBeNull();
   });

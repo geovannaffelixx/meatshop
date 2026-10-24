@@ -92,7 +92,7 @@ export function CouponsScreen() {
     () =>
       new URLSearchParams({
         page: String(page),
-        limit: "20",
+        limit: "10",
         ...(search ? { search } : {}),
         ...(!isAdmin && unitId ? { unit_id: String(unitId) } : {}),
       }).toString(),
@@ -250,7 +250,7 @@ export function CouponsScreen() {
               </div>
               <DataPagination
                 page={page}
-                pageSize={20}
+                pageSize={10}
                 totalItems={result.meta.total}
                 totalPages={result.meta.totalPages}
                 onPageChange={setPage}
