@@ -1,3 +1,5 @@
+import { AuditRequestContextMiddleware } from './audit/audit-request-context';
+import { MonitoringModule } from './monitoring/monitoring.module';
 import { LegalDocument } from './legal/entities/legal-document.entity';
 import { LegalAcceptance } from './legal/entities/legal-acceptance.entity';
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
@@ -88,6 +90,7 @@ import { AiModule } from './ai/ai.module';
     ConfigModule.forRoot({ isGlobal: true }),
     LoggerModule,
     MetricsModule,
+    MonitoringModule,
     FirebaseModule,
     ScheduleModule.forRoot(),
     StorageModule,
@@ -201,6 +204,8 @@ import { AiModule } from './ai/ai.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(RateLimitMiddleware, AppCheckMiddleware).forRoutes('*');
+    consumer
+      .apply(AuditRequestContextMiddleware, RateLimitMiddleware, AppCheckMiddleware)
+      .forRoutes('*');
   }
 }

@@ -1,3 +1,4 @@
+import { isValidProductQuantity } from '../../cart/services/product-availability.policy';
 import { SellerAccountsService } from '../../payments/seller-accounts.service';
 import { isOfflinePayment } from '../../payments/payment-policy';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
@@ -65,7 +66,14 @@ export class QuoteCartUseCase {
       })),
     );
     const groups = this.pricing.group(items, dto);
-    if (items.some((i) => !i.product.active || !i.product.category?.active))
+    if (
+      items.some(
+        (i) =>
+          !i.product.active ||
+          !i.product.category?.active ||
+          !isValidProductQuantity(i.product, Number(i.quantity)),
+      )
+    )
       throw new BadRequestException({
         code: 'PRODUCT_UNAVAILABLE',
         message: 'Há produtos indisponíveis no carrinho.',

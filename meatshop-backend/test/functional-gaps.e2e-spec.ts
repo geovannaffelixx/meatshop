@@ -1,3 +1,4 @@
+import { CompleteFunctionalGaps1792790400000 } from '../src/database/migrations/1792790400000-CompleteFunctionalGaps';
 import 'reflect-metadata';
 import { jest } from '@jest/globals';
 import { randomUUID } from 'node:crypto';
@@ -48,7 +49,7 @@ const enabled = process.env.GAPS_TEST_DATABASE === 'meatshop_gaps_test_330';
       type: 'postgres',
       entities: source.options.entities,
       host: '127.0.0.1',
-      port: 5433,
+      port: Number(process.env.E2E_DB_PORT ?? 5433),
       username: 'meatshop_user',
       password: 'meatshop_pass',
       database: 'meatshop_gaps_test_330',
@@ -60,6 +61,8 @@ const enabled = process.env.GAPS_TEST_DATABASE === 'meatshop_gaps_test_330';
     await db.initialize();
     const runner = db.createQueryRunner();
     // Verify the branch migrations against the schema before these features existed.
+    if (await runner.hasTable('auth_login_attempts'))
+      await new CompleteFunctionalGaps1792790400000().down(runner);
     if (await runner.hasColumn('promotions', 'notification_sent_at')) {
       await new FunctionalGapsHardening1792288803000().down(runner);
     }
@@ -68,6 +71,7 @@ const enabled = process.env.GAPS_TEST_DATABASE === 'meatshop_gaps_test_330';
     await new NotificationPreferences1792288801000().up(runner);
     await new UnitSchedulingCapacity1792288802000().up(runner);
     await new FunctionalGapsHardening1792288803000().up(runner);
+    await new CompleteFunctionalGaps1792790400000().up(runner);
     await runner.release();
     user = await db
       .getRepository(User)

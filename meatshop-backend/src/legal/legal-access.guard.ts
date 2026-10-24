@@ -21,6 +21,8 @@ export class LegalAccessGuard implements CanActivate {
       path.startsWith('/auth/') ||
       path.startsWith('/support') ||
       path === '/users/me' ||
+      path === '/users/me/export' ||
+      path === '/users/me/retention-policy' ||
       path === '/users/me/panel-access' ||
       path === '/users/me/account' ||
       path === '/units/mine' ||

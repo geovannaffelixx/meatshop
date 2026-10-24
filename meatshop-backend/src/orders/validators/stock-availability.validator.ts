@@ -24,7 +24,7 @@ export class StockAvailabilityValidator {
         where: { product_id: item.product_id },
       });
 
-      if (!stock || stock.quantity < item.quantity) {
+      if (!stock || Number(stock.quantity) < Number(item.quantity)) {
         insufficient.push(item.product_name);
       }
     }

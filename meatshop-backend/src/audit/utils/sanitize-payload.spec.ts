@@ -21,3 +21,17 @@ describe('sanitizePayload', () => {
     expect(String(sanitizePayload('a'.repeat(600)))).toContain('[TRUNCATED]');
   });
 });
+
+describe('Credential variants', () => {
+  it('redacts SDK and HTTP credential variants', () => {
+    const sanitized = sanitizePayload({
+      accessToken: 'secret',
+      refreshToken: 'secret',
+      idToken: 'secret',
+      api_key: 'secret',
+      cookie: 'secret',
+      nested: { authorization: 'secret' },
+    });
+    expect(JSON.stringify(sanitized)).not.toContain('secret');
+  });
+});

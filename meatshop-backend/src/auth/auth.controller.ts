@@ -1,3 +1,5 @@
+import { LoginDto } from './dto/login.dto';
+import { VerifyMobilePasswordUseCase } from './use-cases/verify-mobile-password.use-case';
 import {
   BadRequestException,
   Body,
@@ -40,6 +42,7 @@ import { FirebaseExchangeUseCase } from './use-cases/firebase-exchange.use-case'
 @Controller('auth')
 export class AuthController {
   constructor(
+    private readonly verifyMobilePassword: VerifyMobilePasswordUseCase,
     private readonly registerUseCase: RegisterUseCase,
     private readonly registerUnitUseCase: RegisterUnitUseCase,
     private readonly loginUseCase: LoginUseCase,
@@ -52,6 +55,13 @@ export class AuthController {
     private readonly configService: ConfigService,
     private readonly firebaseExchangeUseCase: FirebaseExchangeUseCase,
   ) {}
+
+  @Public()
+  @Post('mobile/password')
+  @HttpCode(HttpStatus.OK)
+  mobilePassword(@Body() dto: LoginDto) {
+    return this.verifyMobilePassword.execute(dto.email, dto.password);
+  }
 
   @ApiOperation({
     summary: 'Exchanges a Firebase ID token for a MeatShop session',

@@ -1,3 +1,4 @@
+import { CompleteFunctionalGaps1792790400000 } from '../src/database/migrations/1792790400000-CompleteFunctionalGaps';
 import type { DataSource } from 'typeorm';
 import { NotificationPreferences1792288801000 } from '../src/database/migrations/1792288801000-NotificationPreferences';
 import { UnitSchedulingCapacity1792288802000 } from '../src/database/migrations/1792288802000-UnitSchedulingCapacity';
@@ -34,6 +35,9 @@ export async function applyFunctionalGapsMigrations(db: DataSource): Promise<voi
     }
     if (!(await runner.hasColumn('promotions', 'notification_sent_at'))) {
       await new FunctionalGapsHardening1792288803000().up(runner);
+    }
+    if (!(await runner.hasTable('auth_login_attempts'))) {
+      await new CompleteFunctionalGaps1792790400000().up(runner);
     }
     await runner.commitTransaction();
   } catch (error) {

@@ -47,7 +47,7 @@ export function ProductsTable({
     if (!unitId) return;
 
     setLoading(true);
-    apiGet(`/products?unit_id=${unitId}&limit=200`)
+    apiGet(`/products/manage?unit_id=${unitId}&limit=200`)
       .then((result) => setProducts(result?.data ?? []))
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));

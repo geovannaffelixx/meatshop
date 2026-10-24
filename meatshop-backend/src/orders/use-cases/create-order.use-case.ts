@@ -1,3 +1,4 @@
+import { isValidProductQuantity } from '../../cart/services/product-availability.policy';
 import { SellerAccountsService } from '../../payments/seller-accounts.service';
 import { isOfflinePayment } from '../../payments/payment-policy';
 import { PaymentMethod } from '../enums/payment-method.enum';
@@ -293,7 +294,10 @@ export class CreateOrderUseCase {
       });
     }
     const unavailable = items.filter(
-      (item) => !item.product.active || !item.product.category?.active,
+      (item) =>
+        !item.product.active ||
+        !item.product.category?.active ||
+        !isValidProductQuantity(item.product, Number(item.quantity)),
     );
     if (unavailable.length > 0) {
       throw new BadRequestException({

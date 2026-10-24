@@ -14,9 +14,13 @@ function queryBuilder(result: 'entities' | 'raw', values: unknown[] = []) {
     'groupBy',
     'addGroupBy',
     'orderBy',
+    'addOrderBy',
+    'offset',
+    'limit',
   ]) {
     query[method] = jest.fn(() => query);
   }
+  query.getCount = jest.fn(async () => values.length);
   query.getMany = jest.fn(async () => (result === 'entities' ? values : []));
   query.getRawAndEntities = jest.fn(async () => ({ raw: [], entities: [] }));
   query.getRawMany = jest.fn(async () => (result === 'raw' ? values : []));
@@ -24,6 +28,27 @@ function queryBuilder(result: 'entities' | 'raw', values: unknown[] = []) {
 }
 
 describe('MarketplaceSearchService', () => {
+  it('paginates across category and product boundaries without loading all matches', async () => {
+    const units = queryBuilder('entities');
+    const categories = queryBuilder('entities');
+    const products = queryBuilder('entities');
+    units.getCount.mockImplementation(async () => 3);
+    categories.getCount.mockImplementation(async () => 2);
+    products.getCount.mockImplementation(async () => 1000);
+    const service = new MarketplaceSearchService(
+      { createQueryBuilder: () => units } as never,
+      { createQueryBuilder: () => categories } as never,
+      { createQueryBuilder: () => products } as never,
+    );
+    const result = await service.execute({ q: 'carne', page: 2, limit: 4 });
+    expect(units.getMany).not.toHaveBeenCalled();
+    expect(categories.offset).toHaveBeenCalledWith(1);
+    expect(categories.limit).toHaveBeenCalledWith(1);
+    expect(products.offset).toHaveBeenCalledWith(0);
+    expect(products.limit).toHaveBeenCalledWith(3);
+    expect(result.meta.total).toBe(1005);
+  });
+
   it('searches product names and brands and applies an exact brand filter', async () => {
     const unitQuery = queryBuilder('entities');
     const categoryQuery = queryBuilder('entities');

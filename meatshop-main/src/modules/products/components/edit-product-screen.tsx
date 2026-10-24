@@ -46,7 +46,7 @@ export function EditProductScreen() {
   const [deletingImageId, setDeletingImageId] = useState<number | null>(null)
 
   useEffect(() => {
-    apiGet(`/products/${productId}`)
+    apiGet(`/products/manage/${productId}`)
       .then((res: { product: Product; stock: Stock | null; images?: ProductImage[] }) => {
         setProduct(res.product)
         setStock(res.stock ?? { quantity: 0, min_quantity: 0 })

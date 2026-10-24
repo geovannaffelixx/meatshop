@@ -65,6 +65,18 @@ jobs:
       - run: npm run migration:run:prod
       - run: npm run test:coverage
       - run: npm run test:e2e
+      - name: Prepare isolated functional gaps database
+        run: PGPASSWORD=meatshop_pass psql -h 127.0.0.1 -U meatshop_user -d meatshop -c 'CREATE DATABASE meatshop_gaps_test_330'
+      - name: Migrate isolated functional gaps database
+        run: npm run migration:run:prod
+        env:
+          DB_DATABASE: meatshop_gaps_test_330
+      - name: Verify functional gaps and application smoke
+        run: npm run test:e2e -- functional-gaps app.e2e health.e2e metrics.e2e specification
+        env:
+          E2E_DB_PORT: 5432
+          E2E_TEST_DATABASE: meatshop_gaps_test_330
+          GAPS_TEST_DATABASE: meatshop_gaps_test_330
       - name: Prepare isolated payments database
         run: PGPASSWORD=meatshop_pass psql -h 127.0.0.1 -U meatshop_user -d meatshop -c 'CREATE DATABASE meatshop_payments_test'
       - name: Migrate isolated payments database
@@ -81,6 +93,12 @@ jobs:
         with:
           name: backend-coverage
           path: meatshop-backend/coverage
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: specification-results
+          path: meatshop-backend/test-results
 
   frontend:
     runs-on: ubuntu-latest

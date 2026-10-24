@@ -30,7 +30,7 @@ export class AuditLogInterceptor implements NestInterceptor {
       request.route?.path ?? request.path,
       request.params ?? {},
     );
-    return from(this.fetchOldData(request.method, info)).pipe(
+    return from(this.prepare(request, info)).pipe(
       mergeMap((oldData) =>
         next.handle().pipe(
           mergeMap(async (response) => {
@@ -49,6 +49,19 @@ export class AuditLogInterceptor implements NestInterceptor {
         ),
       ),
     );
+  }
+
+  private async prepare(request: Request, info: IRouteAuditInfo): Promise<unknown> {
+    const oldData = await this.fetchOldData(request.method, info);
+    await this.auditTrail.record({
+      ...this.auditTrail.contextFromRequest(request),
+      action: `ATTEMPT_${info.action}`,
+      entity: info.entity,
+      entityId: info.entityId,
+      description: `Attempt: ${info.description}`,
+      oldData,
+    });
+    return oldData;
   }
 
   private async fetchOldData(method: string, info: IRouteAuditInfo): Promise<unknown> {

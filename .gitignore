@@ -65,3 +65,11 @@ Thumbs.db
 ![rR][eE][lL][eE][aA][sS][eE][sS]*.[mM][dD]
 
 !docs/TERMS_AND_PRIVACY.md
+
+secrets/monitoring-token.txt
+
+meatshop-backend/test-results/
+
+!docs/IMPLEMENTACAO_GAPS_330.md
+!docs/AUDITORIA_ESPECIFICACAO_ORIGINAL_330.md
+!docs/ROTEIRO_HOMOLOGACAO_GAPS_330.md

@@ -4,6 +4,14 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ## [3.3.0] - 2026-10-20 - Fechamento de lacunas funcionais
 
+### Complemento da especificacao original (23/10/2026)
+
+- Bloqueio de login central, auditoria transacional com ator e protecao contra TRUNCATE.
+- Despesas do entregador, exportacao dos proprios dados e retencao configuravel.
+- Catalogo publico protegido, filtros por cidade/regiao, paginacao SQL e validacao de estoque numerico.
+- Alertas somente no painel, adaptador Socket.IO PostgreSQL, CI de integracao e jornadas concorrentes.
+- Evidencias e decisoes: [implementacao dos 18 pontos](../docs/IMPLEMENTACAO_GAPS_330.md).
+
 ### Adicionado
 
 - Busca pública combinada por texto, categoria, marca e faixa de preço, com endpoint de marcas disponíveis e paginação preservada.

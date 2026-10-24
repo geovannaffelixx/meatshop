@@ -4,14 +4,15 @@ import { useEffect, useState } from "react";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
 import { Spinner } from "@/shared/components/ui/spinner";
 import { PasswordInput } from "@/shared/components/ui/password-input";
-import { API_URL, apiUpload, apiPatch, apiPost } from "@/shared/lib/api";
+import { API_URL, apiGet, apiUpload, apiPatch, apiPost } from "@/shared/lib/api";
 import { toast } from "@/shared/lib/toast";
 import { PageHeader } from "@/shared/components/page-header";
+import { Button } from "@/shared/components/ui/button";
 import { RequiredMark } from "@/shared/components/ui/required-mark";
 
-function formatCpf(cpf: string) {
-  const digits = cpf.replace(/\D/g, "");
-  if (digits.length !== 11) return cpf;
+function formatCpf(cpf: string | null | undefined) {
+  const digits = (cpf ?? '').replace(/\D/g, "");
+  if (digits.length !== 11) return cpf ?? '';
   return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
 }
 
@@ -27,6 +28,7 @@ function AccountForm() {
   const { user, refresh } = usePanelAccess();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [exporting, setExporting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -43,6 +45,23 @@ function AccountForm() {
   if (!user) return <p className="p-6 text-gray-500">Carregando conta...</p>;
 
   const emailChanged = email.trim().toLowerCase() !== user.email.toLowerCase();
+
+  async function exportData() {
+    setExporting(true);
+    try {
+      const data = await apiGet("/users/me/export");
+      const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "meatshop-meus-dados.json";
+      anchor.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      toast.error("Não foi possível exportar seus dados.");
+    } finally {
+      setExporting(false);
+    }
+  }
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -121,6 +140,7 @@ function AccountForm() {
         title="Minha conta"
         description="Gerencie seus dados pessoais e a segurança do acesso."
       />
+      <div className="mb-4 flex justify-end"><Button type="button" variant="outline" onClick={exportData} disabled={exporting}>{exporting ? "Preparando arquivo..." : "Exportar meus dados"}</Button></div>
       <section className="rounded-xl border bg-white p-6">
         <h2 className="text-lg font-semibold text-gray-900">Dados pessoais</h2>
         <p className="mt-1 text-sm text-gray-600">Informações utilizadas para identificar sua conta.</p>

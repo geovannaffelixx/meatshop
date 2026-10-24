@@ -29,7 +29,8 @@ export class AppCheckMiddleware implements NestMiddleware {
 
   private isProtectedRoute(request: Request): boolean {
     const configured =
-      this.config.get<string>('FIREBASE_APP_CHECK_PROTECTED_PATHS') ?? '/auth/firebase-exchange';
+      this.config.get<string>('FIREBASE_APP_CHECK_PROTECTED_PATHS') ??
+      '/auth/firebase-exchange,/auth/firebase/exchange,/auth/mobile/password';
     const requestPath = request.path || request.originalUrl.split('?')[0];
     return configured
       .split(',')

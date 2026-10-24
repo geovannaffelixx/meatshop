@@ -23,13 +23,16 @@ export class SendNotificationUseCase {
     private readonly notificationsGateway: NotificationsGateway,
   ) {}
 
-  async execute(dto: CreateNotificationDto): Promise<Notification> {
+  async execute(
+    dto: CreateNotificationDto,
+    options: { push?: boolean } = {},
+  ): Promise<Notification> {
     const notification = await this.notificationRepository.save(
       this.notificationRepository.create({ title: 'MeatShop', ...dto }),
     );
 
     this.notificationsGateway.emitToUser(notification);
-    if (await this.isPushEnabled(notification)) {
+    if (options.push !== false && (await this.isPushEnabled(notification))) {
       await this.pushToDevices(notification);
     }
 

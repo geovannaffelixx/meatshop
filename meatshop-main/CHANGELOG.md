@@ -4,6 +4,12 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ## [3.3.0] - 2026-10-20 - Fechamento de lacunas funcionais
 
+### Complemento da especificacao original (23/10/2026)
+
+- Exportacao dos proprios dados na conta, com tratamento de erro e nova tentativa.
+- Gestao de produtos e promocoes usa catalogo autenticado, preservando produtos inativos para edicao.
+- Dependencias de producao atualizadas e regressao da exportacao de dados.
+
 ### Adicionado
 
 - Configuração de agendamento na unidade, com ativação explícita, duração do intervalo e capacidade de pedidos por intervalo; os valores iniciais sugeridos são 30 minutos e 5 pedidos.

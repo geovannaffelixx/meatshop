@@ -119,7 +119,7 @@ export function PromotionsScreen() {
     try {
       const [promotionsData, productsData] = await Promise.all([
         apiGet(`/promotions?unit_id=${unit}`),
-        apiGet(`/products?unit_id=${unit}&limit=200`),
+        apiGet(`/products/manage?unit_id=${unit}&limit=200`),
       ])
       setPromotions(Array.isArray(promotionsData) ? promotionsData : [])
       setProducts(Array.isArray(productsData?.data) ? productsData.data : [])

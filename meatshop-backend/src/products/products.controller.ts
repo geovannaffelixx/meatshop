@@ -1,4 +1,16 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
+import { UnitAuthorizationService } from '../units/services/unit-authorization.service';
+import { UnitPermission } from '../common/enums/unit-permission.enum';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
@@ -21,6 +33,7 @@ export class ProductsController {
     private readonly updateStockUseCase: UpdateStockUseCase,
     private readonly listProductsUseCase: ListProductsUseCase,
     private readonly getProductUseCase: GetProductUseCase,
+    private readonly authorization: UnitAuthorizationService,
   ) {}
 
   @Public()
@@ -44,11 +57,42 @@ export class ProductsController {
     return this.listProductsUseCase.execute({
       unitId: unitId ? Number(unitId) : undefined,
       categoryId: categoryId ? Number(categoryId) : undefined,
-      active: active !== undefined ? active === 'true' : undefined,
-      available: available === 'true',
+      active: true,
+      available: true,
       page: Math.max(Number(page) || 1, 1),
       limit: Math.min(Math.max(Number(limit) || 10, 1), 50),
     });
+  }
+
+  @Get('manage')
+  async manage(
+    @CurrentUser() user: User,
+    @Query('unit_id') unitId?: string,
+    @Query('active') active?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const id = Number(unitId);
+    if (!Number.isSafeInteger(id) || id <= 0) throw new BadRequestException('Choose a unit');
+    await this.authorization.assertHasPermission(user, id, UnitPermission.MANAGE_PRODUCTS);
+    return this.listProductsUseCase.execute({
+      unitId: id,
+      active: active === undefined ? undefined : active === 'true',
+      available: false,
+      page: Math.max(Number(page) || 1, 1),
+      limit: Math.min(Math.max(Number(limit) || 50, 1), 200),
+    });
+  }
+
+  @Get('manage/:id')
+  async manageOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: User) {
+    const result = await this.getProductUseCase.execute(id, false);
+    await this.authorization.assertHasPermission(
+      user,
+      result.product.unit_id,
+      UnitPermission.MANAGE_PRODUCTS,
+    );
+    return result;
   }
 
   @Public()

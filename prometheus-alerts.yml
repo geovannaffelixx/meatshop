@@ -44,7 +44,7 @@ groups:
         annotations:
           summary: Latência p95 acima de 500 ms
       - alert: MeatshopLoginFailuresSpike
-        expr: sum(rate(http_requests_total{route="/auth/login",status_code=~"4.."}[5m])) > 0.5
+        expr: sum(rate(http_requests_total{route=~"/auth/(login|mobile/password)",status_code=~"4.."}[5m])) > 0.5
         for: 5m
         labels:
           severity: warning

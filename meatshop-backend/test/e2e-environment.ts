@@ -1,13 +1,15 @@
 // The smoke tests must never accidentally connect to a developer's application DB.
-if (process.env.E2E_TEST_DATABASE === 'meatshop_gaps_test_330') {
+if (
+  ['meatshop_gaps_test_330', 'meatshop_spec_test_330'].includes(process.env.E2E_TEST_DATABASE ?? '')
+) {
   Object.assign(process.env, {
     NODE_ENV: 'test',
     DB_TYPE: 'postgres',
     DB_HOST: '127.0.0.1',
-    DB_PORT: '5433',
+    DB_PORT: process.env.E2E_DB_PORT ?? '5433',
     DB_USERNAME: 'meatshop_user',
     DB_PASSWORD: 'meatshop_pass',
-    DB_DATABASE: 'meatshop_gaps_test_330',
+    DB_DATABASE: process.env.E2E_TEST_DATABASE,
     DELIVERY_TEST_DATABASE: 'meatshop_gaps_test_330',
     DB_SSL: 'false',
     DB_SYNCHRONIZE: 'false',

@@ -1,5 +1,16 @@
 const SENSITIVE_KEYS = [
   'password',
+  'accesstoken',
+  'refreshtoken',
+  'idtoken',
+  'id_token',
+  'firebase_id_token',
+  'x-firebase-reauth-token',
+  'apikey',
+  'api_key',
+  'jwt',
+  'cookie',
+  'set-cookie',
   'password_hash',
   'current_password',
   'new_password',
@@ -27,6 +38,7 @@ const SENSITIVE_KEYS = [
 ];
 const PERSONAL_KEYS = [
   'cpf',
+  'cpfcnpj',
   'cnpj',
   'email',
   'phone',
@@ -52,7 +64,8 @@ export function sanitizePayload(value: unknown, depth = 0): unknown {
       ? `${value.slice(0, MAX_STRING_LENGTH)}...[TRUNCATED]`
       : value;
   }
-  if (depth > 5 || value === null || typeof value !== 'object') {
+  if (depth > 5) return '[TRUNCATED]';
+  if (value === null || typeof value !== 'object') {
     return value;
   }
 

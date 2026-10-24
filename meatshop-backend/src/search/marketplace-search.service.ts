@@ -109,11 +109,50 @@ export class MarketplaceSearchService {
         brand: brand.toLocaleLowerCase('pt-BR'),
       });
 
-    const [units, categories, productResult] = await Promise.all([
-      unitQuery.orderBy('unit.name', 'ASC').getMany(),
-      categoryQuery.orderBy('category.name', 'ASC').getMany(),
-      productQuery.orderBy('product.name', 'ASC').getRawAndEntities(),
+    const [unitCount, categoryCount, productCount] = await Promise.all([
+      unitQuery.getCount(),
+      categoryQuery.getCount(),
+      productQuery.getCount(),
     ]);
+    const start = (filters.page - 1) * filters.limit;
+    const range = (preceding: number, count: number) => {
+      const offset = Math.max(0, start - preceding);
+      const limit = Math.max(
+        0,
+        Math.min(count - offset, start + filters.limit - preceding - offset),
+      );
+      return { offset, limit };
+    };
+    const unitRange = range(0, unitCount);
+    const categoryRange = range(unitCount, categoryCount);
+    const productRange = range(unitCount + categoryCount, productCount);
+    const [units, categories, productResult] = await Promise.all([
+      unitRange.limit > 0
+        ? unitQuery
+            .orderBy('unit.name', 'ASC')
+            .addOrderBy('unit.id', 'ASC')
+            .offset(unitRange.offset)
+            .limit(unitRange.limit)
+            .getMany()
+        : [],
+      categoryRange.limit > 0
+        ? categoryQuery
+            .orderBy('category.name', 'ASC')
+            .addOrderBy('category.id', 'ASC')
+            .offset(categoryRange.offset)
+            .limit(categoryRange.limit)
+            .getMany()
+        : [],
+      productRange.limit > 0
+        ? productQuery
+            .orderBy('product.name', 'ASC')
+            .addOrderBy('product.id', 'ASC')
+            .offset(productRange.offset)
+            .limit(productRange.limit)
+            .getRawAndEntities()
+        : { raw: [], entities: [] },
+    ]);
+    const total = unitCount + categoryCount + productCount;
     const stocks = new Map<number, Stock>();
     for (const row of productResult.raw) {
       const stock = new Stock();
@@ -132,14 +171,13 @@ export class MarketplaceSearchService {
         product: ProductListItemDto.fromEntity(product, stocks.get(product.id) ?? null),
       })),
     ];
-    const start = (filters.page - 1) * filters.limit;
     return {
-      data: combined.slice(start, start + filters.limit),
+      data: combined,
       meta: {
         page: filters.page,
         limit: filters.limit,
-        total: combined.length,
-        totalPages: Math.max(Math.ceil(combined.length / filters.limit), 1),
+        total,
+        totalPages: Math.max(Math.ceil(total / filters.limit), 1),
       },
     };
   }

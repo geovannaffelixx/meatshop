@@ -40,6 +40,7 @@ describe('runtime config', () => {
       const environment = {
         NODE_ENV: 'production',
         DB_TYPE: 'postgres',
+        FIREBASE_WEB_API_KEY: 'public-api-key',
         DB_HOST: 'database.internal',
         DB_USERNAME: 'meatshop',
         DB_PASSWORD: 'database-secret',
@@ -90,4 +91,10 @@ describe('runtime config', () => {
       ).toThrow();
     },
   );
+});
+
+describe('Replica safeguards', () => {
+  it('rejects multiple replicas without shared realtime', () => {
+    expect(() => validateEnvironment({ BACKEND_REPLICAS: '2' })).toThrow('SOCKET_IO_SHARED');
+  });
 });

@@ -16,13 +16,17 @@ export class GetProductUseCase {
     private readonly productImageRepository: Repository<ProductImage>,
   ) {}
 
-  async execute(productId: number): Promise<{
+  async execute(
+    productId: number,
+    available = true,
+  ): Promise<{
     product: Product;
     stock: Stock | null;
     images: ProductImage[];
   }> {
     const product = await this.productRepository.findOne({
       where: { id: productId },
+      relations: ['category'],
     });
 
     if (!product) {
@@ -32,6 +36,13 @@ export class GetProductUseCase {
     const stock = await this.stockRepository.findOne({
       where: { product_id: productId },
     });
+
+    if (
+      available &&
+      (!product.active || !product.category?.active || Number(stock?.quantity ?? 0) <= 0)
+    ) {
+      throw new NotFoundException('Product not found');
+    }
 
     const images = await this.productImageRepository.find({
       where: { product_id: productId },

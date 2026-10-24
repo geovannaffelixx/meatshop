@@ -19,6 +19,21 @@ export class ListPublicUnitsUseCase {
     if (located !== (filters.lng !== undefined))
       throw new BadRequestException('Latitude and longitude must be provided together');
     const query = this.units.createQueryBuilder('unit');
+    if (filters.city?.trim()) {
+      query.andWhere(
+        "translate(LOWER(TRIM(unit.city)), 'áàâãäéèêëíìîïóòôõöúùûüç', 'aaaaaeeeeiiiiooooouuuuc') = translate(LOWER(:city), 'áàâãäéèêëíìîïóòôõöúùûüç', 'aaaaaeeeeiiiiooooouuuuc')",
+        { city: filters.city.trim() },
+      );
+    }
+    if (filters.region?.trim()) {
+      query.andWhere(
+        '(LOWER(unit.state) = LOWER(:region) OR LOWER(unit.neighborhood) LIKE LOWER(:regionTerm))',
+        {
+          region: filters.region.trim(),
+          regionTerm: `%${filters.region.trim()}%`,
+        },
+      );
+    }
     if (located) {
       // Clamp the cosine to protect acos from floating-point rounding near identical points.
       const distance =
