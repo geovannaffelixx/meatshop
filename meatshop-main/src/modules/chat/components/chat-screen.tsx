@@ -12,6 +12,7 @@ import { Input } from "@/shared/components/ui/input";
 
 import { apiGet } from "@/shared/lib/api";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
+import { PageHeader } from "@/shared/components/page-header";
 import { ChatThread } from "./chat-thread";
 import type { ChatOrder, ChatParticipantType } from "../types";
 
@@ -91,10 +92,8 @@ export function ChatScreen() {
   return (
     <main className="flex min-h-[calc(100dvh-5rem)] flex-col bg-slate-50 p-4 sm:p-6">
       <div className="mb-5">
-        <h1 className="text-2xl font-bold text-slate-950">Mensagens</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Converse com clientes e entregadores em canais separados por pedido.
-        </p>
+        <PageHeader eyebrow="Operação" title="Mensagens"
+          description="Converse com clientes e entregadores em canais separados por pedido." />
       </div>
 
       <div className="grid min-h-[36rem] flex-1 overflow-hidden rounded-2xl border bg-white shadow-sm lg:grid-cols-[21rem_1fr]">

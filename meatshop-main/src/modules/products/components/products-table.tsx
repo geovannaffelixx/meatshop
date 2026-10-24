@@ -90,6 +90,6 @@ export function ProductsTable({
   ];
 
   return <ReusableTable data={pageData} columns={columns} caption="Produtos e níveis de estoque" keyExtractor={product => product.id}
-    onRowClick={product => router.push(`/products/${product.id}`)} emptyMessage="Nenhum produto encontrado com os filtros aplicados."
+    emptyMessage="Nenhum produto encontrado com os filtros aplicados."
     footer={<DataPagination page={safePage} pageSize={itemsPerPage} totalItems={filtered.length} totalPages={totalPages} onPageChange={onPageChange} />} />;
 }

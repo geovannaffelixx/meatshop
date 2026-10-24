@@ -4,6 +4,15 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ## [3.3.0] - 2026-10-20 - Fechamento de lacunas funcionais
 
+### Ajustes do painel (23/10/2026)
+
+- Foto do usuário na sidebar com alternativa em caso de falha.
+- Modal de exportação com Excel/JSON/PDF e toast demonstrativo, sem download nesta etapa.
+- Cabeçalho de Operação em Mensagens; edição de produto somente no botão Editar.
+- Validade do cache ampliada para cinco minutos em hooks e chamadas diretas.
+- Zod integrado aos validadores compartilhados e ao formulário da conta, preservando CNPJ alfanumérico.
+- Componentes de progresso e pontos animados adaptados à paleta e ao movimento reduzido.
+
 ### Navegação e experiência de carregamento
 
 - Categorias, Promoções e Equipe e acessos com tabela compartilhada e páginas de dez registros.

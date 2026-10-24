@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Image from 'next/image';
+import { UserAvatar } from '@/shared/components/user-avatar';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { BadgePercent, BarChart3, Boxes, Building2, ChevronDown, CircleHelp, ClipboardList, House, LogOut, MessageSquare, PackageSearch, Percent, PiggyBank, ScrollText, Settings, ShoppingBag, Star, Tags, TicketPercent, Truck, User as UserIcon, Users, UtensilsCrossed, X, type LucideIcon } from 'lucide-react';
@@ -247,7 +248,7 @@ export function AppSidebar(props: AppSidebarProps) {
         <SidebarMenuItem><SidebarMenuButton type="button" tooltip="Sair" onClick={() => void logout()} className="h-9 rounded-xl px-3 text-slate-500 hover:bg-red-50 hover:text-red-700"><LogOut /><span>Sair</span></SidebarMenuButton></SidebarMenuItem>
       </SidebarMenu>
       <div className="mt-2 flex items-center gap-2 border-t border-slate-100 px-3 pt-3 group-data-[collapsible=icon]:hidden">
-        <span aria-hidden="true" className="grid size-7 shrink-0 place-items-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">{user?.name?.charAt(0).toUpperCase()}</span>
+        <UserAvatar name={user?.name ?? "Sua conta"} src={user?.avatar_url} />
         <span className="min-w-0"><span className="block truncate text-xs font-medium text-slate-700">{user?.name ?? 'Sua conta'}</span><span className="block truncate text-[11px] text-slate-400">{user?.email}</span></span>
       </div>
     </SidebarFooter>

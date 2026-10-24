@@ -1,9 +1,11 @@
 import { QueryClient } from '@tanstack/react-query';
 
+export const API_CACHE_STALE_TIME = 5 * 60_000;
+
 export const panelQueryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 120_000,
+      staleTime: API_CACHE_STALE_TIME,
       gcTime: 600_000,
       retry: false,
       refetchOnWindowFocus: false,
@@ -38,6 +40,6 @@ export async function invalidateApiCache() {
 
 export function peekApiData<T>(path: string): T | undefined {
   const state = panelQueryClient.getQueryState<T>(apiQueryKey(path));
-  if (!state || state.isInvalidated || Date.now() - state.dataUpdatedAt >= 120_000) return;
+  if (!state || state.isInvalidated || Date.now() - state.dataUpdatedAt >= API_CACHE_STALE_TIME) return;
   return state.data;
 }

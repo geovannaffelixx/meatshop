@@ -1,7 +1,8 @@
 'use client';
 
+import { Loading } from '@/shared/components/loading';
 import { useEffect, useRef } from 'react';
-import { Building2, LoaderCircle } from 'lucide-react';
+import { Building2 } from 'lucide-react';
 
 export function UnitSwitchOverlay({ name }: { name: string }) {
   const dialog = useRef<HTMLDivElement>(null);
@@ -25,8 +26,7 @@ export function UnitSwitchOverlay({ name }: { name: string }) {
         <p className="mb-3 text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">MeatShop</p>
         <h2 id="unit-switch-title" className="text-2xl font-semibold">Trocando de unidade</h2>
         <p className="mt-3 break-words text-slate-600">{name}</p>
-        <LoaderCircle aria-hidden="true" className="mx-auto mt-8 size-6 text-red-600 motion-safe:animate-spin" />
-        <p className="mt-4 text-sm text-slate-500">Preparando seu ambiente de trabalho…</p>
+        <div className="mt-6"><Loading variant="dots" label="Preparando seu ambiente de trabalho…" /></div>
       </div>
     </div>
   );

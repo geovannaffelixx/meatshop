@@ -1,10 +1,12 @@
+import { Loading } from '@/shared/components/loading';
 import { DataSkeleton } from '@/shared/components/data-skeleton';
 
 type LoadingOverlayProps = {
   title: string;
+  variant?: 'skeleton' | 'progress';
 };
 
-export function LoadingOverlay({ title }: LoadingOverlayProps) {
+export function LoadingOverlay({ title, variant = 'skeleton' }: LoadingOverlayProps) {
   return (
     <div
       className="fixed inset-0 z-[100] grid place-items-center bg-white/80 p-6 backdrop-blur-sm"
@@ -13,8 +15,12 @@ export function LoadingOverlay({ title }: LoadingOverlayProps) {
       aria-busy="true"
     >
       <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-950/10">
-        <DataSkeleton variant="form" label={title} />
-        <p className="text-sm font-semibold text-slate-800">{title}</p>
+        {variant === 'progress' ? <Loading variant="dots" label={title} /> : (
+          <>
+            <DataSkeleton variant="form" label={title} />
+            <p className="text-sm font-semibold text-slate-800">{title}</p>
+          </>
+        )}
       </div>
     </div>
   );

@@ -32,7 +32,11 @@ describe('Session and unit API cache', () => {
     fetchMock.mockResolvedValue(response([]));
     await apiGet('/products/manage?unit_id=6');
     const timestamp = Date.now();
-    jest.spyOn(Date, 'now').mockReturnValue(timestamp + 120_001);
+    const now = jest.spyOn(Date, 'now').mockReturnValue(timestamp + 299_999);
+    await apiGet('/products/manage?unit_id=6');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    now.mockReturnValue(timestamp + 300_001);
+    expect(peekApiData('/products/manage?unit_id=6')).toBeUndefined();
     await apiGet('/products/manage?unit_id=6');
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });

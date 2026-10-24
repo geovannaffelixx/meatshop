@@ -1,47 +1,41 @@
-import React, { act } from 'react';
-import { createRoot, Root } from 'react-dom/client';
+﻿import React, { act } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
 import { AccountScreen } from './account-screen';
 import { apiGet } from '@/shared/lib/api';
 import { toast } from '@/shared/lib/toast';
 
 jest.mock('@/shared/providers/panel-access-provider', () => ({ usePanelAccess: () => ({ user: { id: 1, name: 'Test user', email: 'test@example.invalid', cpf: null, created_at: '2026-01-01T00:00:00Z' }, refresh: jest.fn() }) }));
 jest.mock('@/shared/lib/api', () => ({ API_URL: 'http://localhost:3001', apiGet: jest.fn(), apiPatch: jest.fn(), apiPost: jest.fn(), apiUpload: jest.fn() }));
-jest.mock('@/shared/lib/toast', () => ({ toast: { error: jest.fn(), success: jest.fn(), warning: jest.fn() } }));
+jest.mock('@/shared/lib/toast', () => ({ toast: { info: jest.fn(), error: jest.fn(), success: jest.fn(), warning: jest.fn() } }));
 
-describe('Personal data download', () => {
+describe('Personal data export preview', () => {
   let element: HTMLDivElement;
   let root: Root;
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
-    Object.assign(globalThis, {IS_REACT_ACT_ENVIRONMENT: true});
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
     element = document.createElement('div'); document.body.append(element); root = createRoot(element);
+    await act(async () => root.render(<AccountScreen />));
   });
   afterEach(async () => { await act(async () => root.unmount()); element.remove(); });
-  it('downloads only the current accounts export and releases the object URL', async () => {
-    jest.useFakeTimers();
-    const create = jest.fn(() => 'blob:personal-data');
-    const revoke = jest.fn();
-    Object.defineProperty(URL,'createObjectURL',{configurable:true,value:create});
-    Object.defineProperty(URL,'revokeObjectURL',{configurable:true,value:revoke});
-    const click = jest.spyOn(HTMLAnchorElement.prototype,'click').mockImplementation(() => undefined);
-    (apiGet as jest.Mock).mockResolvedValue({version:1,data:{profile:[]}});
+  const button = (label: string) => Array.from(document.querySelectorAll('button')).find(value => value.textContent === label)!;
+
+  it.each(['Excel', 'JSON', 'PDF'])('opens the modal and previews %s without downloading personal data', async format => {
+    const download = jest.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
     try {
-      await act(async () => root.render(<AccountScreen />));
-      const button = Array.from(element.querySelectorAll('button')).find(value => value.textContent === 'Exportar meus dados')!;
-      await act(async () => button.click());
-      expect(apiGet).toHaveBeenCalledWith('/users/me/export');
-      expect(click).toHaveBeenCalledTimes(1);
-      expect(create).toHaveBeenCalledTimes(1);
-      act(() => jest.runAllTimers());
-      expect(revoke).toHaveBeenCalledWith('blob:personal-data');
-    } finally {click.mockRestore();jest.useRealTimers();}
+      await act(async () => button('Exportar meus dados').click());
+      expect(document.querySelector('[role="dialog"]')).not.toBeNull();
+      expect(document.querySelector('[role="dialog"]')?.textContent).toContain('próxima versão');
+      await act(async () => button(format).click());
+      expect(toast.info).toHaveBeenCalledWith(expect.stringContaining(format));
+      expect(apiGet).not.toHaveBeenCalled();
+      expect(download).not.toHaveBeenCalled();
+    } finally { download.mockRestore(); }
   });
-  it('shows an error and permits retry when export fails', async () => {
-    (apiGet as jest.Mock).mockRejectedValue(new Error('unavailable'));
-    await act(async () => root.render(<AccountScreen />));
-    const button = Array.from(element.querySelectorAll('button')).find(value => value.textContent === 'Exportar meus dados')!;
-    await act(async () => button.click());
-    expect(toast.error).toHaveBeenCalled();
-    expect(button.disabled).toBe(false);
+
+  it('closes the preview with Escape', async () => {
+    await act(async () => button('Exportar meus dados').click());
+    await act(async () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
   });
 });

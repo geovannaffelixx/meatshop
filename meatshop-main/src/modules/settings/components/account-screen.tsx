@@ -3,18 +3,19 @@
 import { formatDateValue } from "@/shared/lib/date-time";
 
 import { maskCPF } from "@/shared/lib/input-masks";
-import { validateName, validateEmail, validatePassword } from "@/shared/lib/validators";
+import { validatePassword } from "@/shared/lib/validators";
 
+import { accountSchema } from "@/shared/lib/validation-schemas";
 import { DataSkeleton } from "@/shared/components/data-skeleton";
 
 import { useEffect, useState } from "react";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
 import { Spinner } from "@/shared/components/ui/spinner";
 import { PasswordInput } from "@/shared/components/ui/password-input";
-import { API_URL, apiGet, apiUpload, apiPatch, apiPost } from "@/shared/lib/api";
+import { API_URL, apiUpload, apiPatch, apiPost } from "@/shared/lib/api";
 import { toast } from "@/shared/lib/toast";
 import { PageHeader } from "@/shared/components/page-header";
-import { Button } from "@/shared/components/ui/button";
+import { ExportDataDialog } from "./export-data-dialog";
 import { RequiredMark } from "@/shared/components/ui/required-mark";
 
 
@@ -25,7 +26,6 @@ function AccountForm() {
   const { user, refresh } = usePanelAccess();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [exporting, setExporting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -43,33 +43,17 @@ function AccountForm() {
 
   const emailChanged = email.trim().toLowerCase() !== user.email.toLowerCase();
 
-  async function exportData() {
-    setExporting(true);
-    try {
-      const data = await apiGet("/users/me/export");
-      const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = "meatshop-meus-dados.json";
-      anchor.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } catch {
-      toast.error("Não foi possível exportar seus dados.");
-    } finally {
-      setExporting(false);
-    }
-  }
-
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (!validateName(name) || !validateEmail(email)) {
-      toast.warning(!validateName(name) ? 'Informe um nome válido.' : 'Informe um e-mail válido.');
+    const result = accountSchema.safeParse({ name, email });
+    if (!result.success) {
+      toast.warning(result.error.issues[0].message);
       return;
     }
 
     setSaving(true);
     try {
-      await apiPatch("/users/me", { name: name.trim(), email: email.trim().toLowerCase() });
+      await apiPatch("/users/me", result.data);
       await refresh();
       toast.success(
         emailChanged
@@ -137,7 +121,7 @@ function AccountForm() {
         eyebrow="Configurações"
         title="Minha conta"
         actionsAlignment="title"
-        actions={<Button type="button" variant="outline" onClick={exportData} disabled={exporting}>{exporting ? "Preparando arquivo..." : "Exportar meus dados"}</Button>}
+        actions={<ExportDataDialog />}
         description="Gerencie seus dados pessoais e a segurança do acesso."
       />
       <section className="rounded-xl border bg-white p-6">
