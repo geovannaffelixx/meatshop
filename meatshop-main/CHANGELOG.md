@@ -4,6 +4,20 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ## [3.3.0] - 2026-10-20 - Fechamento de lacunas funcionais
 
+### Navegação e experiência de carregamento
+
+- Categorias, Promoções e Equipe e acessos com tabela compartilhada e páginas de dez registros.
+- Exportação de dados na linha do título de Minha conta, reduzindo o espaço vertical.
+- Validadores/máscaras compartilhados nos formulários e datas com fuso de Brasília sem deslocar datas de calendário.
+
+- Transição de unidade clara, logo centralizada e paginação numerada com primeira/última página.
+- Tabela reutilizável tipada aplicada em Produtos, com caption, skeleton, estado vazio e ativação por teclado.
+
+- Sidebar com grupos de links visíveis, seletor de unidade com teclado e acesso único à conta.
+- Transição de unidade em tela inteira durante três segundos, com limpeza de contexto e cache.
+- Cache em memória por sessão/unidade, válido por dois minutos, com invalidação após alterações; pedidos sempre consultam novamente.
+- Skeleton compartilhado para leituras de dados e remoção do bloqueio de termos a cada navegação.
+
 ### Complemento da especificacao original (23/10/2026)
 
 - Exportacao dos proprios dados na conta, com tratamento de erro e nova tentativa.

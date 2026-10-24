@@ -1,6 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useApiQuery } from "@/shared/hooks/use-api-query";
+import { DataSkeleton } from "@/shared/components/data-skeleton";
+
+import { useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Download, Eye, History, Search } from "lucide-react";
 import { API_URL, apiGet } from "@/shared/lib/api";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
@@ -18,28 +21,20 @@ const outcomeLabels = { SUCCESS: "Sucesso", FAILURE: "Falha" } as const;
 
 export function AuditScreen() {
   const { user } = usePanelAccess();
-  const [result, setResult] = useState(emptyResult);
-  const [summary, setSummary] = useState<AuditSummary>({ total: 0, success: 0, failure: 0, last24Hours: 0 });
   const [filters, setFilters] = useState({ search: "", outcome: "", date_from: "", date_to: "" });
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<AuditLog | null>(null);
-  const [loading, setLoading] = useState(true);
   const query = useMemo(() => buildQuery(filters, page), [filters, page]);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try { setResult(await apiGet(`/audit-logs?${query}`, { silent: true })); }
-    finally { setLoading(false); }
-  }, [query]);
-  useEffect(() => { if (user?.global_role === "SUPER_ADMIN") void load(); }, [load, user?.global_role]);
-  useEffect(() => { if (user?.global_role === "SUPER_ADMIN") void apiGet("/audit-logs/summary", { silent: true }).then(setSummary); }, [user?.global_role]);
+  const { data: result = emptyResult, isPending: loading } = useApiQuery<AuditResult>(user?.global_role === 'SUPER_ADMIN' ? `/audit-logs?${query}` : null);
+  const { data: summary = { total: 0, success: 0, failure: 0, last24Hours: 0 }, isPending: summaryLoading } = useApiQuery<AuditSummary>(user?.global_role === 'SUPER_ADMIN' ? '/audit-logs/summary' : null);
 
   if (user && user.global_role !== "SUPER_ADMIN") return <div className="p-8 text-center text-slate-600">Esta área é exclusiva da administração da plataforma.</div>;
   return <section className="mx-auto max-w-7xl space-y-6 p-6">
     <header className="flex flex-wrap items-start justify-between gap-4"><div><h1 className="text-2xl font-bold">Auditoria da plataforma</h1><p className="text-sm text-slate-500">Rastreabilidade de operações críticas, acessos e falhas.</p></div><button onClick={() => downloadCsv(query)} className="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold hover:bg-slate-50"><Download className="size-4" />Exportar CSV</button></header>
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Metric icon={History} label="Eventos" value={summary.total} /><Metric icon={CheckCircle2} label="Sucessos" value={summary.success} tone="text-emerald-700" /><Metric icon={AlertTriangle} label="Falhas" value={summary.failure} tone="text-red-700" /><Metric icon={History} label="Últimas 24h" value={summary.last24Hours} tone="text-blue-700" /></div>
+    {summaryLoading ? <DataSkeleton variant="cards" /> : <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Metric icon={History} label="Eventos" value={summary.total} /><Metric icon={CheckCircle2} label="Sucessos" value={summary.success} tone="text-emerald-700" /><Metric icon={AlertTriangle} label="Falhas" value={summary.failure} tone="text-red-700" /><Metric icon={History} label="Últimas 24h" value={summary.last24Hours} tone="text-blue-700" /></div>}
     <Filters filters={filters} onChange={(next) => { setFilters(next as typeof filters); setPage(1); }} />
-    <div className="overflow-hidden rounded-xl border bg-white shadow-sm"><div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="p-3">Data</th><th className="p-3">Resultado</th><th className="p-3">Ação</th><th className="p-3">Responsável</th><th className="p-3">Unidade</th><th className="p-3">Recurso</th><th className="p-3"><span className="sr-only">Detalhar</span></th></tr></thead><tbody>{loading ? <tr><td colSpan={7} className="p-10 text-center text-slate-500">Carregando eventos...</td></tr> : result.data.length === 0 ? <tr><td colSpan={7} className="p-10 text-center text-slate-500">Nenhum evento encontrado.</td></tr> : result.data.map((log) => <AuditRow key={log.id} log={log} onOpen={() => void apiGet(`/audit-logs/${log.id}`).then(setSelected)} />)}</tbody></table></div><Pagination result={result} page={page} setPage={setPage} /></div>
+    <div className="overflow-hidden rounded-xl border bg-white shadow-sm"><div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="p-3">Data</th><th className="p-3">Resultado</th><th className="p-3">Ação</th><th className="p-3">Responsável</th><th className="p-3">Unidade</th><th className="p-3">Recurso</th><th className="p-3"><span className="sr-only">Detalhar</span></th></tr></thead><tbody>{loading ? <tr><td colSpan={7} className="p-10 text-center text-slate-500"><DataSkeleton label="Carregando eventos..." /></td></tr> : result.data.length === 0 ? <tr><td colSpan={7} className="p-10 text-center text-slate-500">Nenhum evento encontrado.</td></tr> : result.data.map((log) => <AuditRow key={log.id} log={log} onOpen={() => void apiGet(`/audit-logs/${log.id}`).then(setSelected)} />)}</tbody></table></div><Pagination result={result} page={page} setPage={setPage} /></div>
     {selected && <AuditDetail log={selected} onClose={() => setSelected(null)} />}
   </section>;
 }

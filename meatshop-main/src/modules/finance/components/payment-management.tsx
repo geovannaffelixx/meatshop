@@ -1,8 +1,12 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { formatDateValue } from "@/shared/lib/date-time";
 
-import { apiGet, apiPost } from "@/shared/lib/api"
+import { useApiQuery } from "@/shared/hooks/use-api-query";
+
+import { useState } from "react"
+
+import { apiPost } from "@/shared/lib/api"
 
 import { usePanelAccess } from "@/shared/providers/panel-access-provider"
 
@@ -80,7 +84,7 @@ const ACCOUNT_STATES: Record<
   },
 }
 const dateLabel = (value: string) =>
-  new Date(value).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })
+  formatDateValue(value, { dateStyle: 'short', timeStyle: 'medium' })
 
 type PaymentRow = {
   id: number
@@ -337,75 +341,26 @@ export function PaymentManagement({
 }) {
   const { hasPermission } = usePanelAccess()
 
-  const [account, setAccount] = useState<{
-    available: boolean
-    connected: boolean
-    collector_id: string | null
-    state?: string
-    expires_at?: string | null
-    history?: { kind: string; collector_id: string; created_at: string }[]
-  } | null>(null)
-
-  const [rows, setRows] = useState<PaymentRow[]>([])
-
-  const [error, setError] = useState("")
-
-  const [page, setPage] = useState(0)
-  const [view, setView] = useState("all")
-
-  const [busy, setBusy] = useState(false)
-
-  const [loading, setLoading] = useState(true)
-  const request = useRef({ sequence: 0 })
-  const load = useCallback(
-    async (foreground = true) => {
-      const current = ++request.current.sequence
-      if (foreground) {
-        setLoading(true)
-        setRows([])
-      }
-      try {
-        const [payments, seller] = await Promise.all([
-          apiGet(
-            `/payments/orders?unit_id=${unitId}&page=${page}&view=${view}${month ? `&month=${month}` : ""}`,
-          ),
-          hasPermission("MANAGE_FINANCE")
-            ? apiGet(`/payments/sellers/${unitId}/status`)
-            : Promise.resolve(null),
-        ])
-        if (current !== request.current.sequence) return
-        setRows(payments)
-        setAccount(seller)
-        setError("")
-      } catch (e) {
-        if (current !== request.current.sequence) return
-        setError(
-          e instanceof Error
-            ? e.message
-            : "Não foi possível carregar pagamentos.",
-        )
-      } finally {
-        if (current === request.current.sequence) setLoading(false)
-      }
-    },
-    [unitId, page, hasPermission, view, month],
-  )
-
-  useEffect(() => {
-    const pendingRequests = request.current
-    void load()
-    const timer = setInterval(() => void load(false), 30_000)
-    return () => {
-      clearInterval(timer)
-      pendingRequests.sequence++
-    }
-  }, [load])
+  const [page, setPage] = useState(0);
+  const [view, setView] = useState('all');
+  const [busy, setBusy] = useState(false);
+  const [actionError, setError] = useState('');
+  const paymentsQuery = useApiQuery<PaymentRow[]>(`/payments/orders?unit_id=${unitId}&page=${page}&view=${view}${month ? `&month=${month}` : ''}`, { refetchInterval: 30000 });
+  const sellerQuery = useApiQuery<{ available: boolean; connected: boolean; collector_id: string | null; state?: string; expires_at?: string | null; history?: { kind: string; collector_id: string; created_at: string }[] }>(hasPermission('MANAGE_FINANCE') ? `/payments/sellers/${unitId}/status` : null, { refetchInterval: 30000 });
+  const rows = paymentsQuery.data ?? [];
+  const account = sellerQuery.data;
+  const error = actionError || paymentsQuery.error?.message || sellerQuery.error?.message;
+  const loading = paymentsQuery.isPending || (hasPermission('MANAGE_FINANCE') && sellerQuery.isPending);
+  const load = async () => {
+    setError('');
+    await Promise.all([paymentsQuery.refetch(), ...(hasPermission('MANAGE_FINANCE') ? [sellerQuery.refetch()] : [])]);
+  };
 
   const pause = async () => {
     setBusy(true)
     try {
       await apiPost(`/payments/sellers/${unitId}/pause`, {})
-      await load(false)
+      await load()
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não foi possível pausar.")
     } finally {
@@ -436,7 +391,7 @@ export function PaymentManagement({
       account?.state ?? (account?.connected ? "CONNECTED" : "NOT_CONNECTED")
     ] ?? ACCOUNT_STATES.NOT_CONNECTED
   const period = month
-    ? new Date(`${month}-01T12:00:00`).toLocaleDateString("pt-BR", {
+    ? formatDateValue(`${month}-01`, {
         month: "long",
         year: "numeric",
       })
@@ -667,7 +622,7 @@ export function PaymentManagement({
                   <PaymentActions
                     order={row}
                     onChange={() => {
-                      void load(false)
+                      void load()
                       onFinancialChange?.()
                     }}
                   />

@@ -59,12 +59,15 @@ export class CreateUnitDto extends LegalSubmissionDto {
   name: string;
 
   @ApiProperty({
-    description: 'Unit CNPJ containing exactly 14 digits',
+    description:
+      'Unit CNPJ with 12 numeric or uppercase alphanumeric characters and 2 check digits',
     example: '12345678000199',
   })
   @IsNotEmpty()
   @IsString()
-  @Matches(/^\d{14}$/, { message: 'cnpj must contain exactly 14 digits' })
+  @Matches(/^[A-Z0-9]{12}\d{2}$/, {
+    message: 'cnpj must contain 12 uppercase alphanumeric characters and 2 check digits',
+  })
   cnpj: string;
 
   @ApiProperty({

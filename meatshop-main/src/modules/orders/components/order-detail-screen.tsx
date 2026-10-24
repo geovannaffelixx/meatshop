@@ -1,5 +1,9 @@
 "use client"
 
+import { toDatetimeLocal, datetimeLocalToISO, isValidDateTime } from "@/shared/lib/date-time";
+
+import { DataSkeleton } from "@/shared/components/data-skeleton";
+
 import { PaymentActions } from "@/modules/finance/components/payment-management"
 import React, { useEffect, useState } from "react"
 import Link from "next/link"
@@ -60,12 +64,7 @@ interface OrderDetailScreenProps {
   orderId: string
 }
 
-function toDatetimeLocal(iso: string | null) {
-  if (!iso) return ""
-  const d = new Date(iso)
-  const pad = (n: number) => String(n).padStart(2, "0")
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
+
 
 export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
   const [order, setOrder] = useState<Order | null>(null)
@@ -128,7 +127,8 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
 
   const handleReschedule = () => {
     if (!order || !scheduleDate) return
-    const iso = new Date(scheduleDate).toISOString()
+    if (!isValidDateTime(scheduleDate)) { setError('Informe data e hora válidas.'); return; }
+    const iso = datetimeLocalToISO(scheduleDate)
     runAction(() => apiPatch(`/orders/${order.id}/schedule`, { scheduled_delivery_date: iso })).then(() => {
       setScheduleOpen(false)
     })
@@ -145,7 +145,7 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
   if (!order)
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-gray-600">Carregando pedido...</p>
+        <DataSkeleton label="Carregando pedido..." />
       </div>
     )
 

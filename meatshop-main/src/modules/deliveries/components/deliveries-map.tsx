@@ -1,4 +1,6 @@
 "use client";
+
+import { DataSkeleton } from "@/shared/components/data-skeleton";
 import { useEffect, useRef, useState } from 'react';
 import type { Map, Marker } from 'maplibre-gl';
 import { mapStyle, validPoint } from '@/shared/components/maps/map-style';
@@ -76,7 +78,7 @@ export function DeliveriesMap({unit,deliveries,selectedOrderId,onSelect}:{
     <button type="button" onClick={()=>setFollow(v=>!v)} className="absolute left-3 top-3 rounded bg-white p-2 text-sm shadow">
       {follow?'Parar de seguir':'Seguir entregador selecionado'}
     </button>
-    {!ready&&!error&&<p className="absolute bottom-3 left-3 bg-white p-2">Carregando mapa…</p>}
+    {!ready&&!error&&<DataSkeleton label="Carregando mapa…" className="absolute inset-0 bg-slate-50" />}
     {error&&<div className="absolute bottom-3 left-3 right-3 rounded bg-white p-3 text-sm">{error}
       <button type="button" className="ml-3 underline" onClick={()=>{setReady(false);setError('');setRetry(v=>v+1);}}>Tentar novamente</button>
     </div>}

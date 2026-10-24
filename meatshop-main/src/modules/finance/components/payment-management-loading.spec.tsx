@@ -2,6 +2,9 @@ import React, { act } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { PaymentManagement } from "./payment-management"
 import { apiGet } from "@/shared/lib/api"
+import { resetApiCache } from '@/shared/lib/query-cache';
+
+const settleQueries = () => act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
 
 jest.mock("@/shared/providers/panel-access-provider", () => {
   const hasPermission = (permission: string) => permission === "VIEW_FINANCE"
@@ -15,12 +18,14 @@ describe("Payment list loading and unit isolation", () => {
   beforeEach(() => {
     Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
     jest.clearAllMocks()
+    resetApiCache();
     container = document.createElement("div")
     document.body.append(container)
     root = createRoot(container)
   })
   afterEach(async () => {
     await act(async () => root.unmount())
+    resetApiCache();
     container.remove()
   })
 
@@ -35,6 +40,7 @@ describe("Payment list loading and unit isolation", () => {
     expect(container.querySelector('[role="status"]')).not.toBeNull()
     expect(container.textContent).not.toContain("Nenhum pagamento encontrado")
     await act(async () => finish([]))
+    await settleQueries();
     expect(container.textContent).toContain("Nenhum pagamento encontrado")
     expect(container.querySelector('[role="status"]')).toBeNull()
   })
@@ -44,6 +50,7 @@ describe("Payment list loading and unit isolation", () => {
       .mocked(apiGet)
       .mockRejectedValueOnce(new Error("Falha ao consultar pagamentos"))
     await act(async () => root.render(<PaymentManagement unitId={1} />))
+    await settleQueries();
     expect(container.querySelector('[role="alert"]')?.textContent).toContain(
       "Falha ao consultar pagamentos",
     )
@@ -77,6 +84,7 @@ describe("Payment list loading and unit isolation", () => {
       ]),
     )
     expect(container.textContent).not.toContain("Pedido #999")
+    await settleQueries();
     expect(container.textContent).toContain("Nenhum pagamento encontrado")
   })
 })

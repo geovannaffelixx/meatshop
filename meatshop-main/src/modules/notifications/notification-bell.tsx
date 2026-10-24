@@ -1,20 +1,20 @@
 "use client";
 
+import { formatDateValue } from "@/shared/lib/date-time";
+
 import { Bell, CheckCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useNotifications } from "./notifications-provider";
 import type { PanelNotification } from "./types";
+import { DataSkeleton } from '@/shared/components/data-skeleton';
 
-const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
-  day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
-});
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, loading } = useNotifications();
 
   useEffect(() => {
     if (!open) return;
@@ -51,10 +51,10 @@ export function NotificationBell() {
             {unreadCount > 0 && <button type="button" onClick={() => void markAllAsRead()} className="flex items-center gap-1 text-xs font-medium text-red-700 hover:underline"><CheckCheck className="size-4" />Marcar todas como lidas</button>}
           </div>
           <div className="max-h-96 overflow-y-auto">
-            {notifications.length === 0 ? <p className="px-4 py-8 text-center text-sm text-slate-500">Nenhuma notificação por enquanto.</p> : notifications.slice(0, 10).map((notification) => (
+            {loading && notifications.length === 0 ? <DataSkeleton label="Carregando notificações" /> : notifications.length === 0 ? <p className="px-4 py-8 text-center text-sm text-slate-500">Nenhuma notificação por enquanto.</p> : notifications.slice(0, 10).map((notification) => (
               <button key={notification.id} type="button" onClick={() => void openNotification(notification)} className="flex w-full gap-3 border-b px-4 py-3 text-left hover:bg-slate-50">
                 <span className={`mt-1.5 size-2 shrink-0 rounded-full ${notification.read ? "bg-transparent" : "bg-red-600"}`} />
-                <span className="min-w-0"><strong className="block text-sm">{notification.title}</strong><span className="block text-sm text-slate-600">{notification.message}</span><time className="mt-1 block text-xs text-slate-400">{dateFormatter.format(new Date(notification.created_at))}</time></span>
+                <span className="min-w-0"><strong className="block text-sm">{notification.title}</strong><span className="block text-sm text-slate-600">{notification.message}</span><time className="mt-1 block text-xs text-slate-400">{formatDateValue(notification.created_at, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</time></span>
               </button>
             ))}
           </div>

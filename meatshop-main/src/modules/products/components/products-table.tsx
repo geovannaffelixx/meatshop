@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useApiQuery } from "@/shared/hooks/use-api-query";
+
+import { DataSkeleton } from "@/shared/components/data-skeleton";
+
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { apiGet } from "@/shared/lib/api";
+
 import { useManagedUnits } from "@/shared/hooks/use-managed-units";
+import { ReusableTable, type TableColumn } from "@/shared/components/reusable-table";
 import { DataPagination } from "@/shared/components/data-pagination";
 import { formatCurrency } from "@/shared/lib/formatters";
 import { AlertTriangle } from "lucide-react";
@@ -39,19 +44,10 @@ export function ProductsTable({
   const router = useRouter();
   const { unitId } = useManagedUnits();
 
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!unitId) return;
-
-    setLoading(true);
-    apiGet(`/products/manage?unit_id=${unitId}&limit=200`)
-      .then((result) => setProducts(result?.data ?? []))
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, [unitId]);
+  const query = useApiQuery<{ data: Product[] }>(unitId ? `/products/manage?unit_id=${unitId}&limit=200` : null);
+  const products = useMemo(() => query.data?.data ?? [], [query.data]);
+  const loading = query.isPending;
+  const error = query.error?.message;
 
   const filtered = useMemo(() => {
     return products.filter((p) => {
@@ -77,89 +73,23 @@ export function ProductsTable({
   const pageData = filtered.slice(start, start + itemsPerPage);
 
   if (loading) {
-    return <div className="p-10 text-center text-slate-500">Carregando produtos...</div>;
+    return <DataSkeleton label="Carregando produtos..." />;
   }
   if (error) {
     return <div className="p-10 text-center font-semibold text-red-700">{error}</div>;
   }
 
-  return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="overflow-x-auto">
-      <table className="data-table">
-        <caption className="sr-only">Produtos e níveis de estoque</caption>
-        <thead>
-          <tr>
-            <th scope="col">Produto</th>
-            <th scope="col">Categoria</th>
-            <th scope="col">Marca</th>
-            <th scope="col">Estoque</th>
-            <th scope="col">Preço</th>
-            <th scope="col">Status</th>
-            <th scope="col" className="text-right">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {pageData.length > 0 ? (
-            pageData.map((p) => (
-              <tr
-                key={p.id}
-                onClick={() => router.push(`/products/${p.id}`)}
-                className="cursor-pointer"
-              >
-                <td>
-                  <span className="block font-semibold text-slate-900">{p.name}</span>
-                  <span className="text-xs text-slate-500">#{p.id}</span>
-                </td>
-                <td>{p.category_name ?? "—"}</td>
-                <td>{p.brand ?? "—"}</td>
-                <td>
-                  <span className="flex items-center gap-1.5 whitespace-nowrap">
-                    {p.stock_quantity} {p.unit_of_measure}
-                  {p.stock_quantity <= p.stock_min_quantity && (
-                      <span title="Estoque abaixo do mínimo" aria-label="Estoque abaixo do mínimo" className="text-amber-700">
-                        <AlertTriangle className="size-4" />
-                      </span>
-                  )}
-                  </span>
-                </td>
-                <td className="whitespace-nowrap font-medium">{formatCurrency(p.price)}</td>
-                <td>
-                  <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${p.active ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
-                    {p.active ? "Ativo" : "Inativo"}
-                  </span>
-                </td>
-                <td className="text-right">
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      router.push(`/products/${p.id}`);
-                    }}
-                    className="font-semibold text-red-700 hover:underline"
-                  >
-                    Editar
-                  </button>
-                </td>
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan={7} className="p-10 text-center text-slate-500">
-                Nenhum produto encontrado com os filtros aplicados.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-      </div>
-      <DataPagination
-        page={safePage}
-        pageSize={itemsPerPage}
-        totalItems={filtered.length}
-        totalPages={totalPages}
-        onPageChange={onPageChange}
-      />
-    </div>
-  );
+  const columns: TableColumn<Product>[] = [
+    { id: 'name', header: 'Produto', accessor: product => <><span className="block font-semibold text-slate-900">{product.name}</span><span className="text-xs text-slate-500">#{product.id}</span></> },
+    { id: 'category', header: 'Categoria', accessor: product => product.category_name ?? '—' },
+    { id: 'brand', header: 'Marca', accessor: product => product.brand ?? '—' },
+    { id: 'stock', header: 'Estoque', accessor: product => <span className="flex items-center gap-1.5 whitespace-nowrap">{product.stock_quantity} {product.unit_of_measure}{product.stock_quantity <= product.stock_min_quantity && <span title="Estoque abaixo do mínimo" aria-label="Estoque abaixo do mínimo" className="text-amber-700"><AlertTriangle className="size-4" /></span>}</span> },
+    { id: 'price', header: 'Preço', accessor: product => formatCurrency(product.price), className: 'whitespace-nowrap font-medium' },
+    { id: 'status', header: 'Status', accessor: product => <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${product.active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>{product.active ? 'Ativo' : 'Inativo'}</span> },
+    { id: 'actions', header: 'Ações', textAlign: 'end', accessor: product => <button type="button" onClick={() => router.push(`/products/${product.id}`)} className="font-semibold text-red-700 hover:underline">Editar</button> },
+  ];
+
+  return <ReusableTable data={pageData} columns={columns} caption="Produtos e níveis de estoque" keyExtractor={product => product.id}
+    onRowClick={product => router.push(`/products/${product.id}`)} emptyMessage="Nenhum produto encontrado com os filtros aplicados."
+    footer={<DataPagination page={safePage} pageSize={itemsPerPage} totalItems={filtered.length} totalPages={totalPages} onPageChange={onPageChange} />} />;
 }

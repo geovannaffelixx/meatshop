@@ -1,8 +1,16 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { ReusableTable, type TableColumn } from "@/shared/components/reusable-table";
+import { DataPagination } from "@/shared/components/data-pagination";
+import { useTablePagination } from "@/shared/hooks/use-table-pagination";
+
+import { useApiQuery } from "@/shared/hooks/use-api-query";
+
+
+
+import { useMemo, useState } from "react"
 import { Button } from "@/shared/components/ui/button"
-import { Card, CardContent } from "@/shared/components/ui/card"
+
 import {
   Dialog,
   DialogContent,
@@ -14,11 +22,11 @@ import { Input } from "@/shared/components/ui/input"
 import { Textarea } from "@/shared/components/ui/textarea"
 import { RequiredMark } from "@/shared/components/ui/required-mark"
 import { Spinner } from "@/shared/components/ui/spinner"
-import { Plus, Search, Tags } from "lucide-react"
-import { apiGet, apiPatch, apiPost } from "@/shared/lib/api"
+import { Plus, Search } from "lucide-react"
+import { apiPatch, apiPost } from "@/shared/lib/api"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
 import { PageHeader } from "@/shared/components/page-header"
-import { EmptyState } from "@/shared/components/empty-state"
+
 import { toast } from "@/shared/lib/toast"
 
 type Category = {
@@ -38,11 +46,14 @@ type FormState = {
 const EMPTY_FORM: FormState = { name: "", description: "", active: true }
 
 export function CategoriesScreen() {
-  const { units, unitId, setUnitId, loading: unitsLoading } = useManagedUnits()
+  const { units, unitId, loading: unitsLoading } = useManagedUnits()
 
-  const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const query = useApiQuery<Category[]>(unitId ? `/categories?unit_id=${unitId}` : null);
+  const categories = useMemo(() => query.data ?? [], [query.data]);
+  const loading = query.isPending;
+  const [actionError, setError] = useState<string | null>(null);
+  const error = actionError ?? query.error?.message;
+
 
   const [open, setOpen] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -62,23 +73,6 @@ export function CategoriesScreen() {
     )
   }, [categories, search])
 
-  const loadCategories = async (unit: number) => {
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await apiGet(`/categories?unit_id=${unit}`)
-      setCategories(Array.isArray(data) ? data : [])
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao carregar categorias.")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    if (!unitId) return
-    loadCategories(unitId)
-  }, [unitId])
 
   const openCreate = () => {
     setEditingId(null)
@@ -125,7 +119,7 @@ export function CategoriesScreen() {
       }
 
       setOpen(false)
-      await loadCategories(unitId)
+      await query.refetch()
       toast.success(editingId ? "Categoria atualizada." : "Categoria criada.")
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Erro ao salvar categoria.")
@@ -139,7 +133,7 @@ export function CategoriesScreen() {
     setTogglingId(category.id)
     try {
       await apiPatch(`/categories/${category.id}`, { active: !category.active })
-      await loadCategories(unitId)
+      await query.refetch()
       toast.success(category.active ? "Categoria desativada." : "Categoria ativada.")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao atualizar categoria.")
@@ -147,6 +141,17 @@ export function CategoriesScreen() {
       setTogglingId(null)
     }
   }
+
+  const pagination = useTablePagination(filteredCategories, `${unitId}:${search}`);
+  const columns: TableColumn<Category>[] = [
+    { id: 'name', header: 'Nome', accessor: 'name', className: 'font-medium' },
+    { id: 'description', header: 'Descrição', accessor: row => row.description ?? '—', className: 'text-slate-600' },
+    { id: 'status', header: 'Status', accessor: row => <span className={row.active ? 'font-semibold text-emerald-700' : 'font-semibold text-slate-500'}>{row.active ? 'Ativa' : 'Inativa'}</span> },
+    { id: 'actions', header: 'Ações', textAlign: 'end', accessor: row => <div className="flex justify-end gap-3">
+      <Button type="button" variant="ghost" size="sm" onClick={() => openEdit(row)}>Editar</Button>
+      <Button type="button" variant="ghost" size="sm" onClick={() => void toggleActive(row)} disabled={togglingId === row.id}>{togglingId === row.id ? 'Atualizando...' : row.active ? 'Desativar' : 'Ativar'}</Button>
+    </div> },
+  ];
 
   return (
     <div className="page-surface">
@@ -157,20 +162,7 @@ export function CategoriesScreen() {
             description="Organize os produtos em categorias fáceis de encontrar."
             actions={
               <>
-              {units.length > 1 && (
-                <select
-                  aria-label="Unidade ativa"
-                  value={unitId ?? ""}
-                  onChange={(e) => setUnitId(Number(e.target.value))}
-                  className="border rounded-md px-3 py-2"
-                >
-                  {units.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.name}
-                    </option>
-                  ))}
-                </select>
-              )}
+
 
               <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
@@ -255,73 +247,7 @@ export function CategoriesScreen() {
             />
           </label>
 
-          <Card className="overflow-hidden border-0 bg-white shadow-sm">
-            <CardContent className="p-0">
-              {loading ? (
-                <div className="p-10 text-center text-slate-500">Carregando categorias...</div>
-              ) : error ? (
-                <div className="p-10 text-center">
-                  <p className="font-semibold text-red-700">{error}</p>
-                  {unitId && <button type="button" onClick={() => void loadCategories(unitId)} className="mt-3 text-sm font-semibold text-red-700 hover:underline">Tentar novamente</button>}
-                </div>
-              ) : filteredCategories.length === 0 ? (
-                <EmptyState
-                  icon={Tags}
-                  title={categories.length ? "Nenhuma categoria encontrada" : "Nenhuma categoria cadastrada"}
-                  description={categories.length ? "Tente usar outro termo de busca." : "Crie uma categoria para começar a organizar o catálogo."}
-                  action={!categories.length ? <Button onClick={openCreate}><Plus />Nova categoria</Button> : undefined}
-                />
-              ) : (
-                <div className="overflow-x-auto">
-                <table className="data-table">
-                  <caption className="sr-only">Categorias cadastradas</caption>
-                  <thead className="bg-gray-100 text-gray-700 font-semibold">
-                    <tr>
-                      <th scope="col">Nome</th>
-                      <th scope="col">Descrição</th>
-                      <th scope="col">Status</th>
-                      <th scope="col" className="text-right">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredCategories.map((category) => (
-                        <tr key={category.id} className="border-t hover:bg-gray-50">
-                          <td className="p-3 font-medium">{category.name}</td>
-                          <td className="p-3 text-gray-600">{category.description ?? "-"}</td>
-                          <td className="p-3">
-                            <span
-                              className={
-                                category.active
-                                  ? "text-green-700 font-semibold"
-                                  : "text-gray-500 font-semibold"
-                              }
-                            >
-                              {category.active ? "Ativa" : "Inativa"}
-                            </span>
-                          </td>
-                          <td className="space-x-3 whitespace-nowrap text-right">
-                            <button
-                              onClick={() => openEdit(category)}
-                              className="text-red-600 font-semibold hover:underline"
-                            >
-                              Editar
-                            </button>
-                            <button
-                              onClick={() => toggleActive(category)}
-                              disabled={togglingId === category.id}
-                              className="text-gray-600 font-semibold hover:underline disabled:opacity-50"
-                            >
-                              {togglingId === category.id ? "Atualizando..." : category.active ? "Desativar" : "Ativar"}
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {error ? <div className="p-6 text-red-700" role="alert">{error}<button type="button" onClick={() => { setError(null); void query.refetch(); }} className="ml-3 underline">Tentar novamente</button></div> : <ReusableTable data={pagination.pageData} columns={columns} caption="Categorias cadastradas" keyExtractor={row => row.id} isLoading={loading} emptyMessage="Nenhuma categoria encontrada." footer={<DataPagination {...pagination} isLoading={loading} />} />}
       </div>
     </div>
   )

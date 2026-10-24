@@ -1,10 +1,13 @@
 "use client"
 
+import { useApiQuery } from "@/shared/hooks/use-api-query";
+import { DataSkeleton } from "@/shared/components/data-skeleton";
+
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, ImagePlus, X } from "lucide-react"
-import { apiGet, apiPatch, apiPost, apiUpload } from "@/shared/lib/api"
+import { apiPatch, apiPost, apiUpload } from "@/shared/lib/api"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
 import { Spinner } from "@/shared/components/ui/spinner"
 import { toast } from "@/shared/lib/toast"
@@ -16,7 +19,8 @@ export function NewProductScreen() {
   const router = useRouter()
   const { unitId } = useManagedUnits()
 
-  const [categories, setCategories] = useState<Category[]>([])
+  const categoriesQuery = useApiQuery<Category[]>(unitId ? `/categories?unit_id=${unitId}` : null);
+  const categories = categoriesQuery.data ?? [];
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -37,14 +41,9 @@ export function NewProductScreen() {
   const [stagedPreviews, setStagedPreviews] = useState<string[]>([])
 
   useEffect(() => {
-    if (!unitId) return
-    apiGet(`/categories?unit_id=${unitId}`)
-      .then((cats: Category[]) => {
-        setCategories(cats ?? [])
-        if (cats?.length > 0) setForm((f) => ({ ...f, category_id: cats[0].id }))
-      })
-      .catch((err) => setError(err.message))
-  }, [unitId])
+    const first = categoriesQuery.data?.[0];
+    if (first) setForm(current => current.category_id ? current : { ...current, category_id: first.id });
+  }, [categoriesQuery.data]);
 
   const handleChange = <K extends keyof typeof form>(key: K, value: typeof form[K]) => {
     setForm((f) => ({ ...f, [key]: value }))
@@ -126,6 +125,9 @@ export function NewProductScreen() {
       setSaving(false)
     }
   }
+
+  if (categoriesQuery.isPending) return <DataSkeleton variant="form" label="Carregando categorias do produto" />;
+  if (categoriesQuery.error) return <div className="p-6 text-red-700" role="alert">{categoriesQuery.error.message}<button onClick={() => void categoriesQuery.refetch()} className="ml-3 underline">Tentar novamente</button></div>;
 
   return (
     <div className="page-surface px-4 py-6 sm:px-6">

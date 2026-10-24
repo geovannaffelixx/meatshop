@@ -1,5 +1,11 @@
 "use client";
 
+import { validateRequiredText, validateCEP, validateUF } from "@/shared/lib/validators";
+
+import { peekApiData } from "@/shared/lib/query-cache";
+
+import { DataSkeleton } from "@/shared/components/data-skeleton";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { AddressPinPicker, type AddressPin } from '@/shared/components/maps/address-pin-picker';
@@ -73,19 +79,22 @@ const emptyUnit: UnitForm = {
 
 function UnitSettings() {
   const { unitId, refresh } = usePanelAccess();
-  const [unit, setUnit] = useState<UnitForm>(emptyUnit);
-  const [days, setDays] = useState<Day[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cachedUnit = unitId ? peekApiData<UnitForm & { latitude?: number; longitude?: number; coordinate_source?: string }>(`/units/${unitId}/settings`) : undefined;
+  const cachedHours = unitId ? peekApiData<Day[]>(`/units/${unitId}/business-hours`) : undefined;
+  const cachedPoint = cachedUnit?.latitude != null && cachedUnit?.longitude != null ? { latitude: Number(cachedUnit.latitude), longitude: Number(cachedUnit.longitude) } : null;
+  const [unit, setUnit] = useState<UnitForm>(() => ({ ...emptyUnit, ...cachedUnit }));
+  const [days, setDays] = useState<Day[]>(() => cachedHours ?? []);
+  const [loading, setLoading] = useState(!cachedUnit || !cachedHours);
   const [saving, setSaving] = useState(false);
   const [lookingUpCep, setLookingUpCep] = useState(false);
   const [cepResolved, setCepResolved] = useState(false);
-  const [pin,setPin] = useState<AddressPin|null>(null);
-  const [approximate,setApproximate] = useState<AddressPin|null>(null);
+  const [pin,setPin] = useState<AddressPin|null>(cachedUnit?.coordinate_source === 'USER_PIN' ? cachedPoint : null);
+  const [approximate,setApproximate] = useState<AddressPin|null>(cachedPoint);
   const cepVersion = useRef(0);
 
   const load = useCallback(async () => {
     if (!unitId) return;
-    setLoading(true);
+    setLoading(!peekApiData(`/units/${unitId}/settings`) || !peekApiData(`/units/${unitId}/business-hours`));
     try {
       const [unitData, hours] = await Promise.all([
         apiGet(`/units/${unitId}/settings`),
@@ -119,7 +128,7 @@ function UnitSettings() {
   async function lookupCep() {
     if (lookingUpCep) return;
     const cep = unit.zip_code.replace(/\D/g, "");
-    if (cep.length !== 8) {
+    if (!validateCEP(unit.zip_code)) {
       toast.warning("Informe um CEP válido com 8 dígitos.");
       return;
     }
@@ -153,6 +162,8 @@ function UnitSettings() {
   async function saveUnit(event: React.FormEvent) {
     event.preventDefault();
     if (!unitId) return;
+    const validationError = !validateRequiredText(unit.name, 100, 3) ? 'Informe o nome da unidade.' : !validateCEP(unit.zip_code) ? 'Informe um CEP válido.' : !validateUF(unit.state) ? 'Informe uma UF válida.' : !validateRequiredText(unit.city, 80) ? 'Informe a cidade.' : null;
+    if (validationError) { toast.warning(validationError); return; }
     setSaving(true);
     try {
       await apiPatch(`/units/${unitId}`, {
@@ -163,7 +174,7 @@ function UnitSettings() {
         complement: unit.complement || null,
         neighborhood: unit.neighborhood || null,
         city: unit.city,
-        state: unit.state.toUpperCase(),
+        state: unit.state.trim().toUpperCase(),
         delivery_radius_km: Number(unit.delivery_radius_km ?? 25),
         ...(pin ?? {}),
       });
@@ -249,7 +260,7 @@ function UnitSettings() {
   }
 
   if (loading)
-    return <p className="p-6 text-gray-500">Carregando configurações...</p>;
+    return <DataSkeleton label="Carregando configurações..." />;
   const field = (key: keyof UnitForm, label: string, disabled = false) => (
     <label className="text-sm font-medium text-gray-700">
       {label}

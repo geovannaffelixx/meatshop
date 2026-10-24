@@ -1,5 +1,7 @@
 "use client";
 
+import { validateEmail } from "@/shared/lib/validators";
+
 import { useState } from "react";
 import { Input } from "@/shared/components/ui/input";
 import { PasswordInput } from "@/shared/components/ui/password-input";
@@ -24,6 +26,7 @@ export function LoginScreen() {
       toast.warning("Preencha o e-mail e a senha para continuar.");
       return;
     }
+    if (!validateEmail(email)) { toast.warning('Informe um e-mail válido.'); return; }
     if (submitting) return;
 
     setSubmitting(true);

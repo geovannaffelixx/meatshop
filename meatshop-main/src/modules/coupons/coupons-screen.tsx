@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { toDatetimeLocal as toLocal, datetimeLocalToISO, validateDateRange } from "@/shared/lib/date-time";
+
+import { DataSkeleton } from "@/shared/components/data-skeleton";
+
+import { useApiQuery } from "@/shared/hooks/use-api-query";
+
+import { useMemo, useState } from "react";
 import { BadgePercent, History, Plus, Search, TicketPercent } from "lucide-react";
 import { apiGet, apiPatch, apiPost } from "@/shared/lib/api";
 import { formatCurrency } from "@/shared/lib/formatters";
@@ -70,17 +76,12 @@ export function CouponsScreen() {
   const { user, unitId } = usePanelAccess();
   const { units } = useManagedUnits();
   const isAdmin = user?.global_role === "SUPER_ADMIN";
-  const [result, setResult] = useState<CouponResult>({
-    data: [],
-    meta: { page: 1, total: 0, totalPages: 1 },
-  });
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [editing, setEditing] = useState<Coupon | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [history, setHistory] = useState<{
     coupon: Coupon;
     items: Redemption[];
@@ -97,20 +98,7 @@ export function CouponsScreen() {
     [isAdmin, page, search, unitId],
   );
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      setResult(await apiGet(`/coupons?${query}`, { silent: true }));
-    } catch {
-      toast.error("Não foi possível carregar os cupons.");
-    } finally {
-      setLoading(false);
-    }
-  }, [query]);
-
-  useEffect(() => {
-    if (isAdmin || unitId) void load();
-  }, [isAdmin, load, unitId]);
+  const { data: result = { data: [], meta: { page: 1, total: 0, totalPages: 1 } }, isPending: loading, refetch: load } = useApiQuery<CouponResult>(isAdmin || unitId ? `/coupons?${query}` : null);
 
   function startCreate() {
     setEditing(null);
@@ -130,7 +118,7 @@ export function CouponsScreen() {
 
   async function save(event: React.FormEvent) {
     event.preventDefault();
-    if (new Date(form.expires_at) <= new Date(form.starts_at)) {
+    if (!validateDateRange(form.starts_at, form.expires_at)) {
       toast.warning("O término deve ser posterior ao início do cupom.");
       return;
     }
@@ -223,10 +211,7 @@ export function CouponsScreen() {
 
         <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           {loading ? (
-            <div className="flex items-center justify-center gap-2 p-12 text-slate-500">
-              <Spinner />
-              Carregando cupons...
-            </div>
+            <DataSkeleton label="Carregando cupons..." />
           ) : result.data.length === 0 ? (
             <EmptyState
               icon={TicketPercent}
@@ -658,8 +643,8 @@ function toPayload(form: FormState, isAdmin: boolean, editing: boolean) {
             : undefined
         : undefined,
     minimum_order_value: Number(form.minimum_order_value || 0),
-    starts_at: new Date(form.starts_at).toISOString(),
-    expires_at: new Date(form.expires_at).toISOString(),
+    starts_at: datetimeLocalToISO(form.starts_at),
+    expires_at: datetimeLocalToISO(form.expires_at),
     total_usage_limit: form.total_usage_limit
       ? Number(form.total_usage_limit)
       : editing
@@ -674,11 +659,7 @@ function toPayload(form: FormState, isAdmin: boolean, editing: boolean) {
   };
 }
 
-function toLocal(value: string) {
-  const date = new Date(value);
-  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-  return date.toISOString().slice(0, 16);
-}
+
 
 function toForm(coupon: Coupon): FormState {
   return {

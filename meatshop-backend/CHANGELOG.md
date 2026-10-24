@@ -6,6 +6,8 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ### Complemento da especificacao original (23/10/2026)
 
+- Contratos de criação de unidade aceitam CNPJ numérico ou alfanumérico normalizado, preservando as duas posições finais numéricas.
+
 - Bloqueio de login central, auditoria transacional com ator e protecao contra TRUNCATE.
 - Despesas do entregador, exportacao dos proprios dados e retencao configuravel.
 - Catalogo publico protegido, filtros por cidade/regiao, paginacao SQL e validacao de estoque numerico.

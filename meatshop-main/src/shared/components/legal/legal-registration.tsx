@@ -1,5 +1,7 @@
 'use client';
 
+import { DataSkeleton } from "@/shared/components/data-skeleton";
+
 import { Button } from '@/shared/components/ui/button';
 import { LegalDocuments } from './legal-documents';
 import { LegalCheckbox } from './legal-checkbox';
@@ -22,7 +24,7 @@ export function LegalRegistration({
         </Button>
       </div>
     );
-  if (!catalog) return <p role="status">Carregando documentos...</p>;
+  if (!catalog) return <DataSkeleton label="Carregando documentos..." />;
   return (
     <fieldset className="space-y-4 rounded-xl border p-4">
       <legend className="px-2 font-medium">Termos e privacidade</legend>

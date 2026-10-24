@@ -1,11 +1,17 @@
 "use client";
 
+import { formatDateTime } from "@/shared/lib/formatters";
+
+import { useApiQuery } from "@/shared/hooks/use-api-query";
+
+import { DataSkeleton } from "@/shared/components/data-skeleton";
+
 /* eslint-disable @next/next/no-img-element */
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { ArrowLeft, ImagePlus, LockKeyhole, Send, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { apiGet, apiPatch, apiUpload, resolveAssetUrl } from "@/shared/lib/api";
+import { apiPatch, apiUpload, resolveAssetUrl } from "@/shared/lib/api";
 import { Spinner } from "@/shared/components/ui/spinner";
 import { toast } from "@/shared/lib/toast";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
@@ -19,23 +25,11 @@ import {
 export function SupportDetailScreen({ ticketId }: { ticketId: number }) {
   const router = useRouter();
   const { user } = usePanelAccess();
-  const [ticket, setTicket] = useState<SupportTicket | null>(null);
   const [message, setMessage] = useState("");
   const [images, setImages] = useState<File[]>([]);
-  const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      setTicket(await apiGet(`/support-tickets/${ticketId}`, { silent: true }));
-    } finally {
-      setLoading(false);
-    }
-  }, [ticketId]);
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const { data: ticket, isPending: loading, refetch: load } = useApiQuery<SupportTicket>(`/support-tickets/${ticketId}`);
 
   async function sendMessage(event: React.FormEvent) {
     event.preventDefault();
@@ -72,9 +66,7 @@ export function SupportDetailScreen({ ticketId }: { ticketId: number }) {
   if (loading && !ticket)
     return (
       <div className="page-surface">
-        <div className="grid min-h-[60vh] place-items-center text-slate-500">
-          Carregando chamado...
-        </div>
+        <DataSkeleton label="Carregando chamado..." />
       </div>
     );
   if (!ticket)
@@ -158,7 +150,7 @@ export function SupportDetailScreen({ ticketId }: { ticketId: number }) {
                     <time
                       className={`mt-2 block text-[11px] ${mine ? "text-red-100" : "text-slate-400"}`}
                     >
-                      {new Date(item.created_at).toLocaleString("pt-BR")}
+                      {formatDateTime(item.created_at)}
                     </time>
                   </div>
                 </article>
@@ -264,7 +256,7 @@ export function SupportDetailScreen({ ticketId }: { ticketId: number }) {
             )}
             <div>
               <dt className="text-slate-500">Aberto em</dt>
-              <dd>{new Date(ticket.created_at).toLocaleString("pt-BR")}</dd>
+              <dd>{formatDateTime(ticket.created_at)}</dd>
             </div>
           </dl>
           {!closed && (

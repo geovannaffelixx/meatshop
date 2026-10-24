@@ -1,5 +1,7 @@
 'use client';
 
+import { validateEmail } from "@/shared/lib/validators";
+
 import { useState } from "react";
 import { Input } from "@/shared/components/ui/input";
 import { Button } from "@/shared/components/ui/button";
@@ -22,15 +24,15 @@ export function ForgotPasswordScreen() {
     setMsg("");
     setAlertType("");
 
-    if (!email.trim()) {
-      setMsg("Informe seu e-mail.");
+    if (!validateEmail(email)) {
+      setMsg("Informe um e-mail válido.");
       setAlertType("error");
       return;
     }
 
     setSubmitting(true);
     try {
-      await apiPost("/auth/forgot-password", { email });
+      await apiPost("/auth/forgot-password", { email: email.trim().toLowerCase() });
 
       setMsg("Se este e-mail estiver cadastrado, você receberá um link para redefinir a senha.");
       setAlertType("success");

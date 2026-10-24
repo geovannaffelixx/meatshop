@@ -1,8 +1,19 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { toDatetimeLocal, datetimeLocalToISO, validateDateRange } from "@/shared/lib/date-time";
+import { formatDateTime as formatDateTimeBR } from "@/shared/lib/formatters";
+
+import { ReusableTable, type TableColumn } from "@/shared/components/reusable-table";
+import { DataPagination } from "@/shared/components/data-pagination";
+import { useTablePagination } from "@/shared/hooks/use-table-pagination";
+
+import { useApiQuery } from "@/shared/hooks/use-api-query";
+
+
+
+import { useMemo, useState } from "react"
 import { Button } from "@/shared/components/ui/button"
-import { Card, CardContent } from "@/shared/components/ui/card"
+
 import {
   Dialog,
   DialogContent,
@@ -15,7 +26,7 @@ import { Textarea } from "@/shared/components/ui/textarea"
 import { RequiredMark } from "@/shared/components/ui/required-mark"
 import { Spinner } from "@/shared/components/ui/spinner"
 import { Plus, Search } from "lucide-react"
-import { apiGet, apiPatch, apiPost } from "@/shared/lib/api"
+import { apiPatch, apiPost } from "@/shared/lib/api"
 import { toast } from "@/shared/lib/toast"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
 import { PageHeader } from "@/shared/components/page-header"
@@ -59,15 +70,9 @@ const EMPTY_FORM: FormState = {
   ends_at: "",
 }
 
-function toDatetimeLocal(iso: string) {
-  const d = new Date(iso)
-  const pad = (n: number) => String(n).padStart(2, "0")
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
 
-function formatDateTimeBR(iso: string) {
-  return new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })
-}
+
+
 
 function promotionStatus(promotion: Promotion) {
   if (!promotion.active) return { label: "Inativa", className: "text-gray-500" }
@@ -78,12 +83,14 @@ function promotionStatus(promotion: Promotion) {
 }
 
 export function PromotionsScreen() {
-  const { units, unitId, setUnitId, loading: unitsLoading } = useManagedUnits()
+  const { units, unitId, loading: unitsLoading } = useManagedUnits()
 
-  const [products, setProducts] = useState<Product[]>([])
-  const [promotions, setPromotions] = useState<Promotion[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const promotionsQuery = useApiQuery<Promotion[]>(unitId ? `/promotions?unit_id=${unitId}` : null);
+  const productsQuery = useApiQuery<{ data: Product[] }>(unitId ? `/products/manage?unit_id=${unitId}&limit=200` : null);
+  const promotions = useMemo(() => promotionsQuery.data ?? [], [promotionsQuery.data]);
+  const products = useMemo(() => productsQuery.data?.data ?? [], [productsQuery.data]);
+  const loading = promotionsQuery.isPending || productsQuery.isPending;
+  const error = promotionsQuery.error?.message ?? productsQuery.error?.message;
 
   const [open, setOpen] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -112,28 +119,6 @@ export function PromotionsScreen() {
       return searchMatches && statusMatches
     })
   }, [productName, promotions, search, statusFilter])
-
-  const loadData = async (unit: number) => {
-    setLoading(true)
-    setError(null)
-    try {
-      const [promotionsData, productsData] = await Promise.all([
-        apiGet(`/promotions?unit_id=${unit}`),
-        apiGet(`/products/manage?unit_id=${unit}&limit=200`),
-      ])
-      setPromotions(Array.isArray(promotionsData) ? promotionsData : [])
-      setProducts(Array.isArray(productsData?.data) ? productsData.data : [])
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao carregar promoções.")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    if (!unitId) return
-    loadData(unitId)
-  }, [unitId])
 
   const openCreate = () => {
     setEditingId(null)
@@ -179,7 +164,7 @@ export function PromotionsScreen() {
       setFormError("Informe o período da promoção.")
       return
     }
-    if (new Date(form.ends_at) <= new Date(form.starts_at)) {
+    if (!validateDateRange(form.starts_at, form.ends_at)) {
       setFormError("A data de término deve ser depois da data de início.")
       return
     }
@@ -198,8 +183,8 @@ export function PromotionsScreen() {
         description: form.description.trim() || undefined,
         discount_percentage: form.discountMode === "percentage" ? Number(form.discount_percentage) : clearValue,
         promotional_price: form.discountMode === "price" ? Number(form.promotional_price) : clearValue,
-        starts_at: new Date(form.starts_at).toISOString(),
-        ends_at: new Date(form.ends_at).toISOString(),
+        starts_at: datetimeLocalToISO(form.starts_at),
+        ends_at: datetimeLocalToISO(form.ends_at),
       }
 
       if (editingId) {
@@ -209,7 +194,7 @@ export function PromotionsScreen() {
       }
 
       setOpen(false)
-      await loadData(unitId)
+      await Promise.all([promotionsQuery.refetch(), productsQuery.refetch()])
       toast.success(editingId ? "Promoção atualizada com sucesso." : "Promoção criada com sucesso.")
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Erro ao salvar promoção.")
@@ -223,13 +208,26 @@ export function PromotionsScreen() {
     setTogglingId(promotion.id)
     try {
       await apiPatch(`/promotions/${promotion.id}/${promotion.active ? "deactivate" : "activate"}`, {})
-      await loadData(unitId)
+      await Promise.all([promotionsQuery.refetch(), productsQuery.refetch()])
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao atualizar promoção.")
     } finally {
       setTogglingId(null)
     }
   }
+
+  const pagination = useTablePagination(filteredPromotions, `${unitId}:${search}:${statusFilter}`);
+  const columns: TableColumn<Promotion>[] = [
+    { id: 'title', header: 'Título', accessor: 'title', className: 'font-medium' },
+    { id: 'product', header: 'Produto', accessor: row => productName(row.product_id) },
+    { id: 'discount', header: 'Desconto', accessor: row => row.promotional_price != null ? Number(row.promotional_price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : `${row.discount_percentage}%` },
+    { id: 'period', header: 'Período', accessor: row => <>{formatDateTimeBR(row.starts_at)} — {formatDateTimeBR(row.ends_at)}</> },
+    { id: 'status', header: 'Status', accessor: row => { const status = promotionStatus(row); return <span className={`font-semibold ${status.className}`}>{status.label}</span>; } },
+    { id: 'actions', header: 'Ações', textAlign: 'end', accessor: row => <div className="flex justify-end gap-3">
+      <Button type="button" variant="ghost" size="sm" onClick={() => openEdit(row)}>Editar</Button>
+      <Button type="button" variant="ghost" size="sm" onClick={() => void toggleActive(row)} disabled={togglingId === row.id}>{togglingId === row.id ? 'Atualizando...' : row.active ? 'Desativar' : 'Ativar'}</Button>
+    </div> },
+  ];
 
   return (
     <div className="page-surface">
@@ -240,20 +238,7 @@ export function PromotionsScreen() {
           description="Planeje campanhas por produto, período e tipo de desconto."
           actions={
             <>
-            {units.length > 1 && (
-              <select
-                aria-label="Unidade ativa"
-                value={unitId ?? ""}
-                onChange={(e) => setUnitId(Number(e.target.value))}
-                className="border rounded-md px-3 py-2"
-              >
-                {units.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name}
-                  </option>
-                ))}
-              </select>
-            )}
+
 
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
@@ -430,74 +415,7 @@ export function PromotionsScreen() {
           </select>
         </div>
 
-        <Card className="overflow-hidden border-0 bg-white shadow-sm">
-          <CardContent className="p-0">
-            {loading ? (
-              <div className="p-10 text-center text-slate-500">Carregando promoções...</div>
-            ) : error ? (
-              <div className="p-4 text-red-600 font-semibold">Erro: {error}</div>
-            ) : (
-              <div className="overflow-x-auto">
-              <table className="data-table">
-                <caption className="sr-only">Promoções cadastradas</caption>
-                <thead className="bg-gray-100 text-gray-700 font-semibold">
-                  <tr>
-                    <th scope="col">Título</th>
-                    <th scope="col">Produto</th>
-                    <th scope="col">Desconto</th>
-                    <th scope="col">Período</th>
-                    <th scope="col">Status</th>
-                    <th scope="col" className="text-right">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredPromotions.length > 0 ? (
-                    filteredPromotions.map((promotion) => {
-                      const status = promotionStatus(promotion)
-                      return (
-                        <tr key={promotion.id} className="border-t hover:bg-gray-50">
-                          <td className="p-3 font-medium">{promotion.title}</td>
-                          <td className="p-3 text-gray-600">{productName(promotion.product_id)}</td>
-                          <td className="p-3">
-                            {promotion.promotional_price != null
-                              ? Number(promotion.promotional_price).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-                              : `${promotion.discount_percentage}%`}
-                          </td>
-                          <td className="p-3 text-gray-600">
-                            {formatDateTimeBR(promotion.starts_at)} — {formatDateTimeBR(promotion.ends_at)}
-                          </td>
-                          <td className={`p-3 font-semibold ${status.className}`}>{status.label}</td>
-                          <td className="space-x-3 whitespace-nowrap text-right">
-                            <button
-                              onClick={() => openEdit(promotion)}
-                              className="text-red-600 font-semibold hover:underline"
-                            >
-                              Editar
-                            </button>
-                            <button
-                              onClick={() => toggleActive(promotion)}
-                              disabled={togglingId === promotion.id}
-                              className="text-gray-600 font-semibold hover:underline disabled:opacity-50"
-                            >
-                              {togglingId === promotion.id ? "Atualizando..." : promotion.active ? "Desativar" : "Ativar"}
-                            </button>
-                          </td>
-                        </tr>
-                      )
-                    })
-                  ) : (
-                    <tr>
-                      <td colSpan={6} className="text-center p-6 text-gray-500 italic">
-                        Nenhuma promoção encontrada.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {error ? <div className="p-6 text-red-700" role="alert">{error}</div> : <ReusableTable data={pagination.pageData} columns={columns} caption="Promoções cadastradas" keyExtractor={row => row.id} isLoading={loading} emptyMessage="Nenhuma promoção encontrada." footer={<DataPagination {...pagination} isLoading={loading} />} />}
       </div>
     </div>
   )

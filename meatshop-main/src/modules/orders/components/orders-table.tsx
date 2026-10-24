@@ -1,5 +1,9 @@
 "use client"
 
+import { toDateInput, isValidDate } from "@/shared/lib/date-time";
+
+import { DataSkeleton } from "@/shared/components/data-skeleton";
+
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { apiGet, apiPatch } from "@/shared/lib/api"
@@ -73,10 +77,8 @@ export function OrdersTable({ filters, currentPage, onPageChange }: OrdersTableP
   const inRange = (valueISO: string | null, from: string, to: string) => {
     if (!from && !to) return true
     if (!valueISO) return false
-    const v = new Date(valueISO)
-    const fromDate = from ? new Date(from + "T00:00:00") : null
-    const toDate = to ? new Date(to + "T23:59:59") : null
-    return (!fromDate || v >= fromDate) && (!toDate || v <= toDate)
+    const date = toDateInput(valueISO);
+    return Boolean(date) && (!from || (isValidDate(from) && date >= from)) && (!to || (isValidDate(to) && date <= to));
   }
 
   const filtered = useMemo(() => {
@@ -108,7 +110,7 @@ export function OrdersTable({ filters, currentPage, onPageChange }: OrdersTableP
   }
 
   if (loading) {
-    return <div className="p-10 text-center text-slate-500">Carregando pedidos...</div>
+    return <DataSkeleton label="Carregando pedidos..." />
   }
   if (error) {
     return (

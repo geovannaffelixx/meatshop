@@ -1,5 +1,9 @@
 "use client"
 
+import { peekApiData } from "@/shared/lib/query-cache";
+
+import { DataSkeleton } from "@/shared/components/data-skeleton";
+
 import { useEffect, useMemo, useState } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
@@ -35,10 +39,11 @@ export function EditProductScreen() {
   const productId = useMemo(() => Number(id), [id])
   const productKey = productId.toString().padStart(5, "0")
 
-  const [product, setProduct] = useState<Product | null>(null)
-  const [stock, setStock] = useState<Stock>({ quantity: 0, min_quantity: 0 })
-  const [categories, setCategories] = useState<Category[]>([])
-  const [images, setImages] = useState<ProductImage[]>([])
+  const cached = peekApiData<{ product: Product; stock: Stock | null; images?: ProductImage[] }>(`/products/manage/${productId}`);
+  const [product, setProduct] = useState<Product | null>(() => cached?.product ?? null)
+  const [stock, setStock] = useState<Stock>(() => cached?.stock ?? { quantity: 0, min_quantity: 0 })
+  const [categories, setCategories] = useState<Category[]>(() => cached ? peekApiData<Category[]>(`/categories?unit_id=${cached.product.unit_id}`) ?? [] : [])
+  const [images, setImages] = useState<ProductImage[]>(() => cached?.images ?? [])
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -131,9 +136,7 @@ export function EditProductScreen() {
 
   if (!product) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-600 text-lg">
-        Carregando produto...
-      </div>
+      <DataSkeleton label="Carregando produto..." />
     )
   }
 
