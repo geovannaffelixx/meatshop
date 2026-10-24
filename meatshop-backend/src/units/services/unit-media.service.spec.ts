@@ -47,6 +47,32 @@ describe('Unit gallery and cover persistence', () => {
     await expect(service.upload(6, actor, [file])).rejects.toThrow('forbidden');
     expect(storage.upload).not.toHaveBeenCalled();
   });
+  it.each([undefined, null, 'photo.png', { length: 1, 0: { originalname: 'photo.png' } }])(
+    'rejects non-array upload parameters before storage: %o',
+    async (files) => {
+      await expect(service.upload(6, actor, files as never)).rejects.toThrow(
+        'Files must be an array',
+      );
+      expect(storage.upload).not.toHaveBeenCalled();
+      expect(manager.save).not.toHaveBeenCalled();
+    },
+  );
+  it.each([
+    { count: 0, cover: false },
+    { count: 11, cover: false },
+    { count: 2, cover: true },
+  ])('rejects invalid file counts before storage: %o', async ({ count, cover }) => {
+    await expect(
+      service.upload(
+        6,
+        actor,
+        Array.from({ length: count }, () => file),
+        cover,
+      ),
+    ).rejects.toThrow('Choose up to 10 images');
+    expect(storage.upload).not.toHaveBeenCalled();
+    expect(manager.save).not.toHaveBeenCalled();
+  });
   it('cleans new files if concurrent uploads reach the gallery limit', async () => {
     unit.gallery_urls = Array.from({ length: 10 }, (_, index) => `/photo-${index}.png`);
     await expect(service.upload(6, actor, [file])).rejects.toThrow('up to 10');

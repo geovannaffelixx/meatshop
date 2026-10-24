@@ -21,7 +21,8 @@ export class UnitMediaService {
     const unit = await this.units.findOne({ where: { id } });
     if (!unit) throw new NotFoundException('Unit not found');
     await this.authorization.assertHasPermission(actor, unit.id, UnitPermission.MANAGE_UNIT);
-    if (!files?.length || files.length > (cover ? 1 : 10))
+    if (!Array.isArray(files)) throw new BadRequestException('Files must be an array');
+    if (files.length === 0 || files.length > (cover ? 1 : 10))
       throw new BadRequestException('Choose up to 10 images');
     const urls: string[] = [];
     let previous: string | null = null;
