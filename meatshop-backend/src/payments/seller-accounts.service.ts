@@ -2,7 +2,8 @@ import { BadRequestException, Injectable, ServiceUnavailableException } from '@n
 import { ConfigService } from '@nestjs/config';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, EntityManager } from 'typeorm';
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
+import { AesGcmCipher } from '../common/security/aes-gcm-cipher';
 import { MercadoPagoService } from './providers/mercadopago.service';
 import { UnitAuthorizationService } from '../units/services/unit-authorization.service';
 import { UnitPermission } from '../common/enums/unit-permission.enum';
@@ -31,23 +32,15 @@ export class SellerAccountsService {
   }
 
   private encrypt(value: string): string {
-    const key = createHash('sha256')
-      .update(this.config.getOrThrow<string>('MP_CREDENTIAL_ENCRYPTION_KEY'))
-      .digest();
-    const iv = randomBytes(12);
-    const cipher = createCipheriv('aes-256-gcm', key, iv);
-    const data = Buffer.concat([cipher.update(value, 'utf8'), cipher.final()]);
-    return [iv, cipher.getAuthTag(), data].map((b) => b.toString('base64url')).join('.');
+    return this.cipher().encrypt(value);
   }
 
   private decrypt(value: string): string {
-    const [iv, tag, data] = value.split('.').map((x) => Buffer.from(x, 'base64url'));
-    const key = createHash('sha256')
-      .update(this.config.getOrThrow<string>('MP_CREDENTIAL_ENCRYPTION_KEY'))
-      .digest();
-    const cipher = createDecipheriv('aes-256-gcm', key, iv);
-    cipher.setAuthTag(tag);
-    return Buffer.concat([cipher.update(data), cipher.final()]).toString('utf8');
+    return this.cipher().decrypt(value);
+  }
+
+  private cipher(): AesGcmCipher {
+    return AesGcmCipher.fromSecret(this.config.getOrThrow<string>('MP_CREDENTIAL_ENCRYPTION_KEY'));
   }
 
   async status(unitId: number, user: User) {

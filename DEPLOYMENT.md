@@ -16,7 +16,20 @@ Os dois subdomínios sob o mesmo domínio permitem cookies seguros com `SameSite
 4. Use `https://app.seudominio.com.br` em `FRONTEND_URL` e `CORS_ORIGINS`.
 5. Use `https://api.seudominio.com.br` em `BACKEND_PUBLIC_URL`.
 
-O Blueprint executa as migrations antes de iniciar a API e só publica a `develop` depois que o CI passar.
+O Blueprint define dois ambientes isolados, cada um com banco e segredos próprios:
+
+| Ambiente | Serviço | Branch | Banco | `COOKIE_SAMESITE` |
+|---|---|---|---|---|
+| Homologação | `meatshop-api` | `develop` | `meatshop-db` (free) | `none` (domínios `vercel.app`/`onrender.com`) |
+| Produção | `meatshop-api-production` | `main` | `meatshop-db-production` | `lax` (painel e API em subdomínios do mesmo domínio) |
+
+Configurações não sensíveis comuns ficam no grupo `meatshop-api-shared` (inclui `COOKIE_SECURE=true` e `ORDER_CONFIRMATION_TIMEOUT_MINUTES=30`). Em cada serviço, informe no dashboard:
+
+- `DATA_ENCRYPTION_KEY` e `DATA_HASH_KEY`: valores distintos gerados com `openssl rand -base64 32`. Guarde-os no cofre da equipe: perdê-los torna irrecuperáveis os dados pessoais criptografados. Nunca compartilhe as chaves entre homologação e produção;
+- `METRICS_TOKEN`: gerado com `openssl rand -hex 32`, usado pelo Prometheus para coletar `/metrics`;
+- em produção, as credenciais Mercado Pago (`MP_CLIENT_ID`, `MP_CLIENT_SECRET`, `MP_OAUTH_REDIRECT_URI`, `MP_CREDENTIAL_ENCRYPTION_KEY`, `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`) e `PAYMENTS_ENABLED`.
+
+O Blueprint executa as migrations antes de iniciar a API e só publica cada branch depois que o CI passar.
 
 ## Render (chatbot)
 

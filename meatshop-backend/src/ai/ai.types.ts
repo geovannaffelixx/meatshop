@@ -7,6 +7,18 @@ export type AiChatResponse = {
 
 export type AiUpstreamChatResponse = Omit<AiChatResponse, 'conversation_id' | 'expires_at'>;
 
+export type AiChatStreamEvent =
+  | { delta: string }
+  | { error: string; code: string }
+  | { done: true; conversation_id: string };
+
+export interface AiChatStreamSink {
+  readonly signal: AbortSignal;
+  open(): void;
+  send(event: AiChatStreamEvent): void;
+  close(): void;
+}
+
 export type AiConversationResponse = {
   conversation_id: string;
   expires_at: string;

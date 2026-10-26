@@ -18,9 +18,28 @@ export class MetricsService {
   private readonly aiDuration: Histogram;
   private readonly aiDraftFeedback: Counter;
   private readonly aiConversationsPurged: Counter;
+  private readonly webhookQueuePending: Gauge;
+  private readonly webhookProcessingFailures: Counter;
+  private readonly rateLimitRejections: Counter;
 
   constructor() {
     this.register = new Registry();
+    this.webhookQueuePending = new Gauge({
+      name: 'payment_webhook_queue_pending',
+      help: 'Payment provider notifications waiting for or under processing',
+      registers: [this.register],
+    });
+    this.webhookProcessingFailures = new Counter({
+      name: 'payment_webhook_processing_failures_total',
+      help: 'Failed payment notification processing attempts',
+      registers: [this.register],
+    });
+    this.rateLimitRejections = new Counter({
+      name: 'rate_limit_rejections_total',
+      help: 'Requests rejected by rate limiting',
+      labelNames: ['scope'],
+      registers: [this.register],
+    });
     this.refundQueue = new Gauge({
       name: 'payment_refund_queue',
       help: 'Refunds requiring processing or financial intervention',
@@ -126,6 +145,18 @@ export class MetricsService {
 
   observeAiConversationPurge(count: number): void {
     this.aiConversationsPurged.inc(count);
+  }
+
+  observeWebhookQueue(pending: number): void {
+    this.webhookQueuePending.set(pending);
+  }
+
+  observeWebhookFailure(): void {
+    this.webhookProcessingFailures.inc();
+  }
+
+  observeRateLimitRejection(scope: string): void {
+    this.rateLimitRejections.inc({ scope });
   }
 
   async getMetrics(): Promise<string> {

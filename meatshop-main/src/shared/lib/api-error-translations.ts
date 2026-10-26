@@ -3,9 +3,15 @@ type ApiErrorPayload = {
   error?: unknown;
   message?: unknown;
   statusCode?: unknown;
+  retry_after_seconds?: unknown;
 };
 
+const SECONDS_PER_MINUTE = 60;
+
 const ERROR_CODE_MESSAGES: Record<string, string> = {
+  ACCOUNT_LOCKED: "Conta bloqueada temporariamente por excesso de tentativas. Tente novamente mais tarde.",
+  CSRF_TOKEN_INVALID: "Sua sessão de segurança expirou. Recarregue a página e tente novamente.",
+  UNIT_INACTIVE: "Esta unidade está inativa no momento.",
   LEGAL_ACCEPTANCE_REQUIRED: "Leia e confirme os documentos vigentes para continuar.",
   UNIT_LEGAL_ACCEPTANCE_REQUIRED: "O responsável da unidade precisa confirmar os termos do estabelecimento.",
   LEGAL_DOCUMENTS_CHANGED: "Os documentos foram atualizados. Consulte e confirme as novas versões.",
@@ -55,6 +61,7 @@ const STATUS_MESSAGES: Record<number, string> = {
 
 const MESSAGE_TRANSLATIONS: Array<[RegExp, string]> = [
   [/current password is incorrect/i, "A senha atual está incorreta."],
+  [/invalid or expired (verification |reset )?token/i, "O link é inválido ou expirou. Solicite um novo link."],
   [/cpf.*(in use|taken|registered|already exists)/i, "Já existe uma conta cadastrada com este CPF."],
   [/cnpj.*(in use|taken|registered|already exists)/i, "Já existe um açougue cadastrado com este CNPJ."],
   [/email.*(in use|taken|registered|already exists)/i, "Já existe uma conta cadastrada com este e-mail."],
@@ -120,6 +127,13 @@ function translateMessage(message: string): string {
   return DEFAULT_MESSAGE;
 }
 
+function lockoutMessage(payload: ApiErrorPayload): string {
+  const seconds = Number(payload.retry_after_seconds);
+  if (!Number.isFinite(seconds) || seconds <= 0) return ERROR_CODE_MESSAGES.ACCOUNT_LOCKED;
+  const minutes = Math.ceil(seconds / SECONDS_PER_MINUTE);
+  return `Conta bloqueada temporariamente por excesso de tentativas. Tente novamente em ${minutes} minuto${minutes === 1 ? "" : "s"}.`;
+}
+
 export function translateApiError(
   error: unknown,
   status?: number,
@@ -128,6 +142,7 @@ export function translateApiError(
   const payload = parsePayload(error);
   const payloadStatus = typeof payload?.statusCode === "number" ? payload.statusCode : undefined;
   const errorCode = typeof payload?.code === "string" ? payload.code : undefined;
+  if (payload && errorCode === "ACCOUNT_LOCKED") return lockoutMessage(payload);
   if (errorCode && ERROR_CODE_MESSAGES[errorCode]) {
     return ERROR_CODE_MESSAGES[errorCode];
   }

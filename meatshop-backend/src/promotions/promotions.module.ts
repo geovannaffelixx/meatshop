@@ -25,6 +25,7 @@ import { CouponRedemptionService } from './services/coupon-redemption.service';
 import { CouponWriteValidatorService } from './services/coupon-write-validator.service';
 import { GetCouponUseCase } from './use-cases/get-coupon.use-case';
 import { ListCouponRedemptionsUseCase } from './use-cases/list-coupon-redemptions.use-case';
+import { PromotionalPriceService } from './services/promotional-price.service';
 
 @Module({
   imports: [
@@ -51,7 +52,13 @@ import { ListCouponRedemptionsUseCase } from './use-cases/list-coupon-redemption
     CouponWriteValidatorService,
     GetCouponUseCase,
     ListCouponRedemptionsUseCase,
+    PromotionalPriceService,
   ],
-  exports: [TypeOrmModule, ValidateCouponUseCase, CouponRedemptionService],
+  exports: [
+    TypeOrmModule,
+    ValidateCouponUseCase,
+    CouponRedemptionService,
+    PromotionalPriceService,
+  ],
 })
 export class PromotionsModule {}

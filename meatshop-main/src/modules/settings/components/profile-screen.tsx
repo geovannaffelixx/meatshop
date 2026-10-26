@@ -9,6 +9,7 @@ import { DataSkeleton } from "@/shared/components/data-skeleton";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PageHeader } from "@/shared/components/page-header";
 import { UnitImages } from "./unit-images";
+import { UnitStatusToggle } from "./unit-status-toggle";
 import { AddressPinPicker, type AddressPin } from '@/shared/components/maps/address-pin-picker';
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
 import { Spinner } from "@/shared/components/ui/spinner";
@@ -41,6 +42,7 @@ type UnitForm = {
   delivery_radius_km?: number;
   scheduling_slot_minutes?: number | null;
   scheduling_capacity?: number | null;
+  is_active?: boolean;
 };
 type Day = {
   weekday: string;
@@ -79,7 +81,7 @@ const emptyUnit: UnitForm = {
 };
 
 function UnitSettings() {
-  const { unitId, refresh } = usePanelAccess();
+  const { unitId, refresh, selectedMembership } = usePanelAccess();
   const cachedUnit = unitId ? peekApiData<UnitForm & { latitude?: number; longitude?: number; coordinate_source?: string }>(`/units/${unitId}/settings`) : undefined;
   const cachedHours = unitId ? peekApiData<Day[]>(`/units/${unitId}/business-hours`) : undefined;
   const cachedPoint = cachedUnit?.latitude != null && cachedUnit?.longitude != null ? { latitude: Number(cachedUnit.latitude), longitude: Number(cachedUnit.longitude) } : null;
@@ -263,7 +265,9 @@ function UnitSettings() {
   return (
     <div className="page-surface">
     <div className="page-container max-w-6xl">
-      <PageHeader eyebrow="Configurações" title="Unidade" description="Gerencie a apresentação do açougue, o endereço e a operação de entrega." />
+      <PageHeader eyebrow="Configurações" title="Unidade" description="Gerencie a apresentação do açougue, o endereço e a operação de entrega."
+        actions={unitId ? <UnitStatusToggle unitId={unitId} isActive={unit.is_active ?? true} canManage={selectedMembership?.role === "OWNER"}
+          onChanged={(isActive) => { setUnit((current) => ({ ...current, is_active: isActive })); void refresh(); }} /> : undefined} />
       {unitId && <UnitImages unitId={unitId} logo={unit.image_url} cover={unit.cover_url} gallery={unit.gallery_urls ?? []}
         onSaved={async () => {
           const updated = await apiGet(`/units/${unitId}/settings`);

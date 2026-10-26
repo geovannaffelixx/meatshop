@@ -6,6 +6,7 @@ import { DataSkeleton } from "@/shared/components/data-skeleton";
 import { useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Download, Eye, History, Search } from "lucide-react";
 import { API_URL, apiGet } from "@/shared/lib/api";
+import { saveBlob } from "@/shared/lib/download";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
 import type { AuditLog, AuditResult, AuditSummary } from "./types";
 import {
@@ -47,8 +48,7 @@ function buildQuery(filters: Record<string, string>, page: number): string {
 async function downloadCsv(query: string) {
   const response = await fetch(`${API_URL}/audit-logs/export?${query}`, { credentials: "include" });
   if (!response.ok) return;
-  const url = URL.createObjectURL(await response.blob());
-  const anchor = document.createElement("a"); anchor.href = url; anchor.download = "auditoria-meatshop.csv"; anchor.click(); URL.revokeObjectURL(url);
+  saveBlob(await response.blob(), "auditoria-meatshop.csv");
 }
 function Metric({ icon: Icon, label, value, tone = "text-slate-700" }: { icon: typeof History; label: string; value: number; tone?: string }) { return <div className="rounded-xl border bg-white p-4 shadow-sm"><div className={`flex items-center gap-2 ${tone}`}><Icon className="size-5" /><span className="text-sm font-medium">{label}</span></div><strong className="mt-2 block text-2xl">{value.toLocaleString("pt-BR")}</strong></div>; }
 function Filters({ filters, onChange }: { filters: Record<string, string>; onChange: (value: typeof filters) => void }) { return <div className="grid gap-3 rounded-xl border bg-white p-4 md:grid-cols-[1fr_12rem_10rem_10rem]"><label className="relative"><Search className="absolute left-3 top-2.5 size-4 text-slate-400" /><input aria-label="Buscar" placeholder="Ação, recurso, usuário ou unidade" value={filters.search} onChange={(e) => onChange({ ...filters, search: e.target.value })} className="w-full rounded-md border py-2 pl-9 pr-3" /></label><select aria-label="Resultado" value={filters.outcome} onChange={(e) => onChange({ ...filters, outcome: e.target.value })} className="rounded-md border px-3 py-2"><option value="">Todos os resultados</option><option value="SUCCESS">Sucesso</option><option value="FAILURE">Falha</option></select><input aria-label="Data inicial" type="date" value={filters.date_from} onChange={(e) => onChange({ ...filters, date_from: e.target.value })} className="rounded-md border px-3 py-2" /><input aria-label="Data final" type="date" value={filters.date_to} onChange={(e) => onChange({ ...filters, date_to: e.target.value })} className="rounded-md border px-3 py-2" /></div>; }

@@ -9,14 +9,22 @@ import {
   ParseUUIDPipe,
   Post,
   Req,
+  Res,
   UseFilters,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import type { Request } from 'express';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiProduces,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import type { Request, Response } from 'express';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { User } from '../users/entities/user.entity';
 import { AiService } from './ai.service';
 import { AiRateLimitFilter } from './ai-rate-limit.filter';
+import { createSseSink } from './ai-sse.sink';
 import { AiChatRequestDto } from './dtos/ai-chat-request.dto';
 import { GenerateRecipeDraftDto } from './dtos/generate-recipe-draft.dto';
 import { RecipeDraftFeedbackDto } from './dtos/recipe-draft-feedback.dto';
@@ -41,6 +49,26 @@ export class AiController {
     @Req() request: RequestWithCorrelation,
   ) {
     return this.ai.chat(dto, user, request.correlationId);
+  }
+
+  @Post('chat/stream')
+  @ApiOperation({
+    summary: 'Envia uma pergunta autenticada e recebe a resposta em pedaços via SSE',
+  })
+  @ApiProduces('text/event-stream')
+  @ApiResponse({
+    status: 200,
+    description:
+      'Eventos data: {"delta"} (n vezes), {"error","code"} em falha e {"done":true,"conversation_id"} ao final',
+  })
+  @ApiResponse({ status: 429, description: 'Limite de perguntas excedido' })
+  chatStream(
+    @Body() dto: AiChatRequestDto,
+    @CurrentUser() user: User,
+    @Req() request: RequestWithCorrelation,
+    @Res() response: Response,
+  ): Promise<void> {
+    return this.ai.chatStream(dto, user, createSseSink(response), request.correlationId);
   }
 
   @Delete('conversations/:id')

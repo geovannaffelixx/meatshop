@@ -1,7 +1,7 @@
 name: meatshop
 
-# Valores exclusivamente locais para o ambiente Docker de demonstração.
-# Em produção, substitua credenciais e segredos por um gerenciador de secrets.
+# Segredos lidos do .env local (git-ignored), gerado por: node scripts/setup-local-env.mjs
+# Em produção, injete credenciais e segredos por um gerenciador de secrets.
 x-backend-environment: &backend-environment
   NODE_ENV: development
   PORT: "3001"
@@ -12,16 +12,19 @@ x-backend-environment: &backend-environment
   DB_HOST: db
   DB_PORT: "5432"
   DB_USERNAME: meatshop_user
-  DB_PASSWORD: meatshop_pass
+  DB_PASSWORD: ${POSTGRES_PASSWORD:?Execute node scripts/setup-local-env.mjs para gerar o .env}
   DB_DATABASE: meatshop
   DB_SYNCHRONIZE: "false"
   DB_SSL: "false"
 
-  JWT_SECRET: local-demo-access-secret-meatshop-2026-do-not-use-in-production
-  JWT_REFRESH_SECRET: local-demo-refresh-secret-meatshop-2026-do-not-use-in-production
+  JWT_SECRET: ${JWT_SECRET:?Execute node scripts/setup-local-env.mjs para gerar o .env}
+  JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Execute node scripts/setup-local-env.mjs para gerar o .env}
   JWT_EXPIRES_IN: 15m
-  DELIVERY_CODE_SECRET: local-demo-delivery-code-secret-meatshop-2026
-  DELIVERY_CODE_ENCRYPTION_KEY: local-demo-delivery-code-encryption-meatshop-2026
+  DELIVERY_CODE_SECRET: ${DELIVERY_CODE_SECRET:?Execute node scripts/setup-local-env.mjs para gerar o .env}
+  DELIVERY_CODE_ENCRYPTION_KEY: ${DELIVERY_CODE_ENCRYPTION_KEY:?Execute node scripts/setup-local-env.mjs para gerar o .env}
+  DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:?Execute node scripts/setup-local-env.mjs para gerar o .env}
+  DATA_HASH_KEY: ${DATA_HASH_KEY:?Execute node scripts/setup-local-env.mjs para gerar o .env}
+  ORDER_CONFIRMATION_TIMEOUT_MINUTES: ${ORDER_CONFIRMATION_TIMEOUT_MINUTES:-30}
   PICKUP_CODE_TTL_MINUTES: "240"
   DELIVERY_CODE_TTL_HOURS: "72"
   DEFAULT_DELIVERY_FEE: "8.50"
@@ -40,7 +43,7 @@ x-backend-environment: &backend-environment
 
   SEED_ENABLED: "false"
   SEED_ADMIN_EMAIL: admin@meatshop.local
-  SEED_PASSWORD: MeatshopDev123!
+  SEED_PASSWORD: ${SEED_PASSWORD:-}
 
   LOG_LEVEL: info
   LOG_DIR: logs
@@ -67,6 +70,7 @@ x-backend-environment: &backend-environment
   FIREBASE_PROJECT_ID: meatshop-3c78f
   FIREBASE_APP_CHECK_ENFORCED: "false"
   MONITORING_WEBHOOK_TOKEN: ${MONITORING_WEBHOOK_TOKEN:-}
+  METRICS_TOKEN: ${METRICS_TOKEN:?Execute node scripts/setup-local-env.mjs para gerar o .env}
   BACKEND_REPLICAS: ${BACKEND_REPLICAS:-1}
   AUTH_ATTEMPTS_RETENTION_DAYS: ${AUTH_ATTEMPTS_RETENTION_DAYS:-30}
   SOCKET_IO_SHARED: ${SOCKET_IO_SHARED:-false}
@@ -77,7 +81,7 @@ x-backend-environment: &backend-environment
   AI_RATE_LIMIT_WINDOW_MS: "60000"
   AI_RATE_LIMIT_MAX: "20"
   AI_CHATBOT_URL: http://chatbot:8000
-  AI_CHATBOT_SERVICE_KEY: local-demo-ai-service-secret-meatshop-2026
+  AI_CHATBOT_SERVICE_KEY: ${AI_CHATBOT_SERVICE_KEY:?Execute node scripts/setup-local-env.mjs para gerar o .env}
   AI_CHATBOT_TIMEOUT_MS: "45000"
   AI_CONVERSATION_RETENTION_DAYS: "7"
   AI_HISTORY_MAX_MESSAGES: "6"
@@ -92,7 +96,7 @@ services:
     environment:
       POSTGRES_DB: meatshop
       POSTGRES_USER: meatshop_user
-      POSTGRES_PASSWORD: meatshop_pass
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Execute node scripts/setup-local-env.mjs para gerar o .env}
       TZ: America/Sao_Paulo
     ports:
       - "5433:5432"
@@ -129,7 +133,7 @@ services:
       ENVIRONMENT: development
       PORT: "8000"
       GROQ_API_KEY: ${GROQ_API_KEY:-}
-      SERVICE_API_KEY: local-demo-ai-service-secret-meatshop-2026
+      SERVICE_API_KEY: ${AI_CHATBOT_SERVICE_KEY:?Execute node scripts/setup-local-env.mjs para gerar o .env}
       ALLOWED_ORIGINS: ""
       RATE_LIMIT_REQUESTS: "20"
       RATE_LIMIT_WINDOW_SECONDS: "60"
@@ -230,7 +234,8 @@ services:
     command: ["--config.file=/etc/alertmanager/alertmanager.yml"]
     volumes:
       - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
-      - ./secrets/monitoring-token.txt:/run/secrets/monitoring_token:ro
+    secrets:
+      - monitoring_token
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
@@ -242,6 +247,8 @@ services:
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./prometheus-alerts.yml:/etc/prometheus/prometheus-alerts.yml:ro
+    secrets:
+      - metrics_token
     ports:
       - "9090:9090"
     depends_on:
@@ -257,7 +264,7 @@ services:
     profiles: ["observability"]
     environment:
       GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Execute node scripts/setup-local-env.mjs para gerar o .env}
       TZ: America/Sao_Paulo
     ports:
       - "3002:3000"
@@ -269,6 +276,12 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+
+secrets:
+  metrics_token:
+    environment: METRICS_TOKEN
+  monitoring_token:
+    environment: MONITORING_WEBHOOK_TOKEN
 
 volumes:
   pgdata:

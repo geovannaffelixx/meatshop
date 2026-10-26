@@ -1,10 +1,4 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as crypto from 'crypto';
@@ -14,6 +8,7 @@ import { verifyEmailTemplate } from '../../email/templates/verify-email.template
 import { UpdateProfileDto } from '../dtos/update-profile.dto';
 import { UserResponseDto } from '../dtos/user-response.dto';
 import { User } from '../entities/user.entity';
+import { UserIdentityService } from '../services/user-identity.service';
 
 @Injectable()
 export class UpdateProfileUseCase {
@@ -24,6 +19,7 @@ export class UpdateProfileUseCase {
     private readonly userRepository: Repository<User>,
     private readonly emailService: EmailService,
     private readonly configService: ConfigService,
+    private readonly identity: UserIdentityService,
   ) {}
 
   async execute(userId: number, dto: UpdateProfileDto): Promise<UserResponseDto> {
@@ -35,31 +31,8 @@ export class UpdateProfileUseCase {
     if (dto.name) {
       user.name = dto.name.trim();
     }
-
-    if (dto.email) {
-      const normalizedEmail = dto.email.toLowerCase().trim();
-      if (normalizedEmail !== user.email) {
-        if (user.firebase_uid) {
-          throw new BadRequestException(
-            'Confirme a alteração de e-mail pelo provedor de identidade.',
-          );
-        }
-        await this.ensureEmailIsUnique(normalizedEmail);
-        user.email = normalizedEmail;
-        user.email_verified = false;
-        user.email_verification_token = crypto.randomBytes(32).toString('hex');
-        await this.sendVerificationEmail(user);
-      }
-    }
-
-    if (dto.cpf && dto.cpf !== user.cpf) {
-      await this.ensureCpfIsUnique(dto.cpf);
-      user.cpf = dto.cpf;
-    }
-    if (dto.phone && dto.phone !== user.phone) {
-      await this.ensurePhoneIsUnique(dto.phone);
-      user.phone = dto.phone;
-    }
+    await this.applyEmail(user, dto.email);
+    await this.applyIdentity(user, dto);
     if (dto.app_profile) {
       user.app_profile = dto.app_profile;
     }
@@ -73,33 +46,27 @@ export class UpdateProfileUseCase {
     return UserResponseDto.fromEntity(user);
   }
 
-  private async ensureCpfIsUnique(cpf: string): Promise<void> {
-    const existing = await this.userRepository.findOne({ where: { cpf } });
-    if (existing) {
-      throw new ConflictException({
-        code: 'CPF_ALREADY_EXISTS',
-        message: 'CPF already in use.',
-      });
+  private async applyEmail(user: User, email?: string): Promise<void> {
+    const normalizedEmail = email?.toLowerCase().trim();
+    if (!normalizedEmail || normalizedEmail === user.email) return;
+    if (user.firebase_uid) {
+      throw new BadRequestException('Confirme a alteração de e-mail pelo provedor de identidade.');
     }
+    await this.identity.assertEmailAvailable(normalizedEmail);
+    user.email = normalizedEmail;
+    user.email_verified = false;
+    user.email_verification_token = crypto.randomBytes(32).toString('hex');
+    await this.sendVerificationEmail(user);
   }
 
-  private async ensurePhoneIsUnique(phone: string): Promise<void> {
-    const existing = await this.userRepository.findOne({ where: { phone } });
-    if (existing) {
-      throw new ConflictException({
-        code: 'PHONE_ALREADY_EXISTS',
-        message: 'Phone already in use.',
-      });
+  private async applyIdentity(user: User, dto: UpdateProfileDto): Promise<void> {
+    if (dto.cpf && dto.cpf !== user.cpf) {
+      await this.identity.assertCpfAvailable(dto.cpf, user.id);
+      user.cpf = dto.cpf;
     }
-  }
-
-  private async ensureEmailIsUnique(email: string): Promise<void> {
-    const existing = await this.userRepository.findOne({ where: { email } });
-    if (existing) {
-      throw new ConflictException({
-        code: 'EMAIL_ALREADY_EXISTS',
-        message: 'An account with this email already exists.',
-      });
+    if (dto.phone && dto.phone !== user.phone) {
+      await this.identity.assertPhoneAvailable(dto.phone, user.id);
+      user.phone = dto.phone;
     }
   }
 

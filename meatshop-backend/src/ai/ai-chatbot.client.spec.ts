@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import { AiChatbotClient } from './ai-chatbot.client';
@@ -64,5 +65,49 @@ describe('AiChatbotClient', () => {
     await expect(client.chat('picanha', [], 42)).rejects.toMatchObject({
       retryAfterSeconds: 17,
     } satisfies Partial<AiRateLimitException>);
+  });
+
+  function createClient() {
+    return new AiChatbotClient(
+      new ConfigService({
+        AI_CHATBOT_URL: 'https://chatbot.internal',
+        AI_CHATBOT_SERVICE_KEY: 'server-secret',
+      }),
+    );
+  }
+
+  it('proxies the chatbot stream with the service key and parses its events', async () => {
+    const fetchMock = jest.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('data: {"delta": "ok"}\n\ndata: [DONE]\n\n', {
+        status: 200,
+        headers: { 'content-type': 'text/event-stream' },
+      }),
+    );
+    const abort = new AbortController();
+
+    const events = await createClient().chatStream('picanha', [], 42, abort.signal, 'request-1');
+    const received = [];
+    for await (const event of events) received.push(event);
+
+    expect(received).toEqual([{ type: 'delta', text: 'ok' }, { type: 'done' }]);
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://chatbot.internal/chat/stream',
+      expect.objectContaining({
+        headers: expect.objectContaining({ 'x-service-key': 'server-secret' }),
+        signal: expect.any(AbortSignal),
+      }),
+    );
+  });
+
+  it('maps stream rejections before the first event to HTTP errors', async () => {
+    jest.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ code: 'AI_UNSAFE_INPUT', detail: 'bloqueado' }), {
+        status: 400,
+      }),
+    );
+
+    await expect(
+      createClient().chatStream('picanha', [], 42, new AbortController().signal),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 });

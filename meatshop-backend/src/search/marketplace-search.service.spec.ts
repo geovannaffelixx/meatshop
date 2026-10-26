@@ -105,6 +105,30 @@ describe('MarketplaceSearchService', () => {
     expect(categoryQuery.andWhere).toHaveBeenCalledWith('1 = 0', {});
   });
 
+  it('excludes inactive units from units, categories, products and brands', async () => {
+    const unitQuery = queryBuilder('entities');
+    const categoryQuery = queryBuilder('entities');
+    const productQuery = queryBuilder('entities');
+    const service = new MarketplaceSearchService(
+      { createQueryBuilder: () => unitQuery } as never,
+      { createQueryBuilder: () => categoryQuery } as never,
+      { createQueryBuilder: () => productQuery } as never,
+    );
+
+    await service.execute({ q: 'carne', page: 1, limit: 20 });
+    await service.listBrands({});
+
+    const activeUnit = ['unit.is_active = :unitActive', { unitActive: true }];
+    expect(unitQuery.andWhere).toHaveBeenCalledWith(...activeUnit);
+    expect(categoryQuery.innerJoin).toHaveBeenCalledWith('category.unit', 'unit', ...activeUnit);
+    expect(productQuery.innerJoinAndSelect).toHaveBeenCalledWith(
+      'product.unit',
+      'unit',
+      ...activeUnit,
+    );
+    expect(productQuery.innerJoin).toHaveBeenCalledWith('product.unit', 'unit', ...activeUnit);
+  });
+
   it('rejects an unfiltered request', async () => {
     const service = new MarketplaceSearchService(
       { createQueryBuilder: jest.fn() } as never,

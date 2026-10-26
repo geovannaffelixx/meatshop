@@ -11,6 +11,7 @@ import { getRoutePermissions } from '@/shared/auth/route-access';
 import { usePathname, useRouter } from "next/navigation";
 
 const UNIT_STORAGE_KEY = "meatshop:selected-unit-id";
+const LEGACY_USER_STORAGE_KEY = "currentUser";
 type RefreshOptions = {
   signal?: AbortSignal;
 };
@@ -64,7 +65,6 @@ export function PanelAccessProvider({ children }: { children: React.ReactNode })
       setUnitIdState(selected);
       setApiCacheScope(`${data.user.id}:${selected ?? 'none'}`);
       if (selected) localStorage.setItem(UNIT_STORAGE_KEY, String(selected));
-      localStorage.setItem("currentUser", JSON.stringify(data.user));
     } catch (error) {
       if (options.signal?.aborted) return;
 
@@ -72,7 +72,6 @@ export function PanelAccessProvider({ children }: { children: React.ReactNode })
       resetApiCache();
       setPanel(null);
       setUnitIdState(null);
-      localStorage.removeItem("currentUser");
       if (error instanceof Error && error.name === "AbortError") return;
     } finally {
       if (!options.signal?.aborted) {
@@ -81,6 +80,10 @@ export function PanelAccessProvider({ children }: { children: React.ReactNode })
         setLoading(false);
       }
     }
+  }, []);
+
+  useEffect(() => {
+    localStorage.removeItem(LEGACY_USER_STORAGE_KEY);
   }, []);
 
   useEffect(() => {
@@ -99,7 +102,6 @@ export function PanelAccessProvider({ children }: { children: React.ReactNode })
       setUnitIdState(null);
       setInitialized(true);
       setLoading(false);
-      localStorage.removeItem("currentUser");
     }
     window.addEventListener("auth:session-expired", handleSessionExpired);
     return () => window.removeEventListener("auth:session-expired", handleSessionExpired);

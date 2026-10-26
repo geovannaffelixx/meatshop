@@ -90,7 +90,7 @@ export function SupportDetailScreen({ ticketId }: { ticketId: number }) {
         Voltar aos chamados
       </button>
       <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
-        <main className="overflow-hidden rounded-xl border bg-white shadow-sm">
+        <section aria-label="Conversa do chamado" className="overflow-hidden rounded-xl border bg-white shadow-sm">
           <header className="border-b p-5">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl font-bold">
@@ -148,7 +148,7 @@ export function SupportDetailScreen({ ticketId }: { ticketId: number }) {
                       </div>
                     )}
                     <time
-                      className={`mt-2 block text-[11px] ${mine ? "text-red-100" : "text-slate-400"}`}
+                      className={`mt-2 block text-xs ${mine ? "text-red-100" : "text-slate-500"}`}
                     >
                       {formatDateTime(item.created_at)}
                     </time>
@@ -230,7 +230,7 @@ export function SupportDetailScreen({ ticketId }: { ticketId: number }) {
               </div>
             </form>
           )}
-        </main>
+        </section>
         <aside className="h-fit space-y-4 rounded-xl border bg-white p-5">
           <h2 className="font-semibold">Detalhes</h2>
           <dl className="space-y-3 text-sm">
@@ -246,6 +246,12 @@ export function SupportDetailScreen({ ticketId }: { ticketId: number }) {
               <div>
                 <dt className="text-slate-500">Unidade</dt>
                 <dd className="font-medium">{ticket.unit.name}</dd>
+              </div>
+            )}
+            {ticket.contact && (
+              <div>
+                <dt className="text-slate-500">Contato informado</dt>
+                <dd className="break-words font-medium">{ticket.contact}</dd>
               </div>
             )}
             {ticket.order_id && (

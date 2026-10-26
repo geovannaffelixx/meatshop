@@ -67,6 +67,9 @@ export class Unit {
   @Column({ type: 'jsonb', default: () => "'[]'::jsonb" })
   gallery_urls: string[];
 
+  @Column({ type: 'boolean', default: true })
+  is_active: boolean;
+
   @Column()
   admin_id: number;
 

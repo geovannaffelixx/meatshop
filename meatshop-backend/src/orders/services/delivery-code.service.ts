@@ -6,17 +6,10 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-  createCipheriv,
-  createDecipheriv,
-  createHash,
-  createHmac,
-  randomBytes,
-  randomInt,
-  timingSafeEqual,
-} from 'crypto';
+import { createHmac, randomInt, timingSafeEqual } from 'crypto';
 import { Buffer } from 'buffer';
 import { Repository } from 'typeorm';
+import { AesGcmCipher } from '../../common/security/aes-gcm-cipher';
 import { Order } from '../entities/order.entity';
 
 export type DeliveryCodePurpose = 'PICKUP' | 'DELIVERY';
@@ -171,33 +164,19 @@ export class DeliveryCodeService {
   }
 
   private encrypt(code: string): string {
-    const iv = randomBytes(12);
-    const cipher = createCipheriv('aes-256-gcm', this.encryptionKey(), iv);
-    const encrypted = Buffer.concat([cipher.update(code, 'utf8'), cipher.final()]);
-    return [iv, cipher.getAuthTag(), encrypted].map((part) => part.toString('base64url')).join('.');
+    return this.cipher().encrypt(code);
   }
 
   private decrypt(value: string): string {
-    const [ivValue, tagValue, encryptedValue] = value.split('.');
-    if (!ivValue || !tagValue || !encryptedValue) throw new Error('Invalid ciphertext');
-    const decipher = createDecipheriv(
-      'aes-256-gcm',
-      this.encryptionKey(),
-      Buffer.from(ivValue, 'base64url'),
-    );
-    decipher.setAuthTag(Buffer.from(tagValue, 'base64url'));
-    return Buffer.concat([
-      decipher.update(Buffer.from(encryptedValue, 'base64url')),
-      decipher.final(),
-    ]).toString('utf8');
+    return this.cipher().decrypt(value);
   }
 
-  private encryptionKey(): Buffer {
+  private cipher(): AesGcmCipher {
     const secret =
       this.configService.get<string>('DELIVERY_CODE_ENCRYPTION_KEY') ||
       this.configService.get<string>('DELIVERY_CODE_SECRET') ||
       this.configService.getOrThrow<string>('JWT_REFRESH_SECRET');
-    return createHash('sha256').update(secret).digest();
+    return AesGcmCipher.fromSecret(secret);
   }
 
   private configNumber(name: string, fallback: number): number {

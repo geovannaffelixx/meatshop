@@ -34,26 +34,25 @@ describe('Header profile drawer', () => {
     await act(async () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     expect(document.querySelector('[role="dialog"]')).toBeNull();
   });
-  it('clears private local state and navigates only after successful logout', async () => {
-    localStorage.setItem('currentUser', 'private');
+  it('clears the selected unit and navigates only after successful logout', async () => {
     localStorage.setItem('meatshop:selected-unit-id', '6');
     (apiPost as jest.Mock).mockResolvedValue({});
     const button = Array.from(document.querySelectorAll('button')).find(button => button.textContent === 'Sair')!;
     await act(async () => button.click());
     expect(apiPost).toHaveBeenCalledWith('/auth/logout', {});
     expect(resetApiCache).toHaveBeenCalled();
-    expect(localStorage.getItem('currentUser')).toBeNull();
     expect(localStorage.getItem('meatshop:selected-unit-id')).toBeNull();
+    expect(localStorage.getItem('currentUser')).toBeNull();
     expect(replace).toHaveBeenCalledWith('/login');
   });
   it('keeps the session and permits retry when logout fails', async () => {
-    localStorage.setItem('currentUser', 'private');
+    localStorage.setItem('meatshop:selected-unit-id', '6');
     (apiPost as jest.Mock).mockRejectedValue(new Error('offline'));
     const button = Array.from(document.querySelectorAll('button')).find(button => button.textContent === 'Sair')!;
     await act(async () => button.click());
     expect(toast.error).toHaveBeenCalled();
     expect(replace).not.toHaveBeenCalled();
-    expect(localStorage.getItem('currentUser')).toBe('private');
+    expect(localStorage.getItem('meatshop:selected-unit-id')).toBe('6');
     expect(button.disabled).toBe(false);
   });
 });

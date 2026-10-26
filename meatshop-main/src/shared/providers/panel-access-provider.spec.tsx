@@ -43,6 +43,13 @@ describe('Unit switching', () => {
     expect(container.querySelector('[role="dialog"]')).toBeNull();
     expect(container.querySelector('[data-testid="unit"]')?.textContent).toBe('7');
   });
+  it('keeps the user only in memory and purges the legacy persisted profile', async () => {
+    localStorage.setItem('currentUser', JSON.stringify({ cpf: '12345678900' }));
+    await act(async () => root.render(<PanelAccessProvider><Probe /></PanelAccessProvider>));
+    expect(container.querySelector('[data-testid="unit"]')?.textContent).toBe('6');
+    expect(localStorage.getItem('currentUser')).toBeNull();
+    expect(Object.keys(localStorage)).toEqual(['meatshop:selected-unit-id']);
+  });
   it('ignores the current unit and units outside the membership list', async () => {
     await act(async () => root.render(<PanelAccessProvider><Probe /></PanelAccessProvider>));
     await act(async () => (container.querySelectorAll('button')[1] as HTMLButtonElement).click());

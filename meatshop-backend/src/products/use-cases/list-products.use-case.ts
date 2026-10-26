@@ -29,19 +29,8 @@ export class ListProductsUseCase {
 
   async execute(filters: IListProductsFilters) {
     if (filters.available) return this.listAvailable(filters);
-    const where: Record<string, unknown> = {};
-    if (filters.search?.trim()) where.name = ILike(searchPattern(filters.search));
-    if (filters.category?.trim()) where.category = { name: ILike(searchPattern(filters.category)) };
-    if (filters.id?.trim())
-      where.id = Raw((alias) => `CAST(${alias} AS TEXT) LIKE :productId`, {
-        productId: searchPattern(filters.id),
-      });
-    if (filters.unitId) where.unit_id = filters.unitId;
-    if (filters.categoryId) where.category_id = filters.categoryId;
-    if (filters.active !== undefined) where.active = filters.active;
-
     const [products, total] = await this.productRepository.findAndCount({
-      where,
+      where: this.managedWhere(filters),
       relations: ['category'],
       order: { id: 'ASC' },
       skip: (filters.page - 1) * filters.limit,
@@ -55,23 +44,33 @@ export class ListProductsUseCase {
           })
         : [];
     const stockByProductId = new Map(stocks.map((s) => [s.product_id, s]));
-
-    return {
-      data: products.map((product) =>
+    return this.page(
+      products.map((product) =>
         ProductListItemDto.fromEntity(product, stockByProductId.get(product.id) ?? null),
       ),
-      meta: {
-        page: filters.page,
-        limit: filters.limit,
-        total,
-        totalPages: Math.max(Math.ceil(total / filters.limit), 1),
-      },
-    };
+      total,
+      filters,
+    );
+  }
+
+  private managedWhere(filters: IListProductsFilters): Record<string, unknown> {
+    const where: Record<string, unknown> = {};
+    if (filters.search?.trim()) where.name = ILike(searchPattern(filters.search));
+    if (filters.category?.trim()) where.category = { name: ILike(searchPattern(filters.category)) };
+    if (filters.id?.trim())
+      where.id = Raw((alias) => `CAST(${alias} AS TEXT) LIKE :productId`, {
+        productId: searchPattern(filters.id),
+      });
+    if (filters.unitId) where.unit_id = filters.unitId;
+    if (filters.categoryId) where.category_id = filters.categoryId;
+    if (filters.active !== undefined) where.active = filters.active;
+    return where;
   }
 
   private async listAvailable(filters: IListProductsFilters) {
     const query = this.productRepository
       .createQueryBuilder('product')
+      .innerJoin('product.unit', 'unit', 'unit.is_active = :unitActive', { unitActive: true })
       .innerJoinAndSelect('product.category', 'category', 'category.active = :categoryActive', {
         categoryActive: true,
       })
@@ -91,16 +90,28 @@ export class ListProductsUseCase {
       .skip((filters.page - 1) * filters.limit)
       .take(filters.limit)
       .getRawAndEntities();
-    const quantities = new Map(raw.map((row) => [Number(row.product_id), new Stock()]));
+    const stocks = this.marketStocks(raw);
+    return this.page(
+      entities.map((product) => ProductListItemDto.fromEntity(product, stocks.get(product.id) ?? null)),
+      total,
+      filters,
+    );
+  }
+
+  private marketStocks(raw: Record<string, unknown>[]): Map<number, Stock> {
+    const stocks = new Map<number, Stock>();
     for (const row of raw) {
-      const stock = quantities.get(Number(row.product_id))!;
+      const stock = new Stock();
       stock.quantity = Number(row.market_stock_quantity);
       stock.min_quantity = Number(row.market_stock_min_quantity);
+      stocks.set(Number(row.product_id), stock);
     }
+    return stocks;
+  }
+
+  private page(data: ProductListItemDto[], total: number, filters: IListProductsFilters) {
     return {
-      data: entities.map((product) =>
-        ProductListItemDto.fromEntity(product, quantities.get(product.id) ?? null),
-      ),
+      data,
       meta: {
         page: filters.page,
         limit: filters.limit,
