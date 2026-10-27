@@ -1,5 +1,6 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import { createHash } from 'crypto';
 import type { NextFunction, Request, Response } from 'express';
 import { DataSource } from 'typeorm';
@@ -8,10 +9,14 @@ import { MetricsService } from '../../metrics/metrics.service';
 
 type RateLimitEntry = { count: number; reset_at: Date | string };
 
+const BEARER_PREFIX = 'Bearer ';
+const ACCESS_TOKEN_COOKIE = 'access_token';
+
 @Injectable()
 export class RateLimitMiddleware implements NestMiddleware {
   private readonly windowMs: number;
   private readonly limit: number;
+  private readonly jwt: JwtService | null;
   private nextCleanup = 0;
 
   constructor(
@@ -25,6 +30,8 @@ export class RateLimitMiddleware implements NestMiddleware {
     };
     this.windowMs = readPositiveInteger(environment, 'RATE_LIMIT_WINDOW_MS', 60_000);
     this.limit = readPositiveInteger(environment, 'RATE_LIMIT_MAX', 120);
+    const secret = config.get<string>('JWT_SECRET');
+    this.jwt = secret ? new JwtService({ secret, verifyOptions: { algorithms: ['HS256'] } }) : null;
   }
 
   async use(request: Request, response: Response, next: NextFunction): Promise<void> {
@@ -48,9 +55,33 @@ export class RateLimitMiddleware implements NestMiddleware {
     }
   }
 
-  private async consume(request: Request): Promise<RateLimitEntry> {
+  private rateLimitKey(request: Request): string {
+    const userId = this.authenticatedUserId(request);
+    if (userId !== null) return `user:${userId}`;
     const ip = request.ip || request.socket.remoteAddress || 'unknown';
-    const key = `http:${createHash('sha256').update(ip).digest('hex')}`;
+    return `http:${createHash('sha256').update(ip).digest('hex')}`;
+  }
+
+  private authenticatedUserId(request: Request): number | null {
+    const token = this.accessToken(request);
+    if (!token || !this.jwt) return null;
+    try {
+      const payload = this.jwt.verify<{ sub?: unknown }>(token);
+      return Number.isSafeInteger(payload.sub) ? (payload.sub as number) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private accessToken(request: Request): string | null {
+    const header = request.headers?.authorization;
+    if (header?.startsWith(BEARER_PREFIX)) return header.slice(BEARER_PREFIX.length).trim();
+    const cookies = request.cookies as Record<string, string> | undefined;
+    return cookies?.[ACCESS_TOKEN_COOKIE] ?? null;
+  }
+
+  private async consume(request: Request): Promise<RateLimitEntry> {
+    const key = this.rateLimitKey(request);
     const rows: RateLimitEntry[] = await this.db.query(
       `
       INSERT INTO rate_limit_counters AS counters (key, window_started_at, request_count)
