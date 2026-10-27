@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
   output: process.env.VERCEL ? undefined : "standalone",
   outputFileTracingRoot: process.cwd(),
   poweredByHeader: false,
+  skipTrailingSlashRedirect: true,
   images: {
     remotePatterns: [
       {
@@ -26,6 +27,14 @@ const nextConfig: NextConfig = {
         pathname: "/uploads/**",
       },
     ],
+  },
+  async rewrites() {
+    const target = process.env.API_PROXY_TARGET?.replace(/\/$/, "");
+    if (!target) return [];
+    return [
+      { source: "/api/socket.io/", destination: `${target}/socket.io/` },
+      { source: "/api/:path*", destination: `${target}/:path*` },
+    ];
   },
   async headers() {
     return [

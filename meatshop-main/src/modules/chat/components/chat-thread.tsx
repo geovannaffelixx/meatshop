@@ -10,7 +10,8 @@ import { io, type Socket } from 'socket.io-client';
 import { Button } from '@/shared/components/ui/button';
 import { Spinner } from '@/shared/components/ui/spinner';
 import { Textarea } from '@/shared/components/ui/textarea';
-import { API_URL, apiGet, apiPatch, apiPost } from '@/shared/lib/api';
+import { socketEndpoint } from '@/shared/config/api-url';
+import { apiGet, apiPatch, apiPost } from '@/shared/lib/api';
 import { toast } from '@/shared/lib/toast';
 import type { ChatMessage, ChatParticipantType, ChatReadReceipt } from '../types';
 
@@ -78,8 +79,9 @@ export function ChatThread({ orderId, participantType, participantLabel, current
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
-    const socket = io(`${API_URL}/chat`, {
-      transports: ['websocket', 'polling'],
+    const { url, ...endpoint } = socketEndpoint('/chat');
+    const socket = io(url, {
+      ...endpoint,
       withCredentials: true,
       reconnection: true,
     });

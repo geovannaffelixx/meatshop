@@ -6,7 +6,7 @@
 - API e WebSocket: `https://api.seudominio.com.br` (Render)
 - Chatbot interno: serviço Render separado, sem acesso direto pelo mobile ou painel
 
-Os dois subdomínios sob o mesmo domínio permitem cookies seguros com `SameSite=Lax`. Enquanto forem usados os domínios gratuitos `vercel.app` e `onrender.com`, use `SameSite=None`.
+Os dois subdomínios sob o mesmo domínio permitem cookies seguros com `SameSite=Lax`. Enquanto forem usados os domínios gratuitos `vercel.app` e `onrender.com`, que o navegador trata como sites distintos, o painel acessa a API pelo proxy `/api` da própria Vercel: assim os cookies de sessão são do mesmo site e não são bloqueados como cookies de terceiros (Safari, aba anônima do Chrome, Firefox e Brave).
 
 ## Render (backend e PostgreSQL)
 
@@ -20,11 +20,9 @@ O Blueprint define um único ambiente, todo no plano gratuito:
 
 | Serviço | Branch | Banco | `COOKIE_SAMESITE` |
 |---|---|---|---|
-| `meatshop-api` (`plan: free`) | `main` | `meatshop-db` (`plan: free`) | `none` (domínios `vercel.app`/`onrender.com`) |
+| `meatshop-api` (`plan: free`) | `main` | `meatshop-db` (`plan: free`) | `lax` (painel acessa a API pelo proxy `/api`) |
 
 Limites do plano gratuito do Render: um único PostgreSQL gratuito por workspace, banco gratuito com prazo de expiração e serviço web que hiberna após um período sem acesso (a primeira requisição seguinte é lenta). Para mudar de plano, troque o campo `plan:` do serviço e/ou do banco no `render.yaml`. Um segundo ambiente (homologação na `develop`) exige um segundo banco, portanto um plano pago: duplique o bloco do serviço e do banco com outros nomes e outra branch.
-
-Ao migrar para domínio próprio (`app.` e `api.` no mesmo domínio), troque `COOKIE_SAMESITE` para `lax`.
 
 Configurações não sensíveis ficam no grupo `meatshop-api` (inclui `COOKIE_SECURE=true` e `ORDER_CONFIRMATION_TIMEOUT_MINUTES=30`). Informe no dashboard:
 
@@ -60,8 +58,8 @@ O backend usa a API HTTPS do Resend em produção e preserva SMTP como alternati
 
 1. Importe o mesmo repositório e selecione `meatshop-main` como Root Directory.
 2. Defina `develop` como Production Branch.
-3. Configure `NEXT_PUBLIC_API_URL=https://api.seudominio.com.br`.
-4. Cadastre `app.seudominio.com.br` como custom domain.
+3. Com os domínios gratuitos, configure `API_PROXY_TARGET` com a URL do serviço `meatshop-api` no Render e `NEXT_PUBLIC_API_URL` com a URL do próprio painel seguida de `/api` (ex.: `https://meatshop-painel-web.vercel.app/api`). O proxy da Vercel não repassa WebSocket, então chat, notificações e rastreamento em tempo real usam long-polling do Socket.IO.
+4. Com domínio próprio, cadastre `app.seudominio.com.br` como custom domain, deixe `API_PROXY_TARGET` vazio e configure `NEXT_PUBLIC_API_URL=https://api.seudominio.com.br`.
 
 ## Mercado Pago
 

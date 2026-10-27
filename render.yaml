@@ -60,7 +60,7 @@ services:
       - key: DB_DATABASE
         fromDatabase: { name: meatshop-db, property: database }
       - key: COOKIE_SAMESITE
-        value: none
+        value: lax
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
