@@ -9,6 +9,7 @@ import { DataSkeleton } from "@/shared/components/data-skeleton";
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import { ArrowLeft, Check, Plus, Sparkles, X } from "lucide-react"
 import { Spinner } from "@/shared/components/ui/spinner"
 import { apiGet, apiPatch, apiPost, apiUpload, resolveAssetUrl } from "@/shared/lib/api"
@@ -395,8 +396,14 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
           <div className="flex items-center gap-4">
             <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-md bg-gray-200">
               {coverSrc ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={coverSrc} alt="Capa da receita" className="h-full w-full object-cover" />
+                <Image
+                  src={coverSrc}
+                  alt="Capa da receita"
+                  width={96}
+                  height={96}
+                  unoptimized
+                  className="h-full w-full object-cover"
+                />
               ) : (
                 <span className="text-xs text-gray-500">Sem foto</span>
               )}

@@ -6,6 +6,7 @@ import { DataSkeleton } from "@/shared/components/data-skeleton";
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import { ArrowLeft, ImagePlus, X } from "lucide-react"
 import { apiPatch, apiPost, apiUpload } from "@/shared/lib/api"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
@@ -300,8 +301,14 @@ export function NewProductScreen() {
             <div className="flex flex-wrap gap-3">
               {stagedPreviews.map((src, index) => (
                 <div key={src} className="relative h-20 w-20 overflow-hidden rounded-md border border-gray-300">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={src} alt={`Foto ${index + 1}`} className="h-full w-full object-cover" />
+                  <Image
+                    src={src}
+                    alt={`Foto ${index + 1}`}
+                    width={80}
+                    height={80}
+                    unoptimized
+                    className="h-full w-full object-cover"
+                  />
                   <button
                     type="button"
                     onClick={() => handleRemoveStagedImage(index)}
