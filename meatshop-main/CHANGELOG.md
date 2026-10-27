@@ -2,6 +2,29 @@
 
 Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Changelog e Semantic Versioning.
 
+## [3.4.0] - 2026-10-26 - Conformidade com a especificação
+
+### Adicionado
+
+- Proteção das rotas do painel também no servidor (`proxy.ts` do Next.js 16), com a lista de rotas públicas compartilhada e o RouteGuard como alternativa quando o cookie pertence ao domínio da API.
+- Cliente CSRF: token obtido sob demanda, mantido em memória e enviado nas requisições de alteração, inclusive renovação de sessão e uploads, com uma nova tentativa em caso de token inválido.
+- Ativação e desativação da unidade nas configurações, com confirmação, retorno de sucesso ou erro e acesso restrito ao proprietário.
+- Exportação real dos dados pessoais em JSON, com estados de carregamento, sucesso e erro.
+- Página de verificação de e-mail para o link enviado pela API.
+- Contato informado pelo cliente exibido no detalhe do chamado de suporte.
+- Testes Cypress de login, produtos, pedidos, promoções, geolocalização e acessibilidade, executados com `npm run test:e2e`.
+
+### Alterado
+
+- Os dados do usuário deixam de ser gravados no `localStorage`; apenas a unidade selecionada permanece salva no navegador.
+- Acessibilidade: rótulos associados aos campos, `aria-label` em botões só com ícone, `aria-pressed` nos filtros de avaliações, um único `main`, link "Pular para o conteúdo", contraste maior em textos auxiliares e tamanho mínimo de fonte.
+- Tipos e formas de pagamento das despesas exibidos em português.
+
+### Removido
+
+- Dependências sem uso: `textarea`, `axios`, `next-auth`, `zustand` e `react-input-mask-next`.
+- Componente de tela em construção sem uso.
+
 ## [3.3.0] - 2026-10-20 - Fechamento de lacunas funcionais
 
 ### Listas no servidor e imagens da unidade (24/10/2026)

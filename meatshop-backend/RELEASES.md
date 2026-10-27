@@ -1,5 +1,15 @@
 # Releases do backend
 
+## 3.4.0 — Conformidade com a especificação
+
+Trabalho preparado em 26 de outubro de 2026.
+
+A API passa a atender as regras de negócio e os requisitos que estavam parciais no documento de especificação. O cliente paga o preço promocional que vê no catálogo e no carrinho, pedidos imediatos são recusados com a unidade fechada e pedidos com pagamento na entrega têm prazo para confirmação. Unidades podem ser desativadas, e o cliente pode optar por retirar o pedido no balcão.
+
+A proteção de dados foi reforçada: CPF e telefone ficam cifrados no banco, sessões são encerradas na troca de senha, o painel web recebe proteção CSRF e as métricas exigem token. Consentimentos podem ser revogados, mantendo o histórico. Webhooks do Mercado Pago entram em fila durável e o rate limit passa a ser compartilhado entre réplicas.
+
+A implantação exige configurar as chaves de dados e o token de métricas antes das migrations desta versão, coordenada com o painel web e o aplicativo 3.4.0 e com o chatbot 3.1.0. Esta preparação local não representa publicação ou deploy.
+
 ## 3.3.0 — Fechamento de lacunas funcionais
 
 Trabalho preparado em 20 de outubro de 2026.

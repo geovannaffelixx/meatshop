@@ -2,6 +2,47 @@
 
 Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Changelog e Semantic Versioning.
 
+## [3.4.0] - 2026-10-26 - Conformidade com a especificação
+
+### Adicionado
+
+- Preço promocional vigente aplicado na cotação, na criação do pedido e na leitura e atualização do carrinho; o preço final integra a assinatura da cotação e o cupom é aplicado depois.
+- Status ativo/inativo da unidade (`PATCH /units/:id/status`), auditado e restrito ao proprietário ou SUPER_ADMIN; unidades inativas saem das listagens, da busca, dos produtos e das promoções públicas e o checkout responde `UNIT_INACTIVE`.
+- Retirada no balcão por unidade, sem endereço, taxa de entrega ou entregador, concluída somente com o código do cliente.
+- Prazo de confirmação para pedidos com pagamento na entrega (`ORDER_CONFIRMATION_TIMEOUT_MINUTES`, ou início do horário agendado), com cancelamento automático e devolução de estoque e cupom.
+- Campo opcional `contact`, cifrado em repouso, nos chamados de suporte.
+- Revogação de consentimento com histórico append-only (`ACCEPTED`/`REVOKED`), auditoria e reaceite.
+- Evento `delivery:earnings.updated` no namespace `/delivery`, gerado por outbox transacional.
+- Streaming das respostas da IA em `POST /ai/chat/stream` (SSE com eventos `delta`, `error` e `done`).
+- Proteção CSRF com `GET /auth/csrf` e cabeçalho `x-csrf-token` nas requisições autenticadas por cookie.
+- Fila durável para webhooks do Mercado Pago, com resposta imediata, retentativas, idempotência e estado de falha.
+- Métricas `payment_webhook_queue_pending`, `payment_webhook_processing_failures_total` e `rate_limit_rejections_total`.
+
+### Alterado
+
+- Pedido imediato com a unidade fechada passa a ser recusado com `UNIT_CLOSED`; agendamentos mantêm a validação de horários.
+- CPF e telefone cifrados em repouso (AES-256-GCM) com índices cegos HMAC para unicidade e busca.
+- Bloqueio de login informa `retry_after_seconds`, `locked_until` e o cabeçalho `Retry-After`.
+- Troca e redefinição de senha, revogação no Firebase e reuso de refresh token encerram as sessões.
+- Tokens retornados no corpo da resposta somente para o aplicativo (`x-client-platform: mobile`); o painel web usa apenas cookies.
+- `/metrics` exige `METRICS_TOKEN`, obrigatório em produção.
+- Rate limit compartilhado no PostgreSQL entre réplicas, contado por usuário autenticado e por IP nas demais requisições.
+- Mensagens enviadas à IA e gravadas no histórico passam pela remoção de dados pessoais.
+
+### Removido
+
+- Módulo aposentado de cartões salvos e arquivos vazios sem uso.
+
+### Qualidade
+
+- Cenários k6 de desempenho (30 usuários), carga (50) e pico (500) no CI; o pico é avaliado por erros abaixo de 5% e p95 abaixo de 3 s, mantendo os limites do RNF-003 no uso normal.
+- Índice parcial para promoções ativas e testes de preço promocional no carrinho.
+
+### Implantação
+
+- Configurar `DATA_ENCRYPTION_KEY`, `DATA_HASH_KEY` e `METRICS_TOKEN` antes de executar as migrations e manter as mesmas chaves em todos os processos.
+- Migrations: `PaymentWebhookQueue`, `SharedRateLimit`, `AddUnitActiveStatus`, `AddSupportContact`, `RetireSavedPaymentMethods`, `DeliveryEarningsEvents`, `LegalRevocation`, `EncryptUserIdentity`, `RefreshIdentitySession` e `IndexActivePromotions`.
+
 ## Panel pagination and unit gallery - 2026-10-24
 
 - Declare the required Firebase Web API key in the Render blueprint and document recovery from missing production configuration.
