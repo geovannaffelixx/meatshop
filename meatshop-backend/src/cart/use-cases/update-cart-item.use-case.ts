@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { PromotionalPriceService } from '../../promotions/services/promotional-price.service';
 import { User } from '../../users/entities/user.entity';
 import { UpdateCartItemDto } from '../dtos/update-cart-item.dto';
 import { CartItem } from '../entities/cart-item.entity';
@@ -17,6 +18,7 @@ export class UpdateCartItemUseCase {
     private readonly cartItemRepository: Repository<CartItem>,
     private readonly cartAccessService: CartAccessService,
     private readonly productPolicy: CartProductPolicyService,
+    private readonly promotionalPrice: PromotionalPriceService,
   ) {}
 
   async execute(
@@ -38,6 +40,7 @@ export class UpdateCartItemUseCase {
       currentUser.id,
     );
     if (!items.length) throw new NotFoundException('Cart item not found');
+    await this.promotionalPrice.applyCurrentPrices(items);
     return CartResponseDto.fromEntity(
       item.cart,
       items,
@@ -51,7 +54,6 @@ export class UpdateCartItemUseCase {
     price: number,
     userId: number,
   ): Promise<CartReadRow[]> {
-    // A modifying CTE shares the SELECT snapshot; overlay RETURNING so the response includes the new values.
     return this.cartItemRepository.query(
       `WITH changed AS (
         UPDATE cart_items SET quantity=$1,unit_price=$2 WHERE id=$3
@@ -61,7 +63,7 @@ export class UpdateCartItemUseCase {
         CASE WHEN item.id=changed.id THEN changed.quantity ELSE item.quantity END AS quantity,
         CASE WHEN item.id=changed.id THEN changed.unit_price ELSE item.unit_price END AS unit_price,
         COALESCE(stock.quantity,0) AS available_stock,
-        jsonb_build_object('name',product.name,'unit_id',product.unit_id,
+        jsonb_build_object('id',product.id,'price',product.price,'name',product.name,'unit_id',product.unit_id,
           'unit_of_measure',product.unit_of_measure,'image_url',product.image_url,
           'unit',jsonb_build_object('name',unit.name,'image_url',unit.image_url)) AS product
       FROM changed JOIN cart_items item ON item.cart_id=changed.cart_id

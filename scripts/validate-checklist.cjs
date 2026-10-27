@@ -48,7 +48,8 @@ await inspect.connect();
 await inspect.query('INSERT INTO users(email,cpf,phone,cpf_hash,phone_hash) VALUES ($1,$2,$3,$4,$5)',
   ['migration@example.test',cipher.encrypt('12345678909'),cipher.encrypt('11987654321'),
     cipher.blindIndex('cpf:12345678909'),cipher.blindIndex('phone:11987654321')]);
-run('rollback-refresh-identity', 'node_modules/typeorm/cli.js', ['-d','dist/database/data-source.js','migration:revert'], { DB_DATABASE: migrationDb });
+run('rollback-active-promotions-index', 'node_modules/typeorm/cli.js', ['-d','dist/database/data-source.js','migration:revert'], { DB_DATABASE: migrationDb });
+run('rollback-refresh-identity','node_modules/typeorm/cli.js', ['-d','dist/database/data-source.js','migration:revert'], { DB_DATABASE: migrationDb });
 run('rollback-identity', 'node_modules/typeorm/cli.js', ['-d','dist/database/data-source.js','migration:revert'], { DB_DATABASE: migrationDb });
 const plaintext = await inspect.query('SELECT cpf,phone FROM users WHERE email=$1', ['migration@example.test']);
 if (plaintext.rows[0].cpf !== '12345678909' || plaintext.rows[0].phone !== '11987654321') throw new Error('Identity rollback did not restore plaintext');

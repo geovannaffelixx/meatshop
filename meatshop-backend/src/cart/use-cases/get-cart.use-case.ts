@@ -6,6 +6,7 @@ import { CartResponseDto } from '../dtos/cart-response.dto';
 import { CartItem } from '../entities/cart-item.entity';
 import { CartAccessService, type CartPurchaseItem } from '../services/cart-access.service';
 import { Stock } from '../../products/entities/stock.entity';
+import { PromotionalPriceService } from '../../promotions/services/promotional-price.service';
 import { Cart } from '../entities/cart.entity';
 
 const CART_READ_COLUMNS = [
@@ -16,6 +17,7 @@ const CART_READ_COLUMNS = [
   'item.unit_price',
   'product.id',
   'product.name',
+  'product.price',
   'product.image_url',
   'product.unit_of_measure',
   'product.unit_id',
@@ -32,6 +34,7 @@ export class GetCartUseCase {
     @InjectRepository(CartItem)
     private readonly cartItemRepository: Repository<CartItem>,
     private readonly cartAccessService: CartAccessService,
+    private readonly promotionalPrice: PromotionalPriceService,
   ) {}
 
   async execute(currentUser: User, knownCart?: Cart): Promise<CartResponseDto> {
@@ -48,6 +51,7 @@ export class GetCartUseCase {
       .select(CART_READ_COLUMNS)
       .where('item.cart_id = :cartId', { cartId: cart.id })
       .getMany()) as CartPurchaseItem[];
+    await this.promotionalPrice.applyCurrentPrices(items);
     const stockByProductId = new Map(
       items.map((item) => [item.product_id, Number(item.stock?.quantity ?? 0)]),
     );

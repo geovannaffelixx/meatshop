@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProductsModule } from '../products/products.module';
+import { PromotionsModule } from '../promotions/promotions.module';
 import { CartController } from './cart.controller';
 import { CartItem } from './entities/cart-item.entity';
 import { Cart } from './entities/cart.entity';
@@ -13,7 +14,7 @@ import { UpdateCartItemUseCase } from './use-cases/update-cart-item.use-case';
 import { CartProductPolicyService } from './services/cart-product-policy.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Cart, CartItem]), ProductsModule],
+  imports: [TypeOrmModule.forFeature([Cart, CartItem]), ProductsModule, PromotionsModule],
   controllers: [CartController],
   providers: [
     CartAccessService,
