@@ -1,7 +1,7 @@
 # 🥩 MeatShop — Plataforma para Açougues & Clientes
 
 > [!IMPORTANT]
-> Para subir banco, migrations, backend e frontend após um clone novo, use o guia oficial [SETUP.md](./SETUP.md). O ambiente Docker é autocontido e não exige criar arquivos `.env`.
+> Para subir banco, migrations, backend e frontend após um clone novo, use o guia oficial [SETUP.md](./SETUP.md). Antes do primeiro `docker compose up`, gere o `.env` local com `node scripts/setup-local-env.mjs`: os segredos de desenvolvimento não ficam mais no `docker-compose.yml` e o Compose não sobe sem esse arquivo.
 
 Termos e privacidade 3.2.0: consulte [arquitetura, contratos e implantação](./docs/TERMS_AND_PRIVACY.md).
 

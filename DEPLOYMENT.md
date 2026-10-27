@@ -1,4 +1,4 @@
-# Deploy gratuito da branch `develop`
+# Deploy gratuito da branch `main`
 
 ## Endereços recomendados
 
@@ -16,20 +16,23 @@ Os dois subdomínios sob o mesmo domínio permitem cookies seguros com `SameSite
 4. Use `https://app.seudominio.com.br` em `FRONTEND_URL` e `CORS_ORIGINS`.
 5. Use `https://api.seudominio.com.br` em `BACKEND_PUBLIC_URL`.
 
-O Blueprint define dois ambientes isolados, cada um com banco e segredos próprios:
+O Blueprint define um único ambiente, todo no plano gratuito:
 
-| Ambiente | Serviço | Branch | Banco | `COOKIE_SAMESITE` |
-|---|---|---|---|---|
-| Homologação | `meatshop-api` | `develop` | `meatshop-db` (free) | `none` (domínios `vercel.app`/`onrender.com`) |
-| Produção | `meatshop-api-production` | `main` | `meatshop-db-production` | `lax` (painel e API em subdomínios do mesmo domínio) |
+| Serviço | Branch | Banco | `COOKIE_SAMESITE` |
+|---|---|---|---|
+| `meatshop-api` (`plan: free`) | `main` | `meatshop-db` (`plan: free`) | `none` (domínios `vercel.app`/`onrender.com`) |
 
-Configurações não sensíveis comuns ficam no grupo `meatshop-api-shared` (inclui `COOKIE_SECURE=true` e `ORDER_CONFIRMATION_TIMEOUT_MINUTES=30`). Em cada serviço, informe no dashboard:
+Limites do plano gratuito do Render: um único PostgreSQL gratuito por workspace, banco gratuito com prazo de expiração e serviço web que hiberna após um período sem acesso (a primeira requisição seguinte é lenta). Para mudar de plano, troque o campo `plan:` do serviço e/ou do banco no `render.yaml`. Um segundo ambiente (homologação na `develop`) exige um segundo banco, portanto um plano pago: duplique o bloco do serviço e do banco com outros nomes e outra branch.
 
-- `DATA_ENCRYPTION_KEY` e `DATA_HASH_KEY`: valores distintos gerados com `openssl rand -base64 32`. Guarde-os no cofre da equipe: perdê-los torna irrecuperáveis os dados pessoais criptografados. Nunca compartilhe as chaves entre homologação e produção;
+Ao migrar para domínio próprio (`app.` e `api.` no mesmo domínio), troque `COOKIE_SAMESITE` para `lax`.
+
+Configurações não sensíveis ficam no grupo `meatshop-api` (inclui `COOKIE_SECURE=true` e `ORDER_CONFIRMATION_TIMEOUT_MINUTES=30`). Informe no dashboard:
+
+- `DATA_ENCRYPTION_KEY` e `DATA_HASH_KEY`: valores distintos gerados com `openssl rand -base64 32`. Guarde-os no cofre da equipe: perdê-los torna irrecuperáveis os dados pessoais criptografados;
 - `METRICS_TOKEN`: gerado com `openssl rand -hex 32`, usado pelo Prometheus para coletar `/metrics`;
-- em produção, as credenciais Mercado Pago (`MP_CLIENT_ID`, `MP_CLIENT_SECRET`, `MP_OAUTH_REDIRECT_URI`, `MP_CREDENTIAL_ENCRYPTION_KEY`, `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`) e `PAYMENTS_ENABLED`.
+- `MP_ENV` (`sandbox` enquanto não houver credenciais reais; `production` depois), as credenciais Mercado Pago (`MP_CLIENT_ID`, `MP_CLIENT_SECRET`, `MP_OAUTH_REDIRECT_URI`, `MP_CREDENTIAL_ENCRYPTION_KEY`, `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`) e `PAYMENTS_ENABLED`.
 
-O Blueprint executa as migrations antes de iniciar a API e só publica cada branch depois que o CI passar.
+O Blueprint executa as migrations antes de iniciar a API e só publica a branch depois que o CI passar.
 
 ## Render (chatbot)
 
