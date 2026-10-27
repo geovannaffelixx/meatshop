@@ -1,6 +1,12 @@
 'use client'
 
-import { useEffect, useMemo, useState } from "react"
+import { toDateInput } from "@/shared/lib/date-time";
+
+import { useApiQuery } from "@/shared/hooks/use-api-query";
+
+import { DataSkeleton } from "@/shared/components/data-skeleton";
+
+import { useMemo } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import {
@@ -24,7 +30,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/shared/components/ui/chart"
-import { apiGet, resolveAssetUrl } from "@/shared/lib/api"
+import { resolveAssetUrl } from "@/shared/lib/api"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
 import { formatCurrency } from "@/shared/lib/formatters"
 import { PageHeader } from "@/shared/components/page-header"
@@ -32,7 +38,7 @@ import { AlertTriangle, ArrowRight, PackageOpen, ShoppingBag, TrendingUp } from 
 import Autoplay from "embla-carousel-autoplay"
 
 const chartConfig = {
-  vendas: { label: "Receita", color: "#525252" },
+  vendas: { label: "Receita confirmada", color: "#525252" },
 } satisfies ChartConfig
 
 const WEEKDAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"]
@@ -62,46 +68,21 @@ export function DashboardScreen() {
     [],
   )
   const { unitId } = useManagedUnits()
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [dashboard, setDashboard] = useState<DashboardData | null>(null)
-  const [sales, setSales] = useState<Sale[]>([])
-  const [loadingSales, setLoadingSales] = useState(true)
-  const [errorSales, setErrorSales] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!unitId) return
-    let active = true
-    setLoadingSales(true)
-    setErrorSales(null)
-
-    apiGet(`/sales?unit_id=${unitId}`)
-      .then((list) => { if (active) setSales(Array.isArray(list) ? list : []) })
-      .catch((e) => { if (active) setErrorSales(e.message) })
-      .finally(() => { if (active) setLoadingSales(false) })
-
-    return () => { active = false }
-  }, [unitId])
-
-  useEffect(() => {
-    if (!unitId) return
-    let active = true
-    setLoading(true)
-
-    apiGet(`/dashboard?unit_id=${unitId}`)
-      .then((d) => { if (active) setDashboard(d) })
-      .catch((e) => { if (active) setError(e.message) })
-      .finally(() => { if (active) setLoading(false) })
-
-    return () => { active = false }
-  }, [unitId])
+  const query = useApiQuery<DashboardData>(unitId ? `/dashboard?unit_id=${unitId}` : null);
+  const dashboard = query.data;
+  const loading = query.isPending;
+  const error = query.error?.message;
+  const salesQuery = useApiQuery<Sale[]>(unitId ? `/sales?unit_id=${unitId}` : null);
+  const sales = salesQuery.data ?? [];
+  const loadingSales = salesQuery.isPending;
+  const errorSales = salesQuery.error?.message;
 
   const chartData = useMemo(() => {
     if (!dashboard?.weeklyChart?.series?.length) {
       return WEEKDAY_LABELS.map((day) => ({ day, vendas: 0 }))
     }
     return dashboard.weeklyChart.series.map((s) => ({
-      day: WEEKDAY_LABELS[new Date(s.date).getDay()],
+      day: WEEKDAY_LABELS[new Date(`${toDateInput(s.date)}T00:00:00Z`).getUTCDay()],
       vendas: s.revenue,
     }))
   }, [dashboard])
@@ -109,6 +90,8 @@ export function DashboardScreen() {
   const pendingOrders = useMemo(() => {
     return dashboard?.recentOrders ?? []
   }, [dashboard])
+
+  if (loading && !dashboard) return <div className="page-surface"><div className="page-container"><PageHeader eyebrow="Visão geral" title="Painel da operação" description="Acompanhe pedidos, receita, estoque e campanhas da unidade selecionada." /><DataSkeleton variant="cards" label="Carregando indicadores" /><DataSkeleton label="Carregando painel" /></div></div>;
 
   return (
     <div className="page-surface">
@@ -123,7 +106,7 @@ export function DashboardScreen() {
           <Card className="border-0 shadow-sm">
             <CardContent className="flex items-center justify-between p-5">
               <div>
-                <p className="text-sm text-slate-500">Receita no mês</p>
+                <p className="text-sm text-slate-500">Recebimentos líquidos no mês</p>
                 <strong className="mt-1 block text-2xl text-slate-950">
                   {formatCurrency(dashboard?.revenueThisMonth)}
                 </strong>
@@ -185,7 +168,7 @@ export function DashboardScreen() {
             </Link>
           </div>
 
-          {loading && <p className="p-8 text-center text-slate-500">Carregando pedidos...</p>}
+          {loading && <DataSkeleton label="Carregando pedidos..." />}
           {error && <p className="p-8 text-center text-red-700">{error}</p>}
 
           {!loading && !error && pendingOrders.length === 0 ? (
@@ -220,9 +203,9 @@ export function DashboardScreen() {
           <Card className="h-80 min-w-0 overflow-hidden border-0 shadow-sm">
             <Link href="/finance" className="block">
                 <CardHeader>
-                  <CardTitle className="text-lg font-bold text-slate-950">Receita semanal</CardTitle>
+                  <CardTitle className="text-lg font-bold text-slate-950">Recebimentos líquidos semanais</CardTitle>
                   <CardDescription>
-                    Consulte o detalhamento financeiro da unidade.
+                    Pagamentos confirmados, descontados estornos e taxas.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -247,7 +230,7 @@ export function DashboardScreen() {
               <Link href="/promotions" className="text-sm font-semibold text-red-700 hover:underline">Gerenciar</Link>
             </div>
 
-            {loadingSales && <p className="p-8 text-center text-slate-500">Carregando promoções...</p>}
+            {loadingSales && <DataSkeleton label="Carregando promoções..." />}
             {errorSales && <p className="p-8 text-center text-red-700">{errorSales}</p>}
             {!loadingSales && !errorSales && sales.length === 0 && (
               <p className="p-8 text-center text-sm text-slate-500">Nenhuma promoção ativa no momento.</p>

@@ -59,6 +59,7 @@ export class DeliveryGateway implements OnGatewayConnection, OnGatewayDisconnect
       if (!user?.is_active) throw new Error('User not found or inactive');
       if (!payload.exp || payload.exp * 1000 <= Date.now()) throw new Error('Token expired');
       client.data.user = user;
+      await client.join(`user:${user.id}`);
       client.data.expiresAt = payload.exp * 1000;
       this.expirations.set(
         client.id,

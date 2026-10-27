@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { LessThan, MoreThanOrEqual, Repository } from 'typeorm';
 import { CreateNotificationDto } from '../dtos/create-notification.dto';
 import { Notification } from '../entities/notification.entity';
+import { NotificationPreference } from '../entities/notification-preference.entity';
 import { UserDeviceToken } from '../entities/user-device-token.entity';
 import { FcmService, FcmTokenInvalidError } from '../providers/fcm.service';
 import { NotificationsGateway } from '../notifications.gateway';
@@ -16,19 +17,45 @@ export class SendNotificationUseCase {
     private readonly notificationRepository: Repository<Notification>,
     @InjectRepository(UserDeviceToken)
     private readonly deviceTokenRepository: Repository<UserDeviceToken>,
+    @InjectRepository(NotificationPreference)
+    private readonly preferenceRepository: Repository<NotificationPreference>,
     private readonly fcmService: FcmService,
     private readonly notificationsGateway: NotificationsGateway,
   ) {}
 
-  async execute(dto: CreateNotificationDto): Promise<Notification> {
+  async execute(
+    dto: CreateNotificationDto,
+    options: { push?: boolean } = {},
+  ): Promise<Notification> {
     const notification = await this.notificationRepository.save(
       this.notificationRepository.create({ title: 'MeatShop', ...dto }),
     );
 
     this.notificationsGateway.emitToUser(notification);
-    await this.pushToDevices(notification);
+    if (options.push !== false && (await this.isPushEnabled(notification))) {
+      await this.pushToDevices(notification);
+    }
 
     return notification;
+  }
+
+  private async isPushEnabled(notification: Notification): Promise<boolean> {
+    const preferences = await this.preferenceRepository.findOne({
+      where: { user_id: notification.user_id },
+    });
+    if (!preferences) return true;
+    switch (notification.type) {
+      case 'ORDER':
+        return preferences.orders_enabled;
+      case 'DELIVERY':
+        return preferences.delivery_enabled;
+      case 'PROMOTION':
+        return preferences.promotions_enabled;
+      case 'SYSTEM':
+        return preferences.system_enabled;
+      default:
+        return true;
+    }
   }
 
   private async pushToDevices(notification: Notification): Promise<void> {

@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [main, develop]
+    tags: ["v*"]
   pull_request:
     branches: [main, develop]
 
@@ -10,8 +11,12 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 env:
   NODE_VERSION: 22
+  PYTHON_VERSION: "3.12"
 
 jobs:
   backend:
@@ -34,6 +39,7 @@ jobs:
       DB_TYPE: postgres
       DB_HOST: 127.0.0.1
       DB_PORT: 5432
+      DB_POOL_MAX: "5"
       DB_USERNAME: meatshop_user
       DB_PASSWORD: meatshop_pass
       DB_DATABASE: meatshop
@@ -43,6 +49,8 @@ jobs:
       JWT_REFRESH_SECRET: ci-refresh-secret-with-at-least-32-characters
       DELIVERY_CODE_SECRET: ci-delivery-secret-with-at-least-32-characters
       DELIVERY_CODE_ENCRYPTION_KEY: ci-encryption-key-with-at-least-32-chars
+      ORDER_CONFIRMATION_TIMEOUT_MINUTES: "30"
+      METRICS_TOKEN: ephemeral-ci-metrics-token-for-isolated-tests-only
       FRONTEND_URL: http://localhost:3000
       COOKIE_SECURE: "false"
       FIREBASE_APP_CHECK_ENFORCED: "false"
@@ -57,14 +65,45 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: meatshop-backend/package-lock.json
+      - name: Generate ephemeral test keys
+        run: |
+          echo "DATA_ENCRYPTION_KEY=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+          echo "DATA_HASH_KEY=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
       - run: npm ci
-      - run: npm audit --omit=dev --audit-level=high
+      - run: npm audit --audit-level=high
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backend-dist
+          path: |
+            meatshop-backend/dist
+            meatshop-backend/package.json
+            meatshop-backend/package-lock.json
+          retention-days: 14
       - run: npm run migration:run:prod
       - run: npm run test:coverage
       - run: npm run test:e2e
+      - name: Prepare isolated functional gaps database
+        run: PGPASSWORD=meatshop_pass psql -h 127.0.0.1 -U meatshop_user -d meatshop -c 'CREATE DATABASE meatshop_gaps_test_330'
+      - name: Migrate isolated functional gaps database
+        run: npm run migration:run:prod
+        env:
+          DB_DATABASE: meatshop_gaps_test_330
+      - uses: grafana/setup-k6-action@v1
+      - name: Verify functional gaps and application smoke
+        run: npm run test:e2e -- checklist.e2e functional-gaps app.e2e health.e2e metrics.e2e specification
+        env:
+          E2E_DB_PORT: 5432
+          E2E_TEST_DATABASE: meatshop_gaps_test_330
+          GAPS_TEST_DATABASE: meatshop_gaps_test_330
+          LEGAL_ACCEPTANCE_REQUIRED: "false"
+          K6_ENABLED: "true"
+          K6_SCENARIO: all
+          K6_REPLICAS: "6"
+          K6_DB_POOL_MAX: "10"
+          RATE_LIMIT_MAX: "1000000"
       - name: Prepare isolated payments database
         run: PGPASSWORD=meatshop_pass psql -h 127.0.0.1 -U meatshop_user -d meatshop -c 'CREATE DATABASE meatshop_payments_test'
       - name: Migrate isolated payments database
@@ -82,6 +121,12 @@ jobs:
           name: backend-coverage
           path: meatshop-backend/coverage
 
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: specification-results
+          path: meatshop-backend/test-results
+
   frontend:
     runs-on: ubuntu-latest
     defaults:
@@ -95,18 +140,73 @@ jobs:
           cache: npm
           cache-dependency-path: meatshop-main/package-lock.json
       - run: npm ci
-      - run: npm audit --omit=dev --audit-level=high
+        env:
+          CYPRESS_INSTALL_BINARY: 0
+      - run: npm audit --audit-level=high
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test:coverage
       - run: npm run build
         env:
           NEXT_PUBLIC_API_URL: http://localhost:3001
+      - name: Assemble standalone server
+        run: |
+          cp -r public .next/standalone/public
+          cp -r .next/static .next/standalone/.next/static
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-standalone
+          path: meatshop-main/.next/standalone
+          include-hidden-files: true
+          retention-days: 14
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: frontend-coverage
           path: meatshop-main/coverage
+
+  frontend-e2e:
+    needs: frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: meatshop-main
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: meatshop-main/package-lock.json
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-standalone
+          path: meatshop-main/.next/standalone
+      - name: Start web server
+        run: nohup node .next/standalone/server.js > web-server.log 2>&1 &
+        env:
+          PORT: 3000
+          HOSTNAME: 0.0.0.0
+          NODE_ENV: production
+      - name: Wait for web server
+        run: |
+          for attempt in {1..30}; do
+            curl -fsS -o /dev/null http://127.0.0.1:3000/login && exit 0
+            sleep 2
+          done
+          cat web-server.log
+          exit 1
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-results
+          path: |
+            meatshop-main/cypress/screenshots
+            meatshop-main/cypress/videos
+            meatshop-main/web-server.log
+          if-no-files-found: ignore
 
   integration:
     needs: [backend, frontend]
@@ -133,6 +233,20 @@ jobs:
             git fetch --depth=1 origin "refs/heads/${CHATBOT_HEAD_REF}"
             git checkout --detach FETCH_HEAD
           fi
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Audit chatbot dependencies
+        run: |
+          python -m pip install --upgrade pip-audit
+          pip-audit --requirement meatshop-chatbot/requirements.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Generate ephemeral environment
+        id: ephemeral-env
+        working-directory: meatshop
+        run: node scripts/setup-local-env.mjs
       - uses: docker/setup-buildx-action@v3
       - run: docker compose up -d --build
         working-directory: meatshop
@@ -148,20 +262,70 @@ jobs:
           done
           docker compose ps
           exit 1
+      - name: Verify protected metrics endpoint
+        working-directory: meatshop
+        shell: bash
+        run: |
+          token="$(grep '^METRICS_TOKEN=' .env | cut -d= -f2-)"
+          echo "::add-mask::${token}"
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3001/metrics)" = "401"
+          curl -fsS -o /dev/null -H "Authorization: Bearer ${token}" http://localhost:3001/metrics
       - run: node scripts/performance-smoke.mjs
         working-directory: meatshop
       - name: Capture compose logs
-        if: always()
+        if: always() && steps.ephemeral-env.outcome == 'success'
         working-directory: meatshop
         run: docker compose logs --no-color > compose-logs.txt
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && steps.ephemeral-env.outcome == 'success'
         with:
           name: integration-logs
           path: meatshop/compose-logs.txt
-      - if: always()
+      - if: always() && steps.ephemeral-env.outcome == 'success'
         run: docker compose down --volumes
         working-directory: meatshop
+
+  images:
+    needs: [backend, frontend, frontend-e2e, integration]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      PUBLISH: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) }}
+    strategy:
+      matrix:
+        include:
+          - image: meatshop-backend
+            context: meatshop-backend
+          - image: meatshop-frontend
+            context: meatshop-main
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        if: env.PUBLISH == 'true'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
+          tags: |
+            type=sha
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: ${{ env.PUBLISH == 'true' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL || 'http://localhost:3001' }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
 
   dependency-review:
     if: github.event_name == 'pull_request'
@@ -177,7 +341,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - name: Audit backend lockfile
         working-directory: meatshop-backend
-        run: npm audit --package-lock-only --omit=dev --audit-level=high
+        run: npm audit --package-lock-only --audit-level=high
       - name: Audit frontend lockfile
         working-directory: meatshop-main
-        run: npm audit --package-lock-only --omit=dev --audit-level=high
+        run: npm audit --package-lock-only --audit-level=high

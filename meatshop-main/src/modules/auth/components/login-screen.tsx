@@ -1,5 +1,7 @@
 "use client";
 
+import { validateEmail } from "@/shared/lib/validators";
+
 import { useState } from "react";
 import { Input } from "@/shared/components/ui/input";
 import { PasswordInput } from "@/shared/components/ui/password-input";
@@ -24,6 +26,7 @@ export function LoginScreen() {
       toast.warning("Preencha o e-mail e a senha para continuar.");
       return;
     }
+    if (!validateEmail(email)) { toast.warning('Informe um e-mail válido.'); return; }
     if (submitting) return;
 
     setSubmitting(true);
@@ -46,7 +49,7 @@ export function LoginScreen() {
   }
 
   return (
-    <main className="grid min-h-screen bg-white lg:grid-cols-[minmax(22rem,0.85fr)_1.15fr]">
+    <main id="main-content" tabIndex={-1} className="grid min-h-screen bg-white lg:grid-cols-[minmax(22rem,0.85fr)_1.15fr]">
       <section className="relative hidden min-h-screen overflow-hidden bg-white lg:block">
         <Image
           src="/entrar.png"

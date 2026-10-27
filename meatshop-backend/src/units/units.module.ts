@@ -1,3 +1,4 @@
+import { UnitMediaService } from './services/unit-media.service';
 import { LegalModule } from '../legal/legal.module';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -25,6 +26,7 @@ import { UnitAddressService } from './services/unit-address.service';
 import { Review } from '../reviews/entities/review.entity';
 import { GetPublicUnitUseCase } from './use-cases/get-public-unit.use-case';
 import { ListPublicUnitsUseCase } from './use-cases/list-public-units.use-case';
+import { UpdateUnitStatusUseCase } from './use-cases/update-unit-status.use-case';
 
 @Module({
   imports: [
@@ -33,6 +35,7 @@ import { ListPublicUnitsUseCase } from './use-cases/list-public-units.use-case';
   ],
   controllers: [UnitsController, UnitsUploadController],
   providers: [
+    UnitMediaService,
     CreateUnitUseCase,
     UpdateUnitUseCase,
     AddUserToUnitUseCase,
@@ -49,6 +52,7 @@ import { ListPublicUnitsUseCase } from './use-cases/list-public-units.use-case';
     UnitAddressService,
     GetPublicUnitUseCase,
     ListPublicUnitsUseCase,
+    UpdateUnitStatusUseCase,
   ],
   exports: [TypeOrmModule, UnitAuthorizationService, UnitPermissionPolicy, UnitAddressService],
 })

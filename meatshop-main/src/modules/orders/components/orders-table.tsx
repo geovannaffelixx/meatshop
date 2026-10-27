@@ -1,8 +1,14 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useApiQuery } from "@/shared/hooks/use-api-query";
+import type { PageResult } from "@/shared/hooks/use-server-list";
+import { usePanelAccess } from "@/shared/providers/panel-access-provider";
+
+import { DataSkeleton } from "@/shared/components/data-skeleton";
+
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { apiGet, apiPatch } from "@/shared/lib/api"
+import { apiPatch } from "@/shared/lib/api"
 import { ORDER_STATUS_LABELS } from "@/modules/orders/utils/status-labels"
 import { Spinner } from "@/shared/components/ui/spinner"
 import { DataPagination } from "@/shared/components/data-pagination"
@@ -39,24 +45,22 @@ type Order = {
 
 export function OrdersTable({ filters, currentPage, onPageChange }: OrdersTableProps) {
   const router = useRouter()
-  const [orders, setOrders] = useState<Order[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [confirmingId, setConfirmingId] = useState<number | null>(null)
-
-  const loadOrders = () => {
-    setLoading(true)
-    setError(null)
-    apiGet("/orders")
-      .then((data) => setOrders(Array.isArray(data) ? data : []))
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false))
-  }
-
+  const { unitId } = usePanelAccess();
+  const [confirmingId, setConfirmingId] = useState<number | null>(null);
+  const params = new URLSearchParams({ paginated: 'true', page: String(currentPage), limit: '10' });
+  const values = { unit_id: unitId ? String(unitId) : '', search: filters.customer.name, order_id: filters.customer.orderId,
+    status: filters.status, order_from: filters.orderDate.from, order_to: filters.orderDate.to,
+    scheduled_from: filters.scheduledDate.from, scheduled_to: filters.scheduledDate.to };
+  Object.entries(values).forEach(([key, value]) => { if (value) params.set(key, value); });
+  const query = useApiQuery<PageResult<Order>>(unitId ? `/orders?${params}` : null);
+  const pageData = query.data?.data ?? [];
+  const loading = query.isPending;
+  const error = query.error?.message;
+  const loadOrders = () => void query.refetch();
+  const totalPages = query.data?.meta.totalPages ?? 1;
   useEffect(() => {
-    loadOrders()
-  }, [])
-
+    if (query.data && currentPage > totalPages) onPageChange(totalPages);
+  }, [currentPage, onPageChange, query.data, totalPages]);
   const handleConfirm = async (orderId: number) => {
     setConfirmingId(orderId)
     try {
@@ -70,45 +74,8 @@ export function OrdersTable({ filters, currentPage, onPageChange }: OrdersTableP
     }
   }
 
-  const inRange = (valueISO: string | null, from: string, to: string) => {
-    if (!from && !to) return true
-    if (!valueISO) return false
-    const v = new Date(valueISO)
-    const fromDate = from ? new Date(from + "T00:00:00") : null
-    const toDate = to ? new Date(to + "T23:59:59") : null
-    return (!fromDate || v >= fromDate) && (!toDate || v <= toDate)
-  }
-
-  const filtered = useMemo(() => {
-    return orders.filter((o) => {
-      const idMatches = filters.customer.orderId ? o.id.toString().includes(filters.customer.orderId) : true
-      const nameMatches = filters.customer.name
-        ? (o.client_name ?? "").toLowerCase().includes(filters.customer.name.toLowerCase())
-        : true
-      const statusMatches = filters.status ? o.status === filters.status : true
-      const orderDateMatches = inRange(o.order_date, filters.orderDate.from, filters.orderDate.to)
-      const scheduledDateMatches = inRange(
-        o.scheduled_delivery_date,
-        filters.scheduledDate.from,
-        filters.scheduledDate.to,
-      )
-
-      return idMatches && nameMatches && statusMatches && orderDateMatches && scheduledDateMatches
-    })
-  }, [filters, orders])
-
-  const itemsPerPage = 10
-  const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage))
-  const safePage = Math.min(Math.max(currentPage, 1), totalPages)
-  const start = (safePage - 1) * itemsPerPage
-  const pageData = filtered.slice(start, start + itemsPerPage)
-
-  const changePage = (page: number) => {
-    if (page >= 1 && page <= totalPages) onPageChange(page)
-  }
-
   if (loading) {
-    return <div className="p-10 text-center text-slate-500">Carregando pedidos...</div>
+    return <DataSkeleton label="Carregando pedidos..." />
   }
   if (error) {
     return (
@@ -184,11 +151,11 @@ export function OrdersTable({ filters, currentPage, onPageChange }: OrdersTableP
       </table>
       </div>
       <DataPagination
-        page={safePage}
-        pageSize={itemsPerPage}
-        totalItems={filtered.length}
+        page={currentPage}
+        pageSize={10}
+        totalItems={query.data?.meta.total ?? 0}
         totalPages={totalPages}
-        onPageChange={changePage}
+        onPageChange={onPageChange}
       />
     </div>
   )

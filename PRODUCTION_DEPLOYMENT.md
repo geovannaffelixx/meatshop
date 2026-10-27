@@ -16,14 +16,27 @@ Defina NODE_ENV=production, DB_TYPE=postgres, DB_SYNCHRONIZE=false, DB_SSL=true,
 
 Configure ainda:
 
-- FIREBASE_SERVICE_ACCOUNT e FIREBASE_APP_CHECK_ENFORCED=true;
+- FIREBASE_SERVICE_ACCOUNT, FIREBASE_WEB_API_KEY e FIREBASE_APP_CHECK_ENFORCED=true;
 - FIREBASE_APP_CHECK_PROTECTED_PATHS=/auth/firebase-exchange;
 - MP_ACCESS_TOKEN, MP_WEBHOOK_SECRET e MP_ENV=production;
 - SMTP real em MAIL_HOST, MAIL_PORT, MAIL_SECURE, MAIL_USER, MAIL_PASSWORD e MAIL_FROM;
 - BACKEND_PUBLIC_URL, TRUST_PROXY=true, RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX e DELIVERY_TRACKING_RETENTION_DAYS;
+- DATA_ENCRYPTION_KEY e DATA_HASH_KEY, cada uma com `openssl rand -base64 32`, independentes entre si e entre ambientes, com cópia segura no cofre da equipe;
+- METRICS_TOKEN (`openssl rand -hex 32`), entregue ao Prometheus via arquivo de secret (`credentials_file`);
+- ORDER_CONFIRMATION_TIMEOUT_MINUTES (padrão 30) para o cancelamento automático de pedidos com pagamento offline não confirmados;
 - diretórios ou serviços externos para logs e uploads, com acesso mínimo necessário.
 
 A aplicação falha na inicialização quando detecta configuração insegura de produção. Para múltiplas réplicas, mantenha o limite local como proteção adicional e aplique também rate limiting distribuído no ingress ou API gateway.
+
+### Render: Firebase Web API key ausente
+
+Se as migrations terminarem com `COMMIT` e o processo falhar com `FIREBASE_WEB_API_KEY is required in production`, o schema foi atualizado; falta configurar o ambiente do backend. Não reverta migrations para resolver esse erro.
+
+No serviço da API na Render, abra **Environment → Add Environment Variable** e adicione `FIREBASE_WEB_API_KEY` com a API key do mesmo projeto Firebase usado pelo mobile e por `FIREBASE_SERVICE_ACCOUNT`. Localize a chave nas configurações do projeto/app Firebase ou em **Google Cloud → APIs & Services → Credentials**. Ela é diferente do JSON de service account e da chave privada. Verifique que as restrições da chave permitem chamadas do backend à API de autenticação do Firebase.
+
+Salve com **Save and deploy** para reaplicar o ambiente ao build existente, ou **Save, rebuild, and deploy** para construir o commit mais recente. Confirme que o serviço inicia e que `/health` responde. Apenas fazer push não preenche o valor dessa variável: `render.yaml` declara `sync: false`, e o valor deve ser informado no dashboard. A variável é necessária ao fluxo centralizado de validação de senha mobile e não deve ser removida da validação de produção.
+
+Referências: [API keys do Firebase](https://firebase.google.com/docs/projects/api-keys) e [variáveis de ambiente na Render](https://render.com/docs/configure-environment-variables).
 
 ## Ordem de publicação
 
@@ -49,7 +62,9 @@ Migrations nunca devem usar synchronize. Se uma migration falhar, interrompa a p
 
 ## Observabilidade e resposta
 
-Importe prometheus-alerts.yml, centralize logs estruturados e remova dados pessoais antes da ingestão. Defina responsáveis, escalonamento e objetivos de disponibilidade. Teste alertas de backend indisponível, 5xx, p95 elevado e pico de falhas de login.
+Importe prometheus-alerts.yml, centralize logs estruturados e remova dados pessoais antes da ingestão. Defina responsáveis, escalonamento e objetivos de disponibilidade. Teste alertas de backend indisponível, 5xx, p95 elevado, pico de falhas de login, fila e falhas de webhooks de pagamento, pico de rejeições por rate limit e uso elevado de CPU e memória.
+
+O CI publica as imagens `meatshop-backend` e `meatshop-frontend` no GHCR somente em pushes para `main` e tags `v*`, depois que todos os testes passam, com tag pelo SHA do commit.
 
 ## Rollback
 

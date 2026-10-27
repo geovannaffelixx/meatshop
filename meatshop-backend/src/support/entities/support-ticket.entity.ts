@@ -15,9 +15,13 @@ import { SupportTicketCategory } from '../enums/support-ticket-category.enum';
 import { SupportTicketPriority } from '../enums/support-ticket-priority.enum';
 import { SupportTicketStatus } from '../enums/support-ticket-status.enum';
 import { SupportMessage } from './support-message.entity';
+import { encryptedColumnTransformer } from '../../common/security/field-encryption';
 
 @Entity('support_tickets')
 export class SupportTicket {
+  @Column({ type: 'text', nullable: true, transformer: encryptedColumnTransformer })
+  contact: string | null;
+
   @PrimaryGeneratedColumn()
   id: number;
 

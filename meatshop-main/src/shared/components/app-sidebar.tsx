@@ -1,63 +1,15 @@
 "use client";
 
-import * as React from "react";
-import Image from "next/image";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import {
-  BadgePercent,
-  BarChart3,
-  Boxes,
-  Building2,
-  ChevronDown,
-  ChevronRight,
-  CircleHelp,
-  ClipboardList,
-  House,
-  LogOut,
-  MessageSquare,
-  PackageSearch,
-  Percent,
-  PiggyBank,
-  ScrollText,
-  Settings,
-  ShoppingBag,
-  Star,
-  Tags,
-  TicketPercent,
-  Truck,
-  User as UserIcon,
-  Users,
-  UtensilsCrossed,
-  type LucideIcon,
-} from "lucide-react";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/shared/components/ui/collapsible";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
-  SidebarRail,
-} from "@/shared/components/ui/sidebar";
-import {
-  unitPermissions,
-  type UnitPermission,
-} from "@/shared/auth/panel-access";
-import { API_URL, apiPost } from "@/shared/lib/api";
-import { usePanelAccess } from "@/shared/providers/panel-access-provider";
+import * as React from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { BadgePercent, BarChart3, Boxes, Building2, ChevronDown, CircleHelp, ClipboardList, House, MessageSquare, PackageSearch, Percent, PiggyBank, ScrollText, Settings, ShoppingBag, Star, Tags, TicketPercent, Truck, User as UserIcon, Users, UtensilsCrossed, X, type LucideIcon } from 'lucide-react';
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarRail, useSidebar } from '@/shared/components/ui/sidebar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from '@/shared/components/ui/dropdown-menu';
+import { unitPermissions, type UnitPermission } from '@/shared/auth/panel-access';
+import { resolveAssetUrl } from '@/shared/lib/api';
+import { usePanelAccess } from '@/shared/providers/panel-access-provider';
 
 type NavItem = {
   title: string;
@@ -190,6 +142,7 @@ const navGroups: NavGroup[] = [
     title: "Configurações",
     icon: Settings,
     items: [
+      supportItem,
       {
         title: "Unidade",
         url: "/settings/unit",
@@ -208,301 +161,75 @@ const navGroups: NavGroup[] = [
         icon: UserIcon,
         permission: null,
       },
-      {
-        title: "Minha conta",
-        url: "/settings/account",
-        icon: UserIcon,
-        permission: unitPermissions.viewDashboard,
-      },
     ],
   },
 ];
 
-type UserData = { name: string; email: string; avatar_url?: string | null };
-type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
-  user?: UserData;
-};
+type AppSidebarProps = React.ComponentProps<typeof Sidebar>;
 
-function itemIsActive(pathname: string, url: string) {
-  return pathname === url || pathname.startsWith(`${url}/`);
-}
-
-export function AppSidebar({ user, ...props }: AppSidebarProps) {
+export function AppSidebar(props: AppSidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
-  const {
-    user: currentUser,
-    panel,
-    selectedMembership,
-    unitId,
-    setUnitId,
-    hasPermission,
-  } = usePanelAccess();
-  const displayUser = currentUser ??
-    user ?? { name: "Conta", email: "", avatar_url: null };
-  const resolvedSrc = displayUser.avatar_url
-    ? displayUser.avatar_url.startsWith("http")
-      ? displayUser.avatar_url
-      : `${process.env.NEXT_PUBLIC_API_URL}${displayUser.avatar_url}`
-    : null;
-  const unitLogoSrc = selectedMembership?.unit_image_url
-    ? selectedMembership.unit_image_url.startsWith("http")
-      ? selectedMembership.unit_image_url
-      : `${API_URL}${selectedMembership.unit_image_url}`
-    : null;
+  const { setOpenMobile } = useSidebar();
+  const { user, panel, selectedMembership, unitId, setUnitId, hasPermission } = usePanelAccess();
+  const memberships = panel?.memberships ?? [];
+  const unitLogo = resolveAssetUrl(selectedMembership?.unit_image_url);
+  const canSee = (item: NavItem) => (!item.adminOnly || user?.global_role === 'SUPER_ADMIN') && (!item.permission || hasPermission(item.permission));
+  const groups = navGroups.map(group => ({ ...group, items: group.items.filter(canSee) })).filter(group => group.items.length);
 
-  const visibleGroups = React.useMemo(
-    () =>
-      navGroups
-        .map((group) => ({
-          ...group,
-          items: group.items.filter(
-            (item) =>
-              (!item.adminOnly ||
-                currentUser?.global_role === "SUPER_ADMIN") &&
-              (!item.permission || hasPermission(item.permission)),
-          ).sort((first, second) =>
-            first.title.localeCompare(second.title, "pt-BR"),
-          ),
-        }))
-        .filter((group) => group.items.length > 0)
-        .sort((first, second) =>
-          first.title.localeCompare(second.title, "pt-BR"),
-        ),
-    [currentUser?.global_role, hasPermission],
-  );
-
-  const [openGroups, setOpenGroups] = React.useState<Record<string, boolean>>(
-    () =>
-      Object.fromEntries(
-        navGroups.map((group) => [group.id, Boolean(group.defaultOpen)]),
-      ),
-  );
-
-  React.useEffect(() => {
-    const activeGroup = visibleGroups.find((group) =>
-      group.items.some((item) => itemIsActive(pathname, item.url)),
-    );
-    if (!activeGroup) return;
-    setOpenGroups((current) =>
-      current[activeGroup.id]
-        ? current
-        : { ...current, [activeGroup.id]: true },
-    );
-  }, [pathname, visibleGroups]);
-
-  function canSee(item: NavItem) {
-    return (
-      (!item.adminOnly || currentUser?.global_role === "SUPER_ADMIN") &&
-      (!item.permission || hasPermission(item.permission))
-    );
-  }
-
-  async function handleLogout() {
-    try {
-      await apiPost("/auth/logout", {});
-    } finally {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("currentUser");
-      window.dispatchEvent(new Event("currentUserUpdated"));
-      router.push("/login");
-    }
-  }
-
-  function directItem(item: NavItem) {
-    if (!canSee(item)) return null;
+  function itemLink(item: NavItem) {
+    const active = pathname === item.url || pathname.startsWith(`${item.url}/`);
     const Icon = item.icon;
-    const active = itemIsActive(pathname, item.url);
-    return (
-      <SidebarMenuItem key={item.url}>
-        <SidebarMenuButton
-          asChild
-          isActive={active}
-          tooltip={item.title}
-          className={active ? "font-semibold text-red-700" : ""}
-        >
-          <Link href={item.url}>
-            <Icon />
-            <span>{item.title}</span>
-          </Link>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-    );
+    return <SidebarMenuItem key={item.url}>
+      <SidebarMenuButton asChild isActive={active} tooltip={item.title}
+        className="h-10 rounded-xl px-3 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 data-[active=true]:bg-red-50 data-[active=true]:font-semibold data-[active=true]:text-red-700">
+        <Link href={item.url} aria-current={active ? 'page' : undefined} onClick={() => setOpenMobile(false)}>
+          <Icon className="size-[18px]" /><span>{item.title}</span>
+        </Link>
+      </SidebarMenuButton>
+    </SidebarMenuItem>;
   }
 
-  return (
-    <Sidebar {...props}>
-      <SidebarHeader className="border-b border-slate-200 p-3">
-        <div className="flex items-center gap-3 px-1 py-1">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-red-700 text-white shadow-sm ring-1 ring-red-800/10">
-            {unitLogoSrc ? (
-              <Image
-                unoptimized
-                src={unitLogoSrc}
-                alt={`Logo de ${selectedMembership?.unit_name ?? "unidade"}`}
-                width={36}
-                height={36}
-                className="h-full w-full object-contain p-0.5"
-              />
-            ) : (
-              <span className="text-sm font-bold" aria-hidden="true">
-                {selectedMembership?.unit_name?.charAt(0).toUpperCase() ?? "M"}
-              </span>
-            )}
-          </div>
-          <div className="min-w-0 group-data-[collapsible=icon]:hidden">
-            <p className="text-sm font-bold text-slate-950">MeatShop</p>
-            <p className="truncate text-xs text-slate-500">
-              {selectedMembership?.unit_name ?? "Painel de gestão"}
-            </p>
-          </div>
-        </div>
-        {(panel?.memberships.length ?? 0) > 1 && (
-          <div className="mt-2 group-data-[collapsible=icon]:hidden">
-            <label
-              htmlFor="active-unit"
-              className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-500"
-            >
-              Unidade ativa
-            </label>
-            <select
-              id="active-unit"
-              value={unitId ?? ""}
-              onChange={(event) => setUnitId(Number(event.target.value))}
-              className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100"
-            >
-              {panel?.memberships.map((membership) => (
-                <option key={membership.unit_id} value={membership.unit_id}>
-                  {membership.unit_name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-      </SidebarHeader>
+  const unitCard = <>
+    <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-xl bg-red-50 text-red-700">
+      {unitLogo ? <Image unoptimized src={unitLogo} alt="" width={40} height={40} className="size-10 object-contain p-1" /> : <Building2 className="size-5" />}
+    </span>
+    <span className="min-w-0 flex-1 text-left group-data-[collapsible=icon]:hidden">
+      <span className="block text-xs font-semibold uppercase tracking-wider text-slate-500">Unidade atual</span>
+      <span className="mt-0.5 block break-words text-sm font-semibold leading-snug text-slate-900">{selectedMembership?.unit_name ?? 'Painel de gestão'}</span>
+    </span>
+    {memberships.length > 1 && <ChevronDown className="size-4 shrink-0 text-slate-400 group-data-[collapsible=icon]:hidden" />}
+  </>;
 
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Navegação</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {visibleGroups.map((group) => {
-                const GroupIcon = group.icon;
-                const groupActive = group.items.some((item) =>
-                  itemIsActive(pathname, item.url),
-                );
-                const open = Boolean(openGroups[group.id]);
-                return (
-                  <Collapsible
-                    key={group.id}
-                    asChild
-                    open={open}
-                    onOpenChange={(nextOpen) =>
-                      setOpenGroups((current) => ({
-                        ...current,
-                        [group.id]: nextOpen,
-                      }))
-                    }
-                  >
-                    <SidebarMenuItem>
-                      <CollapsibleTrigger asChild>
-                        <SidebarMenuButton
-                          tooltip={group.title}
-                          className={
-                            groupActive
-                              ? "font-semibold text-slate-950"
-                              : "text-slate-700"
-                          }
-                        >
-                          <GroupIcon />
-                          <span>{group.title}</span>
-                          <ChevronDown
-                            className={`ml-auto transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-                          />
-                        </SidebarMenuButton>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <SidebarMenuSub>
-                          {group.items.map((item) => {
-                            const Icon = item.icon;
-                            const active = itemIsActive(pathname, item.url);
-                            return (
-                              <SidebarMenuSubItem key={item.url}>
-                                <SidebarMenuSubButton
-                                  asChild
-                                  isActive={active}
-                                  className={
-                                    active
-                                      ? "bg-red-50 font-semibold text-red-700 hover:bg-red-50 hover:text-red-700"
-                                      : ""
-                                  }
-                                >
-                                  <Link href={item.url}>
-                                    <Icon />
-                                    <span>{item.title}</span>
-                                  </Link>
-                                </SidebarMenuSubButton>
-                              </SidebarMenuSubItem>
-                            );
-                          })}
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
-                    </SidebarMenuItem>
-                  </Collapsible>
-                );
-              })}
-              <div className="my-1 border-t border-slate-100" />
-              {directItem(supportItem)}
-              {directItem(dashboardItem)}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
+  return <Sidebar {...props}>
+    <SidebarHeader className="gap-5 px-3 pb-4 pt-5">
+      <div className="relative flex min-h-10 items-center justify-center px-3 group-data-[collapsible=icon]:hidden">
+        <Image src="/logoEscuraEscrita.png" alt="MeatShop" width={140} height={40} className="h-8 w-auto object-contain" priority />
+        <button type="button" aria-label="Fechar menu" onClick={() => setOpenMobile(false)} className="absolute right-0 rounded-lg p-2 text-slate-500 hover:bg-slate-100 focus-visible:outline-red-600 md:hidden"><X className="size-4" /></button>
+      </div>
+      {memberships.length > 1 ? <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button type="button" aria-label="Trocar unidade" className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm transition-colors hover:border-red-200 hover:bg-red-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0">
+            {unitCard}
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" sideOffset={8} className="w-72 max-w-[calc(100vw-2rem)] rounded-2xl p-2 shadow-xl">
+          <DropdownMenuLabel className="px-3 py-2 text-xs text-slate-500">Escolha sua unidade</DropdownMenuLabel>
+          <DropdownMenuRadioGroup value={String(unitId)} onValueChange={value => { setOpenMobile(false); setUnitId(Number(value)); }}>
+            {memberships.map(membership => <DropdownMenuRadioItem key={membership.unit_id} value={String(membership.unit_id)} className="my-1 rounded-xl py-3 pr-3 focus:bg-red-50 focus:text-red-700">
+              <span className="min-w-0"><span className="block break-words font-medium">{membership.unit_name}</span><span className="mt-0.5 block text-xs text-slate-500">{membership.unit_id === unitId ? 'Unidade selecionada' : 'Acessar unidade'}</span></span>
+            </DropdownMenuRadioItem>)}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenu> : <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-2.5 group-data-[collapsible=icon]:p-0">{unitCard}</div>}
+    </SidebarHeader>
+    <SidebarContent className="gap-1 px-1">
+      <SidebarGroup className="py-0"><SidebarGroupContent><SidebarMenu>{canSee(dashboardItem) && itemLink(dashboardItem)}</SidebarMenu></SidebarGroupContent></SidebarGroup>
+      {groups.map(group => <SidebarGroup key={group.id} className="py-2">
+        <SidebarGroupLabel className="px-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{group.title}</SidebarGroupLabel>
+        <SidebarGroupContent><SidebarMenu className="gap-1">{group.items.map(itemLink)}</SidebarMenu></SidebarGroupContent>
+      </SidebarGroup>)}
+    </SidebarContent>
 
-      <SidebarFooter className="border-t border-slate-200 p-2">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              type="button"
-              onClick={() => void handleLogout()}
-              tooltip="Sair"
-              className="text-slate-600 hover:bg-red-50 hover:text-red-700"
-            >
-              <LogOut />
-              <span>Sair</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-        <Link
-          href="/settings/account"
-          className="mt-1 flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-slate-100 group-data-[collapsible=icon]:justify-center"
-        >
-          {resolvedSrc ? (
-            <Image
-              unoptimized
-              src={resolvedSrc}
-              alt={displayUser.name}
-              width={36}
-              height={36}
-              className="h-9 w-9 shrink-0 rounded-full object-cover"
-            />
-          ) : (
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-red-700 font-semibold text-white">
-              {displayUser.name.charAt(0).toUpperCase()}
-            </div>
-          )}
-          <div className="flex min-w-0 flex-1 flex-col text-sm group-data-[collapsible=icon]:hidden">
-            <span className="truncate font-semibold text-slate-800">
-              {displayUser.name}
-            </span>
-            <span className="truncate text-xs text-slate-500">
-              {displayUser.email}
-            </span>
-          </div>
-          <ChevronRight className="h-4 w-4 text-slate-400 group-data-[collapsible=icon]:hidden" />
-        </Link>
-      </SidebarFooter>
-      <SidebarRail />
-    </Sidebar>
-  );
+    <SidebarRail />
+  </Sidebar>;
 }

@@ -1,11 +1,17 @@
 "use client";
 
+import { formatDateTime } from "@/shared/lib/formatters";
+
+import { useApiQuery } from "@/shared/hooks/use-api-query";
+
+import { DataSkeleton } from "@/shared/components/data-skeleton";
+
 /* eslint-disable @next/next/no-img-element */
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { ArrowLeft, ImagePlus, LockKeyhole, Send, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { apiGet, apiPatch, apiUpload, resolveAssetUrl } from "@/shared/lib/api";
+import { apiPatch, apiUpload, resolveAssetUrl } from "@/shared/lib/api";
 import { Spinner } from "@/shared/components/ui/spinner";
 import { toast } from "@/shared/lib/toast";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
@@ -19,23 +25,11 @@ import {
 export function SupportDetailScreen({ ticketId }: { ticketId: number }) {
   const router = useRouter();
   const { user } = usePanelAccess();
-  const [ticket, setTicket] = useState<SupportTicket | null>(null);
   const [message, setMessage] = useState("");
   const [images, setImages] = useState<File[]>([]);
-  const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      setTicket(await apiGet(`/support-tickets/${ticketId}`, { silent: true }));
-    } finally {
-      setLoading(false);
-    }
-  }, [ticketId]);
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const { data: ticket, isPending: loading, refetch: load } = useApiQuery<SupportTicket>(`/support-tickets/${ticketId}`);
 
   async function sendMessage(event: React.FormEvent) {
     event.preventDefault();
@@ -72,9 +66,7 @@ export function SupportDetailScreen({ ticketId }: { ticketId: number }) {
   if (loading && !ticket)
     return (
       <div className="page-surface">
-        <div className="grid min-h-[60vh] place-items-center text-slate-500">
-          Carregando chamado...
-        </div>
+        <DataSkeleton label="Carregando chamado..." />
       </div>
     );
   if (!ticket)
@@ -98,7 +90,7 @@ export function SupportDetailScreen({ ticketId }: { ticketId: number }) {
         Voltar aos chamados
       </button>
       <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
-        <main className="overflow-hidden rounded-xl border bg-white shadow-sm">
+        <section aria-label="Conversa do chamado" className="overflow-hidden rounded-xl border bg-white shadow-sm">
           <header className="border-b p-5">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl font-bold">
@@ -156,9 +148,9 @@ export function SupportDetailScreen({ ticketId }: { ticketId: number }) {
                       </div>
                     )}
                     <time
-                      className={`mt-2 block text-[11px] ${mine ? "text-red-100" : "text-slate-400"}`}
+                      className={`mt-2 block text-xs ${mine ? "text-red-100" : "text-slate-500"}`}
                     >
-                      {new Date(item.created_at).toLocaleString("pt-BR")}
+                      {formatDateTime(item.created_at)}
                     </time>
                   </div>
                 </article>
@@ -238,7 +230,7 @@ export function SupportDetailScreen({ ticketId }: { ticketId: number }) {
               </div>
             </form>
           )}
-        </main>
+        </section>
         <aside className="h-fit space-y-4 rounded-xl border bg-white p-5">
           <h2 className="font-semibold">Detalhes</h2>
           <dl className="space-y-3 text-sm">
@@ -256,6 +248,12 @@ export function SupportDetailScreen({ ticketId }: { ticketId: number }) {
                 <dd className="font-medium">{ticket.unit.name}</dd>
               </div>
             )}
+            {ticket.contact && (
+              <div>
+                <dt className="text-slate-500">Contato informado</dt>
+                <dd className="break-words font-medium">{ticket.contact}</dd>
+              </div>
+            )}
             {ticket.order_id && (
               <div>
                 <dt className="text-slate-500">Pedido</dt>
@@ -264,7 +262,7 @@ export function SupportDetailScreen({ ticketId }: { ticketId: number }) {
             )}
             <div>
               <dt className="text-slate-500">Aberto em</dt>
-              <dd>{new Date(ticket.created_at).toLocaleString("pt-BR")}</dd>
+              <dd>{formatDateTime(ticket.created_at)}</dd>
             </div>
           </dl>
           {!closed && (

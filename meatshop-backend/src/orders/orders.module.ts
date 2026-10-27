@@ -1,4 +1,5 @@
 import { SellerAccountsService } from '../payments/seller-accounts.service';
+import { CheckoutUnitPolicyService } from './services/checkout-unit-policy.service';
 import { MetricsModule } from '../metrics/metrics.module';
 import { CheckoutQuoteService } from './services/checkout-quote.service';
 import { PaymentLifecycleService } from '../payments/payment-lifecycle.service';
@@ -35,11 +36,22 @@ import { OrderStatusTransitionValidator } from './validators/order-status-transi
 import { StockAvailabilityValidator } from './validators/stock-availability.validator';
 import { CheckoutPricingService } from './services/checkout-pricing.service';
 import { QuoteCartUseCase } from './use-cases/quote-cart.use-case';
+import { SchedulingAvailabilityService } from './services/scheduling-availability.service';
+import { BusinessHours } from '../units/entities/business-hours.entity';
+import { Unit } from '../units/entities/unit.entity';
 
 @Module({
   imports: [
     MetricsModule,
-    TypeOrmModule.forFeature([Order, OrderItem, Payment, OrderStatusHistory, DeliveryPerson]),
+    TypeOrmModule.forFeature([
+      Order,
+      OrderItem,
+      Payment,
+      OrderStatusHistory,
+      DeliveryPerson,
+      BusinessHours,
+      Unit,
+    ]),
     UnitsModule,
     ProductsModule,
     UsersModule,
@@ -49,6 +61,7 @@ import { QuoteCartUseCase } from './use-cases/quote-cart.use-case';
   ],
   controllers: [OrdersController, CheckoutController, PaymentsController, SellerPaymentsController],
   providers: [
+    CheckoutUnitPolicyService,
     CheckoutQuoteService,
     SellerAccountsService,
     PaymentLifecycleService,
@@ -69,6 +82,7 @@ import { QuoteCartUseCase } from './use-cases/quote-cart.use-case';
     CancelOrderUseCase,
     ScheduleOrderUseCase,
     RepeatOrderUseCase,
+    SchedulingAvailabilityService,
   ],
   exports: [
     SellerAccountsService,

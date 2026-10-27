@@ -1,13 +1,17 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { resetApiCache, setApiCacheScope } from '@/shared/lib/query-cache';
+import { UnitSwitchOverlay } from '@/shared/components/unit-switch-overlay';
 import { apiGet } from "@/shared/lib/api";
 import type { CurrentUser } from "@/shared/hooks/use-current-user";
 import type { PanelContext, PanelMembership, UnitPermission } from "@/shared/auth/panel-access";
 import { isPublicRoute } from "@/shared/auth/route-access";
-import { usePathname } from "next/navigation";
+import { getRoutePermissions } from '@/shared/auth/route-access';
+import { usePathname, useRouter } from "next/navigation";
 
 const UNIT_STORAGE_KEY = "meatshop:selected-unit-id";
+const LEGACY_USER_STORAGE_KEY = "currentUser";
 type RefreshOptions = {
   signal?: AbortSignal;
 };
@@ -37,10 +41,14 @@ export function PanelAccessProvider({ children }: { children: React.ReactNode })
   const [unitId, setUnitIdState] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
+  const [switchingUnit, setSwitchingUnit] = useState<string | null>(null);
+  const switchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initializedRef = useRef(false);
   const pathname = usePathname();
+  const router = useRouter();
 
   const refresh = useCallback(async (options: RefreshOptions = {}) => {
-    setLoading(true);
+    setLoading(!initializedRef.current);
     try {
       const data = (await apiGet("/users/me", {
         silent: true,
@@ -55,22 +63,27 @@ export function PanelAccessProvider({ children }: { children: React.ReactNode })
         ? stored
         : nextPanel.memberships[0]?.unit_id ?? null;
       setUnitIdState(selected);
+      setApiCacheScope(`${data.user.id}:${selected ?? 'none'}`);
       if (selected) localStorage.setItem(UNIT_STORAGE_KEY, String(selected));
-      localStorage.setItem("currentUser", JSON.stringify(data.user));
     } catch (error) {
       if (options.signal?.aborted) return;
 
       setUser(null);
+      resetApiCache();
       setPanel(null);
       setUnitIdState(null);
-      localStorage.removeItem("currentUser");
       if (error instanceof Error && error.name === "AbortError") return;
     } finally {
       if (!options.signal?.aborted) {
         setInitialized(true);
+        initializedRef.current = true;
         setLoading(false);
       }
     }
+  }, []);
+
+  useEffect(() => {
+    localStorage.removeItem(LEGACY_USER_STORAGE_KEY);
   }, []);
 
   useEffect(() => {
@@ -83,12 +96,12 @@ export function PanelAccessProvider({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     function handleSessionExpired() {
+      resetApiCache();
       setUser(null);
       setPanel(null);
       setUnitIdState(null);
       setInitialized(true);
       setLoading(false);
-      localStorage.removeItem("currentUser");
     }
     window.addEventListener("auth:session-expired", handleSessionExpired);
     return () => window.removeEventListener("auth:session-expired", handleSessionExpired);
@@ -113,10 +126,27 @@ export function PanelAccessProvider({ children }: { children: React.ReactNode })
   }, [refresh]);
 
   const setUnitId = useCallback((nextUnitId: number) => {
-    if (!panel?.memberships.some((item) => item.unit_id === nextUnitId)) return;
+    const membership = panel?.memberships.find((item) => item.unit_id === nextUnitId);
+    if (!membership || nextUnitId === unitId || switchingUnit) return;
+    setSwitchingUnit(membership.unit_name);
+    resetApiCache(`${user?.id}:${nextUnitId}`);
     localStorage.setItem(UNIT_STORAGE_KEY, String(nextUnitId));
     setUnitIdState(nextUnitId);
-  }, [panel]);
+    const detail = pathname.match(/^\/(products|orders|recipes)\/(?:\d+|new)$/);
+    const required = getRoutePermissions(pathname);
+    const allowed = required?.some(permission => permission === 'AUTHENTICATED' ||
+      (permission === 'SUPER_ADMIN' ? user?.global_role === 'SUPER_ADMIN' : membership.permissions.includes(permission)));
+    if (!allowed) router.replace(membership.permissions.includes('VIEW_DASHBOARD') ? '/dashboard' : '/settings/account');
+    else if (detail) router.replace(`/${detail[1]}`);
+    switchTimer.current = setTimeout(() => {
+      setSwitchingUnit(null);
+      switchTimer.current = null;
+    }, 3000);
+  }, [panel, unitId, user?.id, user?.global_role, switchingUnit, pathname, router]);
+
+  useEffect(() => () => {
+    if (switchTimer.current) clearTimeout(switchTimer.current);
+  }, []);
 
   const selectedMembership = useMemo(
     () => panel?.memberships.find((item) => item.unit_id === unitId) ?? null,
@@ -129,7 +159,8 @@ export function PanelAccessProvider({ children }: { children: React.ReactNode })
 
   return (
     <PanelAccessContext.Provider value={{ user, panel, selectedMembership, unitId, loading, initialized, hasPermission, setUnitId, refresh }}>
-      {children}
+      <div inert={switchingUnit !== null} className="min-h-screen">{children}</div>
+      {switchingUnit && <UnitSwitchOverlay name={switchingUnit} />}
     </PanelAccessContext.Provider>
   );
 }

@@ -1,10 +1,14 @@
 "use client"
 
+import { useApiQuery } from "@/shared/hooks/use-api-query";
+import { DataSkeleton } from "@/shared/components/data-skeleton";
+
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import { ArrowLeft, ImagePlus, X } from "lucide-react"
-import { apiGet, apiPatch, apiPost, apiUpload } from "@/shared/lib/api"
+import { apiPatch, apiPost, apiUpload } from "@/shared/lib/api"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
 import { Spinner } from "@/shared/components/ui/spinner"
 import { toast } from "@/shared/lib/toast"
@@ -16,7 +20,8 @@ export function NewProductScreen() {
   const router = useRouter()
   const { unitId } = useManagedUnits()
 
-  const [categories, setCategories] = useState<Category[]>([])
+  const categoriesQuery = useApiQuery<Category[]>(unitId ? `/categories?unit_id=${unitId}` : null);
+  const categories = categoriesQuery.data ?? [];
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -37,14 +42,9 @@ export function NewProductScreen() {
   const [stagedPreviews, setStagedPreviews] = useState<string[]>([])
 
   useEffect(() => {
-    if (!unitId) return
-    apiGet(`/categories?unit_id=${unitId}`)
-      .then((cats: Category[]) => {
-        setCategories(cats ?? [])
-        if (cats?.length > 0) setForm((f) => ({ ...f, category_id: cats[0].id }))
-      })
-      .catch((err) => setError(err.message))
-  }, [unitId])
+    const first = categoriesQuery.data?.[0];
+    if (first) setForm(current => current.category_id ? current : { ...current, category_id: first.id });
+  }, [categoriesQuery.data]);
 
   const handleChange = <K extends keyof typeof form>(key: K, value: typeof form[K]) => {
     setForm((f) => ({ ...f, [key]: value }))
@@ -127,6 +127,9 @@ export function NewProductScreen() {
     }
   }
 
+  if (categoriesQuery.isPending) return <DataSkeleton variant="form" label="Carregando categorias do produto" />;
+  if (categoriesQuery.error) return <div className="p-6 text-red-700" role="alert">{categoriesQuery.error.message}<button onClick={() => void categoriesQuery.refetch()} className="ml-3 underline">Tentar novamente</button></div>;
+
   return (
     <div className="page-surface px-4 py-6 sm:px-6">
       <form
@@ -160,8 +163,8 @@ export function NewProductScreen() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
           <fieldset className="rounded-xl border border-slate-200 px-3 py-2">
-            <legend className="px-1 text-sm font-semibold text-slate-700">Status</legend>
-            <select
+            <legend id="legend-new-product-screen-5576" className="px-1 text-sm font-semibold text-slate-700">Status</legend>
+            <select aria-labelledby="legend-new-product-screen-5576"
               value={form.active ? "ATIVO" : "INATIVO"}
               onChange={(e) => handleChange("active", e.target.value === "ATIVO")}
               className="input"
@@ -172,8 +175,8 @@ export function NewProductScreen() {
           </fieldset>
 
           <fieldset className="rounded-xl border border-slate-200 px-3 py-2">
-            <legend className="px-1 text-sm font-semibold text-slate-700">Produto<RequiredMark /></legend>
-            <input
+            <legend id="legend-new-product-screen-6100" className="px-1 text-sm font-semibold text-slate-700">Produto<RequiredMark /></legend>
+            <input aria-labelledby="legend-new-product-screen-6100"
               type="text"
               value={form.name}
               onChange={(e) => handleChange("name", e.target.value)}
@@ -186,8 +189,8 @@ export function NewProductScreen() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
           <fieldset className="rounded-xl border border-slate-200 px-3 py-2">
-            <legend className="text-gray-600 font-medium px-1 text-sm">Categoria<RequiredMark /></legend>
-            <select
+            <legend id="legend-new-product-screen-6656" className="text-gray-600 font-medium px-1 text-sm">Categoria<RequiredMark /></legend>
+            <select aria-labelledby="legend-new-product-screen-6656"
               value={form.category_id}
               onChange={(e) => handleChange("category_id", Number(e.target.value))}
               className="input"
@@ -208,8 +211,8 @@ export function NewProductScreen() {
           </fieldset>
 
           <fieldset className="rounded-xl border border-slate-200 px-3 py-2">
-            <legend className="text-gray-600 font-medium px-1 text-sm">Marca</legend>
-            <input
+            <legend id="legend-new-product-screen-7582" className="text-gray-600 font-medium px-1 text-sm">Marca</legend>
+            <input aria-labelledby="legend-new-product-screen-7582"
               type="text"
               value={form.brand}
               onChange={(e) => handleChange("brand", e.target.value)}
@@ -219,8 +222,8 @@ export function NewProductScreen() {
           </fieldset>
 
           <fieldset className="rounded-xl border border-slate-200 px-3 py-2">
-            <legend className="text-gray-600 font-medium px-1 text-sm">Unidade de medida<RequiredMark /></legend>
-            <select
+            <legend id="legend-new-product-screen-8004" className="text-gray-600 font-medium px-1 text-sm">Unidade de medida<RequiredMark /></legend>
+            <select aria-labelledby="legend-new-product-screen-8004"
               value={form.unit_of_measure}
               onChange={(e) => handleChange("unit_of_measure", e.target.value)}
               className="input"
@@ -236,10 +239,10 @@ export function NewProductScreen() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
           <fieldset className="rounded-xl border border-slate-200 px-3 py-2">
-            <legend className="text-gray-600 font-medium px-1 text-sm">
+            <legend id="legend-new-product-screen-8746" className="text-gray-600 font-medium px-1 text-sm">
               Quantidade inicial em estoque
             </legend>
-            <input
+            <input aria-labelledby="legend-new-product-screen-8746"
               type="number"
               value={form.initialQuantity}
               min={0}
@@ -251,8 +254,8 @@ export function NewProductScreen() {
           </fieldset>
 
           <fieldset className="rounded-xl border border-slate-200 px-3 py-2">
-            <legend className="px-1 text-sm font-medium text-slate-600">Estoque mínimo</legend>
-            <input
+            <legend id="legend-new-product-screen-9300" className="px-1 text-sm font-medium text-slate-600">Estoque mínimo</legend>
+            <input aria-labelledby="legend-new-product-screen-9300"
               type="number"
               min={0}
               step="0.001"
@@ -266,8 +269,8 @@ export function NewProductScreen() {
 
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <fieldset className="rounded-xl border border-slate-200 px-3 py-2">
-            <legend className="px-1 text-sm font-medium text-slate-600">Preço do produto<RequiredMark /></legend>
-            <input
+            <legend id="legend-new-product-screen-9904" className="px-1 text-sm font-medium text-slate-600">Preço do produto<RequiredMark /></legend>
+            <input aria-labelledby="legend-new-product-screen-9904"
               type="number"
               min={0.01}
               step="0.01"
@@ -280,10 +283,10 @@ export function NewProductScreen() {
           </fieldset>
 
           <fieldset className="rounded-xl border border-slate-200 px-3 py-2">
-            <legend className="text-gray-600 font-medium px-1 text-sm">
+            <legend id="legend-new-product-screen-10446" className="text-gray-600 font-medium px-1 text-sm">
               Descrição do produto (opcional)
             </legend>
-            <textarea
+            <textarea aria-labelledby="legend-new-product-screen-10446"
               value={form.description}
               onChange={(e) => handleChange("description", e.target.value)}
               className="input h-24 resize-none"
@@ -294,12 +297,18 @@ export function NewProductScreen() {
 
         <div className="grid grid-cols-1 mt-3">
           <fieldset className="rounded-xl border border-slate-200 px-3 py-3">
-            <legend className="text-gray-600 font-medium px-1 text-sm">Fotos do produto</legend>
+            <legend id="legend-new-product-screen-11026" className="text-gray-600 font-medium px-1 text-sm">Fotos do produto</legend>
             <div className="flex flex-wrap gap-3">
               {stagedPreviews.map((src, index) => (
                 <div key={src} className="relative h-20 w-20 overflow-hidden rounded-md border border-gray-300">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={src} alt={`Foto ${index + 1}`} className="h-full w-full object-cover" />
+                  <Image
+                    src={src}
+                    alt={`Foto ${index + 1}`}
+                    width={80}
+                    height={80}
+                    unoptimized
+                    className="h-full w-full object-cover"
+                  />
                   <button
                     type="button"
                     onClick={() => handleRemoveStagedImage(index)}

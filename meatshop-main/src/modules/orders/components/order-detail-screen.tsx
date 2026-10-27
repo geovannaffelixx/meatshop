@@ -1,5 +1,9 @@
 "use client"
 
+import { toDatetimeLocal, datetimeLocalToISO, isValidDateTime } from "@/shared/lib/date-time";
+
+import { DataSkeleton } from "@/shared/components/data-skeleton";
+
 import { PaymentActions } from "@/modules/finance/components/payment-management"
 import React, { useEffect, useState } from "react"
 import Link from "next/link"
@@ -60,18 +64,14 @@ interface OrderDetailScreenProps {
   orderId: string
 }
 
-function toDatetimeLocal(iso: string | null) {
-  if (!iso) return ""
-  const d = new Date(iso)
-  const pad = (n: number) => String(n).padStart(2, "0")
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
+
 
 export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
   const [order, setOrder] = useState<Order | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [working, setWorking] = useState(false)
+  const [pickupCode, setPickupCode] = useState("")
 
   const [cancelOpen, setCancelOpen] = useState(false)
   const [cancelReason, setCancelReason] = useState("")
@@ -110,11 +110,15 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
     if (!order) return
     const next = getNextAction(order.status, order.delivery_type)
     if (!next) return
+    if (order.delivery_type === "PICKUP" && next.targetStatus === "DELIVERED" && !/^\d{6}$/.test(pickupCode)) {
+      setActionError("Informe o código de seis dígitos apresentado pelo cliente.")
+      return
+    }
 
     runAction(() =>
       next.endpoint === "confirm"
         ? apiPatch(`/orders/${order.id}/confirm`, {})
-        : apiPatch(`/orders/${order.id}/status`, { status: next.targetStatus }),
+        : apiPatch(`/orders/${order.id}/status`, { status: next.targetStatus, ...(order.delivery_type === "PICKUP" && next.targetStatus === "DELIVERED" ? { code: pickupCode } : {}) }),
     )
   }
 
@@ -128,7 +132,8 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
 
   const handleReschedule = () => {
     if (!order || !scheduleDate) return
-    const iso = new Date(scheduleDate).toISOString()
+    if (!isValidDateTime(scheduleDate)) { setError('Informe data e hora válidas.'); return; }
+    const iso = datetimeLocalToISO(scheduleDate)
     runAction(() => apiPatch(`/orders/${order.id}/schedule`, { scheduled_delivery_date: iso })).then(() => {
       setScheduleOpen(false)
     })
@@ -145,7 +150,7 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
   if (!order)
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-gray-600">Carregando pedido...</p>
+        <DataSkeleton label="Carregando pedido..." />
       </div>
     )
 
@@ -208,7 +213,13 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
 
         {order.payment && <PaymentActions order={{...order,...order.payment,payment_status:order.payment_status,status:order.status}} onChange={loadOrder} />}
         {!allowsPreparation && order.status !== "CANCELLED" && <p className="text-amber-700">O preparo depende da confirmação do pagamento.</p>}
-        <div className="overflow-x-auto">
+          {order.delivery_type === "PICKUP" && order.status === "READY" && (
+            <label className="block text-sm font-medium">Código de retirada do cliente
+              <Input aria-label="Código de retirada do cliente" value={pickupCode} inputMode="numeric" maxLength={6}
+                onChange={(event) => setPickupCode(event.target.value.replace(/\D/g, ""))} />
+            </label>
+          )}
+          <div className="overflow-x-auto">
           <table className="data-table">
             <caption className="sr-only">Itens do pedido</caption>
             <thead className="bg-gray-200 text-gray-700 font-semibold">

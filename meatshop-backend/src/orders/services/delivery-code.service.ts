@@ -6,18 +6,12 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-  createCipheriv,
-  createDecipheriv,
-  createHash,
-  createHmac,
-  randomBytes,
-  randomInt,
-  timingSafeEqual,
-} from 'crypto';
+import { createHmac, randomInt, timingSafeEqual } from 'crypto';
 import { Buffer } from 'buffer';
 import { Repository } from 'typeorm';
+import { AesGcmCipher } from '../../common/security/aes-gcm-cipher';
 import { Order } from '../entities/order.entity';
+import { OrderStatus } from '../enums/order-status.enum';
 
 export type DeliveryCodePurpose = 'PICKUP' | 'DELIVERY';
 
@@ -65,6 +59,32 @@ export class DeliveryCodeService {
     const fields = this.fields(order, purpose);
     const now = new Date();
 
+    this.assertCodeUsable(order, purpose, now);
+    const expected = Buffer.from(fields.hash!, 'hex');
+    const received = Buffer.from(this.hash(order.id, purpose, code), 'hex');
+    if (expected.length !== received.length || !timingSafeEqual(expected, received)) {
+      this.applyFailedAttempt(order, purpose, fields.attempts + 1);
+      await this.orderRepository.save(order);
+      throw new UnauthorizedException({
+        code: 'INVALID_DELIVERY_CODE',
+        message: 'Invalid security code.',
+      });
+    }
+
+    if (purpose === 'PICKUP') {
+      order.pickup_verified_at = now;
+      order.pickup_code_attempts = 0;
+      order.pickup_code_locked_until = null;
+    } else {
+      order.delivery_verified_at = now;
+      order.delivery_code_attempts = 0;
+      order.delivery_code_locked_until = null;
+    }
+    await this.orderRepository.save(order);
+  }
+
+  private assertCodeUsable(order: Order, purpose: DeliveryCodePurpose, now: Date) {
+    const fields = this.fields(order, purpose);
     if (fields.verifiedAt) {
       throw new BadRequestException(
         purpose === 'PICKUP'
@@ -90,28 +110,6 @@ export class DeliveryCodeService {
         message: 'The code expired. Request a new code.',
       });
     }
-
-    const expected = Buffer.from(fields.hash, 'hex');
-    const received = Buffer.from(this.hash(order.id, purpose, code), 'hex');
-    if (expected.length !== received.length || !timingSafeEqual(expected, received)) {
-      this.applyFailedAttempt(order, purpose, fields.attempts + 1);
-      await this.orderRepository.save(order);
-      throw new UnauthorizedException({
-        code: 'INVALID_DELIVERY_CODE',
-        message: 'Invalid security code.',
-      });
-    }
-
-    if (purpose === 'PICKUP') {
-      order.pickup_verified_at = now;
-      order.pickup_code_attempts = 0;
-      order.pickup_code_locked_until = null;
-    } else {
-      order.delivery_verified_at = now;
-      order.delivery_code_attempts = 0;
-      order.delivery_code_locked_until = null;
-    }
-    await this.orderRepository.save(order);
   }
 
   clearPickup(order: Order): void {
@@ -124,6 +122,8 @@ export class DeliveryCodeService {
 
   revealDeliveryCode(order: Order): string | null {
     if (!order.delivery_code_ciphertext || order.delivery_verified_at) return null;
+    if ([OrderStatus.CANCELLED, OrderStatus.DELIVERED].includes(order.status)) return null;
+    if (order.delivery_code_expires_at && order.delivery_code_expires_at <= new Date()) return null;
     try {
       return this.decrypt(order.delivery_code_ciphertext);
     } catch {
@@ -171,33 +171,19 @@ export class DeliveryCodeService {
   }
 
   private encrypt(code: string): string {
-    const iv = randomBytes(12);
-    const cipher = createCipheriv('aes-256-gcm', this.encryptionKey(), iv);
-    const encrypted = Buffer.concat([cipher.update(code, 'utf8'), cipher.final()]);
-    return [iv, cipher.getAuthTag(), encrypted].map((part) => part.toString('base64url')).join('.');
+    return this.cipher().encrypt(code);
   }
 
   private decrypt(value: string): string {
-    const [ivValue, tagValue, encryptedValue] = value.split('.');
-    if (!ivValue || !tagValue || !encryptedValue) throw new Error('Invalid ciphertext');
-    const decipher = createDecipheriv(
-      'aes-256-gcm',
-      this.encryptionKey(),
-      Buffer.from(ivValue, 'base64url'),
-    );
-    decipher.setAuthTag(Buffer.from(tagValue, 'base64url'));
-    return Buffer.concat([
-      decipher.update(Buffer.from(encryptedValue, 'base64url')),
-      decipher.final(),
-    ]).toString('utf8');
+    return this.cipher().decrypt(value);
   }
 
-  private encryptionKey(): Buffer {
+  private cipher(): AesGcmCipher {
     const secret =
       this.configService.get<string>('DELIVERY_CODE_ENCRYPTION_KEY') ||
       this.configService.get<string>('DELIVERY_CODE_SECRET') ||
       this.configService.getOrThrow<string>('JWT_REFRESH_SECRET');
-    return createHash('sha256').update(secret).digest();
+    return AesGcmCipher.fromSecret(secret);
   }
 
   private configNumber(name: string, fallback: number): number {

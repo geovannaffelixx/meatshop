@@ -2,6 +2,85 @@
 
 Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Changelog e Semantic Versioning.
 
+## [3.4.0] - 2026-10-26 - Conformidade com a especificação
+
+### Adicionado
+
+- Proteção das rotas do painel também no servidor (`proxy.ts` do Next.js 16), com a lista de rotas públicas compartilhada e o RouteGuard como alternativa quando o cookie pertence ao domínio da API.
+- Cliente CSRF: token obtido sob demanda, mantido em memória e enviado nas requisições de alteração, inclusive renovação de sessão e uploads, com uma nova tentativa em caso de token inválido.
+- Ativação e desativação da unidade nas configurações, com confirmação, retorno de sucesso ou erro e acesso restrito ao proprietário.
+- Exportação real dos dados pessoais em JSON, com estados de carregamento, sucesso e erro.
+- Página de verificação de e-mail para o link enviado pela API.
+- Contato informado pelo cliente exibido no detalhe do chamado de suporte.
+- Testes Cypress de login, produtos, pedidos, promoções, geolocalização e acessibilidade, executados com `npm run test:e2e`.
+
+### Alterado
+
+- Os dados do usuário deixam de ser gravados no `localStorage`; apenas a unidade selecionada permanece salva no navegador.
+- Acessibilidade: rótulos associados aos campos, `aria-label` em botões só com ícone, `aria-pressed` nos filtros de avaliações, um único `main`, link "Pular para o conteúdo", contraste maior em textos auxiliares e tamanho mínimo de fonte.
+- Tipos e formas de pagamento das despesas exibidos em português.
+
+### Removido
+
+- Dependências sem uso: `textarea`, `axios`, `next-auth`, `zustand` e `react-input-mask-next`.
+- Componente de tela em construção sem uso.
+
+## [3.3.0] - 2026-10-20 - Fechamento de lacunas funcionais
+
+### Listas no servidor e imagens da unidade (24/10/2026)
+
+- Busca/paginação de dez registros no backend, com total filtrado e reinício ao trocar busca/filtros.
+- Ajuda no grupo Configurações, cabeçalho consistente em Unidade/Equipe e drawer com um acesso único à conta.
+- Formulário da unidade organizado por assunto; upload de logo, capa e galeria com até dez fotos.
+- Modal de produto ao clicar na linha, com galeria e estoque; edição preservada no botão Editar.
+- Regressões de consulta por página, busca, detalhes e gerenciamento de imagens.
+
+### Busca e perfil (24/10/2026)
+
+- Busca compartilhada em Categorias, Promoções, Cupons e Receitas, com foco acessível e limpeza.
+- Perfil no cabeçalho com drawer à direita, foto, contexto de unidade/função e versão.
+- Acessos de conta, senha e saída centralizados no drawer; removido o rodapé de usuário da sidebar.
+- Testes de busca, navegação do perfil e logout com sucesso/falha.
+
+### Ajustes do painel (23/10/2026)
+
+- Foto do usuário na sidebar com alternativa em caso de falha.
+- Modal de exportação com Excel/JSON/PDF e toast demonstrativo, sem download nesta etapa.
+- Cabeçalho de Operação em Mensagens; edição de produto somente no botão Editar.
+- Validade do cache ampliada para cinco minutos em hooks e chamadas diretas.
+- Zod integrado aos validadores compartilhados e ao formulário da conta, preservando CNPJ alfanumérico.
+- Componentes de progresso e pontos animados adaptados à paleta e ao movimento reduzido.
+
+### Navegação e experiência de carregamento
+
+- Categorias, Promoções e Equipe e acessos com tabela compartilhada e páginas de dez registros.
+- Exportação de dados na linha do título de Minha conta, reduzindo o espaço vertical.
+- Validadores/máscaras compartilhados nos formulários e datas com fuso de Brasília sem deslocar datas de calendário.
+
+- Transição de unidade clara, logo centralizada e paginação numerada com primeira/última página.
+- Tabela reutilizável tipada aplicada em Produtos, com caption, skeleton, estado vazio e ativação por teclado.
+
+- Sidebar com grupos de links visíveis, seletor de unidade com teclado e acesso único à conta.
+- Transição de unidade em tela inteira durante três segundos, com limpeza de contexto e cache.
+- Cache em memória por sessão/unidade, válido por dois minutos, com invalidação após alterações; pedidos sempre consultam novamente.
+- Skeleton compartilhado para leituras de dados e remoção do bloqueio de termos a cada navegação.
+
+### Complemento da especificacao original (23/10/2026)
+
+- Exportacao dos proprios dados na conta, com tratamento de erro e nova tentativa.
+- Gestao de produtos e promocoes usa catalogo autenticado, preservando produtos inativos para edicao.
+- Dependencias de producao atualizadas e regressao da exportacao de dados.
+
+### Adicionado
+
+- Configuração de agendamento na unidade, com ativação explícita, duração do intervalo e capacidade de pedidos por intervalo; os valores iniciais sugeridos são 30 minutos e 5 pedidos.
+
+### Alterado
+
+- Painel financeiro e gráfico do dashboard identificam com clareza a receita confirmada, os recebimentos líquidos, as taxas e os estornos.
+- Salvamento de horários passa a atualizar também a disponibilidade de agendamento da unidade.
+- Horários e capacidade enviados em uma única requisição transacional, com mensagem explícita em caso de falha e botão compartilhado do painel.
+
 ## [3.2.0] - 2026-10-18 - Termos e privacidade
 
 ### Alterado

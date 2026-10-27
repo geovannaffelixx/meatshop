@@ -1,10 +1,19 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 import { SupportTicketCategory } from '../enums/support-ticket-category.enum';
 import { SupportTicketPriority } from '../enums/support-ticket-priority.enum';
 
 export class CreateSupportTicketDto {
+  @ApiPropertyOptional({ description: 'Optional contact information', maxLength: 150 })
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') || undefined : value,
+  )
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  contact?: string;
+
   @ApiProperty({
     enum: SupportTicketCategory,
     example: SupportTicketCategory.TECHNICAL,

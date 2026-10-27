@@ -23,9 +23,9 @@ const enabled = process.env.LEGAL_TEST_DATABASE === 'meatshop_legal_test';
     db = new DataSource({
       type: 'postgres',
       host: '127.0.0.1',
-      port: 5433,
-      username: 'meatshop_user',
-      password: 'meatshop_pass',
+      port: Number(process.env.E2E_DB_PORT ?? 5433),
+      username: process.env.DB_USERNAME ?? 'meatshop_user',
+      password: process.env.DB_PASSWORD ?? 'meatshop_pass',
       database: 'meatshop_legal_test',
       entities: [LegalDocument, LegalAcceptance],
       synchronize: false,

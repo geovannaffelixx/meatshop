@@ -1,17 +1,24 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { toDateInput } from "@/shared/lib/date-time";
+
+import { useServerList } from "@/shared/hooks/use-server-list";
+import { DataPagination } from "@/shared/components/data-pagination";
+
+import { DataSkeleton } from "@/shared/components/data-skeleton";
+
+import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent } from "@/shared/components/ui/card"
 import { Spinner } from "@/shared/components/ui/spinner"
-import { CalendarDays, Plus, Search, UtensilsCrossed } from "lucide-react"
-import { apiDelete, apiGet, resolveAssetUrl } from "@/shared/lib/api"
+import { CalendarDays, Plus, UtensilsCrossed } from "lucide-react"
+import { apiDelete, resolveAssetUrl } from "@/shared/lib/api"
 import { toast } from "@/shared/lib/toast"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
+import { SearchField } from "@/shared/components/search-field";
 import { PageHeader } from "@/shared/components/page-header"
 import { EmptyState } from "@/shared/components/empty-state"
-import { Input } from "@/shared/components/ui/input"
 import {
   Dialog,
   DialogContent,
@@ -34,48 +41,24 @@ type Recipe = {
 
 function isCurrentWeek(weekStart: string | null) {
   if (!weekStart) return false
-  const start = new Date(weekStart)
-  const end = new Date(start)
-  end.setDate(end.getDate() + 7)
-  const now = new Date()
-  return start <= now && now < end
+  const start = toDateInput(weekStart);
+  if (!start) return false;
+  const end = new Date(`${start}T00:00:00Z`);
+  end.setUTCDate(end.getUTCDate() + 7);
+  const today = toDateInput(new Date());
+  return today >= start && today < end.toISOString().slice(0, 10);
 }
 
 export function RecipesScreen() {
-  const { units, unitId, setUnitId, loading: unitsLoading } = useManagedUnits()
+  const { units, unitId, loading: unitsLoading } = useManagedUnits()
 
-  const [recipes, setRecipes] = useState<Recipe[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [removing, setRemoving] = useState<Recipe | null>(null)
-  const [confirmingRemoval, setConfirmingRemoval] = useState(false)
-  const [search, setSearch] = useState("")
-
-  const filteredRecipes = useMemo(() => {
-    const term = search.trim().toLocaleLowerCase("pt-BR")
-    if (!term) return recipes
-    return recipes.filter((recipe) =>
-      `${recipe.title} ${recipe.tag ?? ""}`.toLocaleLowerCase("pt-BR").includes(term),
-    )
-  }, [recipes, search])
-
-  const loadRecipes = async (unit: number) => {
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await apiGet(`/recipes?unit_id=${unit}`)
-      setRecipes(Array.isArray(data) ? data : [])
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao carregar receitas.")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    if (!unitId) return
-    loadRecipes(unitId)
-  }, [unitId])
+  const [search, setSearch] = useState('');
+  const query = useServerList<Recipe>(unitId ? `/recipes?unit_id=${unitId}` : null, search);
+  const recipes = query.rows;
+  const loading = query.isPending;
+  const error = query.error?.message;
+  const [removing, setRemoving] = useState<Recipe | null>(null);
+  const [confirmingRemoval, setConfirmingRemoval] = useState(false);
 
   const confirmRemove = async () => {
     if (!removing || !unitId) return
@@ -84,7 +67,7 @@ export function RecipesScreen() {
       await apiDelete(`/recipes/${removing.id}`)
       toast.success("Receita removida com sucesso.")
       setRemoving(null)
-      await loadRecipes(unitId)
+      await query.refetch()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao remover receita.")
     } finally {
@@ -101,20 +84,7 @@ export function RecipesScreen() {
           description="Publique conteúdos que aproximam os clientes dos produtos da unidade."
           actions={
             <>
-            {units.length > 1 && (
-              <select
-                aria-label="Unidade ativa"
-                value={unitId ?? ""}
-                onChange={(e) => setUnitId(Number(e.target.value))}
-                className="border rounded-md px-3 py-2"
-              >
-                {units.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name}
-                  </option>
-                ))}
-              </select>
-            )}
+
 
             {recipes.length > 0 && (
               <Button asChild className="bg-red-600 hover:bg-red-700 text-white flex items-center gap-2">
@@ -132,17 +102,13 @@ export function RecipesScreen() {
           <div className="text-center text-red-600">Nenhuma unidade encontrada para este usuário.</div>
         )}
 
-        <label className="relative block max-w-xl">
-          <span className="sr-only">Buscar receitas</span>
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-          <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por título ou tag" className="pl-9" />
-        </label>
+        <SearchField value={search} onValueChange={setSearch} label="Buscar receitas" placeholder="Buscar por título ou tag" className="max-w-xl" />
 
         {loading ? (
-          <div className="p-6 text-center italic text-gray-500">Carregando receitas...</div>
+          <DataSkeleton label="Carregando receitas..." />
         ) : error ? (
           <div className="p-4 text-center font-semibold text-red-600">Erro: {error}</div>
-        ) : filteredRecipes.length === 0 ? (
+        ) : recipes.length === 0 ? (
           <Card className="border-0 bg-white shadow-sm">
             <EmptyState
               icon={UtensilsCrossed}
@@ -153,7 +119,7 @@ export function RecipesScreen() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredRecipes.map((recipe) => (
+            {recipes.map((recipe) => (
               <Card key={recipe.id} className="overflow-hidden border-0 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
                 <div className="h-36 w-full bg-gray-200">
                   {recipe.image_url ? (
@@ -200,6 +166,7 @@ export function RecipesScreen() {
         )}
       </div>
 
+      <DataPagination {...query.pagination} isLoading={loading} />
       <Dialog open={Boolean(removing)} onOpenChange={(nextOpen) => !nextOpen && setRemoving(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>

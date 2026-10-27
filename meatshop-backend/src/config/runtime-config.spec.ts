@@ -16,6 +16,9 @@ describe('runtime config', () => {
   it('rejects insecure production configuration', () => {
     expect(() =>
       validateEnvironment({
+        DATA_ENCRYPTION_KEY: Buffer.alloc(32, 1).toString('base64'),
+        DATA_HASH_KEY: Buffer.alloc(32, 2).toString('base64'),
+        METRICS_TOKEN: 'm'.repeat(32),
         NODE_ENV: 'production',
         DB_TYPE: 'postgres',
         DB_SYNCHRONIZE: 'false',
@@ -38,8 +41,12 @@ describe('runtime config', () => {
     'validates a secure production server with MP_ENV=%s and PAYMENTS_ENABLED=%s',
     (mpEnv, enabled) => {
       const environment = {
+        DATA_ENCRYPTION_KEY: Buffer.alloc(32, 1).toString('base64'),
+        DATA_HASH_KEY: Buffer.alloc(32, 2).toString('base64'),
+        METRICS_TOKEN: 'm'.repeat(32),
         NODE_ENV: 'production',
         DB_TYPE: 'postgres',
+        FIREBASE_WEB_API_KEY: 'public-api-key',
         DB_HOST: 'database.internal',
         DB_USERNAME: 'meatshop',
         DB_PASSWORD: 'database-secret',
@@ -76,6 +83,11 @@ describe('runtime config', () => {
         DELIVERY_CODE_ENCRYPTION_KEY: 'd'.repeat(32),
       };
       expect(() => validateEnvironment(environment)).not.toThrow();
+      for (const missingKey of [undefined, '', '   ']) {
+        expect(() =>
+          validateEnvironment({ ...environment, FIREBASE_WEB_API_KEY: missingKey }),
+        ).toThrow('FIREBASE_WEB_API_KEY is required in production');
+      }
       for (const invalid of [undefined, '', 'test', 'prod']) {
         expect(() => validateEnvironment({ ...environment, MP_ENV: invalid })).toThrow(
           'MP_ENV must be sandbox or production',
@@ -90,4 +102,10 @@ describe('runtime config', () => {
       ).toThrow();
     },
   );
+});
+
+describe('Replica safeguards', () => {
+  it('rejects multiple replicas without shared realtime', () => {
+    expect(() => validateEnvironment({ BACKEND_REPLICAS: '2' })).toThrow('SOCKET_IO_SHARED');
+  });
 });

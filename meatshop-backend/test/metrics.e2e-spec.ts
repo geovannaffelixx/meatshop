@@ -4,7 +4,8 @@ import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 
-describe('Metrics Endpoint (e2e)', () => {
+const enabled = process.env.E2E_TEST_DATABASE === 'meatshop_gaps_test_330';
+(enabled ? describe : describe.skip)('Metrics Endpoint (isolated PostgreSQL)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
@@ -21,7 +22,11 @@ describe('Metrics Endpoint (e2e)', () => {
   });
 
   it('/metrics (GET) contains basic metrics', async () => {
-    const res = await request(app.getHttpServer()).get('/metrics');
+    const denied = await request(app.getHttpServer()).get('/metrics');
+    expect(denied.status).toBe(401);
+    const res = await request(app.getHttpServer())
+      .get('/metrics')
+      .set('Authorization', `Bearer ${process.env.METRICS_TOKEN}`);
     expect(res.status).toBe(200);
     expect(res.text).toContain('process_cpu_user_seconds_total');
   });

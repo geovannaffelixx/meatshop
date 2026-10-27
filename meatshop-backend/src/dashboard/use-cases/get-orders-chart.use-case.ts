@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThanOrEqual } from 'typeorm';
 import { Order } from '../../orders/entities/order.entity';
 import { OrderStatus } from '../../orders/enums/order-status.enum';
-import { PaymentStatus } from '../../orders/enums/payment-status.enum';
 import { UnitAuthorizationService } from '../../units/services/unit-authorization.service';
 import { User } from '../../users/entities/user.entity';
 import { OrdersChartQueryDto } from '../dtos/orders-chart-query.dto';
@@ -74,9 +73,6 @@ export class GetOrdersChartUseCase {
       const key = businessDateKey(o.order_date);
       const bucket = byDate.get(key) ?? { orderCount: 0, revenue: 0 };
       bucket.orderCount += 1;
-      if (o.payment_status === PaymentStatus.PAID) {
-        bucket.revenue += Number(o.total_amount);
-      }
       byDate.set(key, bucket);
     });
 

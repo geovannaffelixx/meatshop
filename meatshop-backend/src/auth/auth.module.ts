@@ -1,3 +1,6 @@
+import { UsersModule } from '../users/users.module';
+import { AuthSessionService } from './services/auth-session.service';
+import { VerifyMobilePasswordUseCase } from './use-cases/verify-mobile-password.use-case';
 import { LegalAccessGuard } from '../legal/legal-access.guard';
 import { LegalModule } from '../legal/legal.module';
 import { Module } from '@nestjs/common';
@@ -8,6 +11,7 @@ import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../users/entities/user.entity';
 import { AuthController } from './auth.controller';
+import { CsrfController } from './csrf.controller';
 import { AuthService } from './auth.service';
 import { RefreshTokenEntity } from './entities/refresh-token.entity';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -31,6 +35,7 @@ import { FirebaseExchangeUseCase } from './use-cases/firebase-exchange.use-case'
 
 @Module({
   imports: [
+    UsersModule,
     LegalModule,
     ConfigModule,
     EmailModule,
@@ -39,7 +44,7 @@ import { FirebaseExchangeUseCase } from './use-cases/firebase-exchange.use-case'
     TypeOrmModule.forFeature([User, RefreshTokenEntity]),
     PassportModule,
     JwtModule.registerAsync({
-      imports: [ConfigModule],
+      imports: [UsersModule, ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         secret: configService.getOrThrow<string>('JWT_SECRET'),
@@ -49,9 +54,11 @@ import { FirebaseExchangeUseCase } from './use-cases/firebase-exchange.use-case'
       }),
     }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, CsrfController],
   providers: [
     AuthService,
+    AuthSessionService,
+    VerifyMobilePasswordUseCase,
     JwtStrategy,
     LocalStrategy,
     JwtAuthGuard,

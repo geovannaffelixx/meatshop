@@ -1,3 +1,4 @@
+import { PanelListQueryDto } from '../common/dtos/panel-list-query.dto';
 import {
   Body,
   Controller,
@@ -39,6 +40,8 @@ import { UnitPermission } from '../common/enums/unit-permission.enum';
 import { FilterPublicUnitsDto } from './dtos/filter-public-units.dto';
 import { GetPublicUnitUseCase } from './use-cases/get-public-unit.use-case';
 import { ListPublicUnitsUseCase } from './use-cases/list-public-units.use-case';
+import { UpdateUnitStatusDto } from './dtos/update-unit-status.dto';
+import { UpdateUnitStatusUseCase } from './use-cases/update-unit-status.use-case';
 
 @ApiTags('Units')
 @ApiBearerAuth('access-token')
@@ -60,6 +63,7 @@ export class UnitsController {
     private readonly unitAuthorizationService: UnitAuthorizationService,
     private readonly listPublicUnitsUseCase: ListPublicUnitsUseCase,
     private readonly getPublicUnitUseCase: GetPublicUnitUseCase,
+    private readonly updateUnitStatusUseCase: UpdateUnitStatusUseCase,
   ) {}
 
   @Public()
@@ -124,6 +128,22 @@ export class UnitsController {
     return this.updateUnitUseCase.execute(id, dto, currentUser);
   }
 
+  @ApiOperation({ summary: 'Activates or deactivates a unit in the marketplace' })
+  @ApiResponse({ status: 200, description: 'Unit status updated successfully.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Only the unit owner or a super admin can change the status.',
+  })
+  @ApiResponse({ status: 404, description: 'Unit not found.' })
+  @Patch(':id/status')
+  updateStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateUnitStatusDto,
+    @CurrentUser() currentUser: User,
+  ) {
+    return this.updateUnitStatusUseCase.execute(id, dto, currentUser);
+  }
+
   @ApiOperation({ summary: 'Adds a user as a unit member' })
   @ApiResponse({
     status: 201,
@@ -169,8 +189,12 @@ export class UnitsController {
 
   @ApiOperation({ summary: 'Lists administrative members of a unit' })
   @Get(':unitId/members')
-  listMembers(@Param('unitId', ParseIntPipe) unitId: number, @CurrentUser() currentUser: User) {
-    return this.listUnitMembersUseCase.execute(unitId, currentUser);
+  listMembers(
+    @Param('unitId', ParseIntPipe) unitId: number,
+    @CurrentUser() currentUser: User,
+    @Query() filters: PanelListQueryDto,
+  ) {
+    return this.listUnitMembersUseCase.execute(unitId, currentUser, filters);
   }
 
   @ApiOperation({ summary: 'Changes the role or status of a unit member' })

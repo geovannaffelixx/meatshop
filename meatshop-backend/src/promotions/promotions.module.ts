@@ -1,6 +1,8 @@
+import { ListManagedPromotionsUseCase } from './use-cases/list-managed-promotions.use-case';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProductsModule } from '../products/products.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { UnitsModule } from '../units/units.module';
 import { CouponsController } from './coupons.controller';
 import { Coupon } from './entities/coupon.entity';
@@ -24,15 +26,18 @@ import { CouponRedemptionService } from './services/coupon-redemption.service';
 import { CouponWriteValidatorService } from './services/coupon-write-validator.service';
 import { GetCouponUseCase } from './use-cases/get-coupon.use-case';
 import { ListCouponRedemptionsUseCase } from './use-cases/list-coupon-redemptions.use-case';
+import { PromotionalPriceService } from './services/promotional-price.service';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Promotion, Coupon, CouponUnit, CouponRedemption]),
     UnitsModule,
     ProductsModule,
+    NotificationsModule,
   ],
   controllers: [PromotionsController, CouponsController],
   providers: [
+    ListManagedPromotionsUseCase,
     CreatePromotionUseCase,
     UpdatePromotionUseCase,
     ActivatePromotionUseCase,
@@ -49,7 +54,8 @@ import { ListCouponRedemptionsUseCase } from './use-cases/list-coupon-redemption
     CouponWriteValidatorService,
     GetCouponUseCase,
     ListCouponRedemptionsUseCase,
+    PromotionalPriceService,
   ],
-  exports: [TypeOrmModule, ValidateCouponUseCase, CouponRedemptionService],
+  exports: [TypeOrmModule, ValidateCouponUseCase, CouponRedemptionService, PromotionalPriceService],
 })
 export class PromotionsModule {}

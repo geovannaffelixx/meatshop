@@ -29,4 +29,14 @@ describe('Public units pagination', () => {
     expect(q.skip).toHaveBeenCalledWith(10);
     expect(result.meta.total).toBe(0);
   });
+  it('hides inactive units from the public list', async () => {
+    const q: any = {};
+    for (const name of ['andWhere', 'addSelect', 'orderBy', 'addOrderBy', 'skip', 'take'])
+      q[name] = jest.fn(() => q);
+    q.getManyAndCount = jest.fn(async () => [[], 0]);
+    await new ListPublicUnitsUseCase({ createQueryBuilder: () => q } as never, {} as never).execute(
+      { page: 1, limit: 10 },
+    );
+    expect(q.andWhere).toHaveBeenCalledWith('unit.is_active = :unitActive', { unitActive: true });
+  });
 });

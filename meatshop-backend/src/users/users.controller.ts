@@ -1,9 +1,12 @@
+import { ExportPersonalDataUseCase } from './use-cases/export-personal-data.use-case';
+import { PersonalDataRetentionService } from './services/personal-data-retention.service';
 import {
   Body,
   Controller,
   Delete,
   Get,
   Headers,
+  Header,
   HttpCode,
   HttpStatus,
   Patch,
@@ -21,11 +24,25 @@ import { DeleteAccountUseCase } from './use-cases/delete-account.use-case';
 @Controller('users')
 export class UsersController {
   constructor(
+    private readonly exportData: ExportPersonalDataUseCase,
+    private readonly retention: PersonalDataRetentionService,
     private readonly getUserProfileUseCase: GetUserProfileUseCase,
     private readonly getPanelContextUseCase: GetPanelContextUseCase,
     private readonly updateProfileUseCase: UpdateProfileUseCase,
     private readonly deleteAccountUseCase: DeleteAccountUseCase,
   ) {}
+
+  @Get('me/export')
+  @Header('Cache-Control', 'no-store')
+  @Header('Content-Disposition', 'attachment; filename="meatshop-personal-data.json"')
+  exportMe(@CurrentUser() user: User) {
+    return this.exportData.execute(user.id);
+  }
+
+  @Get('me/retention-policy')
+  retentionPolicy() {
+    return this.retention.policy();
+  }
 
   @Get('me')
   @ApiBearerAuth('access-token')

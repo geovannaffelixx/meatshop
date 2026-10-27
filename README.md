@@ -1,7 +1,7 @@
 # 🥩 MeatShop — Plataforma para Açougues & Clientes
 
 > [!IMPORTANT]
-> Para subir banco, migrations, backend e frontend após um clone novo, use o guia oficial [SETUP.md](./SETUP.md). O ambiente Docker é autocontido e não exige criar arquivos `.env`.
+> Para subir banco, migrations, backend e frontend após um clone novo, use o guia oficial [SETUP.md](./SETUP.md). Antes do primeiro `docker compose up`, gere o `.env` local com `node scripts/setup-local-env.mjs`: os segredos de desenvolvimento não ficam mais no `docker-compose.yml` e o Compose não sobe sem esse arquivo.
 
 Termos e privacidade 3.2.0: consulte [arquitetura, contratos e implantação](./docs/TERMS_AND_PRIVACY.md).
 
@@ -25,7 +25,7 @@ variável local `GROQ_API_KEY`. Consulte [SETUP.md](./SETUP.md).
 ![Frontend NextJS](https://img.shields.io/badge/Next.js-Frontend-black?logo=next.js)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-blue?logo=postgresql)
 ![Docker Ready](https://img.shields.io/badge/Docker-ready-0db7ed?logo=docker)
-![Versão](https://img.shields.io/badge/versão-1.0.0-green)
+![Versão](https://img.shields.io/badge/versão-3.3.0-green)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow?logo=open-source-initiative&logoColor=white)
 
 

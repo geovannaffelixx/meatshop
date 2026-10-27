@@ -1,11 +1,17 @@
 "use client"
 
+import { formatDateValue } from "@/shared/lib/date-time";
+
+import { useApiQuery } from "@/shared/hooks/use-api-query";
+
+import { DataSkeleton } from "@/shared/components/data-skeleton";
+
 import { UserRound } from "lucide-react"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { Card, CardContent } from "@/shared/components/ui/card"
 import { Star, Store } from "lucide-react"
-import { apiGet } from "@/shared/lib/api"
+
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
 import { PageHeader } from "@/shared/components/page-header"
 
@@ -23,39 +29,29 @@ type Review = {
 
 function StarRating({ rating }: { rating: number }) {
   return (
-    <div className="flex items-center gap-0.5" aria-label={`Nota ${rating} de 5`}>
+    <div className="flex items-center gap-0.5" role="img" aria-label={`Nota ${rating} de 5`}>
       {Array.from({ length: 5 }, (_, i) => (
         <Star
           key={i}
           size={16}
-          className={i < rating ? "fill-amber-400 text-amber-400" : "text-gray-300"}
+          aria-hidden="true"
+          className={i < rating ? "fill-amber-700 text-amber-700" : "text-gray-500"}
         />
       ))}
     </div>
   )
 }
 
-function formatDateBR(iso: string) {
-  return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })
-}
+
 
 export function ReviewsScreen() {
-  const { units, unitId, setUnitId, loading: unitsLoading } = useManagedUnits()
+  const { units, unitId, loading: unitsLoading } = useManagedUnits()
 
-  const [reviews, setReviews] = useState<Review[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const query = useApiQuery<Review[]>(unitId ? `/reviews?unit_id=${unitId}` : null);
+  const reviews = useMemo(() => query.data ?? [], [query.data]);
+  const loading = query.isPending;
+  const error = query.error?.message;
   const [filter, setFilter] = useState<"all" | "unit" | number>("all")
-
-  useEffect(() => {
-    if (!unitId) return
-    setLoading(true)
-    setError(null)
-    apiGet(`/reviews?unit_id=${unitId}`)
-      .then((data) => setReviews(Array.isArray(data) ? data : []))
-      .catch((err) => setError(err instanceof Error ? err.message : "Erro ao carregar avaliações."))
-      .finally(() => setLoading(false))
-  }, [unitId])
 
   const products = useMemo(() => {
     const map = new Map<number, string>()
@@ -83,20 +79,6 @@ export function ReviewsScreen() {
           eyebrow="Clientes"
           title="Avaliações"
           description="Acompanhe a satisfação com a unidade e com os produtos."
-          actions={units.length > 1 ? (
-            <select
-              aria-label="Unidade ativa"
-              value={unitId ?? ""}
-              onChange={(e) => setUnitId(Number(e.target.value))}
-              className="border rounded-md px-3 py-2"
-            >
-              {units.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
-          ) : undefined}
         />
 
         {!unitsLoading && units.length === 0 && (
@@ -122,12 +104,14 @@ export function ReviewsScreen() {
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setFilter("all")}
+              aria-pressed={filter === "all"}
               className={`rounded-full px-4 py-1.5 text-sm font-medium ${filter === "all" ? "bg-red-600 text-white" : "bg-white text-gray-700 border"}`}
             >
               Todas
             </button>
             <button
               onClick={() => setFilter("unit")}
+              aria-pressed={filter === "unit"}
               className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium ${filter === "unit" ? "bg-red-600 text-white" : "bg-white text-gray-700 border"}`}
             >
               <Store size={14} />
@@ -137,6 +121,7 @@ export function ReviewsScreen() {
               <button
                 key={p.id}
                 onClick={() => setFilter(p.id)}
+                aria-pressed={filter === p.id}
                 className={`rounded-full px-4 py-1.5 text-sm font-medium ${filter === p.id ? "bg-red-600 text-white" : "bg-white text-gray-700 border"}`}
               >
                 {p.name}
@@ -147,7 +132,7 @@ export function ReviewsScreen() {
 
         <div className="space-y-3">
           {loading ? (
-            <div className="p-6 text-center italic text-gray-500">Carregando avaliações...</div>
+            <DataSkeleton label="Carregando avaliações..." />
           ) : error ? (
             <div className="p-4 text-center font-semibold text-red-600">Erro: {error}</div>
           ) : filtered.length === 0 ? (
@@ -175,13 +160,13 @@ export function ReviewsScreen() {
                         </span>
                       )}
                     </div>
-                    <span className="text-xs text-gray-500">{formatDateBR(review.created_at)}</span>
+                    <span className="text-xs text-gray-500">{formatDateValue(review.created_at, { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                   </div>
                   <div className="mt-2">
                     <StarRating rating={review.rating} />
                   </div>
                   {review.comment && <p className="mt-2 text-sm text-gray-700">{review.comment}</p>}
-                  <p className="mt-2 text-xs text-gray-400">Pedido #{review.order_id}</p>
+                  <p className="mt-2 text-xs text-gray-600">Pedido #{review.order_id}</p>
                 </CardContent>
               </Card>
             ))

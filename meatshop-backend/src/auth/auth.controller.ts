@@ -1,3 +1,5 @@
+import { LoginDto } from './dto/login.dto';
+import { VerifyMobilePasswordUseCase } from './use-cases/verify-mobile-password.use-case';
 import {
   BadRequestException,
   Body,
@@ -40,6 +42,7 @@ import { FirebaseExchangeUseCase } from './use-cases/firebase-exchange.use-case'
 @Controller('auth')
 export class AuthController {
   constructor(
+    private readonly verifyMobilePassword: VerifyMobilePasswordUseCase,
     private readonly registerUseCase: RegisterUseCase,
     private readonly registerUnitUseCase: RegisterUnitUseCase,
     private readonly loginUseCase: LoginUseCase,
@@ -52,6 +55,13 @@ export class AuthController {
     private readonly configService: ConfigService,
     private readonly firebaseExchangeUseCase: FirebaseExchangeUseCase,
   ) {}
+
+  @Public()
+  @Post('mobile/password')
+  @HttpCode(HttpStatus.OK)
+  mobilePassword(@Body() dto: LoginDto) {
+    return this.verifyMobilePassword.execute(dto.email, dto.password);
+  }
 
   @ApiOperation({
     summary: 'Exchanges a Firebase ID token for a MeatShop session',
@@ -67,7 +77,11 @@ export class AuthController {
   @Public()
   @Post('firebase/exchange')
   @HttpCode(HttpStatus.OK)
-  firebaseExchange(@Req() req: Request, @Body() dto: FirebaseExchangeDto) {
+  async firebaseExchange(
+    @Req() req: Request,
+    @Body() dto: FirebaseExchangeDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const authorization = req.headers.authorization;
     const [scheme, token] = authorization?.split(' ') ?? [];
     if (scheme?.toLowerCase() !== 'bearer' || !token) {
@@ -76,7 +90,9 @@ export class AuthController {
         message: 'Firebase ID token is required.',
       });
     }
-    return this.firebaseExchangeUseCase.execute(token, dto.password);
+    const result = await this.firebaseExchangeUseCase.execute(token, dto.password);
+    this.setAuthCookies(res, result);
+    return this.platformResponse(req, result);
   }
 
   @ApiOperation({ summary: 'Registers a new user' })
@@ -108,10 +124,14 @@ export class AuthController {
   @Public()
   @Post('register-unit')
   @HttpCode(HttpStatus.CREATED)
-  async registerUnit(@Body() dto: RegisterUnitDto, @Res({ passthrough: true }) res: Response) {
+  async registerUnit(
+    @Body() dto: RegisterUnitDto,
+    @Res({ passthrough: true }) res: Response,
+    @Req() req: Request,
+  ) {
     const { unit, ...tokens } = await this.registerUnitUseCase.execute(dto);
     this.setAuthCookies(res, tokens);
-    return { ...tokens, unit };
+    return { ...this.platformResponse(req, tokens), unit };
   }
 
   @ApiOperation({
@@ -123,10 +143,14 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@CurrentUser() user: User, @Res({ passthrough: true }) res: Response) {
+  async login(
+    @CurrentUser() user: User,
+    @Res({ passthrough: true }) res: Response,
+    @Req() req: Request,
+  ) {
     const tokens = await this.loginUseCase.execute(user);
     this.setAuthCookies(res, tokens);
-    return tokens;
+    return this.platformResponse(req, tokens);
   }
 
   @ApiOperation({
@@ -173,7 +197,7 @@ export class AuthController {
     }
     const tokens = await this.refreshTokenUseCase.execute(token);
     this.setAuthCookies(res, tokens);
-    return tokens;
+    return this.platformResponse(req, tokens);
   }
 
   @ApiOperation({
@@ -226,6 +250,17 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   changePassword(@CurrentUser('id') userId: number, @Body() dto: ChangePasswordDto) {
     return this.changePasswordUseCase.execute(userId, dto.current_password, dto.new_password);
+  }
+
+  private platformResponse<T extends { access_token: string; refresh_token: string }>(
+    req: Request,
+    tokens: T,
+  ) {
+    if (req.get('x-client-platform') === 'mobile') return tokens;
+    const payload: Partial<T> = { ...tokens };
+    delete payload.access_token;
+    delete payload.refresh_token;
+    return payload;
   }
 
   private setAuthCookies(

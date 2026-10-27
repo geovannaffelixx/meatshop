@@ -1,8 +1,9 @@
+import { PanelListQueryDto } from '../../common/dtos/panel-list-query.dto';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
 
-export class FilterPromotionsDto {
+export class FilterPromotionsDto extends PanelListQueryDto {
   @ApiPropertyOptional({
     description: 'Filters promotions by unit',
     example: 1,
@@ -28,6 +29,11 @@ export class FilterPromotionsDto {
   @IsOptional()
   @IsIn(['true', 'false'])
   active?: 'true' | 'false';
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsIn(['Ativa', 'Agendada', 'Expirada', 'Inativa'])
+  status?: string;
 
   @ApiPropertyOptional() @IsOptional() @IsIn(['true']) marketplace?: 'true';
   @ApiPropertyOptional({ default: 1 })

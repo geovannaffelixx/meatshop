@@ -1,13 +1,26 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { Category } from '../categories/entities/category.entity';
 import { ProductListItemDto } from '../products/dtos/product-list-item.dto';
 import { Product } from '../products/entities/product.entity';
 import { Stock } from '../products/entities/stock.entity';
 import { PublicUnitDto } from '../units/dtos/public-unit.dto';
 import { Unit } from '../units/entities/unit.entity';
-import { MarketplaceSearchDto } from './dtos/marketplace-search.dto';
+import { MarketplaceBrandsDto, MarketplaceSearchDto } from './dtos/marketplace-search.dto';
+
+const ACTIVE_UNIT_CONDITION = 'unit.is_active = :unitActive';
+const NO_MATCH = '1 = 0';
+
+type SearchCriteria = {
+  filters: MarketplaceSearchDto;
+  term: string | null;
+  brand?: string;
+  category?: string;
+  hasProductFilters: boolean;
+};
+
+type ProductPage = { raw: Record<string, unknown>[]; entities: Product[] };
 
 @Injectable()
 export class MarketplaceSearchService {
@@ -19,6 +32,66 @@ export class MarketplaceSearchService {
   ) {}
 
   async execute(filters: MarketplaceSearchDto) {
+    const criteria = this.criteria(filters);
+    const unitQuery = this.unitQuery(criteria);
+    const categoryQuery = this.categoryQuery(criteria);
+    const productQuery = this.productQuery(criteria);
+    const [unitCount, categoryCount, productCount] = await Promise.all([
+      unitQuery.getCount(),
+      categoryQuery.getCount(),
+      productQuery.getCount(),
+    ]);
+    const start = (filters.page - 1) * filters.limit;
+    const unitRange = this.range(start, filters.limit, 0, unitCount);
+    const categoryRange = this.range(start, filters.limit, unitCount, categoryCount);
+    const productRange = this.range(start, filters.limit, unitCount + categoryCount, productCount);
+    const [units, categories, productPage] = await Promise.all([
+      this.pageOf(unitQuery, 'unit.name', 'unit.id', unitRange),
+      this.pageOf(categoryQuery, 'category.name', 'category.id', categoryRange),
+      this.productPage(productQuery, productRange),
+    ]);
+    const total = unitCount + categoryCount + productCount;
+    return {
+      data: this.combine(units, categories, productPage),
+      meta: {
+        page: filters.page,
+        limit: filters.limit,
+        total,
+        totalPages: Math.max(Math.ceil(total / filters.limit), 1),
+      },
+    };
+  }
+
+  async listBrands(filters: MarketplaceBrandsDto): Promise<string[]> {
+    const query = this.products
+      .createQueryBuilder('product')
+      .innerJoin('product.unit', 'unit', ACTIVE_UNIT_CONDITION, { unitActive: true })
+      .innerJoin('product.category', 'category', 'category.active = :categoryActive', {
+        categoryActive: true,
+      })
+      .innerJoin(Stock, 'stock', 'stock.product_id = product.id AND stock.quantity > 0')
+      .select('MIN(TRIM(product.brand))', 'brand')
+      .where('product.active = :active', { active: true })
+      .andWhere('product.brand IS NOT NULL')
+      .andWhere("TRIM(product.brand) <> ''");
+    if (filters.unit_id) query.andWhere('product.unit_id = :unitId', { unitId: filters.unit_id });
+    if (filters.category_id)
+      query.andWhere('product.category_id = :categoryId', {
+        categoryId: filters.category_id,
+      });
+    const category = filters.category?.trim();
+    if (category)
+      query.andWhere('LOWER(TRIM(category.name)) = :category', {
+        category: category.toLocaleLowerCase('pt-BR'),
+      });
+    const rows = await query
+      .groupBy('LOWER(TRIM(product.brand))')
+      .orderBy('LOWER(TRIM(product.brand))', 'ASC')
+      .getRawMany<{ brand: string }>();
+    return rows.map(({ brand: value }) => value);
+  }
+
+  private criteria(filters: MarketplaceSearchDto): SearchCriteria {
     if (
       filters.min_price !== undefined &&
       filters.max_price !== undefined &&
@@ -26,83 +99,146 @@ export class MarketplaceSearchService {
     ) {
       throw new BadRequestException('Minimum price cannot exceed maximum price');
     }
-    const term = `%${filters.q.trim().toLocaleLowerCase('pt-BR')}%`;
-    const unitQuery = this.units
+    const query = filters.q?.trim();
+    const brand = filters.brand?.trim();
+    const category = filters.category?.trim();
+    const hasProductFilters = Boolean(
+      brand ||
+      category ||
+      filters.category_id ||
+      filters.min_price !== undefined ||
+      filters.max_price !== undefined,
+    );
+    if (!query && !hasProductFilters) {
+      throw new BadRequestException('Provide a search term or at least one product filter');
+    }
+    const term = query ? `%${query.toLocaleLowerCase('pt-BR')}%` : null;
+    return { filters, term, brand, category, hasProductFilters };
+  }
+
+  private unitQuery({ filters, term, hasProductFilters }: SearchCriteria) {
+    const matchesName = Boolean(term && !hasProductFilters);
+    const query = this.units
       .createQueryBuilder('unit')
-      .where('LOWER(unit.name) LIKE :term', { term });
-    if (filters.unit_id) unitQuery.andWhere('unit.id = :unitId', { unitId: filters.unit_id });
-    const categoryQuery = this.categories
+      .where(matchesName ? 'LOWER(unit.name) LIKE :term' : NO_MATCH, matchesName ? { term } : {})
+      .andWhere(ACTIVE_UNIT_CONDITION, { unitActive: true });
+    if (filters.unit_id) query.andWhere('unit.id = :unitId', { unitId: filters.unit_id });
+    return query;
+  }
+
+  private categoryQuery({ filters, term, hasProductFilters }: SearchCriteria) {
+    const matchesName = Boolean(term && !hasProductFilters);
+    const query = this.categories
       .createQueryBuilder('category')
+      .innerJoin('category.unit', 'unit', ACTIVE_UNIT_CONDITION, { unitActive: true })
       .where('category.active = :active', { active: true })
-      .andWhere('LOWER(category.name) LIKE :term', { term });
+      .andWhere(
+        matchesName ? 'LOWER(category.name) LIKE :term' : NO_MATCH,
+        matchesName ? { term } : {},
+      );
     if (filters.unit_id)
-      categoryQuery.andWhere('category.unit_id = :unitId', {
+      query.andWhere('category.unit_id = :unitId', {
         unitId: filters.unit_id,
       });
     if (filters.category_id)
-      categoryQuery.andWhere('category.id = :categoryId', {
+      query.andWhere('category.id = :categoryId', {
         categoryId: filters.category_id,
       });
-    const productQuery = this.products
+    return query;
+  }
+
+  private productQuery(criteria: SearchCriteria) {
+    const query = this.products
       .createQueryBuilder('product')
-      .innerJoinAndSelect('product.unit', 'unit')
+      .innerJoinAndSelect('product.unit', 'unit', ACTIVE_UNIT_CONDITION, { unitActive: true })
       .innerJoinAndSelect('product.category', 'category', 'category.active = :categoryActive', {
         categoryActive: true,
       })
       .innerJoin(Stock, 'stock', 'stock.product_id = product.id AND stock.quantity > 0')
       .addSelect('stock.quantity', 'market_stock_quantity')
       .addSelect('stock.min_quantity', 'market_stock_min_quantity')
-      .where('product.active = :active', { active: true })
-      .andWhere('LOWER(product.name) LIKE :term', { term });
-    if (filters.unit_id)
-      productQuery.andWhere('product.unit_id = :unitId', {
-        unitId: filters.unit_id,
-      });
+      .where('product.active = :active', { active: true });
+    if (criteria.term)
+      query.andWhere(
+        "(LOWER(product.name) LIKE :term OR LOWER(COALESCE(product.brand, '')) LIKE :term)",
+        { term: criteria.term },
+      );
+    this.applyProductFilters(query, criteria);
+    return query;
+  }
+
+  private applyProductFilters(
+    query: SelectQueryBuilder<Product>,
+    { filters, brand, category }: SearchCriteria,
+  ): void {
+    if (filters.unit_id) query.andWhere('product.unit_id = :unitId', { unitId: filters.unit_id });
     if (filters.category_id)
-      productQuery.andWhere('product.category_id = :categoryId', {
+      query.andWhere('product.category_id = :categoryId', {
         categoryId: filters.category_id,
       });
+    if (category)
+      query.andWhere('LOWER(TRIM(category.name)) = :category', {
+        category: category.toLocaleLowerCase('pt-BR'),
+      });
     if (filters.min_price !== undefined)
-      productQuery.andWhere('product.price >= :minPrice', {
-        minPrice: filters.min_price,
-      });
+      query.andWhere('product.price >= :minPrice', { minPrice: filters.min_price });
     if (filters.max_price !== undefined)
-      productQuery.andWhere('product.price <= :maxPrice', {
-        maxPrice: filters.max_price,
+      query.andWhere('product.price <= :maxPrice', { maxPrice: filters.max_price });
+    if (brand)
+      query.andWhere('LOWER(TRIM(product.brand)) = :brand', {
+        brand: brand.toLocaleLowerCase('pt-BR'),
       });
+  }
 
-    const [units, categories, productResult] = await Promise.all([
-      unitQuery.orderBy('unit.name', 'ASC').getMany(),
-      categoryQuery.orderBy('category.name', 'ASC').getMany(),
-      productQuery.orderBy('product.name', 'ASC').getRawAndEntities(),
-    ]);
+  private range(start: number, pageSize: number, preceding: number, count: number) {
+    const offset = Math.max(0, start - preceding);
+    const limit = Math.max(0, Math.min(count - offset, start + pageSize - preceding - offset));
+    return { offset, limit };
+  }
+
+  private async pageOf<T extends object>(
+    query: SelectQueryBuilder<T>,
+    nameColumn: string,
+    idColumn: string,
+    range: { offset: number; limit: number },
+  ): Promise<T[]> {
+    if (range.limit <= 0) return [];
+    return query
+      .orderBy(nameColumn, 'ASC')
+      .addOrderBy(idColumn, 'ASC')
+      .offset(range.offset)
+      .limit(range.limit)
+      .getMany();
+  }
+
+  private async productPage(
+    query: SelectQueryBuilder<Product>,
+    range: { offset: number; limit: number },
+  ): Promise<ProductPage> {
+    if (range.limit <= 0) return { raw: [], entities: [] };
+    return query
+      .orderBy('product.name', 'ASC')
+      .addOrderBy('product.id', 'ASC')
+      .offset(range.offset)
+      .limit(range.limit)
+      .getRawAndEntities();
+  }
+
+  private combine(units: Unit[], categories: Category[], productPage: ProductPage) {
     const stocks = new Map<number, Stock>();
-    for (const row of productResult.raw) {
+    for (const row of productPage.raw) {
       const stock = new Stock();
       stock.quantity = Number(row.market_stock_quantity);
       stock.min_quantity = Number(row.market_stock_min_quantity);
       stocks.set(Number(row.product_id), stock);
     }
-    const combined = [
-      ...units.map((unit) => ({
-        type: 'UNIT',
-        unit: PublicUnitDto.fromEntity(unit),
-      })),
+    return [
+      ...units.map((unit) => ({ type: 'UNIT', unit: PublicUnitDto.fromEntity(unit) })),
       ...categories.map((category) => ({ type: 'CATEGORY', category })),
-      ...productResult.entities.map((product) => ({
+      ...productPage.entities.map((product) => ({
         type: 'PRODUCT',
         product: ProductListItemDto.fromEntity(product, stocks.get(product.id) ?? null),
       })),
     ];
-    const start = (filters.page - 1) * filters.limit;
-    return {
-      data: combined.slice(start, start + filters.limit),
-      meta: {
-        page: filters.page,
-        limit: filters.limit,
-        total: combined.length,
-        totalPages: Math.max(Math.ceil(combined.length / filters.limit), 1),
-      },
-    };
   }
 }

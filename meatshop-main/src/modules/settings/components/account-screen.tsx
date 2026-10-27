@@ -1,5 +1,13 @@
 "use client";
 
+import { formatDateValue } from "@/shared/lib/date-time";
+
+import { maskCPF } from "@/shared/lib/input-masks";
+import { validatePassword } from "@/shared/lib/validators";
+
+import { accountSchema } from "@/shared/lib/validation-schemas";
+import { DataSkeleton } from "@/shared/components/data-skeleton";
+
 import { useEffect, useState } from "react";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
 import { Spinner } from "@/shared/components/ui/spinner";
@@ -7,21 +15,12 @@ import { PasswordInput } from "@/shared/components/ui/password-input";
 import { API_URL, apiUpload, apiPatch, apiPost } from "@/shared/lib/api";
 import { toast } from "@/shared/lib/toast";
 import { PageHeader } from "@/shared/components/page-header";
+import { ExportDataDialog } from "./export-data-dialog";
 import { RequiredMark } from "@/shared/components/ui/required-mark";
 
-function formatCpf(cpf: string) {
-  const digits = cpf.replace(/\D/g, "");
-  if (digits.length !== 11) return cpf;
-  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
-}
 
-function formatMemberSince(iso: string) {
-  try {
-    return new Date(iso).toLocaleDateString("pt-BR", { year: "numeric", month: "long", day: "numeric" });
-  } catch {
-    return iso;
-  }
-}
+
+
 
 function AccountForm() {
   const { user, refresh } = usePanelAccess();
@@ -40,20 +39,21 @@ function AccountForm() {
     setEmail(user.email);
   }, [user]);
 
-  if (!user) return <p className="p-6 text-gray-500">Carregando conta...</p>;
+  if (!user) return <DataSkeleton label="Carregando conta..." />;
 
   const emailChanged = email.trim().toLowerCase() !== user.email.toLowerCase();
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (!name.trim() || !email.trim()) {
-      toast.warning("Preencha nome e e-mail.");
+    const result = accountSchema.safeParse({ name, email });
+    if (!result.success) {
+      toast.warning(result.error.issues[0].message);
       return;
     }
 
     setSaving(true);
     try {
-      await apiPatch("/users/me", { name: name.trim(), email: email.trim() });
+      await apiPatch("/users/me", result.data);
       await refresh();
       toast.success(
         emailChanged
@@ -90,6 +90,7 @@ function AccountForm() {
       return;
     }
 
+    if (!validatePassword(newPassword)) { toast.warning('Use 8 a 64 caracteres, com maiúscula, minúscula, número e especial.'); return; }
     setChangingPassword(true);
     try {
       await apiPost("/auth/change-password", {
@@ -119,6 +120,8 @@ function AccountForm() {
       <PageHeader
         eyebrow="Configurações"
         title="Minha conta"
+        actionsAlignment="title"
+        actions={<ExportDataDialog />}
         description="Gerencie seus dados pessoais e a segurança do acesso."
       />
       <section className="rounded-xl border bg-white p-6">
@@ -179,14 +182,14 @@ function AccountForm() {
           <label className="text-sm font-medium text-gray-700">
             CPF
             <input
-              value={formatCpf(user.cpf)}
+              value={maskCPF(user.cpf ?? '')}
               disabled
               className="mt-1 w-full rounded-md border bg-gray-100 px-3 py-2 text-gray-500"
             />
           </label>
 
           <p className="text-xs text-gray-500 md:col-span-2">
-            Cadastrado em {formatMemberSince(user.created_at)}.
+            Cadastrado em {formatDateValue(user.created_at, { year: 'numeric', month: 'long', day: 'numeric' })}.
           </p>
 
           <div className="md:col-span-2">
@@ -201,7 +204,7 @@ function AccountForm() {
         </form>
       </section>
 
-      <section className="rounded-xl border bg-white p-6">
+      <section id="security" className="scroll-mt-24 rounded-xl border bg-white p-6">
         <h2 className="text-lg font-semibold text-gray-900">Segurança</h2>
         <p className="mt-1 text-sm text-gray-600">
           Atualize sua senha de acesso com segurança.

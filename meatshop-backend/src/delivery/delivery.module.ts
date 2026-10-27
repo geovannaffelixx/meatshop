@@ -1,3 +1,6 @@
+import { DeliveryEarningsEventsService } from './services/delivery-earnings-events.service';
+import { DeliveryExpensesService } from './services/delivery-expenses.service';
+import { DeliveryExpensesController } from './delivery-expenses.controller';
 import { DeliveryAssignmentService } from './services/delivery-assignment.service';
 import { MetricsModule } from '../metrics/metrics.module';
 import { Module } from '@nestjs/common';
@@ -60,8 +63,10 @@ import { DeliveryTrackingRetentionService } from './services/delivery-tracking-r
     OrdersModule,
     UnitsModule,
   ],
-  controllers: [DeliveryController, DeliveryUploadController],
+  controllers: [DeliveryExpensesController, DeliveryController, DeliveryUploadController],
   providers: [
+    DeliveryEarningsEventsService,
+    DeliveryExpensesService,
     DeliveryAssignmentService,
     DeliveryPersonAccessService,
     RegisterDeliveryPersonUseCase,

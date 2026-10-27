@@ -1,0 +1,17 @@
+global:
+  resolve_timeout: 5m
+route:
+  receiver: meatshop-admins
+  group_by: [alertname]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+receivers:
+  - name: meatshop-admins
+    webhook_configs:
+      - url: http://backend:3001/monitoring/alerts
+        send_resolved: true
+        http_config:
+          authorization:
+            type: Bearer
+            credentials_file: /run/secrets/monitoring_token

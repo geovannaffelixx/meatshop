@@ -1,5 +1,9 @@
 "use client"
 
+import { formatDateValue } from "@/shared/lib/date-time";
+
+import { DataSkeleton } from "@/shared/components/data-skeleton";
+
 import { useState } from "react"
 import { apiGet, apiPost } from "@/shared/lib/api"
 import { Button } from "@/shared/components/ui/button"
@@ -122,9 +126,7 @@ export function PaymentHistory({
         >
           <p className="font-semibold text-slate-900">Histórico do pagamento</p>
           {busy && (
-            <p role="status" className="text-xs text-slate-500">
-              Carregando histórico…
-            </p>
+            <DataSkeleton label="Carregando histórico…" />
           )}
           {history?.transactions.map((t) => (
             <p
@@ -159,7 +161,7 @@ export function PaymentHistory({
                   key={i}
                   className="break-words border-l-2 border-slate-200 pl-3 text-xs leading-relaxed text-slate-500"
                 >
-                  {new Date(a.created_at).toLocaleString("pt-BR", {
+                  {formatDateValue(a.created_at, {
                     timeZone: "America/Sao_Paulo",
                   })}
                   : {states[a.status] ?? a.status}
@@ -205,7 +207,7 @@ export function PaymentHistory({
               {e.kind === "RECEIPT" ? "Recebimento" : "Devolução presencial"}:{" "}
               {formatCurrency(Number(e.amount))} · {e.reference} · Usuário #
               {e.actor_id} ·{" "}
-              {new Date(e.created_at).toLocaleString("pt-BR", {
+              {formatDateValue(e.created_at, {
                 timeZone: "America/Sao_Paulo",
               })}
             </p>
@@ -215,7 +217,7 @@ export function PaymentHistory({
               Repasse ao entregador:{" "}
               {formatCurrency(Number(history.settlement.amount))} ·{" "}
               {history.settlement.reference} ·{" "}
-              {new Date(history.settlement.paid_at).toLocaleString("pt-BR", {
+              {formatDateValue(history.settlement.paid_at, {
                 timeZone: "America/Sao_Paulo",
               })}
             </p>

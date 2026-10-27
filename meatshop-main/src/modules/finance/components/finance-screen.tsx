@@ -1,4 +1,17 @@
 "use client"
+import { expenseTypeLabel, expensePaymentLabel } from '../utils/expense-labels';
+
+import { formatDate as formatLocalDate } from "@/shared/lib/formatters";
+
+import { maskCPFOrCNPJ as formatCpfCnpj } from "@/shared/lib/input-masks";
+import { validateDocument } from "@/shared/lib/validators";
+import { isValidDate, toDateInput } from "@/shared/lib/date-time";
+
+import { Skeleton } from "@/shared/components/ui/skeleton";
+
+import { useApiQuery } from "@/shared/hooks/use-api-query";
+
+import { DataSkeleton } from "@/shared/components/data-skeleton";
 import React, { useState, useEffect, useRef, ChangeEvent } from "react"
 import { Button } from "@/shared/components/ui/button"
 import {
@@ -23,7 +36,7 @@ import { Spinner } from "@/shared/components/ui/spinner"
 import { Plus } from "lucide-react"
 import { PaymentManagement } from "./payment-management"
 import { FinanceSummary } from "./finance-summary"
-import { apiGet, apiPost, apiPut, apiDelete } from "@/shared/lib/api"
+import { apiPost, apiPut, apiDelete } from "@/shared/lib/api"
 import { toast } from "@/shared/lib/toast"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
 import { PageHeader } from "@/shared/components/page-header"
@@ -123,44 +136,8 @@ function formatCurrency(value: number) {
   })
 }
 
-function formatCpfCnpj(raw: string) {
-  const digits = raw.replace(/\D/g, "").slice(0, 14)
-  if (digits.length <= 11) {
-    const p1 = digits.slice(0, 3)
-    const p2 = digits.slice(3, 6)
-    const p3 = digits.slice(6, 9)
-    const p4 = digits.slice(9, 11)
-    let s = p1
-    if (p2) s += "." + p2
-    if (p3) s += "." + p3
-    if (p4) s += "-" + p4
-    return s
-  } else {
-    const p1 = digits.slice(0, 2)
-    const p2 = digits.slice(2, 5)
-    const p3 = digits.slice(5, 8)
-    const p4 = digits.slice(8, 12)
-    const p5 = digits.slice(12, 14)
-    let s = p1
-    if (p2) s += "." + p2
-    if (p3) s += "." + p3
-    if (p4) s += "/" + p4
-    if (p5) s += "-" + p5
-    return s
-  }
-}
-function getMonthParam() {
-  const d = new Date()
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, "0")
-  return `${y}-${m}`
-}
-function formatLocalDate(iso?: string) {
-  if (!iso) return "-"
-  const [y, m, d] = iso.split("-")
-  if (!y || !m || !d) return iso
-  return `${d}/${m}/${y}`
-}
+
+function getMonthParam() { return toDateInput(new Date()).slice(0, 7); }
 function mapExpenses(list: ExpenseApi[]): Expense[] {
   return list.map((e) => ({
     id: String(e.id),
@@ -179,21 +156,25 @@ function mapExpenses(list: ExpenseApi[]): Expense[] {
 }
 
 export function FinanceScreen() {
-  const { units, unitId, setUnitId, loading: unitsLoading } = useManagedUnits()
+  const { units, unitId, loading: unitsLoading } = useManagedUnits()
   const [open, setOpen] = useState(false)
   const [month, setMonth] = useState(getMonthParam())
 
-  const [expenses, setExpenses] = useState<Expense[]>([])
-  const [revenueSeries, setRevenueSeries] = useState<RevenuePoint[]>([])
-  const [revenueTotal, setRevenueTotal] = useState(0)
-  const [expenseTotal, setExpenseTotal] = useState(0)
-  const [payments, setPayments] = useState<PaymentSlice[]>([])
-  const [expenseSeries, setExpenseSeries] = useState<RevenuePoint[]>([])
-  const [financeRevision, setFinanceRevision] = useState(0)
-
-  const [loading, setLoading] = useState(false)
+  const queryParams = `month=${month}&unit_id=${unitId}`;
+  const expensesQuery = useApiQuery<ExpenseApi[]>(unitId ? `/finance/expenses?${queryParams}` : null, { refetchInterval: 30000 });
+  const summaryQuery = useApiQuery<SummaryApi>(unitId ? `/finance/summary?${queryParams}` : null, { refetchInterval: 30000 });
+  const revenueQuery = useApiQuery<RevenueApi>(unitId ? `/finance/revenue?${queryParams}` : null, { refetchInterval: 30000 });
+  const expenses = mapExpenses(expensesQuery.data ?? []);
+  const summary = summaryQuery.data;
+  const expenseTotal = parseFloat(summary?.expensesTotal?.toString().replace(',', '.') ?? '') || 0;
+  const expenseSeries = summary?.expensesByDay ?? [];
+  const payments: PaymentSlice[] = (summary?.payments ?? []).map(p => ({ name: p.name === 'Mercado Pago Balance' ? 'Mercado Pago' : p.name, value: roundMoney(parseFloat(p.value?.toString().replace(',', '.') ?? '') || 0) }));
+  const revenueTotal = revenueQuery.data?.revenueTotal ?? 0;
+  const revenueDaysInMonth = new Date(Number(month.split('-')[0]), Number(month.split('-')[1]), 0).getDate();
+  const revenueSeries: RevenuePoint[] = Array.from({ length: revenueDaysInMonth }, (_, i) => ({ day: i + 1, value: revenueQuery.data?.series.find(p => p.day === i + 1)?.value ?? 0 }));
+  const loading = expensesQuery.isPending || summaryQuery.isPending || revenueQuery.isPending;
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const error = expensesQuery.error?.message ?? summaryQuery.error?.message ?? revenueQuery.error?.message;
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [removing, setRemoving] = useState<Expense | null>(null)
@@ -225,86 +206,9 @@ export function FinanceScreen() {
     }
   }, [])
 
-  const reloadExpensesAndSummary = async (
-    isCurrent: () => boolean = () => true,
-  ) => {
-    if (!unitId) return
-    const query = `month=${month}&unit_id=${unitId}`
-    const [expensesApi, summary]: [ExpenseApi[], SummaryApi] =
-      await Promise.all([
-        apiGet(`/finance/expenses?${query}`),
-        apiGet(`/finance/summary?${query}`),
-      ])
-
-    if (!isCurrent() || activeScope.current !== `${unitId}:${month}`) return
-    setExpenses(mapExpenses(expensesApi))
-    setExpenseTotal(
-      parseFloat(summary.expensesTotal?.toString().replace(",", ".")) || 0,
-    )
-    setExpenseSeries(summary.expensesByDay ?? [])
-    setPayments(
-      (summary.payments ?? []).map((p) => ({
-        name: p.name === "Mercado Pago Balance" ? "Mercado Pago" : p.name,
-        value: roundMoney(
-          parseFloat(p.value?.toString().replace(",", ".")) || 0,
-        ),
-      })),
-    )
-  }
-
-  useEffect(() => {
-    if (!unitId) return
-    let active = true
-    let fetching = false
-
-    const load = async (background = false) => {
-      if (fetching) return
-      fetching = true
-      try {
-        if (!background) setLoading(true)
-        setError(null)
-
-        const query = `month=${month}&unit_id=${unitId}`
-
-        const revenue: RevenueApi = await apiGet(`/finance/revenue?${query}`)
-        if (!active) return
-
-        const byDay = new Map<number, number>()
-        revenue.series.forEach((s) => byDay.set(s.day, s.value))
-
-        const daysInMonth = new Date(
-          Number(month.split("-")[0]),
-          Number(month.split("-")[1]),
-          0,
-        ).getDate()
-
-        const series: RevenuePoint[] = Array.from(
-          { length: daysInMonth },
-          (_, i) => ({
-            day: i + 1,
-            value: byDay.get(i + 1) ?? 0,
-          }),
-        )
-        setRevenueSeries(series)
-        setRevenueTotal(revenue.revenueTotal || 0)
-
-        await reloadExpensesAndSummary(() => active)
-      } catch (err) {
-        console.error(err)
-        if (active) setError("Falha ao carregar dados do Financeiro.")
-      } finally {
-        fetching = false
-        if (active) setLoading(false)
-      }
-    }
-    void load()
-    const timer = setInterval(() => void load(true), 30_000)
-    return () => {
-      active = false
-      clearInterval(timer)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [month, unitId, financeRevision])
+  const reloadExpensesAndSummary = async () => {
+    await Promise.all([expensesQuery.refetch(), summaryQuery.refetch(), revenueQuery.refetch()]);
+  };
 
   useEffect(() => {
     const amount = parseCurrencyToNumber(form.amount)
@@ -379,6 +283,8 @@ export function FinanceScreen() {
       return
     }
 
+    if (form.cpfCnpj && !validateDocument(form.cpfCnpj)) { toast.warning('Informe um CPF ou CNPJ válido.'); return; }
+    if ((form.postedAt && !isValidDate(form.postedAt)) || (form.paidAt && !isValidDate(form.paidAt))) { toast.warning('Informe datas válidas.'); return; }
     setSaving(true)
 
     try {
@@ -467,22 +373,7 @@ export function FinanceScreen() {
               className="input mt-1 w-full sm:min-w-48"
             />
           </label>
-          {units.length > 1 && (
-            <label className="text-sm font-medium text-slate-700">
-              Unidade
-              <select
-                value={unitId ?? ""}
-                onChange={(e) => setUnitId(Number(e.target.value))}
-                className="input mt-1 w-full sm:min-w-48"
-              >
-                {units.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
+
         </div>
 
         {unitId && (
@@ -517,15 +408,15 @@ export function FinanceScreen() {
                 <p className="text-sm font-medium text-slate-500">
                   {item.label}
                 </p>
-                <p
+                <div
                   className={`break-words text-2xl font-semibold tracking-tight tabular-nums ${item.color}`}
                 >
                   {loading
-                    ? "—"
+                    ? <Skeleton className="h-8 w-28" />
                     : error
                       ? "Indisponível"
                       : formatCurrency(item.value)}
-                </p>
+                </div>
               </Card>
             ))}
           </div>
@@ -536,7 +427,7 @@ export function FinanceScreen() {
             key={`${unitId}:${month}`}
             unitId={unitId}
             month={month}
-            onFinancialChange={() => setFinanceRevision((v) => v + 1)}
+            onFinancialChange={() => void reloadExpensesAndSummary()}
           />
         )}
 
@@ -549,7 +440,7 @@ export function FinanceScreen() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="border-slate-200 bg-white shadow-sm">
             <CardHeader className="px-4 pt-4 text-center">
-              <CardTitle className="text-green-600">Receitas</CardTitle>
+              <CardTitle className="text-green-700">Receitas</CardTitle>
               <p className="text-sm text-gray-500">
                 Recebimentos líquidos por dia
               </p>
@@ -608,10 +499,10 @@ export function FinanceScreen() {
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
                       <div className="md:col-span-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label htmlFor="field-finance-screen-17154" className="text-sm font-medium text-gray-700">
                           ID
                         </label>
-                        <Input
+                        <Input id="field-finance-screen-17154"
                           value={form.id}
                           disabled
                           placeholder="Gerado automaticamente"
@@ -619,10 +510,10 @@ export function FinanceScreen() {
                       </div>
 
                       <div className="md:col-span-3">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label htmlFor="field-finance-screen-17576" className="text-sm font-medium text-gray-700">
                           ID Fornecedor
                         </label>
-                        <Input
+                        <Input id="field-finance-screen-17576"
                           name="supplierId"
                           value={form.supplierId}
                           onChange={handleFormChange}
@@ -632,10 +523,10 @@ export function FinanceScreen() {
                       </div>
 
                       <div className="md:col-span-3">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label htmlFor="field-finance-screen-18113" className="text-sm font-medium text-gray-700">
                           CPF / CNPJ
                         </label>
-                        <Input
+                        <Input id="field-finance-screen-18113"
                           name="cpfCnpj"
                           value={form.cpfCnpj}
                           onChange={handleFormChange}
@@ -644,11 +535,11 @@ export function FinanceScreen() {
                       </div>
 
                       <div className="md:col-span-4">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label htmlFor="field-finance-screen-18622" className="text-sm font-medium text-gray-700">
                           Fornecedor
                           <RequiredMark />
                         </label>
-                        <Input
+                        <Input id="field-finance-screen-18622"
                           name="supplierName"
                           value={form.supplierName}
                           onChange={handleFormChange}
@@ -658,11 +549,11 @@ export function FinanceScreen() {
                       </div>
 
                       <div className="flex flex-col justify-end md:col-span-3">
-                        <label className="text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="field-finance-screen-19235" className="text-sm font-medium text-gray-700 mb-1">
                           Tipo
                           <RequiredMark />
                         </label>
-                        <select
+                        <select id="field-finance-screen-19235"
                           name="type"
                           value={form.type}
                           onChange={handleFormChange}
@@ -676,11 +567,11 @@ export function FinanceScreen() {
                       </div>
 
                       <div className="md:col-span-3">
-                        <label className="text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="field-finance-screen-20061" className="text-sm font-medium text-gray-700 mb-1">
                           Valor
                           <RequiredMark />
                         </label>
-                        <Input
+                        <Input id="field-finance-screen-20061"
                           name="amount"
                           value={form.amount}
                           onChange={handleFormChange}
@@ -691,10 +582,10 @@ export function FinanceScreen() {
                       </div>
 
                       <div className="md:col-span-3">
-                        <label className="text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="field-finance-screen-20672" className="text-sm font-medium text-gray-700 mb-1">
                           Desconto
                         </label>
-                        <Input
+                        <Input id="field-finance-screen-20672"
                           name="discount"
                           value={form.discount}
                           onChange={handleFormChange}
@@ -704,10 +595,10 @@ export function FinanceScreen() {
                       </div>
 
                       <div className="md:col-span-3">
-                        <label className="text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="field-finance-screen-21209" className="text-sm font-medium text-gray-700 mb-1">
                           Valor Pago (AUTO)
                         </label>
-                        <Input
+                        <Input id="field-finance-screen-21209"
                           name="paidAmount"
                           value={form.paidAmount}
                           readOnly
@@ -717,10 +608,10 @@ export function FinanceScreen() {
 
                       <div className="grid items-end gap-4 md:col-span-12 sm:grid-cols-3">
                         <div>
-                          <label className="text-sm font-medium text-gray-700 mb-1">
+                          <label htmlFor="field-finance-screen-21744" className="text-sm font-medium text-gray-700 mb-1">
                             Data lançamento
                           </label>
-                          <Input
+                          <Input id="field-finance-screen-21744"
                             type="date"
                             name="postedAt"
                             value={form.postedAt}
@@ -729,10 +620,10 @@ export function FinanceScreen() {
                         </div>
 
                         <div>
-                          <label className="text-sm font-medium text-gray-700 mb-1">
+                          <label htmlFor="field-finance-screen-22222" className="text-sm font-medium text-gray-700 mb-1">
                             Data pagamento
                           </label>
-                          <Input
+                          <Input id="field-finance-screen-22222"
                             type="date"
                             name="paidAt"
                             value={form.paidAt}
@@ -741,10 +632,10 @@ export function FinanceScreen() {
                         </div>
 
                         <div>
-                          <label className="text-sm font-medium text-gray-700 mb-1">
+                          <label htmlFor="field-finance-screen-22695" className="text-sm font-medium text-gray-700 mb-1">
                             Forma de pagamento
                           </label>
-                          <select
+                          <select id="field-finance-screen-22695"
                             name="paymentMethod"
                             value={form.paymentMethod}
                             onChange={handleFormChange}
@@ -760,10 +651,10 @@ export function FinanceScreen() {
                       </div>
 
                       <div className="md:col-span-12">
-                        <label className="text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="field-finance-screen-23645" className="text-sm font-medium text-gray-700 mb-1">
                           Observações
                         </label>
-                        <Textarea
+                        <Textarea id="field-finance-screen-23645"
                           name="notes"
                           value={form.notes}
                           onChange={handleFormChange}
@@ -851,7 +742,7 @@ export function FinanceScreen() {
                         colSpan={6}
                         className="p-6 text-center italic text-gray-500"
                       >
-                        Carregando despesas...
+                        <DataSkeleton label="Carregando despesas..." />
                       </td>
                     </tr>
                   ) : expenses.length === 0 ? (
@@ -872,11 +763,11 @@ export function FinanceScreen() {
                         <td className="p-3 font-medium">
                           {expense.supplierName}
                         </td>
-                        <td className="p-3">{expense.type}</td>
+                        <td className="p-3">{expenseTypeLabel(expense.type)}</td>
                         <td className="p-3">
                           {formatCurrency(expense.paidAmount)}
                         </td>
-                        <td className="p-3">{expense.paymentMethod}</td>
+                        <td className="p-3">{expensePaymentLabel(expense.paymentMethod)}</td>
                         <td className="p-3">
                           {formatLocalDate(expense.paidAt || expense.postedAt)}
                         </td>

@@ -1,3 +1,4 @@
+import { FilterCategoriesDto } from './dtos/filter-categories.dto';
 import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -27,10 +28,11 @@ export class CategoriesController {
     description: 'Category list returned successfully',
   })
   @Get()
-  list(@Query('unit_id') unitId?: string, @Query('active') active?: string) {
+  list(@Query() filters: FilterCategoriesDto) {
     return this.listCategoriesUseCase.execute(
-      unitId ? Number(unitId) : undefined,
-      active === undefined ? undefined : active === 'true',
+      filters.unit_id,
+      filters.active === undefined ? undefined : filters.active === 'true',
+      filters,
     );
   }
 

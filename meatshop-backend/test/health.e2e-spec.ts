@@ -4,7 +4,8 @@ import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 
-describe('Health Endpoint (e2e)', () => {
+const enabled = process.env.E2E_TEST_DATABASE === 'meatshop_gaps_test_330';
+(enabled ? describe : describe.skip)('Health Endpoint (isolated PostgreSQL)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
