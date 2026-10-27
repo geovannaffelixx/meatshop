@@ -39,6 +39,7 @@ jobs:
       DB_TYPE: postgres
       DB_HOST: 127.0.0.1
       DB_PORT: 5432
+      DB_POOL_MAX: "5"
       DB_USERNAME: meatshop_user
       DB_PASSWORD: meatshop_pass
       DB_DATABASE: meatshop
@@ -49,6 +50,7 @@ jobs:
       DELIVERY_CODE_SECRET: ci-delivery-secret-with-at-least-32-characters
       DELIVERY_CODE_ENCRYPTION_KEY: ci-encryption-key-with-at-least-32-chars
       ORDER_CONFIRMATION_TIMEOUT_MINUTES: "30"
+      METRICS_TOKEN: ephemeral-ci-metrics-token-for-isolated-tests-only
       FRONTEND_URL: http://localhost:3000
       COOKIE_SECURE: "false"
       FIREBASE_APP_CHECK_ENFORCED: "false"
@@ -68,7 +70,7 @@ jobs:
           echo "DATA_ENCRYPTION_KEY=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
           echo "DATA_HASH_KEY=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
       - run: npm ci
-      - run: npm audit --omit=dev --audit-level=high
+      - run: npm audit --audit-level=high
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run build
@@ -89,12 +91,19 @@ jobs:
         run: npm run migration:run:prod
         env:
           DB_DATABASE: meatshop_gaps_test_330
+      - uses: grafana/setup-k6-action@v1
       - name: Verify functional gaps and application smoke
-        run: npm run test:e2e -- functional-gaps app.e2e health.e2e metrics.e2e specification
+        run: npm run test:e2e -- checklist.e2e functional-gaps app.e2e health.e2e metrics.e2e specification
         env:
           E2E_DB_PORT: 5432
           E2E_TEST_DATABASE: meatshop_gaps_test_330
           GAPS_TEST_DATABASE: meatshop_gaps_test_330
+          LEGAL_ACCEPTANCE_REQUIRED: "false"
+          K6_ENABLED: "true"
+          K6_SCENARIO: all
+          K6_REPLICAS: "6"
+          K6_DB_POOL_MAX: "10"
+          RATE_LIMIT_MAX: "1000000"
       - name: Prepare isolated payments database
         run: PGPASSWORD=meatshop_pass psql -h 127.0.0.1 -U meatshop_user -d meatshop -c 'CREATE DATABASE meatshop_payments_test'
       - name: Migrate isolated payments database
@@ -133,7 +142,7 @@ jobs:
       - run: npm ci
         env:
           CYPRESS_INSTALL_BINARY: 0
-      - run: npm audit --omit=dev --audit-level=high
+      - run: npm audit --audit-level=high
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test:coverage
@@ -262,10 +271,6 @@ jobs:
           curl -fsS -o /dev/null -H "Authorization: Bearer ${token}" http://localhost:3001/metrics
       - run: node scripts/performance-smoke.mjs
         working-directory: meatshop
-      - uses: grafana/setup-k6-action@v1
-      - name: Run k6 performance test
-        working-directory: meatshop
-        run: k6 run -e BASE_URL=http://localhost:3001 meatshop-backend/test/k6/performance.js
       - name: Capture compose logs
         if: always()
         working-directory: meatshop
@@ -335,7 +340,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - name: Audit backend lockfile
         working-directory: meatshop-backend
-        run: npm audit --package-lock-only --omit=dev --audit-level=high
+        run: npm audit --package-lock-only --audit-level=high
       - name: Audit frontend lockfile
         working-directory: meatshop-main
-        run: npm audit --package-lock-only --omit=dev --audit-level=high
+        run: npm audit --package-lock-only --audit-level=high

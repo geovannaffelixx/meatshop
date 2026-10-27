@@ -42,7 +42,7 @@ function LegalGateContent({
   onAccepted: () => void;
 }) {
   return (
-    <main className="min-h-dvh bg-slate-50 px-4 py-8 sm:px-6 sm:py-12">
+    <main id="main-content" tabIndex={-1} className="min-h-dvh bg-slate-50 px-4 py-8 sm:px-6 sm:py-12">
       <div className="mx-auto max-w-3xl space-y-6">
         <PageHeader
           eyebrow="MeatShop"

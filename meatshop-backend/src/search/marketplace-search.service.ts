@@ -44,12 +44,7 @@ export class MarketplaceSearchService {
     const start = (filters.page - 1) * filters.limit;
     const unitRange = this.range(start, filters.limit, 0, unitCount);
     const categoryRange = this.range(start, filters.limit, unitCount, categoryCount);
-    const productRange = this.range(
-      start,
-      filters.limit,
-      unitCount + categoryCount,
-      productCount,
-    );
+    const productRange = this.range(start, filters.limit, unitCount + categoryCount, productCount);
     const [units, categories, productPage] = await Promise.all([
       this.pageOf(unitQuery, 'unit.name', 'unit.id', unitRange),
       this.pageOf(categoryQuery, 'category.name', 'category.id', categoryRange),

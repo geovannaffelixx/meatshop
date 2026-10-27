@@ -105,7 +105,12 @@ export class LegalPolicyService {
 
   async assertUser(userId: number) {
     if (!this.enforced) return;
-    if ((await this.pending(userId)).documents.length) {
+    const state = await this.repository.accessState(userId);
+    this.assertCatalog(
+      state.map((document) => document.kind),
+      false,
+    );
+    if (state.some((document) => !document.accepted)) {
       throw new ForbiddenException({
         code: 'LEGAL_ACCEPTANCE_REQUIRED',
         message: 'Leia e aceite os documentos vigentes para continuar.',

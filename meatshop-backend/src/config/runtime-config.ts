@@ -1,3 +1,4 @@
+import { parseDataKey } from '../common/security/field-encryption';
 const LOCAL_ORIGINS = ['http://localhost:3000', 'http://127.0.0.1:3000'];
 const MINIMUM_SECRET_LENGTH = 32;
 type Environment = Record<string, string | undefined>;
@@ -36,10 +37,18 @@ export function validateEnvironment(environment: Environment): void {
   readPositiveInteger(environment, 'AUTH_ATTEMPTS_RETENTION_DAYS', 30);
   readPositiveInteger(environment, 'RATE_LIMIT_WINDOW_MS', 60_000);
   readPositiveInteger(environment, 'RATE_LIMIT_MAX', 120);
+  readPositiveInteger(environment, 'DB_POOL_MAX', 10);
   readPositiveInteger(environment, 'DELIVERY_TRACKING_RETENTION_DAYS', 30);
   readPositiveInteger(environment, 'MP_WEBHOOK_TOLERANCE_SECONDS', 300);
+  readPositiveInteger(environment, 'ORDER_CONFIRMATION_TIMEOUT_MINUTES', 30);
 
   if (environment.NODE_ENV !== 'production') return;
+  validateProductionBasics(environment);
+  validateProductionServices(environment);
+  validateProductionTransport(environment);
+}
+
+function validateProductionBasics(environment: Environment): void {
   if (environment.DB_TYPE !== 'postgres') throw new Error('Production requires PostgreSQL');
   if (environment.DB_SYNCHRONIZE === 'true') {
     throw new Error('DB_SYNCHRONIZE must be false in production');
@@ -56,6 +65,15 @@ export function validateEnvironment(environment: Environment): void {
     throw new Error('FIREBASE_SERVICE_ACCOUNT is required in production');
   }
   assertFirebaseServiceAccount(environment.FIREBASE_SERVICE_ACCOUNT);
+  for (const name of ['DATA_ENCRYPTION_KEY', 'DATA_HASH_KEY']) {
+    if (!parseDataKey(environment, name)) throw new Error(`${name} is required in production`);
+  }
+  if (environment.DATA_ENCRYPTION_KEY === environment.DATA_HASH_KEY)
+    throw new Error('Data encryption and hash keys must differ');
+  assertStrongSecret(environment, 'METRICS_TOKEN');
+}
+
+function validateProductionServices(environment: Environment): void {
   [
     'FIREBASE_WEB_API_KEY',
     'DB_HOST',
@@ -72,6 +90,13 @@ export function validateEnvironment(environment: Environment): void {
   if (environment.FIREBASE_APP_CHECK_ENFORCED !== 'true') {
     throw new Error('FIREBASE_APP_CHECK_ENFORCED must be true in production');
   }
+  validatePaymentEnvironment(environment);
+  if (environment.SWAGGER_ENABLED === 'true') {
+    throw new Error('SWAGGER_ENABLED must be false in production');
+  }
+}
+
+function validatePaymentEnvironment(environment: Environment): void {
   if (environment.PAYMENTS_ENABLED === 'true' || environment.MP_CLIENT_ID?.trim()) {
     for (const key of ['MP_CLIENT_ID', 'MP_CLIENT_SECRET', 'MP_OAUTH_REDIRECT_URI'])
       assertRequired(environment, key);
@@ -82,10 +107,9 @@ export function validateEnvironment(environment: Environment): void {
     if (!['sandbox', 'production'].includes(environment.MP_ENV ?? ''))
       throw new Error('MP_ENV must be sandbox or production');
   }
-  if (environment.SWAGGER_ENABLED === 'true') {
-    throw new Error('SWAGGER_ENABLED must be false in production');
-  }
+}
 
+function validateProductionTransport(environment: Environment): void {
   for (const origin of getAllowedOrigins(environment)) {
     if (!origin.startsWith('https://')) throw new Error('Production CORS origins must use HTTPS');
   }

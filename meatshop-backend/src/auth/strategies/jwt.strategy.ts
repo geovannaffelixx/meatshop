@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import type { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Repository } from 'typeorm';
+import { createSecretKey } from 'node:crypto';
 import { AppProfile } from '../../common/enums/app-profile.enum';
 import { GlobalRole } from '../../common/enums/global-role.enum';
 import { User } from '../../users/entities/user.entity';
@@ -25,11 +26,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
-        (req: Request) => req?.cookies?.access_token ?? null,
         ExtractJwt.fromAuthHeaderAsBearerToken(),
+        (req: Request) => req?.cookies?.access_token ?? null,
       ]),
       ignoreExpiration: false,
-      secretOrKey: configService.getOrThrow<string>('JWT_SECRET'),
+      // passport-jwt forwards KeyObject to jsonwebtoken, but its declaration only lists string/Buffer.
+      secretOrKey: createSecretKey(
+        Buffer.from(configService.getOrThrow<string>('JWT_SECRET')),
+      ) as unknown as Buffer,
+      algorithms: ['HS256'],
     });
   }
 

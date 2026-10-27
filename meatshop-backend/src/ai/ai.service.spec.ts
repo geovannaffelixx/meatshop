@@ -87,23 +87,43 @@ describe('AiService', () => {
   it('relays stream deltas and persists both messages after completion', async () => {
     const { service, chatbot, conversations, rateLimit, metrics, audit } = setup();
     chatbot.chatStream.mockResolvedValue(
-      eventsOf({ type: 'delta', text: 'Use ' }, { type: 'delta', text: 'sal.' }, { type: 'done' }) as never,
+      eventsOf(
+        { type: 'delta', text: 'Use ' },
+        { type: 'delta', text: 'sal.' },
+        { type: 'done' },
+      ) as never,
     );
     const { sink, sent } = createSink();
 
     await service.chatStream({ message: sensitiveMessage }, user, sink, 'corr-1');
 
     expect(rateLimit.consume).toHaveBeenCalledWith(42);
-    expect(chatbot.chatStream).toHaveBeenCalledWith(sanitizedMessage, [], 42, sink.signal, 'corr-1');
+    expect(chatbot.chatStream).toHaveBeenCalledWith(
+      sanitizedMessage,
+      [],
+      42,
+      sink.signal,
+      'corr-1',
+    );
     expect(sink.open).toHaveBeenCalled();
     expect(sent).toEqual([
       { delta: 'Use ' },
       { delta: 'sal.' },
       { done: true, conversation_id: conversation.id },
     ]);
-    expect(conversations.appendExchange).toHaveBeenCalledWith(conversation.id, sanitizedMessage, 'Use sal.');
-    expect(metrics.observeAiRequest).toHaveBeenCalledWith('chat_stream', 'success', expect.any(Number));
-    expect(audit.safeRecord).toHaveBeenCalledWith(expect.objectContaining({ action: 'AI_CHAT', userId: 42 }));
+    expect(conversations.appendExchange).toHaveBeenCalledWith(
+      conversation.id,
+      sanitizedMessage,
+      'Use sal.',
+    );
+    expect(metrics.observeAiRequest).toHaveBeenCalledWith(
+      'chat_stream',
+      'success',
+      expect.any(Number),
+    );
+    expect(audit.safeRecord).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'AI_CHAT', userId: 42 }),
+    );
     expect(sink.close).toHaveBeenCalled();
   });
 
@@ -120,7 +140,11 @@ describe('AiService', () => {
       { done: true, conversation_id: conversation.id },
     ]);
     expect(conversations.appendExchange).not.toHaveBeenCalled();
-    expect(metrics.observeAiRequest).toHaveBeenCalledWith('chat_stream', 'error', expect.any(Number));
+    expect(metrics.observeAiRequest).toHaveBeenCalledWith(
+      'chat_stream',
+      'error',
+      expect.any(Number),
+    );
   });
 
   it('reports upstream error events without persisting', async () => {
@@ -144,7 +168,11 @@ describe('AiService', () => {
     await service.chatStream({ message: 'picanha?' }, user, sink);
 
     expect(conversations.appendExchange).not.toHaveBeenCalled();
-    expect(metrics.observeAiRequest).toHaveBeenCalledWith('chat_stream', 'aborted', expect.any(Number));
+    expect(metrics.observeAiRequest).toHaveBeenCalledWith(
+      'chat_stream',
+      'aborted',
+      expect.any(Number),
+    );
   });
 
   it('propagates failures before the stream opens as regular HTTP errors', async () => {

@@ -22,7 +22,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
             <div className="flex items-center gap-2"><NotificationBell /><UserProfileDrawer /></div>
           </header>
 
-          <main key={unitId} id="main-content" className="flex-1">{children}</main>
+          <main key={unitId} id="main-content" tabIndex={-1} className="flex-1">{children}</main>
         </SidebarInset>
       </SidebarProvider>
     </NotificationsProvider>

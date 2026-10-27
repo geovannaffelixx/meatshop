@@ -1,10 +1,12 @@
 services:
   backend:
+    deploy:
+      replicas: ${SCALE_BACKEND_REPLICAS:-2}
     container_name: !reset null
     ports: !reset []
     environment:
       SOCKET_IO_SHARED: "true"
-      BACKEND_REPLICAS: "2"
+      BACKEND_REPLICAS: ${SCALE_BACKEND_REPLICAS:-2}
       TRUST_PROXY: "true"
   gateway:
     image: nginx:1.28-alpine

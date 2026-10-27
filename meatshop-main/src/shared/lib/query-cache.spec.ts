@@ -1,3 +1,4 @@
+import { resetCsrfToken } from './csrf';
 import { apiGet, apiPatch } from './api';
 import { apiQueryKey, panelQueryClient, peekApiData, resetApiCache } from './query-cache';
 
@@ -7,6 +8,7 @@ describe('Session and unit API cache', () => {
   const fetchMock = jest.fn();
   const response = (value: unknown) => ({ ok: true, status: 200, text: async () => JSON.stringify(value) });
   beforeEach(() => {
+    resetCsrfToken();
     resetApiCache('user-1:unit-6');
     fetchMock.mockReset();
     Object.defineProperty(globalThis, 'fetch', { configurable: true, value: fetchMock });
@@ -29,10 +31,11 @@ describe('Session and unit API cache', () => {
   });
 
   it('fetches again after the freshness period expires', async () => {
+    const timestamp = Date.now();
+    const now = jest.spyOn(Date, 'now').mockReturnValue(timestamp);
     fetchMock.mockResolvedValue(response([]));
     await apiGet('/products/manage?unit_id=6');
-    const timestamp = Date.now();
-    const now = jest.spyOn(Date, 'now').mockReturnValue(timestamp + 299_999);
+    now.mockReturnValue(timestamp + 299_999);
     await apiGet('/products/manage?unit_id=6');
     expect(fetchMock).toHaveBeenCalledTimes(1);
     now.mockReturnValue(timestamp + 300_001);
@@ -43,13 +46,14 @@ describe('Session and unit API cache', () => {
 
   it('invalidates reads after a successful mutation', async () => {
     fetchMock.mockResolvedValueOnce(response([{ name: 'Before' }]))
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ csrf_token: 'test-csrf-token' }) })
       .mockResolvedValueOnce(response({ name: 'After' }))
       .mockResolvedValueOnce(response([{ name: 'After' }]));
     await apiGet('/categories?unit_id=6');
     await apiPatch('/categories/1', { name: 'After' });
     expect(peekApiData('/categories?unit_id=6')).toBeUndefined();
     expect(await apiGet('/categories?unit_id=6')).toEqual([{ name: 'After' }]);
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 
   it('clears previous unit and user data on a context change', async () => {

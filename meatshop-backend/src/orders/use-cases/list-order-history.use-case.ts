@@ -1,3 +1,4 @@
+import type { SelectQueryBuilder } from 'typeorm';
 import { UnitPermission } from '../../common/enums/unit-permission.enum';
 import { FilterPanelOrdersDto } from '../dtos/filter-panel-orders.dto';
 import { paginatedResult, searchPattern } from '../../common/dtos/panel-list-query.dto';
@@ -50,6 +51,29 @@ export class ListOrderHistoryUseCase {
         actor: currentUser.id,
       });
     }
+    this.applyPanelFilters(query, filters);
+    const [orders, total] = await query
+      .orderBy('orders.order_date', 'DESC')
+      .addOrderBy('orders.id', 'DESC')
+      .skip((filters.page - 1) * filters.limit)
+      .take(filters.limit)
+      .getManyAndCount();
+    const payments = orders.length
+      ? await this.orderRepository.manager.find(Payment, {
+          where: { order_id: In(orders.map((order) => order.id)) },
+        })
+      : [];
+    const methods = new Map(payments.map((payment) => [payment.order_id, payment.method]));
+    return paginatedResult(
+      orders.map((order) =>
+        Object.assign(order, { payment_method: methods.get(order.id) ?? null }),
+      ),
+      total,
+      filters,
+    );
+  }
+
+  private applyPanelFilters(query: SelectQueryBuilder<Order>, filters: FilterPanelOrdersDto) {
     if (filters.unit_id) query.andWhere('orders.unit_id = :unitId', { unitId: filters.unit_id });
     if (filters.search?.trim())
       query.andWhere('(client.name ILIKE :search OR CAST(orders.id AS TEXT) ILIKE :search)', {
@@ -75,43 +99,10 @@ export class ListOrderHistoryUseCase {
           [`${key}To`]: to,
         });
     }
-    const [orders, total] = await query
-      .orderBy('orders.order_date', 'DESC')
-      .addOrderBy('orders.id', 'DESC')
-      .skip((filters.page - 1) * filters.limit)
-      .take(filters.limit)
-      .getManyAndCount();
-    const payments = orders.length
-      ? await this.orderRepository.manager.find(Payment, {
-          where: { order_id: In(orders.map((order) => order.id)) },
-        })
-      : [];
-    const methods = new Map(payments.map((payment) => [payment.order_id, payment.method]));
-    return paginatedResult(
-      orders.map((order) =>
-        Object.assign(order, { payment_method: methods.get(order.id) ?? null }),
-      ),
-      total,
-      filters,
-    );
   }
 
-  async mobile(user: User, page: number) {
-    if (!Number.isSafeInteger(page) || page < 0 || page > 10000)
-      throw new BadRequestException('Invalid page');
-    const rows = await this.orderRepository
-      .createQueryBuilder('o')
-      .addSelect('o.delivery_code_ciphertext')
-      .leftJoinAndSelect('o.unit', 'unit')
-      .leftJoinAndSelect('o.delivery_person', 'deliveryPerson')
-      .leftJoinAndSelect('deliveryPerson.user', 'deliveryUser')
-      .where('o.client_id=:client', { client: user.id })
-      .orderBy("CASE WHEN o.status NOT IN ('DELIVERED','CANCELLED') THEN 0 ELSE 1 END", 'ASC')
-      .addOrderBy('o.order_date', 'DESC')
-      .addOrderBy('o.id', 'DESC')
-      .offset(page * 50)
-      .limit(51)
-      .getMany();
+  async mobile(user: User, page: number, finished = false) {
+    const rows = await this.mobileRows(user, page, finished);
     const orders = rows.slice(0, 50);
     const ids = orders.map((o) => o.id);
     if (!ids.length) return { data: [], has_more: false };
@@ -130,26 +121,51 @@ export class ListOrderHistoryUseCase {
       ),
     ]);
     return {
-      data: orders.map((order) => {
-        const dto = OrderResponseDto.fromEntity(
-          order,
-          items.filter((i) => i.order_id === order.id),
-          payments.find((p) => p.order_id === order.id) ?? null,
-          this.deliveryCodes.revealDeliveryCode(order),
-        );
-        dto.delivery_paid_at =
-          settlements.find((s: { order_id: number }) => s.order_id === order.id)?.paid_at ?? null;
-        const ownReviews = reviews.filter((r) => r.order_id === order.id);
-        dto.review_status = {
-          unit_reviewed: ownReviews.some((r) => r.product_id === null),
-          reviewed_product_ids: ownReviews.flatMap((r) =>
-            r.product_id == null ? [] : [r.product_id],
-          ),
-        };
-        return dto;
-      }),
+      data: orders.map((order) => this.mobileDto(order, items, payments, reviews, settlements)),
       has_more: rows.length > 50,
     };
+  }
+
+  private async mobileRows(user: User, page: number, finished: boolean) {
+    if (!Number.isSafeInteger(page) || page < 0 || page > 10000)
+      throw new BadRequestException('Invalid page');
+    return await this.orderRepository
+      .createQueryBuilder('o')
+      .addSelect('o.delivery_code_ciphertext')
+      .leftJoinAndSelect('o.unit', 'unit')
+      .leftJoinAndSelect('o.delivery_person', 'deliveryPerson')
+      .leftJoinAndSelect('deliveryPerson.user', 'deliveryUser')
+      .where('o.client_id=:client', { client: user.id })
+      .andWhere(finished ? "o.status IN ('DELIVERED','CANCELLED')" : 'true')
+      .orderBy("CASE WHEN o.status NOT IN ('DELIVERED','CANCELLED') THEN 0 ELSE 1 END", 'ASC')
+      .addOrderBy('o.order_date', 'DESC')
+      .addOrderBy('o.id', 'DESC')
+      .offset(page * 50)
+      .limit(51)
+      .getMany();
+  }
+
+  private mobileDto(
+    order: Order,
+    items: OrderItem[],
+    payments: Payment[],
+    reviews: Review[],
+    settlements: { order_id: number; paid_at: Date | null }[],
+  ) {
+    const dto = OrderResponseDto.fromEntity(
+      order,
+      items.filter((i) => i.order_id === order.id),
+      payments.find((p) => p.order_id === order.id) ?? null,
+      this.deliveryCodes.revealDeliveryCode(order),
+    );
+    dto.delivery_paid_at =
+      settlements.find((s: { order_id: number }) => s.order_id === order.id)?.paid_at ?? null;
+    const ownReviews = reviews.filter((r) => r.order_id === order.id);
+    dto.review_status = {
+      unit_reviewed: ownReviews.some((r) => r.product_id === null),
+      reviewed_product_ids: ownReviews.flatMap((r) => (r.product_id == null ? [] : [r.product_id])),
+    };
+    return dto;
   }
 
   private async list(currentUser: User): Promise<Order[]> {

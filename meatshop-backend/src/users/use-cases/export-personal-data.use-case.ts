@@ -1,3 +1,4 @@
+import { fieldEncryption } from '../../common/security/field-encryption';
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 
@@ -20,7 +21,6 @@ const sources: Record<string, string> = {
   notification_preferences:
     'SELECT to_jsonb(n) AS data FROM notification_preferences n WHERE user_id=$1',
   legal_acceptances: 'SELECT to_jsonb(a) AS data FROM legal_acceptances a WHERE user_id=$1',
-  saved_payment_methods: 'SELECT to_jsonb(p) AS data FROM saved_payment_methods p WHERE user_id=$1',
   delivery_profile: 'SELECT to_jsonb(d) AS data FROM delivery_persons d WHERE user_id=$1',
   delivery_expenses: 'SELECT to_jsonb(e) AS data FROM delivery_expenses e WHERE user_id=$1',
   vehicles:
@@ -48,7 +48,12 @@ export function removeExportSecrets(value: unknown): unknown {
             key,
           ),
       )
-      .map(([key, nested]) => [key, removeExportSecrets(nested)]),
+      .map(([key, nested]) => [
+        key,
+        ['cpf', 'phone', 'contact'].includes(key) && typeof nested === 'string'
+          ? fieldEncryption().decrypt(nested)
+          : removeExportSecrets(nested),
+      ]),
   );
 }
 

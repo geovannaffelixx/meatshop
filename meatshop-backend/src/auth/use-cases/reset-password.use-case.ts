@@ -1,3 +1,4 @@
+import { AuthSessionService } from '../services/auth-session.service';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
@@ -11,6 +12,7 @@ export class ResetPasswordUseCase {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly sessions: AuthSessionService,
   ) {}
 
   async execute(token: string, newPassword: string): Promise<{ message: string }> {
@@ -25,6 +27,7 @@ export class ResetPasswordUseCase {
     user!.password_reset_expires_at = null;
 
     await this.userRepository.save(user!);
+    await this.sessions.revokeAll(user!.id, 'PASSWORD_RESET');
 
     return { message: 'Password updated successfully' };
   }

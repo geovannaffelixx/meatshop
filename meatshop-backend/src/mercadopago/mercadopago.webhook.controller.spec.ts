@@ -2,12 +2,12 @@
 import { ConfigService } from '@nestjs/config';
 import { createHmac } from 'crypto';
 import { MercadoPagoWebhookController } from './mercadopago.webhook.controller';
-import type { PaymentLifecycleService } from '../payments/payment-lifecycle.service';
+import type { PaymentWebhookQueueService } from '../payments/payment-webhook-queue.service';
 
 describe('Mercado Pago webhook authentication and retries', () => {
   const process = jest.fn();
   const controller = new MercadoPagoWebhookController(
-    { process } as unknown as PaymentLifecycleService,
+    { enqueue: process } as unknown as PaymentWebhookQueueService,
     new ConfigService({ MP_WEBHOOK_SECRET: 'test-secret' }),
   );
   const signature = (ts = String(Math.floor(Date.now() / 1000)), id = '123') =>
@@ -21,7 +21,7 @@ describe('Mercado Pago webhook authentication and retries', () => {
       signature(),
       'request',
     );
-    expect(process).toHaveBeenCalledWith('123', 7);
+    expect(process).toHaveBeenCalledWith('123', 7, null, 'request');
   });
   it.each([undefined, 'ts=1,v1=invalid', signature('1'), signature(undefined, '999')])(
     'rejects missing, old or altered signatures',

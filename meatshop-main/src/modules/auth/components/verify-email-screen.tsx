@@ -37,7 +37,7 @@ function VerifyEmailContent() {
   const token = useSearchParams().get("token") ?? "";
   const { status, message } = useEmailVerification(token);
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-4">
+    <main id="main-content" tabIndex={-1} className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-4">
       <Card className="w-full max-w-md shadow-md">
         <CardHeader className="flex flex-col items-center">
           <MailCheck className="mb-2 size-10 text-red-700" aria-hidden="true" />

@@ -16,7 +16,7 @@ describe('CartProductPolicyService', () => {
 
   it('accepts fractional quantities within current stock', async () => {
     const products = {
-      findOne: jest.fn<() => Promise<Product | null>>().mockResolvedValue(product),
+      find: jest.fn<() => Promise<Product[]>>().mockResolvedValue([product]),
     } as unknown as Repository<Product>;
     const stocks = {
       findOne: jest.fn<() => Promise<Stock | null>>().mockResolvedValue({ quantity: 2.5 } as Stock),
@@ -29,10 +29,12 @@ describe('CartProductPolicyService', () => {
 
   it.each(['UN', 'PCT'])('rejects fractional quantities for %s', async (unit) => {
     const products = {
-      findOne: jest.fn<() => Promise<Product | null>>().mockResolvedValue({
-        ...product,
-        unit_of_measure: unit,
-      }),
+      find: jest.fn<() => Promise<Product[]>>().mockResolvedValue([
+        {
+          ...product,
+          unit_of_measure: unit,
+        },
+      ]),
     } as unknown as Repository<Product>;
     const stocks = { findOne: jest.fn() } as unknown as Repository<Stock>;
     await expect(
@@ -45,7 +47,7 @@ describe('CartProductPolicyService', () => {
 
   it('rejects quantity above stock with a stable code', async () => {
     const products = {
-      findOne: jest.fn<() => Promise<Product | null>>().mockResolvedValue(product),
+      find: jest.fn<() => Promise<Product[]>>().mockResolvedValue([product]),
     } as unknown as Repository<Product>;
     const stocks = {
       findOne: jest.fn<() => Promise<Stock | null>>().mockResolvedValue({ quantity: 1 } as Stock),
@@ -59,10 +61,12 @@ describe('CartProductPolicyService', () => {
 
   it('rejects inactive category as unavailable', async () => {
     const products = {
-      findOne: jest.fn<() => Promise<Product | null>>().mockResolvedValue({
-        ...product,
-        category: { active: false },
-      } as Product),
+      find: jest.fn<() => Promise<Product[]>>().mockResolvedValue([
+        {
+          ...product,
+          category: { active: false },
+        } as Product,
+      ]),
     } as unknown as Repository<Product>;
     const stocks = { findOne: jest.fn() } as unknown as Repository<Stock>;
 

@@ -4,35 +4,52 @@ import { Repository } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { CartResponseDto } from '../dtos/cart-response.dto';
 import { CartItem } from '../entities/cart-item.entity';
-import { CartAccessService } from '../services/cart-access.service';
+import { CartAccessService, type CartPurchaseItem } from '../services/cart-access.service';
 import { Stock } from '../../products/entities/stock.entity';
-import { In } from 'typeorm';
+import { Cart } from '../entities/cart.entity';
+
+const CART_READ_COLUMNS = [
+  'item.id',
+  'item.cart_id',
+  'item.product_id',
+  'item.quantity',
+  'item.unit_price',
+  'product.id',
+  'product.name',
+  'product.image_url',
+  'product.unit_of_measure',
+  'product.unit_id',
+  'unit.id',
+  'unit.name',
+  'unit.image_url',
+  'stock.id',
+  'stock.quantity',
+];
 
 @Injectable()
 export class GetCartUseCase {
   constructor(
     @InjectRepository(CartItem)
     private readonly cartItemRepository: Repository<CartItem>,
-    @InjectRepository(Stock)
-    private readonly stockRepository: Repository<Stock>,
     private readonly cartAccessService: CartAccessService,
   ) {}
 
-  async execute(currentUser: User): Promise<CartResponseDto> {
-    const cart = await this.cartAccessService.getOrCreateCart(currentUser.id);
+  async execute(currentUser: User, knownCart?: Cart): Promise<CartResponseDto> {
+    const cart =
+      knownCart?.user_id === currentUser.id
+        ? knownCart
+        : await this.cartAccessService.getOrCreateCart(currentUser.id);
 
-    const items = await this.cartItemRepository.find({
-      where: { cart_id: cart.id },
-      relations: ['product', 'product.unit'],
-    });
-    const productIds = items.map((item) => item.product_id);
-    const stocks = productIds.length
-      ? await this.stockRepository.find({
-          where: { product_id: In(productIds) },
-        })
-      : [];
+    const items = (await this.cartItemRepository
+      .createQueryBuilder('item')
+      .leftJoinAndSelect('item.product', 'product')
+      .leftJoinAndSelect('product.unit', 'unit')
+      .leftJoinAndMapOne('item.stock', Stock, 'stock', 'stock.product_id = item.product_id')
+      .select(CART_READ_COLUMNS)
+      .where('item.cart_id = :cartId', { cartId: cart.id })
+      .getMany()) as CartPurchaseItem[];
     const stockByProductId = new Map(
-      stocks.map((stock) => [stock.product_id, Number(stock.quantity)]),
+      items.map((item) => [item.product_id, Number(item.stock?.quantity ?? 0)]),
     );
     return CartResponseDto.fromEntity(cart, items, stockByProductId);
   }

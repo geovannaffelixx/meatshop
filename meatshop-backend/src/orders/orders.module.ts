@@ -1,4 +1,5 @@
 import { SellerAccountsService } from '../payments/seller-accounts.service';
+import { CheckoutUnitPolicyService } from './services/checkout-unit-policy.service';
 import { MetricsModule } from '../metrics/metrics.module';
 import { CheckoutQuoteService } from './services/checkout-quote.service';
 import { PaymentLifecycleService } from '../payments/payment-lifecycle.service';
@@ -60,6 +61,7 @@ import { Unit } from '../units/entities/unit.entity';
   ],
   controllers: [OrdersController, CheckoutController, PaymentsController, SellerPaymentsController],
   providers: [
+    CheckoutUnitPolicyService,
     CheckoutQuoteService,
     SellerAccountsService,
     PaymentLifecycleService,

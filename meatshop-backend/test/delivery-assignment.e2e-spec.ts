@@ -35,8 +35,8 @@ describe('Delivery assignment concurrency (PostgreSQL)', () => {
     type: 'postgres' as const,
     host: '127.0.0.1',
     port: Number(process.env.DB_PORT ?? 5433),
-    username: 'meatshop_user',
-    password: 'meatshop_pass',
+    username: process.env.DB_USERNAME ?? 'meatshop_user',
+    password: process.env.DB_PASSWORD ?? 'meatshop_pass',
     database: process.env.DELIVERY_TEST_DATABASE ?? 'meatshop',
     ssl: false as const,
   };

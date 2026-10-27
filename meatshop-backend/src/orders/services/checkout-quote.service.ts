@@ -43,6 +43,7 @@ export class CheckoutQuoteService {
               i.product_id,
               Number(i.quantity),
               Number(i.product.price),
+              Number(i.unit_price ?? i.product.price),
               i.product.unit_of_measure,
             ]),
           groups: [...groups]
@@ -56,6 +57,9 @@ export class CheckoutQuoteService {
   private selection(dto: CreateOrderDto) {
     return {
       delivery: dto.delivery_type,
+      deliveryTypes: [...(dto.unit_delivery_types ?? [])]
+        .sort((a, b) => a.unit_id - b.unit_id)
+        .map((value) => [value.unit_id, value.delivery_type]),
       address: dto.address_id ?? null,
       scheduled: dto.scheduled_delivery_date ?? null,
       method: dto.payment_method,

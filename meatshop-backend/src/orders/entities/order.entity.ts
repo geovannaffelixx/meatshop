@@ -170,4 +170,12 @@ export class Order {
 
   @UpdateDateColumn()
   updated_at: Date;
+
+  toJSON() {
+    return Object.fromEntries(
+      Object.entries(this).filter(
+        ([key]) => !/_hash$|_ciphertext$|^tracking_session_id$/.test(key),
+      ),
+    );
+  }
 }

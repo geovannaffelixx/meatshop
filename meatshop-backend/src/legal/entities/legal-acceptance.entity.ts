@@ -2,6 +2,9 @@ import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeor
 
 @Entity('legal_acceptances')
 export class LegalAcceptance {
+  @Column({ type: 'varchar', default: 'ACCEPTED' })
+  event_type: 'ACCEPTED' | 'REVOKED';
+
   @PrimaryGeneratedColumn()
   id: number;
 

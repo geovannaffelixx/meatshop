@@ -92,7 +92,9 @@ export class ListProductsUseCase {
       .getRawAndEntities();
     const stocks = this.marketStocks(raw);
     return this.page(
-      entities.map((product) => ProductListItemDto.fromEntity(product, stocks.get(product.id) ?? null)),
+      entities.map((product) =>
+        ProductListItemDto.fromEntity(product, stocks.get(product.id) ?? null),
+      ),
       total,
       filters,
     );

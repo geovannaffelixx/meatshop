@@ -38,7 +38,6 @@ import { Chat } from '../chat/entities/chat.entity';
 import { Notification } from '../notifications/entities/notification.entity';
 import { UserDeviceToken } from '../notifications/entities/user-device-token.entity';
 import { NotificationPreference } from '../notifications/entities/notification-preference.entity';
-import { SavedPaymentMethod } from '../saved-payment-methods/entities/saved-payment-method.entity';
 import { BusinessHours } from '../units/entities/business-hours.entity';
 import { Unit } from '../units/entities/unit.entity';
 import { UserUnit } from '../units/entities/user-unit.entity';
@@ -98,7 +97,6 @@ export default new DataSource({
         RecipeStep,
         RecipeIngredient,
         RecipeProduct,
-        SavedPaymentMethod,
         Unit,
         UserUnit,
         BusinessHours,

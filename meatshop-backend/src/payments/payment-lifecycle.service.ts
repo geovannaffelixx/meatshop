@@ -776,10 +776,9 @@ export class PaymentLifecycleService {
     let locked = false;
     try {
       await runner.connect();
-      const [lease] = await runner.query(
-        'SELECT pg_try_advisory_lock(hashtext($1)) AS locked',
-        [MAINTENANCE_LOCK],
-      );
+      const [lease] = await runner.query('SELECT pg_try_advisory_lock(hashtext($1)) AS locked', [
+        MAINTENANCE_LOCK,
+      ]);
       locked = lease.locked;
       if (!locked) return;
       await this.runMaintenance();
@@ -952,7 +951,13 @@ export class PaymentLifecycleService {
     );
     await manager.query(
       'INSERT INTO payment_refund_attempts(refund_id,attempt_key,provider_id,status,actor_id) VALUES($1,$2,$3,$4,$5)',
-      [refund.id, refund.attempt_key, result.id, state, refund.retry_requested_by ?? refund.requested_by],
+      [
+        refund.id,
+        refund.attempt_key,
+        result.id,
+        state,
+        refund.retry_requested_by ?? refund.requested_by,
+      ],
     );
     if (refund.order_id)
       await manager.update(Payment, { order_id: refund.order_id }, { refund_status: state });

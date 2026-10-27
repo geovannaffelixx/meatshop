@@ -7,13 +7,16 @@ import { PromotionalPriceService, promotionalUnitPrice } from './promotional-pri
 describe('PromotionalPriceService', () => {
   const repository = (promotions: Partial<Promotion>[]) => {
     const find = jest.fn(async () => promotions);
-    return { find, service: new PromotionalPriceService({ find } as unknown as Repository<Promotion>) };
+    return {
+      find,
+      service: new PromotionalPriceService({ find } as unknown as Repository<Promotion>),
+    };
   };
 
   it('uses the explicit promotional price or the percentage discount like the catalog', () => {
-    expect(
-      promotionalUnitPrice(80, { promotional_price: 69.9, discount_percentage: null }),
-    ).toBe(69.9);
+    expect(promotionalUnitPrice(80, { promotional_price: 69.9, discount_percentage: null })).toBe(
+      69.9,
+    );
     expect(promotionalUnitPrice(80, { promotional_price: null, discount_percentage: 12.5 })).toBe(
       70,
     );

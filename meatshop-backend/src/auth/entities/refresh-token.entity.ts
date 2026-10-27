@@ -31,4 +31,7 @@ export class RefreshTokenEntity {
 
   @CreateDateColumn()
   created_at: Date;
+
+  @Column({ type: 'timestamp', default: () => 'now()' })
+  authenticated_at: Date;
 }

@@ -1,7 +1,5 @@
 export type AiUpstreamStreamEvent =
-  | { type: 'delta'; text: string }
-  | { type: 'error'; message: string }
-  | { type: 'done' };
+  { type: 'delta'; text: string } | { type: 'error'; message: string } | { type: 'done' };
 
 const EVENT_SEPARATOR = /\r?\n\r?\n/;
 const LINE_SEPARATOR = /\r?\n/;

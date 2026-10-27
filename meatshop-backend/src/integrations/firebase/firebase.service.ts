@@ -106,6 +106,17 @@ export class FirebaseService {
     }
   }
 
+  async isSessionCurrent(uid: string, issuedAt: Date): Promise<boolean> {
+    try {
+      const user = await (await this.auth()).getUser(uid);
+      const validAfter = user.tokensValidAfterTime ? Date.parse(user.tokensValidAfterTime) : 0;
+      return !user.disabled && Number.isFinite(validAfter) && issuedAt.getTime() >= validAfter;
+    } catch (error) {
+      if (this.firebaseErrorCode(error) === 'auth/user-not-found') return false;
+      throw new ServiceUnavailableException('Identity session verification is unavailable.');
+    }
+  }
+
   private async auth(): Promise<Auth> {
     const app = this.getApp();
     const { getAuth } = (await Function('return import("firebase-admin/auth")')()) as {

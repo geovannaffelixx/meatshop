@@ -1,4 +1,49 @@
 const NAME_PLACEHOLDER = '[nome removido]';
+const INSTRUCTION_WORDS = new Set([
+  'ignore',
+  'ignorar',
+  'desconsidere',
+  'esqueca',
+  'revele',
+  'mostre',
+  'imprima',
+  'bypass',
+  'contorne',
+]);
+const NAME_BOUNDARIES = new Set([
+  'e',
+  'quero',
+  'gostaria',
+  'preciso',
+  'moro',
+  'resido',
+  'tenho',
+  'meu',
+  'minha',
+  'para',
+  'com',
+  'mas',
+  'pois',
+  'estou',
+  'vou',
+  'pode',
+  'qual',
+  'onde',
+  'como',
+  'hoje',
+  'amanha',
+  'telefone',
+  'email',
+  'endereco',
+  'cpf',
+  'cep',
+  'faco',
+  'trabalho',
+  'gosto',
+  'procuro',
+  'prefiro',
+  ...INSTRUCTION_WORDS,
+]);
 
 const MEAT_TERMS = new Set([
   'acem',
@@ -32,7 +77,7 @@ const ADDRESS =
 
 const NAME_WORD = String.raw`\p{L}{2,}(?:['-]\p{L}+)?`;
 const CAPITALIZED_WORD = String.raw`\p{Lu}[\p{Ll}'-]+`;
-const SURNAMES = String.raw`(?:\s+(?:d[aeo]s?\s+)?${CAPITALIZED_WORD}){0,3}`;
+const SURNAMES = String.raw`(?:\s+(?:d[aeo]s?\s+)?${NAME_WORD}){0,3}`;
 const NAME_INTRO = new RegExp(
   String.raw`((?<!\p{L})(?:[Mm]eu\s+nome\s+[ée]|MEU\s+NOME\s+[ÉE]|[Mm]e\s+chamo|ME\s+CHAMO)\s+)(${NAME_WORD}${SURNAMES})`,
   'gu',
@@ -43,19 +88,23 @@ const NAME_SOU = new RegExp(
 );
 
 function normalizeWord(word: string): string {
-  return word
-    .normalize('NFD')
-    .replace(/\p{M}/gu, '')
-    .toLowerCase();
+  return word.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 }
 
 function replaceName(match: string, intro: string, name: string): string {
   const firstWord = normalizeWord(name.split(/\s+/)[0]);
-  return MEAT_TERMS.has(firstWord) ? match : `${intro}${NAME_PLACEHOLDER}`;
+  if (MEAT_TERMS.has(firstWord) || INSTRUCTION_WORDS.has(firstWord)) return match;
+  const boundary = [...name.matchAll(/\S+/g)].find(
+    (word, index) => index > 0 && NAME_BOUNDARIES.has(normalizeWord(word[0])),
+  );
+  if (!boundary) return `${intro}${NAME_PLACEHOLDER}`;
+  const spacing = name.slice(0, boundary.index).match(/\s+$/)?.[0] ?? ' ';
+  return `${intro}${NAME_PLACEHOLDER}${spacing}${name.slice(boundary.index)}`;
 }
 
 export function redactSensitiveText(text: string): string {
   return text
+    .normalize('NFC')
     .replace(EMAIL, '[e-mail removido]')
     .replace(CPF, '[CPF removido]')
     .replace(CEP, '[CEP removido]')

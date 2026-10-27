@@ -101,8 +101,9 @@ export class OrdersController {
   mobile(
     @CurrentUser() user: User,
     @Query('page', new DefaultValuePipe(0), ParseIntPipe) page: number,
+    @Query('finished') finished?: string,
   ) {
-    return this.listOrderHistoryUseCase.mobile(user, page);
+    return this.listOrderHistoryUseCase.mobile(user, page, finished === 'true');
   }
 
   @ApiOperation({ summary: 'Gets the details of a specific order' })

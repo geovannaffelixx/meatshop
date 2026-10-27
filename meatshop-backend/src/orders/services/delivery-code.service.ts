@@ -11,6 +11,7 @@ import { Buffer } from 'buffer';
 import { Repository } from 'typeorm';
 import { AesGcmCipher } from '../../common/security/aes-gcm-cipher';
 import { Order } from '../entities/order.entity';
+import { OrderStatus } from '../enums/order-status.enum';
 
 export type DeliveryCodePurpose = 'PICKUP' | 'DELIVERY';
 
@@ -58,6 +59,32 @@ export class DeliveryCodeService {
     const fields = this.fields(order, purpose);
     const now = new Date();
 
+    this.assertCodeUsable(order, purpose, now);
+    const expected = Buffer.from(fields.hash!, 'hex');
+    const received = Buffer.from(this.hash(order.id, purpose, code), 'hex');
+    if (expected.length !== received.length || !timingSafeEqual(expected, received)) {
+      this.applyFailedAttempt(order, purpose, fields.attempts + 1);
+      await this.orderRepository.save(order);
+      throw new UnauthorizedException({
+        code: 'INVALID_DELIVERY_CODE',
+        message: 'Invalid security code.',
+      });
+    }
+
+    if (purpose === 'PICKUP') {
+      order.pickup_verified_at = now;
+      order.pickup_code_attempts = 0;
+      order.pickup_code_locked_until = null;
+    } else {
+      order.delivery_verified_at = now;
+      order.delivery_code_attempts = 0;
+      order.delivery_code_locked_until = null;
+    }
+    await this.orderRepository.save(order);
+  }
+
+  private assertCodeUsable(order: Order, purpose: DeliveryCodePurpose, now: Date) {
+    const fields = this.fields(order, purpose);
     if (fields.verifiedAt) {
       throw new BadRequestException(
         purpose === 'PICKUP'
@@ -83,28 +110,6 @@ export class DeliveryCodeService {
         message: 'The code expired. Request a new code.',
       });
     }
-
-    const expected = Buffer.from(fields.hash, 'hex');
-    const received = Buffer.from(this.hash(order.id, purpose, code), 'hex');
-    if (expected.length !== received.length || !timingSafeEqual(expected, received)) {
-      this.applyFailedAttempt(order, purpose, fields.attempts + 1);
-      await this.orderRepository.save(order);
-      throw new UnauthorizedException({
-        code: 'INVALID_DELIVERY_CODE',
-        message: 'Invalid security code.',
-      });
-    }
-
-    if (purpose === 'PICKUP') {
-      order.pickup_verified_at = now;
-      order.pickup_code_attempts = 0;
-      order.pickup_code_locked_until = null;
-    } else {
-      order.delivery_verified_at = now;
-      order.delivery_code_attempts = 0;
-      order.delivery_code_locked_until = null;
-    }
-    await this.orderRepository.save(order);
   }
 
   clearPickup(order: Order): void {
@@ -117,6 +122,8 @@ export class DeliveryCodeService {
 
   revealDeliveryCode(order: Order): string | null {
     if (!order.delivery_code_ciphertext || order.delivery_verified_at) return null;
+    if ([OrderStatus.CANCELLED, OrderStatus.DELIVERED].includes(order.status)) return null;
+    if (order.delivery_code_expires_at && order.delivery_code_expires_at <= new Date()) return null;
     try {
       return this.decrypt(order.delivery_code_ciphertext);
     } catch {

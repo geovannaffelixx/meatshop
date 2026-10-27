@@ -172,8 +172,8 @@ export function EditProductScreen() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
           <fieldset className="border-2 border-[#A0332C] rounded-md px-3 py-1">
-            <legend className="text-[#A0332C] font-semibold px-1 text-sm">Status</legend>
-            <select
+            <legend id="legend-edit-product-screen-5973" className="text-[#A0332C] font-semibold px-1 text-sm">Status</legend>
+            <select aria-labelledby="legend-edit-product-screen-5973"
               value={product.active ? "ATIVO" : "INATIVO"}
               onChange={(e) => handleChange("active", e.target.value === "ATIVO")}
               className="input"
@@ -184,8 +184,8 @@ export function EditProductScreen() {
           </fieldset>
 
           <fieldset className="border-2 border-[#A0332C] rounded-md px-3 py-1">
-            <legend className="text-[#A0332C] font-semibold px-1 text-sm">Produto<RequiredMark /></legend>
-            <input
+            <legend id="legend-edit-product-screen-6502" className="text-[#A0332C] font-semibold px-1 text-sm">Produto<RequiredMark /></legend>
+            <input aria-labelledby="legend-edit-product-screen-6502"
               type="text"
               value={product.name}
               onChange={(e) => handleChange("name", e.target.value)}
@@ -198,8 +198,8 @@ export function EditProductScreen() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
           <fieldset className="border border-gray-400 rounded-md px-3 py-2">
-            <legend className="text-gray-600 font-medium px-1 text-sm">Categoria<RequiredMark /></legend>
-            <select
+            <legend id="legend-edit-product-screen-7063" className="text-gray-600 font-medium px-1 text-sm">Categoria<RequiredMark /></legend>
+            <select aria-labelledby="legend-edit-product-screen-7063"
               value={product.category_id}
               onChange={(e) => handleChange("category_id", Number(e.target.value))}
               className="input"
@@ -217,8 +217,8 @@ export function EditProductScreen() {
           </fieldset>
 
           <fieldset className="border border-gray-400 rounded-md px-3 py-2">
-            <legend className="text-gray-600 font-medium px-1 text-sm">Marca</legend>
-            <input
+            <legend id="legend-edit-product-screen-7825" className="text-gray-600 font-medium px-1 text-sm">Marca</legend>
+            <input aria-labelledby="legend-edit-product-screen-7825"
               type="text"
               value={product.brand ?? ""}
               onChange={(e) => handleChange("brand", e.target.value)}
@@ -228,8 +228,8 @@ export function EditProductScreen() {
           </fieldset>
 
           <fieldset className="border border-gray-400 rounded-md px-3 py-2">
-            <legend className="text-gray-600 font-medium px-1 text-sm">Unidade de medida<RequiredMark /></legend>
-            <select
+            <legend id="legend-edit-product-screen-8255" className="text-gray-600 font-medium px-1 text-sm">Unidade de medida<RequiredMark /></legend>
+            <select aria-labelledby="legend-edit-product-screen-8255"
               value={product.unit_of_measure}
               onChange={(e) => handleChange("unit_of_measure", e.target.value)}
               className="input"
@@ -245,13 +245,13 @@ export function EditProductScreen() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
           <fieldset className="border border-gray-400 rounded-md px-3 py-2">
-            <legend className="text-gray-600 font-medium px-1 text-sm">
+            <legend id="legend-edit-product-screen-8999" className="text-gray-600 font-medium px-1 text-sm">
               Estoque
             </legend>
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col">
-                <label className="text-xs text-gray-600 mb-1">QUANTIDADE ATUAL</label>
-                <input
+                <label htmlFor="field-edit-product-screen-9297" className="text-xs text-gray-600 mb-1">QUANTIDADE ATUAL</label>
+                <input id="field-edit-product-screen-9297"
                   type="number"
                   min={0}
                   step="0.001"
@@ -264,8 +264,8 @@ export function EditProductScreen() {
                 />
               </div>
               <div className="flex flex-col">
-                <label className="text-xs text-gray-600 mb-1">MÍNIMO (ALERTA)</label>
-                <input
+                <label htmlFor="field-edit-product-screen-9836" className="text-xs text-gray-600 mb-1">MÍNIMO (ALERTA)</label>
+                <input id="field-edit-product-screen-9836"
                   type="number"
                   min={0}
                   step="0.001"
@@ -281,10 +281,10 @@ export function EditProductScreen() {
           </fieldset>
 
           <fieldset className="border border-gray-400 rounded-md px-3 py-2">
-            <legend className="text-gray-600 font-medium px-1 text-sm">Valor</legend>
+            <legend id="legend-edit-product-screen-10371" className="text-gray-600 font-medium px-1 text-sm">Valor</legend>
             <div className="flex flex-col">
-              <label className="text-xs text-gray-600 mb-1">VALOR DO PRODUTO<RequiredMark /></label>
-              <input
+              <label htmlFor="field-edit-product-screen-10582" className="text-xs text-gray-600 mb-1">VALOR DO PRODUTO<RequiredMark /></label>
+              <input id="field-edit-product-screen-10582"
                 type="number"
                 min={0.01}
                 step="0.01"
@@ -300,10 +300,10 @@ export function EditProductScreen() {
 
         <div className="grid grid-cols-1">
           <fieldset className="border border-gray-400 rounded-md px-3 py-2">
-            <legend className="text-gray-600 font-medium px-1 text-sm">
+            <legend id="legend-edit-product-screen-11129" className="text-gray-600 font-medium px-1 text-sm">
               Descrição do produto (opcional)
             </legend>
-            <textarea
+            <textarea aria-labelledby="legend-edit-product-screen-11129"
               value={product.description ?? ""}
               onChange={(e) => handleChange("description", e.target.value)}
               className="input h-24 resize-none"
@@ -314,7 +314,7 @@ export function EditProductScreen() {
 
         <div className="grid grid-cols-1 mt-3">
           <fieldset className="border border-gray-400 rounded-md px-3 py-2">
-            <legend className="text-gray-600 font-medium px-1 text-sm">Fotos do produto</legend>
+            <legend id="legend-edit-product-screen-11717" className="text-gray-600 font-medium px-1 text-sm">Fotos do produto</legend>
             <div className="flex flex-wrap gap-3">
               {images.map((image) => (
                 <div key={image.id} className="relative h-20 w-20 overflow-hidden rounded-md border border-gray-300">

@@ -26,7 +26,7 @@ export class GetProductUseCase {
   }> {
     const product = await this.productRepository.findOne({
       where: { id: productId },
-      relations: ['category'],
+      relations: ['category', 'unit'],
     });
 
     if (!product) {
@@ -39,7 +39,10 @@ export class GetProductUseCase {
 
     if (
       available &&
-      (!product.active || !product.category?.active || Number(stock?.quantity ?? 0) <= 0)
+      (!product.active ||
+        !product.category?.active ||
+        product.unit?.is_active === false ||
+        Number(stock?.quantity ?? 0) <= 0)
     ) {
       throw new NotFoundException('Product not found');
     }

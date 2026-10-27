@@ -13,6 +13,7 @@ pnpm-debug.log*
 # ======================================
 dist
 coverage
+test-results
 build
 tmp
 .cache

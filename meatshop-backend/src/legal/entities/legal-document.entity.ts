@@ -2,6 +2,9 @@ import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity('legal_documents')
 export class LegalDocument {
+  @Column({ default: false })
+  is_revocable: boolean;
+
   @PrimaryGeneratedColumn()
   id: number;
 

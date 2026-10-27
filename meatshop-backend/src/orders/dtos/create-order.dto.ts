@@ -28,6 +28,18 @@ export class UnitCouponDto {
   code: string;
 }
 
+export class UnitDeliveryTypeDto {
+  @IsInt() @Min(1) unit_id: number;
+  @IsEnum(DeliveryType) delivery_type: DeliveryType;
+}
+
+export function deliveryForUnit(dto: CreateOrderDto, unitId: number): DeliveryType {
+  return (
+    dto.unit_delivery_types?.find((value) => value.unit_id === unitId)?.delivery_type ??
+    dto.delivery_type
+  );
+}
+
 export class UnitPaymentMethodDto {
   @IsInt() @Min(1) unit_id: number;
   @IsIn([
@@ -51,6 +63,16 @@ export function paymentForUnit(dto: CreateOrderDto, unitId: number) {
 }
 
 export class CreateOrderDto {
+  @ApiPropertyOptional({
+    type: [UnitDeliveryTypeDto],
+    description: 'Delivery or counter pickup per unit',
+  })
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => UnitDeliveryTypeDto)
+  @ArrayUnique((value: UnitDeliveryTypeDto) => value.unit_id)
+  unit_delivery_types?: UnitDeliveryTypeDto[];
+
   @IsOptional() @IsString() @MaxLength(200) quote_token?: string;
 
   @IsOptional()
@@ -71,7 +93,13 @@ export class CreateOrderDto {
     description: 'Delivery address ID. Required when delivery_type is DELIVERY',
     example: 12,
   })
-  @ValidateIf((dto) => dto.delivery_type === DeliveryType.DELIVERY)
+  @ValidateIf(
+    (dto: CreateOrderDto) =>
+      dto.delivery_type === DeliveryType.DELIVERY ||
+      Boolean(
+        dto.unit_delivery_types?.some((value) => value.delivery_type === DeliveryType.DELIVERY),
+      ),
+  )
   @IsInt()
   address_id?: number;
 

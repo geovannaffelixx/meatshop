@@ -9,7 +9,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "jest --runInBand",
-    "test:coverage": "jest --runInBand --coverage"
+    "test:coverage": "jest --runInBand --coverage",
+    "test:e2e": "cypress run"
   },
   "dependencies": {
     "@radix-ui/react-collapsible": "^1.1.12",

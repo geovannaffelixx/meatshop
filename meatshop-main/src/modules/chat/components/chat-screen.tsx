@@ -100,7 +100,7 @@ export function ChatScreen() {
         <aside className={`${mobileThreadOpen ? "hidden lg:flex" : "flex"} min-h-0 flex-col border-r bg-white`}>
           <div className="border-b p-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-600" />
               <Input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
@@ -138,7 +138,7 @@ export function ChatScreen() {
                       <strong className="truncate text-sm text-slate-900">
                         {order.client_name ?? `Cliente #${order.client_id}`}
                       </strong>
-                      <span className="shrink-0 text-xs text-slate-400">#{order.id}</span>
+                      <span className="shrink-0 text-xs text-slate-600">#{order.id}</span>
                     </span>
                     <span className="mt-1 flex items-center justify-between gap-2 text-xs text-slate-500">
                       <span>{ORDER_STATUS_LABELS[order.status] ?? order.status}</span>
@@ -192,7 +192,7 @@ export function ChatScreen() {
                   <Truck className="size-4" /> Entregador
                 </button>
                 {!selectedOrder.delivery_person_id && (
-                  <span className="text-xs text-slate-400">Disponível após atribuição do entregador</span>
+                  <span className="text-xs text-slate-600">Disponível após atribuição do entregador</span>
                 )}
               </div>
               <ChatThread

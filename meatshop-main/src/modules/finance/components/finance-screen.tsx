@@ -1,4 +1,5 @@
 "use client"
+import { expenseTypeLabel, expensePaymentLabel } from '../utils/expense-labels';
 
 import { formatDate as formatLocalDate } from "@/shared/lib/formatters";
 
@@ -439,7 +440,7 @@ export function FinanceScreen() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="border-slate-200 bg-white shadow-sm">
             <CardHeader className="px-4 pt-4 text-center">
-              <CardTitle className="text-green-600">Receitas</CardTitle>
+              <CardTitle className="text-green-700">Receitas</CardTitle>
               <p className="text-sm text-gray-500">
                 Recebimentos líquidos por dia
               </p>
@@ -498,10 +499,10 @@ export function FinanceScreen() {
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
                       <div className="md:col-span-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label htmlFor="field-finance-screen-17154" className="text-sm font-medium text-gray-700">
                           ID
                         </label>
-                        <Input
+                        <Input id="field-finance-screen-17154"
                           value={form.id}
                           disabled
                           placeholder="Gerado automaticamente"
@@ -509,10 +510,10 @@ export function FinanceScreen() {
                       </div>
 
                       <div className="md:col-span-3">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label htmlFor="field-finance-screen-17576" className="text-sm font-medium text-gray-700">
                           ID Fornecedor
                         </label>
-                        <Input
+                        <Input id="field-finance-screen-17576"
                           name="supplierId"
                           value={form.supplierId}
                           onChange={handleFormChange}
@@ -522,10 +523,10 @@ export function FinanceScreen() {
                       </div>
 
                       <div className="md:col-span-3">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label htmlFor="field-finance-screen-18113" className="text-sm font-medium text-gray-700">
                           CPF / CNPJ
                         </label>
-                        <Input
+                        <Input id="field-finance-screen-18113"
                           name="cpfCnpj"
                           value={form.cpfCnpj}
                           onChange={handleFormChange}
@@ -534,11 +535,11 @@ export function FinanceScreen() {
                       </div>
 
                       <div className="md:col-span-4">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label htmlFor="field-finance-screen-18622" className="text-sm font-medium text-gray-700">
                           Fornecedor
                           <RequiredMark />
                         </label>
-                        <Input
+                        <Input id="field-finance-screen-18622"
                           name="supplierName"
                           value={form.supplierName}
                           onChange={handleFormChange}
@@ -548,11 +549,11 @@ export function FinanceScreen() {
                       </div>
 
                       <div className="flex flex-col justify-end md:col-span-3">
-                        <label className="text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="field-finance-screen-19235" className="text-sm font-medium text-gray-700 mb-1">
                           Tipo
                           <RequiredMark />
                         </label>
-                        <select
+                        <select id="field-finance-screen-19235"
                           name="type"
                           value={form.type}
                           onChange={handleFormChange}
@@ -566,11 +567,11 @@ export function FinanceScreen() {
                       </div>
 
                       <div className="md:col-span-3">
-                        <label className="text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="field-finance-screen-20061" className="text-sm font-medium text-gray-700 mb-1">
                           Valor
                           <RequiredMark />
                         </label>
-                        <Input
+                        <Input id="field-finance-screen-20061"
                           name="amount"
                           value={form.amount}
                           onChange={handleFormChange}
@@ -581,10 +582,10 @@ export function FinanceScreen() {
                       </div>
 
                       <div className="md:col-span-3">
-                        <label className="text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="field-finance-screen-20672" className="text-sm font-medium text-gray-700 mb-1">
                           Desconto
                         </label>
-                        <Input
+                        <Input id="field-finance-screen-20672"
                           name="discount"
                           value={form.discount}
                           onChange={handleFormChange}
@@ -594,10 +595,10 @@ export function FinanceScreen() {
                       </div>
 
                       <div className="md:col-span-3">
-                        <label className="text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="field-finance-screen-21209" className="text-sm font-medium text-gray-700 mb-1">
                           Valor Pago (AUTO)
                         </label>
-                        <Input
+                        <Input id="field-finance-screen-21209"
                           name="paidAmount"
                           value={form.paidAmount}
                           readOnly
@@ -607,10 +608,10 @@ export function FinanceScreen() {
 
                       <div className="grid items-end gap-4 md:col-span-12 sm:grid-cols-3">
                         <div>
-                          <label className="text-sm font-medium text-gray-700 mb-1">
+                          <label htmlFor="field-finance-screen-21744" className="text-sm font-medium text-gray-700 mb-1">
                             Data lançamento
                           </label>
-                          <Input
+                          <Input id="field-finance-screen-21744"
                             type="date"
                             name="postedAt"
                             value={form.postedAt}
@@ -619,10 +620,10 @@ export function FinanceScreen() {
                         </div>
 
                         <div>
-                          <label className="text-sm font-medium text-gray-700 mb-1">
+                          <label htmlFor="field-finance-screen-22222" className="text-sm font-medium text-gray-700 mb-1">
                             Data pagamento
                           </label>
-                          <Input
+                          <Input id="field-finance-screen-22222"
                             type="date"
                             name="paidAt"
                             value={form.paidAt}
@@ -631,10 +632,10 @@ export function FinanceScreen() {
                         </div>
 
                         <div>
-                          <label className="text-sm font-medium text-gray-700 mb-1">
+                          <label htmlFor="field-finance-screen-22695" className="text-sm font-medium text-gray-700 mb-1">
                             Forma de pagamento
                           </label>
-                          <select
+                          <select id="field-finance-screen-22695"
                             name="paymentMethod"
                             value={form.paymentMethod}
                             onChange={handleFormChange}
@@ -650,10 +651,10 @@ export function FinanceScreen() {
                       </div>
 
                       <div className="md:col-span-12">
-                        <label className="text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="field-finance-screen-23645" className="text-sm font-medium text-gray-700 mb-1">
                           Observações
                         </label>
-                        <Textarea
+                        <Textarea id="field-finance-screen-23645"
                           name="notes"
                           value={form.notes}
                           onChange={handleFormChange}
@@ -762,11 +763,11 @@ export function FinanceScreen() {
                         <td className="p-3 font-medium">
                           {expense.supplierName}
                         </td>
-                        <td className="p-3">{expense.type}</td>
+                        <td className="p-3">{expenseTypeLabel(expense.type)}</td>
                         <td className="p-3">
                           {formatCurrency(expense.paidAmount)}
                         </td>
-                        <td className="p-3">{expense.paymentMethod}</td>
+                        <td className="p-3">{expensePaymentLabel(expense.paymentMethod)}</td>
                         <td className="p-3">
                           {formatLocalDate(expense.paidAt || expense.postedAt)}
                         </td>

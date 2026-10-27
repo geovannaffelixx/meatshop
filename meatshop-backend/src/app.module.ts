@@ -1,4 +1,5 @@
 import { AuditRequestContextMiddleware } from './audit/audit-request-context';
+import { CsrfMiddleware } from './common/middleware/csrf.middleware';
 import { MonitoringModule } from './monitoring/monitoring.module';
 import { LegalDocument } from './legal/entities/legal-document.entity';
 import { LegalAcceptance } from './legal/entities/legal-acceptance.entity';
@@ -46,7 +47,6 @@ import { Chat } from './chat/entities/chat.entity';
 import { Notification } from './notifications/entities/notification.entity';
 import { UserDeviceToken } from './notifications/entities/user-device-token.entity';
 import { NotificationPreference } from './notifications/entities/notification-preference.entity';
-import { SavedPaymentMethod } from './saved-payment-methods/entities/saved-payment-method.entity';
 import { BusinessHours } from './units/entities/business-hours.entity';
 import { Unit } from './units/entities/unit.entity';
 import { UserUnit } from './units/entities/user-unit.entity';
@@ -73,7 +73,6 @@ import { AuditModule } from './audit/audit.module';
 import { ChatModule } from './chat/chat.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { RecipesModule } from './recipes/recipes.module';
-import { SavedPaymentMethodsModule } from './saved-payment-methods/saved-payment-methods.module';
 import { SeedModule } from './database/seed/seed.module';
 import { MercadoPagoModule } from '@/mercadopago/mercadopago.module';
 import { EmailModule } from './email/email.module';
@@ -85,6 +84,52 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { RateLimitMiddleware } from './common/middleware/rate-limit.middleware';
 import { StorageModule } from './storage/storage.module';
 import { AiModule } from './ai/ai.module';
+const APP_ENTITIES = [
+  User,
+  LegalDocument,
+  LegalAcceptance,
+  Order,
+  Expense,
+  RefreshTokenEntity,
+  Sale,
+  Product,
+  Stock,
+  Category,
+  Address,
+  Cart,
+  CartItem,
+  Promotion,
+  Coupon,
+  CouponUnit,
+  CouponRedemption,
+  OrderItem,
+  Payment,
+  OrderStatusHistory,
+  DeliveryPerson,
+  Vehicle,
+  DeliveryTracking,
+  Review,
+  DeliveryReview,
+  SupportTicket,
+  SupportMessage,
+  SupportAttachment,
+  AuditLog,
+  Recipe,
+  RecipeStep,
+  RecipeIngredient,
+  RecipeProduct,
+  Unit,
+  UserUnit,
+  BusinessHours,
+  Notification,
+  UserDeviceToken,
+  NotificationPreference,
+  Chat,
+  AiConversation,
+  AiMessage,
+  AiRateLimit,
+];
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -117,61 +162,17 @@ import { AiModule } from './ai/ai.module';
             dbType === 'postgres'
               ? config.get<string>('DB_DATABASE')
               : config.get<string>('DB_PATH') || 'data/meatshop.db',
-          entities: [
-            User,
-            LegalDocument,
-            LegalAcceptance,
-            Order,
-            Expense,
-            RefreshTokenEntity,
-            Sale,
-            Product,
-            Stock,
-            Category,
-            Address,
-            Cart,
-            CartItem,
-            Promotion,
-            Coupon,
-            CouponUnit,
-            CouponRedemption,
-            OrderItem,
-            Payment,
-            OrderStatusHistory,
-            DeliveryPerson,
-            Vehicle,
-            DeliveryTracking,
-            Review,
-            DeliveryReview,
-            SupportTicket,
-            SupportMessage,
-            SupportAttachment,
-            AuditLog,
-            Recipe,
-            RecipeStep,
-            RecipeIngredient,
-            RecipeProduct,
-            SavedPaymentMethod,
-            Unit,
-            UserUnit,
-            BusinessHours,
-            Notification,
-            UserDeviceToken,
-            NotificationPreference,
-            Chat,
-            AiConversation,
-            AiMessage,
-            AiRateLimit,
-          ],
+          entities: [...APP_ENTITIES],
           autoLoadEntities: true,
           synchronize: config.get<string>('DB_SYNCHRONIZE') === 'true',
           ...(dbType === 'postgres'
             ? {
+                extra: { max: Number(config.get<string>('DB_POOL_MAX', '10')) },
                 ssl:
                   config.get<string>('DB_SSL') === 'true' ? { rejectUnauthorized: false } : false,
               }
             : {}),
-          logging: config.get<string>('NODE_ENV') !== 'production',
+          logging: config.get<string>('TYPEORM_LOGGING') === 'true',
         } as TypeOrmModuleOptions;
       },
     }),
@@ -193,7 +194,6 @@ import { AiModule } from './ai/ai.module';
     ChatModule,
     NotificationsModule,
     RecipesModule,
-    SavedPaymentMethodsModule,
     SeedModule,
     MercadoPagoModule,
     SearchModule,
@@ -205,7 +205,7 @@ import { AiModule } from './ai/ai.module';
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
     consumer
-      .apply(AuditRequestContextMiddleware, RateLimitMiddleware, AppCheckMiddleware)
+      .apply(AuditRequestContextMiddleware, RateLimitMiddleware, CsrfMiddleware, AppCheckMiddleware)
       .forRoutes('*');
   }
 }

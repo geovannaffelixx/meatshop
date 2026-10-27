@@ -89,7 +89,7 @@ export function PromotionsScreen() {
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const promotionsQuery = useServerList<Promotion>(unitId ? `/promotions?unit_id=${unitId}` : null, search, { status: statusFilter });
+  const promotionsQuery = useServerList<Promotion>(unitId ? `/promotions/manage?unit_id=${unitId}` : null, search, { status: statusFilter });
   const pagination = promotionsQuery.pagination;
   const productsQuery = useApiQuery<{ data: Product[] }>(unitId ? `/products/manage?unit_id=${unitId}&limit=200` : null);
   const products = useMemo(() => productsQuery.data?.data ?? [], [productsQuery.data]);
@@ -246,8 +246,8 @@ export function PromotionsScreen() {
 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Produto<RequiredMark /></label>
-                    <select
+                    <label htmlFor="field-promotions-screen-9355" className="text-sm font-medium text-gray-700">Produto<RequiredMark /></label>
+                    <select id="field-promotions-screen-9355"
                       value={form.product_id}
                       disabled={!!editingId}
                       onChange={(e) => setForm((f) => ({ ...f, product_id: Number(e.target.value) }))}
@@ -264,8 +264,8 @@ export function PromotionsScreen() {
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Título<RequiredMark /></label>
-                    <Input
+                    <label htmlFor="field-promotions-screen-10200" className="text-sm font-medium text-gray-700">Título<RequiredMark /></label>
+                    <Input id="field-promotions-screen-10200"
                       value={form.title}
                       onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                       placeholder="Ex.: Picanha em promoção"
@@ -274,8 +274,8 @@ export function PromotionsScreen() {
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Descrição (opcional)</label>
-                    <Textarea
+                    <label htmlFor="field-promotions-screen-10627" className="text-sm font-medium text-gray-700">Descrição (opcional)</label>
+                    <Textarea id="field-promotions-screen-10627"
                       value={form.description}
                       onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                       rows={3}
@@ -307,8 +307,8 @@ export function PromotionsScreen() {
 
                   {form.discountMode === "percentage" ? (
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Desconto (%)<RequiredMark /></label>
-                      <Input
+                      <label htmlFor="field-promotions-screen-12214" className="text-sm font-medium text-gray-700">Desconto (%)<RequiredMark /></label>
+                      <Input id="field-promotions-screen-12214"
                         type="number"
                         min={0}
                         max={100}
@@ -321,8 +321,8 @@ export function PromotionsScreen() {
                     </div>
                   ) : (
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Preço promocional (R$)<RequiredMark /></label>
-                      <Input
+                      <label htmlFor="field-promotions-screen-12839" className="text-sm font-medium text-gray-700">Preço promocional (R$)<RequiredMark /></label>
+                      <Input id="field-promotions-screen-12839"
                         type="number"
                         min={0}
                         step="0.01"
@@ -336,8 +336,8 @@ export function PromotionsScreen() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Início<RequiredMark /></label>
-                      <Input
+                      <label htmlFor="field-promotions-screen-13496" className="text-sm font-medium text-gray-700">Início<RequiredMark /></label>
+                      <Input id="field-promotions-screen-13496"
                         type="datetime-local"
                         value={form.starts_at}
                         onChange={(e) => setForm((f) => ({ ...f, starts_at: e.target.value }))}
@@ -345,8 +345,8 @@ export function PromotionsScreen() {
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Término<RequiredMark /></label>
-                      <Input
+                      <label htmlFor="field-promotions-screen-13931" className="text-sm font-medium text-gray-700">Término<RequiredMark /></label>
+                      <Input id="field-promotions-screen-13931"
                         type="datetime-local"
                         value={form.ends_at}
                         onChange={(e) => setForm((f) => ({ ...f, ends_at: e.target.value }))}

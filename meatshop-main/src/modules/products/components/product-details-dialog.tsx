@@ -30,7 +30,7 @@ export function ProductDetailsDialog({ productId, onClose }: { productId: number
         ) : data && <div className="grid gap-6 sm:grid-cols-2">
           <div className="space-y-3">
             <div className="grid aspect-square place-items-center overflow-hidden rounded-2xl border bg-slate-50">
-              {images.length ? <Image unoptimized src={resolveAssetUrl(images[selected] ?? images[0])} alt={data.product.name} width={500} height={500} className="size-full object-contain" /> : <div className="text-center text-slate-400"><Package className="mx-auto mb-2 size-12" /><p className="text-sm">Sem imagens cadastradas</p></div>}
+              {images.length ? <Image unoptimized src={resolveAssetUrl(images[selected] ?? images[0])} alt={data.product.name} width={500} height={500} className="size-full object-contain" /> : <div className="text-center text-slate-600"><Package className="mx-auto mb-2 size-12" /><p className="text-sm">Sem imagens cadastradas</p></div>}
             </div>
             {images.length > 1 && <div className="flex gap-2 overflow-x-auto pb-1">{images.map((url, index) => <button key={url} type="button" aria-label={`Ver imagem ${index + 1}`} aria-pressed={selected === index} onClick={() => setSelected(index)} className={`size-16 shrink-0 overflow-hidden rounded-lg border-2 focus-visible:outline-red-600 ${selected === index ? 'border-red-600' : 'border-slate-200'}`}><Image unoptimized src={resolveAssetUrl(url)} alt="" width={64} height={64} className="size-full object-cover" /></button>)}</div>}
           </div>

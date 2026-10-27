@@ -20,7 +20,11 @@ async function collect(body: ReadableStream<Uint8Array>): Promise<AiUpstreamStre
 describe('parseChatbotStream', () => {
   it('parses deltas split across network chunks and stops at [DONE]', async () => {
     const events = await collect(
-      streamOf('data: {"delta": "A pica', 'nha "}\n\ndata: {"delta": "é ótima"}\r\n\r\n', 'data: [DONE]\n\n'),
+      streamOf(
+        'data: {"delta": "A pica',
+        'nha "}\n\ndata: {"delta": "é ótima"}\r\n\r\n',
+        'data: [DONE]\n\n',
+      ),
     );
 
     expect(events).toEqual([
@@ -32,7 +36,9 @@ describe('parseChatbotStream', () => {
 
   it('maps upstream errors and ignores malformed or unknown events', async () => {
     const events = await collect(
-      streamOf(': ping\n\ndata: {oops\n\ndata: {"other": 1}\n\ndata: {"error": "falhou"}\n\ndata: [DONE]'),
+      streamOf(
+        ': ping\n\ndata: {oops\n\ndata: {"other": 1}\n\ndata: {"error": "falhou"}\n\ndata: [DONE]',
+      ),
     );
 
     expect(events).toEqual([{ type: 'error', message: 'falhou' }, { type: 'done' }]);

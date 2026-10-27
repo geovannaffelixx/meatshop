@@ -1,3 +1,4 @@
+import { ListManagedPromotionsUseCase } from './use-cases/list-managed-promotions.use-case';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProductsModule } from '../products/products.module';
@@ -36,6 +37,7 @@ import { PromotionalPriceService } from './services/promotional-price.service';
   ],
   controllers: [PromotionsController, CouponsController],
   providers: [
+    ListManagedPromotionsUseCase,
     CreatePromotionUseCase,
     UpdatePromotionUseCase,
     ActivatePromotionUseCase,
@@ -54,11 +56,6 @@ import { PromotionalPriceService } from './services/promotional-price.service';
     ListCouponRedemptionsUseCase,
     PromotionalPriceService,
   ],
-  exports: [
-    TypeOrmModule,
-    ValidateCouponUseCase,
-    CouponRedemptionService,
-    PromotionalPriceService,
-  ],
+  exports: [TypeOrmModule, ValidateCouponUseCase, CouponRedemptionService, PromotionalPriceService],
 })
 export class PromotionsModule {}

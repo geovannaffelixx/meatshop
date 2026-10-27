@@ -59,8 +59,8 @@ const enabled = process.env.GEO_TEST_DATABASE === 'meatshop_geo_test';
     dataSource.setOptions({
       host: '127.0.0.1',
       port: Number(process.env.E2E_DB_PORT ?? 5433),
-      username: 'meatshop_user',
-      password: 'meatshop_pass',
+      username: process.env.DB_USERNAME ?? 'meatshop_user',
+      password: process.env.DB_PASSWORD ?? 'meatshop_pass',
       database: 'meatshop_geo_test',
       ssl: false,
       logging: false,

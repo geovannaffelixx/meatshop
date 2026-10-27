@@ -1,7 +1,7 @@
 import { CompleteFunctionalGaps1792790400000 } from '../src/database/migrations/1792790400000-CompleteFunctionalGaps';
 import legalDocuments from '../src/legal/data/documents-2026-10-18.json';
 import { setInterval, clearInterval, setTimeout, clearTimeout } from 'node:timers';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile, unlink } from 'node:fs/promises';
 import { PersonalDataRetentionService } from '../src/users/services/personal-data-retention.service';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
@@ -29,6 +29,7 @@ import { SendNotificationUseCase } from '../src/notifications/use-cases/send-not
 import { SendOrderStatusNotificationUseCase } from '../src/notifications/use-cases/send-order-status-notification.use-case';
 import { VerifyMobilePasswordUseCase } from '../src/auth/use-cases/verify-mobile-password.use-case';
 import { AllExceptionsFilter } from '../src/common/filters/all-exceptions.filter';
+import { startK6Cluster } from './k6/cluster';
 
 const enabled = ['meatshop_spec_test_330', 'meatshop_gaps_test_330'].includes(
   process.env.E2E_TEST_DATABASE ?? '',
@@ -57,7 +58,11 @@ const enabled = ['meatshop_spec_test_330', 'meatshop_gaps_test_330'].includes(
       .compile();
     app = module.createNestApplication();
     app.useGlobalPipes(
-      new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }),
+      new ValidationPipe({
+        transform: true,
+        whitelist: true,
+        forbidNonWhitelisted: true,
+      }),
     );
     app.useGlobalFilters(app.get(AllExceptionsFilter));
     await app.listen(0, '127.0.0.1');
@@ -121,7 +126,7 @@ const enabled = ['meatshop_spec_test_330', 'meatshop_gaps_test_330'].includes(
       .getRepository(Category)
       .save({ name: 'Specification beef', unit_id: unit.id, active: true });
     product = await db.getRepository(Product).save({
-      name: `spec-${randomUUID()}`,
+      name: `carne spec-${randomUUID()}`,
       unit_id: unit.id,
       category_id: category.id,
       active: true,
@@ -223,7 +228,11 @@ const enabled = ['meatshop_spec_test_330', 'meatshop_gaps_test_330'].includes(
     const created = await request(app.getHttpServer())
       .post('/support-tickets')
       .set('Authorization', `Bearer ${bobToken}`)
-      .send({ subject: 'Specification support', description: 'Need help', category: 'TECHNICAL' })
+      .send({
+        subject: 'Specification support',
+        description: 'Need help',
+        category: 'TECHNICAL',
+      })
       .expect(201);
     const id = created.body.id;
     await request(app.getHttpServer())
@@ -369,6 +378,78 @@ const enabled = ['meatshop_spec_test_330', 'meatshop_gaps_test_330'].includes(
     ).toBe(100);
   }, 40000);
 
+  if (process.env.K6_ENABLED === 'true') {
+    it('runs k6 against isolated accounts with search, cart and checkout thresholds', async () => {
+      const users = await db.getRepository(User).save(
+        Array.from({ length: 500 }, (_, index) =>
+          db.getRepository(User).create({
+            name: `k6 account ${index}`,
+            email: `k6-${randomUUID()}@example.test`,
+            is_active: true,
+            email_verified: true,
+            profile_complete: true,
+          }),
+        ),
+      );
+      await db.query(
+        `INSERT INTO legal_acceptances(user_id,document_id,channel,authorized_representative)
+        SELECT user_id,d.id,'mobile',false FROM unnest($1::int[]) AS user_id
+        CROSS JOIN legal_documents d WHERE d.is_current AND d.kind<>'ESTABLISHMENT_TERMS'`,
+        [users.map((user) => user.id)],
+      );
+      const accounts = await Promise.all(
+        users.map(async (user) => ({
+          token: await app.get(JwtService).signAsync({ sub: user.id }),
+          productId: product.id,
+        })),
+      );
+      await db.getRepository(Stock).update({ product_id: product.id }, { quantity: 10000 });
+      const accountsFile = resolve(process.cwd(), 'test-results/k6-accounts.json');
+      await writeFile(accountsFile, JSON.stringify(accounts));
+      let cluster: Awaited<ReturnType<typeof startK6Cluster>> | null = null;
+      try {
+        cluster = process.env.K6_REPLICAS
+          ? await startK6Cluster(Number(process.env.K6_REPLICAS))
+          : null;
+        const selected = process.env.K6_SCENARIO || 'performance';
+        const scenarios = selected === 'all' ? ['performance', 'load', 'spike'] : [selected];
+        const failures: string[] = [];
+        for (const scenario of scenarios) {
+          if (!['load', 'performance', 'spike'].includes(scenario))
+            throw new Error('Invalid k6 scenario');
+          try {
+            await promisify(execFile)(
+              'k6',
+              [
+                'run',
+                '--summary-export',
+                resolve(process.cwd(), `test-results/k6-${scenario}.json`),
+                resolve(__dirname, `k6/${scenario}.js`),
+              ],
+              {
+                env: {
+                  ...process.env,
+                  BASE_URL: cluster?.baseUrl ?? (await app.getUrl()),
+                  K6_ALLOW_MUTATIONS: 'true',
+                  K6_MAX_VUS: '500',
+                  K6_ACCOUNTS_FILE: accountsFile,
+                },
+                maxBuffer: 10 * 1024 * 1024,
+              },
+            );
+          } catch (error) {
+            failures.push(`${scenario}: ${(error as Error).message}`);
+          }
+        }
+        expect(failures).toEqual([]);
+      } finally {
+        await cluster?.close();
+        await unlink(accountsFile).catch(() => undefined);
+        await db.getRepository(Stock).update({ product_id: product.id }, { quantity: 100 });
+      }
+    }, 650000);
+  }
+
   it('does not repeat products whose category was disabled after the purchase', async () => {
     const [order] = await db.query(
       'SELECT id FROM orders WHERE client_id=$1 ORDER BY id DESC LIMIT 1',
@@ -403,8 +484,12 @@ const enabled = ['meatshop_spec_test_330', 'meatshop_gaps_test_330'].includes(
       httpB,
     );
     await Promise.all([adapterA.initialize(), adapterB.initialize()]);
-    const ioA = adapterA.createIOServer(0, { transports: ['websocket'] } as never);
-    const ioB = adapterB.createIOServer(0, { transports: ['websocket'] } as never);
+    const ioA = adapterA.createIOServer(0, {
+      transports: ['websocket'],
+    } as never);
+    const ioB = adapterB.createIOServer(0, {
+      transports: ['websocket'],
+    } as never);
     const room = `isolated-${randomUUID()}`;
     ioB.on('connection', (socket) => {
       void socket.join(room);

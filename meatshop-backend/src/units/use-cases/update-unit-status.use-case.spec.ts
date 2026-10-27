@@ -32,17 +32,17 @@ describe('UpdateUnitStatusUseCase', () => {
   it('does not change the status without management rights', async () => {
     const { useCase, save } = build({ id: 3, is_active: true }, false);
 
-    await expect(useCase.execute(3, { is_active: false }, { id: 8 } as User)).rejects.toBeInstanceOf(
-      ForbiddenException,
-    );
+    await expect(
+      useCase.execute(3, { is_active: false }, { id: 8 } as User),
+    ).rejects.toBeInstanceOf(ForbiddenException);
     expect(save).not.toHaveBeenCalled();
   });
 
   it('returns not found for an unknown unit', async () => {
     const { useCase } = build(null);
 
-    await expect(useCase.execute(99, { is_active: true }, { id: 7 } as User)).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
+    await expect(
+      useCase.execute(99, { is_active: true }, { id: 7 } as User),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 });

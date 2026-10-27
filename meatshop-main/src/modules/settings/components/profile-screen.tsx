@@ -247,7 +247,7 @@ function UnitSettings() {
 
   if (loading)
     return <DataSkeleton label="Carregando configurações..." />;
-  const field = (key: keyof UnitForm, label: string, disabled = false) => (
+  const field = (key: keyof Pick<UnitForm, "name" | "cnpj" | "zip_code" | "street" | "number" | "complement" | "neighborhood" | "city" | "state">, label: string, disabled = false) => (
     <label className="text-sm font-medium text-gray-700">
       {label}
       <input
@@ -434,7 +434,7 @@ function UnitSettings() {
               <span className="font-medium">
                 {weekdays.find(([value]) => value === day.weekday)?.[1]}
               </span>
-              <label className="flex items-center gap-2 text-sm">
+              <label htmlFor="field-profile-screen-17588" className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
                   checked={day.is_open}
@@ -450,7 +450,7 @@ function UnitSettings() {
                 />
                 Aberto
               </label>
-              <input
+              <input id="field-profile-screen-17588"
                 aria-label="Abertura"
                 type="time"
                 disabled={!day.is_open}
