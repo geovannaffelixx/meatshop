@@ -13,7 +13,7 @@ export class GetPublicUnitUseCase {
   ) {}
 
   async execute(id: number): Promise<PublicUnitDto> {
-    const unit = await this.units.findOne({ where: { id } });
+    const unit = await this.units.findOne({ where: { id, is_active: true } });
     if (!unit) throw new NotFoundException('Unit not found');
     const reviews = await this.reviews.find({
       where: { unit_id: id, product_id: IsNull() },

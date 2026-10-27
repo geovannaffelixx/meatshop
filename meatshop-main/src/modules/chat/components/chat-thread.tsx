@@ -195,7 +195,7 @@ export function ChatThread({ orderId, participantType, participantLabel, current
                   <div className={mine ? 'max-w-[82%] rounded-2xl rounded-br-md bg-red-600 px-4 py-2.5 text-white shadow-sm' : 'max-w-[82%] rounded-2xl rounded-bl-md border bg-white px-4 py-2.5 text-slate-800 shadow-sm'}>
                     {!mine && <p className='mb-1 text-xs font-semibold text-slate-500'>{item.sender_name}</p>}
                     <p className='whitespace-pre-wrap break-words text-sm leading-relaxed'>{item.message}</p>
-                    <span className={mine ? 'mt-1 flex items-center justify-end gap-1 text-[10px] text-red-100' : 'mt-1 flex justify-end text-[10px] text-slate-400'}>
+                    <span className={mine ? 'mt-1 flex items-center justify-end gap-1 text-xs text-white' : 'mt-1 flex justify-end text-xs text-slate-600'}>
                       {formatDateValue(item.sent_at, { hour: '2-digit', minute: '2-digit' })}
                       {mine && (item.read_at ? <CheckCheck className='size-3.5' /> : <Check className='size-3.5' />)}
                     </span>
@@ -236,7 +236,7 @@ export function ChatThread({ orderId, participantType, participantLabel, current
             </Button>
           </div>
         )}
-        {!closed && <p className='mt-1 text-right text-[11px] text-slate-400'>Enter envia · Shift + Enter quebra a linha · {draft.length}/2000</p>}
+        {!closed && <p className='mt-1 text-right text-xs text-slate-600'>Enter envia · Shift + Enter quebra a linha · {draft.length}/2000</p>}
       </footer>
     </section>
   );

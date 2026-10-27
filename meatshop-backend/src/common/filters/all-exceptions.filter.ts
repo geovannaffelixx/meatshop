@@ -18,6 +18,8 @@ import {
 } from '../../audit/utils/route-audit-info';
 
 type ErrorDetails = {
+  retry_after_seconds?: number;
+  locked_until?: string;
   code?: string;
   message: string | string[];
   error?: string;
@@ -25,6 +27,14 @@ type ErrorDetails = {
 type PostgresDriverError = { code?: string; constraint?: string };
 
 const UNIQUE_CONSTRAINT_ERRORS: Record<string, ErrorDetails> = {
+  UQ_users_cpf_hash: {
+    code: 'CPF_ALREADY_EXISTS',
+    message: 'An account with this CPF already exists.',
+  },
+  UQ_users_phone_hash: {
+    code: 'PHONE_ALREADY_EXISTS',
+    message: 'An account with this phone number already exists.',
+  },
   UQ_users_email: {
     code: 'EMAIL_ALREADY_EXISTS',
     message: 'An account with this email already exists.',
@@ -59,6 +69,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const response = context.getResponse<Response>();
     const request = context.getRequest<Request>();
     const { status, details } = this.resolveError(exception);
+    if (status === 429 && details.retry_after_seconds)
+      response.setHeader('Retry-After', details.retry_after_seconds);
     this.recordFailure(request, status, details);
 
     if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
@@ -113,20 +125,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     if (exception instanceof HttpException) {
-      const body = exception.getResponse();
-      if (typeof body === 'string') {
-        return { status: exception.getStatus(), details: { message: body } };
-      }
-
-      const payload = body as Partial<ErrorDetails>;
-      return {
-        status: exception.getStatus(),
-        details: {
-          ...(payload.code ? { code: payload.code } : {}),
-          message: payload.message ?? exception.message,
-          ...(payload.error ? { error: payload.error } : {}),
-        },
-      };
+      return this.httpError(exception);
     }
 
     return {
@@ -134,6 +133,27 @@ export class AllExceptionsFilter implements ExceptionFilter {
       details: {
         code: 'INTERNAL_ERROR',
         message: 'The operation could not be completed. Try again shortly.',
+      },
+    };
+  }
+
+  private httpError(exception: HttpException) {
+    const body = exception.getResponse();
+    if (typeof body === 'string') {
+      return { status: exception.getStatus(), details: { message: body } };
+    }
+
+    const payload = body as Partial<ErrorDetails>;
+    return {
+      status: exception.getStatus(),
+      details: {
+        ...(payload.code ? { code: payload.code } : {}),
+        message: payload.message ?? exception.message,
+        ...(payload.error ? { error: payload.error } : {}),
+        ...(typeof payload.retry_after_seconds === 'number'
+          ? { retry_after_seconds: payload.retry_after_seconds }
+          : {}),
+        ...(typeof payload.locked_until === 'string' ? { locked_until: payload.locked_until } : {}),
       },
     };
   }

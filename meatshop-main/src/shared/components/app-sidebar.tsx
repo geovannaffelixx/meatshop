@@ -194,7 +194,7 @@ export function AppSidebar(props: AppSidebarProps) {
       {unitLogo ? <Image unoptimized src={unitLogo} alt="" width={40} height={40} className="size-10 object-contain p-1" /> : <Building2 className="size-5" />}
     </span>
     <span className="min-w-0 flex-1 text-left group-data-[collapsible=icon]:hidden">
-      <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-500">Unidade atual</span>
+      <span className="block text-xs font-semibold uppercase tracking-wider text-slate-500">Unidade atual</span>
       <span className="mt-0.5 block break-words text-sm font-semibold leading-snug text-slate-900">{selectedMembership?.unit_name ?? 'Painel de gestão'}</span>
     </span>
     {memberships.length > 1 && <ChevronDown className="size-4 shrink-0 text-slate-400 group-data-[collapsible=icon]:hidden" />}
@@ -225,7 +225,7 @@ export function AppSidebar(props: AppSidebarProps) {
     <SidebarContent className="gap-1 px-1">
       <SidebarGroup className="py-0"><SidebarGroupContent><SidebarMenu>{canSee(dashboardItem) && itemLink(dashboardItem)}</SidebarMenu></SidebarGroupContent></SidebarGroup>
       {groups.map(group => <SidebarGroup key={group.id} className="py-2">
-        <SidebarGroupLabel className="px-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{group.title}</SidebarGroupLabel>
+        <SidebarGroupLabel className="px-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{group.title}</SidebarGroupLabel>
         <SidebarGroupContent><SidebarMenu className="gap-1">{group.items.map(itemLink)}</SidebarMenu></SidebarGroupContent>
       </SidebarGroup>)}
     </SidebarContent>

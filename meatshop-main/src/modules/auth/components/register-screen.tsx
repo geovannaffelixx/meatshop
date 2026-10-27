@@ -19,7 +19,19 @@ import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/aler
 import { PasswordInput } from "@/shared/components/ui/password-input";
 import { Spinner } from "@/shared/components/ui/spinner";
 import { RequiredMark } from "@/shared/components/ui/required-mark";
-import { apiPost, API_URL } from "@/shared/lib/api";
+import { apiPost, apiUpload } from "@/shared/lib/api";
+
+async function uploadUnitLogo(unitId: number | undefined, logo: File | null): Promise<boolean> {
+  if (!logo || !unitId) return true;
+  const body = new FormData();
+  body.append("file", logo);
+  try {
+    await apiUpload(`/units/${unitId}/logo`, body, { silent: true });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 function RequiredLabel({ label, htmlFor, required = false }: { label: string; htmlFor: string; required?: boolean }) {
   return (
@@ -234,18 +246,9 @@ export function RegisterScreen() {
         },
       });
 
-      if (logo && data?.unit?.id) {
-        const formData = new FormData();
-        formData.append("file", logo);
+      const logoSaved = await uploadUnitLogo(data?.unit?.id, logo);
 
-        await fetch(`${API_URL}/units/${data.unit.id}/logo`, {
-          method: "POST",
-          body: formData,
-          credentials: "include",
-        });
-      }
-
-      setMsg("Açougue cadastrado com sucesso! Redirecionando...");
+      setMsg(logoSaved ? "Açougue cadastrado com sucesso! Redirecionando..." : "Açougue cadastrado, mas o logo não foi enviado. Envie-o depois nas configurações da unidade. Redirecionando...");
       setAlertType("success");
 
       setTimeout(() => router.push("/dashboard"), 1200);

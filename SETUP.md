@@ -8,7 +8,7 @@ Este é o fluxo recomendado para apresentação e avaliação do projeto. Ele so
 - frontend Next.js.
 - chatbot FastAPI conectado somente ao backend.
 
-Não é necessário instalar Node.js, executar `npm install` ou criar arquivos `.env`. As variáveis locais de demonstração já estão declaradas no `docker-compose.yml`.
+Não é necessário executar `npm install`. Os segredos locais (JWT, chaves de criptografia de dados, tokens de métricas e monitoramento, chave interna do chatbot, senha do Grafana) não ficam no `docker-compose.yml`: eles são lidos do arquivo `.env` da raiz, ignorado pelo Git e gerado com valores aleatórios por `scripts/setup-local-env.mjs` a partir do `.env.example`.
 
 Para testar o login do mobile com o Firebase real, baixe uma conta de serviço do projeto `meatshop-3c78f`, salve-a como `secrets/firebase-service-account.json` e inicie o ambiente com:
 
@@ -18,7 +18,7 @@ Para testar o login do mobile com o Firebase real, baixe uma conta de serviço d
 
 O script valida o projeto, injeta a credencial somente no processo Docker e nunca a adiciona ao repositório.
 
-> As credenciais e chaves do Compose são exclusivas para desenvolvimento local. Nunca use esses valores em produção.
+> Os valores do `.env` local são exclusivos para desenvolvimento. Nunca use esses valores em produção nem versione o `.env`.
 
 ## Pré-requisitos
 
@@ -34,15 +34,24 @@ docker --version
 docker compose version
 ```
 
-## Primeira execução — somente 3 comandos
+## Primeira execução
 
 ```powershell
 git clone --branch develop --single-branch https://github.com/geovannaffelixx/meatshop.git
 git clone --branch develop --single-branch https://github.com/VIN1RM/meatshop-chatbot.git
 cd meatshop
+node scripts/setup-local-env.mjs
 $env:GROQ_API_KEY="sua-chave-local"
 docker compose up -d --build
 ```
+
+Sem Node.js instalado, gere o `.env` com a imagem oficial do Node:
+
+```powershell
+docker run --rm -v "${PWD}:/app" -w /app node:22-alpine node scripts/setup-local-env.mjs
+```
+
+O script pode ser executado novamente a qualquer momento: ele preserva os valores já existentes no `.env` e só preenche variáveis novas do `.env.example`. A senha dos usuários do seed de desenvolvimento fica em `SEED_PASSWORD`.
 
 Na primeira execução, o download das imagens e a instalação das dependências podem levar alguns minutos. As próximas inicializações usam cache e são bem mais rápidas.
 
@@ -152,7 +161,7 @@ docker compose --profile observability up -d
 
 - Prometheus: http://localhost:9090
 - Grafana: http://localhost:3002
-- Login inicial do Grafana: `admin` / `admin`
+- Login do Grafana: usuário `admin` e a senha definida em `GRAFANA_ADMIN_PASSWORD` no `.env`
 
 ## Serviços e variáveis
 
@@ -167,8 +176,11 @@ O `docker-compose.yml` é autocontido para desenvolvimento:
 - integrações externas (Mercado Pago, e-mail e Firebase) ficam desativadas quando não configuradas e não impedem o restante da aplicação de funcionar.
 
 O chatbot sobe sem gravar segredos no Compose, mas só gera respostas quando `GROQ_API_KEY`
-está definida no terminal. A chave interna entre backend e chatbot já possui um valor exclusivo
-de desenvolvimento e nunca deve ser reutilizada em produção.
+está definida no terminal ou no `.env`. A chave interna entre backend e chatbot (`AI_CHATBOT_SERVICE_KEY`)
+é gerada no `.env` local e nunca deve ser reutilizada em produção.
+
+O Prometheus do perfil `observability` lê `METRICS_TOKEN` e o Alertmanager lê `MONITORING_WEBHOOK_TOKEN`,
+ambos como secrets do Compose montados em `/run/secrets`, sem gravar os tokens em arquivos versionados.
 
 Para criar pelo painel uma conta que também fará login no aplicativo (inclusive entregadores vinculados), informe `FIREBASE_SERVICE_ACCOUNT` como o JSON da conta de serviço em uma única linha antes de executar o Compose. A ausência dessa credencial não impede a inicialização, mas esse cadastro específico retorna indisponibilidade para evitar uma conta parcialmente criada somente no PostgreSQL.
 

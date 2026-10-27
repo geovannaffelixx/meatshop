@@ -1,6 +1,6 @@
 {
   "name": "meatshop",
-  "version": "3.3.0",
+  "version": "3.4.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -9,7 +9,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "jest --runInBand",
-    "test:coverage": "jest --runInBand --coverage"
+    "test:coverage": "jest --runInBand --coverage",
+    "test:e2e": "cypress run"
   },
   "dependencies": {
     "@radix-ui/react-collapsible": "^1.1.12",
@@ -21,7 +22,6 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@tanstack/react-query": "^5.87.4",
-    "axios": "^1.12.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "embla-carousel-autoplay": "^8.6.0",
@@ -29,16 +29,12 @@
     "lucide-react": "^0.544.0",
     "maplibre-gl": "^6.6.0",
     "next": "16.4.3",
-    "next-auth": "^4.24.11",
     "react": "^19.1.0",
     "react-dom": "19.1.0",
-    "react-input-mask-next": "^3.0.0-alpha.12",
     "recharts": "^2.15.4",
     "socket.io-client": "^4.8.3",
     "tailwind-merge": "^3.3.1",
-    "textarea": "^0.3.0",
-    "zod": "^4.6.7",
-    "zustand": "^5.0.8"
+    "zod": "^4.6.7"
   },
   "overrides": {
     "brace-expansion@1": "1.1.21",
@@ -53,7 +49,6 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/react-input-mask": "^3.0.6",
     "cypress": "^15.2.0",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",

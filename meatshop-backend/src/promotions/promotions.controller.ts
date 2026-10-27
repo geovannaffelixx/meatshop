@@ -12,6 +12,7 @@ import { DeactivatePromotionUseCase } from './use-cases/deactivate-promotion.use
 import { GetPromotionUseCase } from './use-cases/get-promotion.use-case';
 import { ListPromotionsUseCase } from './use-cases/list-promotions.use-case';
 import { UpdatePromotionUseCase } from './use-cases/update-promotion.use-case';
+import { ListManagedPromotionsUseCase } from './use-cases/list-managed-promotions.use-case';
 
 @ApiTags('Promotions')
 @Controller('promotions')
@@ -23,6 +24,7 @@ export class PromotionsController {
     private readonly deactivatePromotionUseCase: DeactivatePromotionUseCase,
     private readonly listPromotionsUseCase: ListPromotionsUseCase,
     private readonly getPromotionUseCase: GetPromotionUseCase,
+    private readonly managedPromotions: ListManagedPromotionsUseCase,
   ) {}
 
   @ApiOperation({
@@ -35,7 +37,16 @@ export class PromotionsController {
   @Public()
   @Get()
   list(@Query() filters: FilterPromotionsDto) {
-    return this.listPromotionsUseCase.execute(filters);
+    return this.listPromotionsUseCase.execute({ ...filters, marketplace: 'true' });
+  }
+
+  @Get('manage')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary: 'Lists promotions including inactive ones for an authorized unit manager',
+  })
+  managed(@Query() filters: FilterPromotionsDto, @CurrentUser() user: User) {
+    return this.managedPromotions.execute(filters, user);
   }
 
   @ApiOperation({ summary: 'Gets promotion details by identifier' })

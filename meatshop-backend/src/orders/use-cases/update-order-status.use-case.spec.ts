@@ -23,6 +23,7 @@ describe('UpdateOrderStatusUseCase', () => {
         authorization as unknown as OrderAuthorizationService,
         { transition } as unknown as OrderStatusService,
         new OrderStatusTransitionValidator(),
+        {} as never,
       );
       await expect(service.execute(9, { status }, { id: 1 } as User)).rejects.toBeInstanceOf(
         BadRequestException,

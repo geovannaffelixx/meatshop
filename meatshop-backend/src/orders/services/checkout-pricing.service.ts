@@ -38,6 +38,8 @@ export class CheckoutPricingService {
       });
     }
 
+    if (dto.unit_delivery_types?.some((selection) => !grouped.has(selection.unit_id)))
+      throw new BadRequestException('Delivery selection contains a unit outside the cart');
     const coupons = new Map(dto.coupon_codes?.map((coupon) => [coupon.unit_id, coupon.code]));
     if (dto.unit_payment_methods?.some((m) => !grouped.has(m.unit_id)))
       throw new BadRequestException('A forma de pagamento contém uma unidade fora do carrinho.');
@@ -57,7 +59,8 @@ export class CheckoutPricingService {
         items: unitItems,
         subtotal: this.roundMoney(
           unitItems.reduce(
-            (sum, item) => sum + Number(item.product.price) * Number(item.quantity),
+            (sum, item) =>
+              sum + Number(item.unit_price ?? item.product.price) * Number(item.quantity),
             0,
           ),
         ),
@@ -90,6 +93,11 @@ export class CheckoutPricingService {
     at = new Date(),
   ): number {
     if (deliveryType !== DeliveryType.DELIVERY) return 0;
+    const distanceKm = this.deliveryDistance(unit, address);
+    return this.calculateDistanceFee(distanceKm, at);
+  }
+
+  private deliveryDistance(unit: Unit, address: Address | null): number {
     const rawCoordinates = [unit.latitude, unit.longitude, address?.latitude, address?.longitude];
     if (rawCoordinates.some((value) => value === null || value === undefined)) {
       throw new BadRequestException({
@@ -122,12 +130,20 @@ export class CheckoutPricingService {
     const clampedHaversine = Math.min(1, Math.max(0, haversine));
     const distanceKm =
       6371 * 2 * Math.atan2(Math.sqrt(clampedHaversine), Math.sqrt(1 - clampedHaversine));
+    this.assertDeliveryRadius(distanceKm, unit);
+    return distanceKm;
+  }
+
+  private assertDeliveryRadius(distanceKm: number, unit: Unit): void {
     if (distanceKm > Number(unit.delivery_radius_km ?? 25)) {
       throw new BadRequestException({
         code: 'OUTSIDE_DELIVERY_AREA',
         message: 'The destination is outside this store delivery area',
       });
     }
+  }
+
+  private calculateDistanceFee(distanceKm: number, at: Date): number {
     const base = Number(this.config.get<string>('DELIVERY_FEE_BASE', '3.20'));
     const perKm = Number(this.config.get<string>('DELIVERY_FEE_PER_KM', '1.10'));
     const threshold = Number(this.config.get<string>('DELIVERY_FEE_LONG_DISTANCE_KM', '8'));

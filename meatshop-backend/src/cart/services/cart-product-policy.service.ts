@@ -19,11 +19,32 @@ export class CartProductPolicyService {
   ) {}
 
   async validate(productId: number, desiredQuantity: number): Promise<Product> {
-    const product = await this.products.findOne({
+    const [product] = await this.products.find({
       where: { id: productId },
       relations: ['category', 'unit'],
     });
-    if (!isPurchasableProduct(product)) {
+    this.assertProduct(product, desiredQuantity);
+    const stock = await this.stocks.findOne({ where: { product_id: productId } });
+    return this.validateLoaded(product, Number(stock?.quantity ?? 0), desiredQuantity);
+  }
+
+  validateLoaded(product: Product, available: number, desiredQuantity: number): Product {
+    this.assertProduct(product, desiredQuantity);
+    if (!hasSufficientStock(available, desiredQuantity)) {
+      throw new BadRequestException({
+        code: 'INSUFFICIENT_STOCK',
+        message: 'Insufficient stock for the requested quantity.',
+        details: [{ product_id: product.id, available }],
+      });
+    }
+    return product;
+  }
+
+  private assertProduct(
+    product: Product | undefined,
+    desiredQuantity: number,
+  ): asserts product is Product {
+    if (!product || !isPurchasableProduct(product)) {
       throw new NotFoundException({
         code: 'PRODUCT_NOT_AVAILABLE',
         message: 'Product is unavailable for purchase.',
@@ -35,17 +56,5 @@ export class CartProductPolicyService {
         message: 'Informe uma quantidade válida para a unidade de medida do produto.',
       });
     }
-    const stock = await this.stocks.findOne({
-      where: { product_id: productId },
-    });
-    const available = Number(stock?.quantity ?? 0);
-    if (!hasSufficientStock(available, desiredQuantity)) {
-      throw new BadRequestException({
-        code: 'INSUFFICIENT_STOCK',
-        message: 'Insufficient stock for the requested quantity.',
-        details: [{ product_id: productId, available }],
-      });
-    }
-    return product;
   }
 }

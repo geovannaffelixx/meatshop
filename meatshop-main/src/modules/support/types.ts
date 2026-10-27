@@ -14,7 +14,7 @@ export type SupportTicket = {
   id: number; user_id: number; unit_id: number | null; order_id: number | null;
   subject: string; description: string | null; status: SupportStatus; category: SupportCategory;
   priority: SupportPriority; created_at: string; updated_at: string; last_message_at: string;
-  closed_at: string | null; user?: { id: number; name: string; email: string };
+  closed_at: string | null; contact?: string | null; user?: { id: number; name: string; email: string };
   unit?: { id: number; name: string } | null; messages?: SupportMessage[];
 };
 

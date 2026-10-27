@@ -49,7 +49,7 @@ export function LoginScreen() {
   }
 
   return (
-    <main className="grid min-h-screen bg-white lg:grid-cols-[minmax(22rem,0.85fr)_1.15fr]">
+    <main id="main-content" tabIndex={-1} className="grid min-h-screen bg-white lg:grid-cols-[minmax(22rem,0.85fr)_1.15fr]">
       <section className="relative hidden min-h-screen overflow-hidden bg-white lg:block">
         <Image
           src="/entrar.png"

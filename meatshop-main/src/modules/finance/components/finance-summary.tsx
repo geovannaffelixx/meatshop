@@ -71,7 +71,7 @@ export function FinanceSummary({
           <div className="text-sm text-gray-600">
             Saldo:{" "}
             <span
-              className={`font-semibold ${revenueTotal - expenseTotal >= 0 ? "text-green-600" : "text-red-600"}`}
+              className={`font-semibold ${revenueTotal - expenseTotal >= 0 ? "text-green-700" : "text-red-600"}`}
             >
               {formatCurrency(revenueTotal - expenseTotal)}
             </span>

@@ -1,5 +1,15 @@
 # Releases do painel web
 
+## 3.4.0 — Conformidade com a especificação
+
+Trabalho preparado em 26 de outubro de 2026.
+
+O responsável pela unidade pode ativar ou desativar a loja nas configurações; uma unidade desativada deixa de aparecer para os clientes. A exportação dos dados pessoais em Minha conta passa a gerar o arquivo de verdade, e o chamado de suporte mostra o contato informado pelo cliente.
+
+A sessão do painel ficou mais protegida: as rotas são verificadas também no servidor, as alterações enviam token CSRF e os dados do usuário não ficam mais salvos no navegador. Formulários, filtros e navegação receberam melhorias de acessibilidade, e os fluxos principais têm testes automatizados de ponta a ponta.
+
+A implantação deve ser coordenada com a API e o aplicativo 3.4.0. Esta preparação local não representa publicação ou deploy.
+
 ## 3.3.0 — Fechamento de lacunas funcionais
 
 Trabalho preparado em 20 de outubro de 2026.

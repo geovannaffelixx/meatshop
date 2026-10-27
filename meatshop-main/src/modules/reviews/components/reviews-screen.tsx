@@ -29,12 +29,13 @@ type Review = {
 
 function StarRating({ rating }: { rating: number }) {
   return (
-    <div className="flex items-center gap-0.5" aria-label={`Nota ${rating} de 5`}>
+    <div className="flex items-center gap-0.5" role="img" aria-label={`Nota ${rating} de 5`}>
       {Array.from({ length: 5 }, (_, i) => (
         <Star
           key={i}
           size={16}
-          className={i < rating ? "fill-amber-400 text-amber-400" : "text-gray-300"}
+          aria-hidden="true"
+          className={i < rating ? "fill-amber-700 text-amber-700" : "text-gray-500"}
         />
       ))}
     </div>
@@ -103,12 +104,14 @@ export function ReviewsScreen() {
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setFilter("all")}
+              aria-pressed={filter === "all"}
               className={`rounded-full px-4 py-1.5 text-sm font-medium ${filter === "all" ? "bg-red-600 text-white" : "bg-white text-gray-700 border"}`}
             >
               Todas
             </button>
             <button
               onClick={() => setFilter("unit")}
+              aria-pressed={filter === "unit"}
               className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium ${filter === "unit" ? "bg-red-600 text-white" : "bg-white text-gray-700 border"}`}
             >
               <Store size={14} />
@@ -118,6 +121,7 @@ export function ReviewsScreen() {
               <button
                 key={p.id}
                 onClick={() => setFilter(p.id)}
+                aria-pressed={filter === p.id}
                 className={`rounded-full px-4 py-1.5 text-sm font-medium ${filter === p.id ? "bg-red-600 text-white" : "bg-white text-gray-700 border"}`}
               >
                 {p.name}
@@ -162,7 +166,7 @@ export function ReviewsScreen() {
                     <StarRating rating={review.rating} />
                   </div>
                   {review.comment && <p className="mt-2 text-sm text-gray-700">{review.comment}</p>}
-                  <p className="mt-2 text-xs text-gray-400">Pedido #{review.order_id}</p>
+                  <p className="mt-2 text-xs text-gray-600">Pedido #{review.order_id}</p>
                 </CardContent>
               </Card>
             ))

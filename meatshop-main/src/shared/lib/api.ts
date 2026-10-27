@@ -1,9 +1,10 @@
 import { ApiError, translateApiError } from "@/shared/lib/api-error-translations";
 import { toast } from "@/shared/lib/toast";
+import { API_URL } from "@/shared/config/api-url";
+import { fetchWithCsrf, resetCsrfToken } from "@/shared/lib/csrf";
 import { apiQueryKey, canCacheApiPath, invalidateApiCache, panelQueryClient, resetApiCache } from './query-cache';
 
-export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+export { API_URL };
 
 export function resolveAssetUrl(value?: string | null): string {
   if (!value) return "";
@@ -32,7 +33,7 @@ let refreshPromise: Promise<boolean> | null = null;
 
 export async function refreshSession(): Promise<boolean> {
   if (!refreshPromise) {
-    refreshPromise = fetch(`${API_URL}/auth/refresh`, {
+    refreshPromise = fetchWithCsrf("/auth/refresh", {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -76,9 +77,32 @@ type RequestOptions = {
   signal?: AbortSignal;
 };
 
+async function invalidateAfterMutation(path: string) {
+  if (!path.startsWith('/auth/')) return invalidateApiCache();
+  resetApiCache();
+  resetCsrfToken();
+}
+
+function reportRequestError(error: unknown, options: RequestOptions): never {
+  if (error instanceof Error && error.name === "AbortError") throw error;
+
+  const message =
+    error instanceof ApiError
+      ? error.message
+      : translateApiError(error instanceof Error ? error.message : error);
+
+  if (error instanceof ApiError && (error.payload as { code?: string } | undefined)?.code === 'LEGAL_ACCEPTANCE_REQUIRED') {
+    window.dispatchEvent(new Event('legal:required'));
+  }
+  if (!options.silent) toast.error(message);
+
+  if (error instanceof ApiError) throw error;
+  throw new ApiError(message, 0, error);
+}
+
 async function request(path: string, init: RequestInit, options: RequestOptions = {}) {
   try {
-    const res = await fetch(`${API_URL}${path}`, {
+    const res = await fetchWithCsrf(path, {
       cache: "no-store",
       credentials: "include",
       redirect: "follow",
@@ -95,26 +119,10 @@ async function request(path: string, init: RequestInit, options: RequestOptions 
     }
 
     const result = await handleResponse(res);
-    if (init.method !== 'GET') {
-      if (path.startsWith('/auth/')) resetApiCache();
-      else await invalidateApiCache();
-    }
+    if (init.method !== 'GET') await invalidateAfterMutation(path);
     return result;
   } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") throw error;
-
-    const message =
-      error instanceof ApiError
-        ? error.message
-        : translateApiError(error instanceof Error ? error.message : error);
-
-    if (error instanceof ApiError && (error.payload as { code?: string } | undefined)?.code === 'LEGAL_ACCEPTANCE_REQUIRED') {
-      window.dispatchEvent(new Event('legal:required'));
-    }
-    if (!options.silent) toast.error(message);
-
-    if (error instanceof ApiError) throw error;
-    throw new ApiError(message, 0, error);
+    reportRequestError(error, options);
   }
 }
 

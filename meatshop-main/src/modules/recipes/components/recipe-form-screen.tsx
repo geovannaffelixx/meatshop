@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Check, Plus, Sparkles, X } from "lucide-react"
 import { Spinner } from "@/shared/components/ui/spinner"
-import { apiGet, apiPatch, apiPost, API_URL, resolveAssetUrl } from "@/shared/lib/api"
+import { apiGet, apiPatch, apiPost, apiUpload, resolveAssetUrl } from "@/shared/lib/api"
 import { toast } from "@/shared/lib/toast"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
 import { RequiredMark } from "@/shared/components/ui/required-mark"
@@ -198,14 +198,9 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
     const body = new FormData()
     body.append("file", stagedImage)
     try {
-      const response = await fetch(`${API_URL}/recipes/${targetId}/image`, {
-        method: "POST",
-        body,
-        credentials: "include",
-      })
-      if (!response.ok) throw new Error("Não foi possível enviar a foto de capa.")
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Não foi possível enviar a foto de capa.")
+      await apiUpload(`/recipes/${targetId}/image`, body, { silent: true })
+    } catch {
+      toast.error("Não foi possível enviar a foto de capa.")
     } finally {
       setUploadingImage(false)
     }

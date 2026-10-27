@@ -1,3 +1,4 @@
+import { accountLocked } from '../services/account-lock';
 import {
   ConflictException,
   ForbiddenException,
@@ -58,6 +59,12 @@ export class FirebaseExchangeUseCase {
     }
 
     this.assertAccountCanAuthenticate(user);
+    await this.synchronizeEmail(user, email);
+    const tokens = await this.login.execute(user);
+    return { ...tokens, user: UserResponseDto.fromEntity(user) };
+  }
+
+  private async synchronizeEmail(user: User, email: string) {
     if (user.email !== email) {
       const owner = await this.users.findOne({ where: { email } });
       if (owner && owner.id !== user.id) {
@@ -71,8 +78,6 @@ export class FirebaseExchangeUseCase {
       user.email_verification_token = null;
       await this.users.save(user);
     }
-    const tokens = await this.login.execute(user);
-    return { ...tokens, user: UserResponseDto.fromEntity(user) };
   }
 
   private async linkExistingUser(
@@ -111,10 +116,7 @@ export class FirebaseExchangeUseCase {
       });
     }
     if (user.locked_until && user.locked_until > new Date()) {
-      throw new ForbiddenException({
-        code: 'ACCOUNT_LOCKED',
-        message: 'Account locked.',
-      });
+      throw accountLocked(user.locked_until);
     }
   }
 }

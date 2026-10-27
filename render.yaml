@@ -1,14 +1,5 @@
-services:
-  - type: web
-    name: meatshop-api
-    runtime: docker
-    plan: free
-    branch: develop
-    autoDeployTrigger: checksPass
-    dockerfilePath: ./meatshop-backend/Dockerfile
-    dockerContext: ./meatshop-backend
-    dockerCommand: npm run start:render
-    healthCheckPath: /health
+envVarGroups:
+  - name: meatshop-api
     envVars:
       - key: NODE_ENV
         value: production
@@ -16,6 +7,48 @@ services:
         value: 3001
       - key: DB_TYPE
         value: postgres
+      - key: DB_SYNCHRONIZE
+        value: "false"
+      - key: DB_SSL
+        value: "true"
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: TRUST_PROXY
+        value: "true"
+      - key: SWAGGER_ENABLED
+        value: "false"
+      - key: SEED_ENABLED
+        value: "false"
+      - key: FIREBASE_APP_CHECK_ENFORCED
+        value: "true"
+      - key: ORDER_CONFIRMATION_TIMEOUT_MINUTES
+        value: "30"
+      - key: AI_CHATBOT_TIMEOUT_MS
+        value: "45000"
+      - key: AI_RATE_LIMIT_WINDOW_MS
+        value: "60000"
+      - key: AI_RATE_LIMIT_MAX
+        value: "20"
+      - key: AI_CONVERSATION_RETENTION_DAYS
+        value: "7"
+      - key: AI_HISTORY_MAX_MESSAGES
+        value: "6"
+      - key: AI_HISTORY_MAX_CHARACTERS
+        value: "6000"
+
+services:
+  - type: web
+    name: meatshop-api
+    runtime: docker
+    plan: free
+    branch: main
+    autoDeployTrigger: checksPass
+    dockerfilePath: ./meatshop-backend/Dockerfile
+    dockerContext: ./meatshop-backend
+    dockerCommand: npm run start:render
+    healthCheckPath: /health
+    envVars:
+      - fromGroup: meatshop-api
       - key: DB_HOST
         fromDatabase: { name: meatshop-db, property: host }
       - key: DB_PORT
@@ -26,20 +59,8 @@ services:
         fromDatabase: { name: meatshop-db, property: password }
       - key: DB_DATABASE
         fromDatabase: { name: meatshop-db, property: database }
-      - key: DB_SYNCHRONIZE
-        value: "false"
-      - key: DB_SSL
-        value: "true"
-      - key: COOKIE_SECURE
-        value: "true"
       - key: COOKIE_SAMESITE
         value: none
-      - key: TRUST_PROXY
-        value: "true"
-      - key: SWAGGER_ENABLED
-        value: "false"
-      - key: SEED_ENABLED
-        value: "false"
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
@@ -48,6 +69,12 @@ services:
         generateValue: true
       - key: DELIVERY_CODE_ENCRYPTION_KEY
         generateValue: true
+      - key: DATA_ENCRYPTION_KEY
+        sync: false
+      - key: DATA_HASH_KEY
+        sync: false
+      - key: METRICS_TOKEN
+        sync: false
       - key: FRONTEND_URL
         sync: false
       - key: CORS_ORIGINS
@@ -68,28 +95,26 @@ services:
         sync: false
       - key: FIREBASE_WEB_API_KEY
         sync: false
-      - key: FIREBASE_APP_CHECK_ENFORCED
-        value: "true"
       - key: PAYMENTS_ENABLED
-        value: "false"
+        sync: false
       - key: MP_ENV
-        value: sandbox
+        sync: false
+      - key: MP_CLIENT_ID
+        sync: false
+      - key: MP_CLIENT_SECRET
+        sync: false
+      - key: MP_OAUTH_REDIRECT_URI
+        sync: false
+      - key: MP_CREDENTIAL_ENCRYPTION_KEY
+        sync: false
+      - key: MP_ACCESS_TOKEN
+        sync: false
+      - key: MP_WEBHOOK_SECRET
+        sync: false
       - key: AI_CHATBOT_URL
         sync: false
       - key: AI_CHATBOT_SERVICE_KEY
         sync: false
-      - key: AI_CHATBOT_TIMEOUT_MS
-        value: "45000"
-      - key: AI_RATE_LIMIT_WINDOW_MS
-        value: "60000"
-      - key: AI_RATE_LIMIT_MAX
-        value: "20"
-      - key: AI_CONVERSATION_RETENTION_DAYS
-        value: "7"
-      - key: AI_HISTORY_MAX_MESSAGES
-        value: "6"
-      - key: AI_HISTORY_MAX_CHARACTERS
-        value: "6000"
 
 databases:
   - name: meatshop-db

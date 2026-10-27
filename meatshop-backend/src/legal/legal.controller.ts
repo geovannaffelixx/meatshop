@@ -1,3 +1,4 @@
+import { RevokeLegalAcceptanceUseCase } from './use-cases/revoke-legal-acceptance.use-case';
 import { Body, Controller, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from '../common/decorators/public.decorator';
@@ -16,6 +17,7 @@ export class LegalController {
     private readonly policy: LegalPolicyService,
     private readonly historyUseCase: GetLegalHistoryUseCase,
     private readonly recordAcceptance: RecordLegalAcceptanceUseCase,
+    private readonly revokeAcceptance: RevokeLegalAcceptanceUseCase,
   ) {}
 
   @Public()
@@ -47,6 +49,15 @@ export class LegalController {
   })
   history(@CurrentUser() user: User) {
     return this.historyUseCase.execute(user.id);
+  }
+
+  @Post('acceptances/:id/revoke')
+  @ApiOperation({
+    summary:
+      'Revokes an acceptance by appending an immutable event; required documents block access again',
+  })
+  revoke(@CurrentUser() user: User, @Param('id', ParseIntPipe) id: number) {
+    return this.revokeAcceptance.execute(user.id, id);
   }
 
   @Post('acceptances')

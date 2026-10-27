@@ -1,3 +1,4 @@
+import { DeliveryEarningsEventsService } from './services/delivery-earnings-events.service';
 import { DeliveryExpensesService } from './services/delivery-expenses.service';
 import { DeliveryExpensesController } from './delivery-expenses.controller';
 import { DeliveryAssignmentService } from './services/delivery-assignment.service';
@@ -64,6 +65,7 @@ import { DeliveryTrackingRetentionService } from './services/delivery-tracking-r
   ],
   controllers: [DeliveryExpensesController, DeliveryController, DeliveryUploadController],
   providers: [
+    DeliveryEarningsEventsService,
     DeliveryExpensesService,
     DeliveryAssignmentService,
     DeliveryPersonAccessService,

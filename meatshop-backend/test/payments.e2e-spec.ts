@@ -1,3 +1,6 @@
+import { PromotionalPriceService } from '../src/promotions/services/promotional-price.service';
+import { Promotion } from '../src/promotions/entities/promotion.entity';
+import { CheckoutUnitPolicyService } from '../src/orders/services/checkout-unit-policy.service';
 import type { LegalPolicyService } from '../src/legal/services/legal-policy.service';
 import { applyFunctionalGapsMigrations } from './apply-functional-gaps-migrations';
 import { RepeatOrderUseCase } from '../src/orders/use-cases/repeat-order.use-case';
@@ -95,8 +98,8 @@ const enabled = process.env.PAYMENTS_TEST_DATABASE === 'meatshop_payments_test';
       type: 'postgres',
       host: '127.0.0.1',
       port: Number(process.env.PAYMENTS_TEST_PORT ?? process.env.DB_PORT ?? 5433),
-      username: 'meatshop_user',
-      password: 'meatshop_pass',
+      username: process.env.DB_USERNAME ?? 'meatshop_user',
+      password: process.env.DB_PASSWORD ?? 'meatshop_pass',
       database: 'meatshop_payments_test',
       ssl: false,
       synchronize: false,
@@ -441,6 +444,9 @@ const enabled = process.env.PAYMENTS_TEST_DATABASE === 'meatshop_payments_test';
         db,
         sellers,
         signing,
+        new PromotionalPriceService(db.getRepository(Promotion)),
+        new CheckoutUnitPolicyService(db.getRepository(Unit), hours),
+        config,
       );
       const quote = new QuoteCartUseCase(
         db.getRepository(CartItem),
@@ -454,6 +460,8 @@ const enabled = process.env.PAYMENTS_TEST_DATABASE === 'meatshop_payments_test';
         db,
         sellers,
         signing,
+        new PromotionalPriceService(db.getRepository(Promotion)),
+        new CheckoutUnitPolicyService(db.getRepository(Unit), hours),
       );
       const selection = {
         delivery_type: DeliveryType.PICKUP,
@@ -647,7 +655,7 @@ const enabled = process.env.PAYMENTS_TEST_DATABASE === 'meatshop_payments_test';
     ]);
     expect(mp.createCheckoutPreference).toHaveBeenCalledTimes(1);
     await expect(
-      lifecycle.checkout(String(order.id), { ...user, id: user.id + 1 }),
+      lifecycle.checkout(String(order.id), Object.assign(new User(), user, { id: user.id + 1 })),
     ).rejects.toThrow();
     await db.getRepository(Order).update(order.id, { status: OrderStatus.CANCELLED });
     await expect(lifecycle.checkout(String(order.id), user)).rejects.toThrow();

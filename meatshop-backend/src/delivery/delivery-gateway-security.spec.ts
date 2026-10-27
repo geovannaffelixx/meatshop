@@ -100,10 +100,13 @@ describe('DeliveryGateway live authorization', () => {
       id: 'idle',
       data: {},
       handshake: { auth: { token: 'test' } },
+      join: jest.fn(async () => {}),
       disconnect: jest.fn(),
     };
     try {
       await gateway.handleConnection(client as never);
+      expect(client.join).toHaveBeenCalledWith('user:3');
+      expect(client.disconnect).not.toHaveBeenCalled();
       jest.advanceTimersByTime(3000);
       expect(client.disconnect).toHaveBeenCalledWith(true);
     } finally {

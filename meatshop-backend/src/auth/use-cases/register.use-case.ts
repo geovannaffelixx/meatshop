@@ -1,10 +1,11 @@
 import { LegalPolicyService } from '../../legal/services/legal-policy.service';
-import { ConflictException, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { DataSource, Repository } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
+import { UserIdentityService } from '../../users/services/user-identity.service';
 import { RegisterDto } from '../dto/register.dto';
 import { ConfigService } from '@nestjs/config';
 import { EmailService } from '../../email/email.service';
@@ -25,12 +26,13 @@ export class RegisterUseCase {
     private readonly emailService: EmailService,
 
     private readonly configService: ConfigService,
+    private readonly identity: UserIdentityService,
   ) {}
 
   async execute(dto: RegisterDto): Promise<{ message: string }> {
     await this.legal.validate(dto.legal_acceptance, false);
-    await this.ensureEmailIsUnique(dto.email);
-    await this.ensureCpfIsUnique(dto.cpf);
+    await this.identity.assertEmailAvailable(dto.email);
+    await this.identity.assertCpfAvailable(dto.cpf);
     const user = this.userRepository.create({
       name: dto.name,
       email: dto.email.toLowerCase().trim(),
@@ -69,36 +71,6 @@ export class RegisterUseCase {
         `Failed to send verification email to user ${user.id}`,
         error instanceof Error ? error.stack : undefined,
       );
-    }
-  }
-
-  private async ensureEmailIsUnique(email: string): Promise<void> {
-    const existingUser = await this.userRepository.findOne({
-      where: {
-        email: email.toLowerCase().trim(),
-      },
-    });
-
-    if (existingUser) {
-      throw new ConflictException({
-        code: 'EMAIL_ALREADY_EXISTS',
-        message: 'An account with this email already exists.',
-      });
-    }
-  }
-
-  private async ensureCpfIsUnique(cpf: string): Promise<void> {
-    const existingUser = await this.userRepository.findOne({
-      where: {
-        cpf,
-      },
-    });
-
-    if (existingUser) {
-      throw new ConflictException({
-        code: 'CPF_ALREADY_EXISTS',
-        message: 'An account with this CPF already exists.',
-      });
     }
   }
 }

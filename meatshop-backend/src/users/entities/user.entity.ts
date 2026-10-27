@@ -1,6 +1,17 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import { encryptedColumnTransformer } from '../../common/security/field-encryption';
 import { AppProfile } from '../../common/enums/app-profile.enum';
 import { GlobalRole } from '../../common/enums/global-role.enum';
+
+const USER_PRIVATE_FIELDS = [
+  'cpf_hash',
+  'phone_hash',
+  'password_hash',
+  'email_verification_token',
+  'password_reset_token',
+  'password_reset_expires_at',
+  'failed_login_attempts',
+] as const;
 
 @Entity('users')
 export class User {
@@ -13,14 +24,22 @@ export class User {
   @Column({ type: 'varchar', unique: true })
   email: string;
 
-  @Column({ type: 'varchar', unique: true, nullable: true })
+  @Column({ type: 'varchar', nullable: true, transformer: encryptedColumnTransformer })
   cpf: string | null;
+
+  @Index('UQ_users_cpf_hash', { unique: true })
+  @Column({ type: 'varchar', length: 64, nullable: true })
+  cpf_hash: string | null;
 
   @Column({ type: 'varchar', nullable: true })
   password_hash: string | null;
 
-  @Column({ type: 'varchar', nullable: true })
+  @Column({ type: 'varchar', nullable: true, transformer: encryptedColumnTransformer })
   phone: string | null;
+
+  @Index('UQ_users_phone_hash', { unique: true })
+  @Column({ type: 'varchar', length: 64, nullable: true })
+  phone_hash: string | null;
 
   @Column({ type: 'varchar', nullable: true, unique: true })
   firebase_uid: string | null;
@@ -60,4 +79,10 @@ export class User {
 
   @CreateDateColumn()
   created_at: Date;
+
+  toJSON(): Partial<User> {
+    const exposed: Partial<User> = { ...this };
+    for (const field of USER_PRIVATE_FIELDS) delete exposed[field];
+    return exposed;
+  }
 }

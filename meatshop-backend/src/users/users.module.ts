@@ -22,11 +22,15 @@ import { UpdateProfileUseCase } from './use-cases/update-profile.use-case';
 import { GeocodingController } from './geocoding.controller';
 import { Order } from '../orders/entities/order.entity';
 import { DeleteAccountUseCase } from './use-cases/delete-account.use-case';
+import { UserIdentitySubscriber } from './subscribers/user-identity.subscriber';
+import { UserIdentityService } from './services/user-identity.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([User, Address, Unit, Order]), UnitsModule, EmailModule],
   controllers: [UsersController, UsersUploadController, AddressesController, GeocodingController],
   providers: [
+    UserIdentitySubscriber,
+    UserIdentityService,
     ExportPersonalDataUseCase,
     PersonalDataRetentionService,
     GetUserProfileUseCase,
@@ -40,6 +44,6 @@ import { DeleteAccountUseCase } from './use-cases/delete-account.use-case';
     DeleteAddressUseCase,
     DeleteAccountUseCase,
   ],
-  exports: [TypeOrmModule],
+  exports: [TypeOrmModule, UserIdentityService],
 })
 export class UsersModule {}

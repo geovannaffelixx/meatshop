@@ -21,6 +21,9 @@ Configure ainda:
 - MP_ACCESS_TOKEN, MP_WEBHOOK_SECRET e MP_ENV=production;
 - SMTP real em MAIL_HOST, MAIL_PORT, MAIL_SECURE, MAIL_USER, MAIL_PASSWORD e MAIL_FROM;
 - BACKEND_PUBLIC_URL, TRUST_PROXY=true, RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX e DELIVERY_TRACKING_RETENTION_DAYS;
+- DATA_ENCRYPTION_KEY e DATA_HASH_KEY, cada uma com `openssl rand -base64 32`, independentes entre si e entre ambientes, com cópia segura no cofre da equipe;
+- METRICS_TOKEN (`openssl rand -hex 32`), entregue ao Prometheus via arquivo de secret (`credentials_file`);
+- ORDER_CONFIRMATION_TIMEOUT_MINUTES (padrão 30) para o cancelamento automático de pedidos com pagamento offline não confirmados;
 - diretórios ou serviços externos para logs e uploads, com acesso mínimo necessário.
 
 A aplicação falha na inicialização quando detecta configuração insegura de produção. Para múltiplas réplicas, mantenha o limite local como proteção adicional e aplique também rate limiting distribuído no ingress ou API gateway.
@@ -59,7 +62,9 @@ Migrations nunca devem usar synchronize. Se uma migration falhar, interrompa a p
 
 ## Observabilidade e resposta
 
-Importe prometheus-alerts.yml, centralize logs estruturados e remova dados pessoais antes da ingestão. Defina responsáveis, escalonamento e objetivos de disponibilidade. Teste alertas de backend indisponível, 5xx, p95 elevado e pico de falhas de login.
+Importe prometheus-alerts.yml, centralize logs estruturados e remova dados pessoais antes da ingestão. Defina responsáveis, escalonamento e objetivos de disponibilidade. Teste alertas de backend indisponível, 5xx, p95 elevado, pico de falhas de login, fila e falhas de webhooks de pagamento, pico de rejeições por rate limit e uso elevado de CPU e memória.
+
+O CI publica as imagens `meatshop-backend` e `meatshop-frontend` no GHCR somente em pushes para `main` e tags `v*`, depois que todos os testes passam, com tag pelo SHA do commit.
 
 ## Rollback
 

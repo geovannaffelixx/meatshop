@@ -15,7 +15,14 @@ function fixture(enforced = 'true') {
     canRepresent: jest.fn(async () => true),
     unitAccepted: jest.fn(async () => false),
     record: jest.fn(async () => undefined),
+    accessState: jest.fn<() => Promise<{ kind: string; accepted: boolean }[]>>(),
   };
+  repository.accessState.mockImplementation(async () => {
+    const accepted = await repository.acceptedIds(10, null);
+    return (await repository.current())
+      .filter((document) => document.kind !== 'ESTABLISHMENT_TERMS')
+      .map((document) => ({ kind: document.kind, accepted: accepted.includes(document.id) }));
+  });
   const policy = new LegalPolicyService(
     repository as unknown as LegalRepository,
     new ConfigService({ LEGAL_ACCEPTANCE_REQUIRED: enforced }),

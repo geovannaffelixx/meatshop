@@ -9,6 +9,7 @@ import { DataSkeleton } from "@/shared/components/data-skeleton";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PageHeader } from "@/shared/components/page-header";
 import { UnitImages } from "./unit-images";
+import { UnitStatusToggle } from "./unit-status-toggle";
 import { AddressPinPicker, type AddressPin } from '@/shared/components/maps/address-pin-picker';
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
 import { Spinner } from "@/shared/components/ui/spinner";
@@ -41,6 +42,7 @@ type UnitForm = {
   delivery_radius_km?: number;
   scheduling_slot_minutes?: number | null;
   scheduling_capacity?: number | null;
+  is_active?: boolean;
 };
 type Day = {
   weekday: string;
@@ -79,7 +81,7 @@ const emptyUnit: UnitForm = {
 };
 
 function UnitSettings() {
-  const { unitId, refresh } = usePanelAccess();
+  const { unitId, refresh, selectedMembership } = usePanelAccess();
   const cachedUnit = unitId ? peekApiData<UnitForm & { latitude?: number; longitude?: number; coordinate_source?: string }>(`/units/${unitId}/settings`) : undefined;
   const cachedHours = unitId ? peekApiData<Day[]>(`/units/${unitId}/business-hours`) : undefined;
   const cachedPoint = cachedUnit?.latitude != null && cachedUnit?.longitude != null ? { latitude: Number(cachedUnit.latitude), longitude: Number(cachedUnit.longitude) } : null;
@@ -245,7 +247,7 @@ function UnitSettings() {
 
   if (loading)
     return <DataSkeleton label="Carregando configurações..." />;
-  const field = (key: keyof UnitForm, label: string, disabled = false) => (
+  const field = (key: keyof Pick<UnitForm, "name" | "cnpj" | "zip_code" | "street" | "number" | "complement" | "neighborhood" | "city" | "state">, label: string, disabled = false) => (
     <label className="text-sm font-medium text-gray-700">
       {label}
       <input
@@ -263,7 +265,9 @@ function UnitSettings() {
   return (
     <div className="page-surface">
     <div className="page-container max-w-6xl">
-      <PageHeader eyebrow="Configurações" title="Unidade" description="Gerencie a apresentação do açougue, o endereço e a operação de entrega." />
+      <PageHeader eyebrow="Configurações" title="Unidade" description="Gerencie a apresentação do açougue, o endereço e a operação de entrega."
+        actions={unitId ? <UnitStatusToggle unitId={unitId} isActive={unit.is_active ?? true} canManage={selectedMembership?.role === "OWNER"}
+          onChanged={(isActive) => { setUnit((current) => ({ ...current, is_active: isActive })); void refresh(); }} /> : undefined} />
       {unitId && <UnitImages unitId={unitId} logo={unit.image_url} cover={unit.cover_url} gallery={unit.gallery_urls ?? []}
         onSaved={async () => {
           const updated = await apiGet(`/units/${unitId}/settings`);
@@ -430,7 +434,7 @@ function UnitSettings() {
               <span className="font-medium">
                 {weekdays.find(([value]) => value === day.weekday)?.[1]}
               </span>
-              <label className="flex items-center gap-2 text-sm">
+              <label htmlFor="field-profile-screen-17588" className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
                   checked={day.is_open}
@@ -446,7 +450,7 @@ function UnitSettings() {
                 />
                 Aberto
               </label>
-              <input
+              <input id="field-profile-screen-17588"
                 aria-label="Abertura"
                 type="time"
                 disabled={!day.is_open}

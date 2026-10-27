@@ -29,8 +29,6 @@ export function UserProfileDrawer() {
     try {
       await apiPost('/auth/logout', {});
       resetApiCache();
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('currentUser');
       localStorage.removeItem('meatshop:selected-unit-id');
       window.dispatchEvent(new Event('currentUserUpdated'));
       setOpen(false);
@@ -61,14 +59,14 @@ export function UserProfileDrawer() {
             <div><p className="break-words font-semibold text-slate-900">{user.name}</p><p className="mt-1 break-all text-sm text-slate-500">{user.email}</p></div>
           </section>
           <dl className="space-y-5 px-1 text-sm">
-            <div><dt className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-slate-400"><Building2 className="size-4" />Unidade atual</dt><dd className="mt-1 break-words font-medium text-slate-900">{selectedMembership?.unit_name ?? 'Nenhuma unidade selecionada'}</dd></div>
-            <div><dt className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-slate-400"><ShieldCheck className="size-4" />Cargo/Função</dt><dd className="mt-1 font-medium text-slate-900">{role}</dd></div>
+            <div><dt className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-slate-500"><Building2 className="size-4" aria-hidden="true" />Unidade atual</dt><dd className="mt-1 break-words font-medium text-slate-900">{selectedMembership?.unit_name ?? 'Nenhuma unidade selecionada'}</dd></div>
+            <div><dt className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-slate-500"><ShieldCheck className="size-4" />Cargo/Função</dt><dd className="mt-1 font-medium text-slate-900">{role}</dd></div>
           </dl>
           <SheetClose asChild><Button asChild variant="outline" className="h-auto w-full justify-start gap-3 rounded-xl px-4 py-4 text-left"><Link href="/settings/account"><UserRound className="size-5 shrink-0 text-red-600" /><span className="min-w-0 flex-1"><span className="block font-semibold">Gerenciar minha conta</span><span className="mt-1 block text-xs font-normal text-slate-500">Dados pessoais, foto e segurança</span></span><ArrowRight className="size-4 shrink-0 text-slate-400" /></Link></Button></SheetClose>
         </div>
         <SheetFooter className="gap-4 border-t border-slate-100 px-6 py-5">
           <Button type="button" onClick={() => void logout()} disabled={loggingOut} variant="ghost" className="justify-start gap-3 rounded-xl text-red-700 hover:bg-red-50 hover:text-red-800"><LogOut className="size-4" />{loggingOut ? 'Saindo...' : 'Sair'}</Button>
-          <p className="text-right text-xs text-slate-400">v{packageJson.version}</p>
+          <p className="text-right text-xs text-slate-500">v{packageJson.version}</p>
         </SheetFooter>
       </SheetContent>
     </Sheet>

@@ -53,7 +53,7 @@ export function OrdersScreen() {
             <CardContent className="space-y-4">
               <div className="grid gap-4 lg:grid-cols-2">
                 <fieldset className="rounded-xl border border-slate-200 p-4">
-                  <legend className="px-1 text-sm font-semibold text-slate-700">Data do pedido</legend>
+                  <legend id="legend-orders-screen-1701" className="px-1 text-sm font-semibold text-slate-700">Data do pedido</legend>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <label className="text-xs font-medium text-slate-500">
                       De
@@ -89,7 +89,7 @@ export function OrdersScreen() {
                 </fieldset>
 
                 <fieldset className="rounded-xl border border-slate-200 p-4">
-                  <legend className="px-1 text-sm font-semibold text-slate-700">Data agendada</legend>
+                  <legend id="legend-orders-screen-3284" className="px-1 text-sm font-semibold text-slate-700">Data agendada</legend>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <label className="text-xs font-medium text-slate-500">
                       De

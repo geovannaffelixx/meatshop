@@ -1,3 +1,4 @@
+import { RevokeLegalAcceptanceUseCase } from './use-cases/revoke-legal-acceptance.use-case';
 import { GetLegalHistoryUseCase } from './use-cases/get-legal-history.use-case';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -12,6 +13,7 @@ import { LegalController } from './legal.controller';
   imports: [TypeOrmModule.forFeature([LegalDocument, LegalAcceptance])],
   controllers: [LegalController],
   providers: [
+    RevokeLegalAcceptanceUseCase,
     GetLegalHistoryUseCase,
     LegalRepository,
     LegalPolicyService,

@@ -32,6 +32,7 @@ export class CreateSupportTicketUseCase {
           order_id: dto.order_id ?? null,
           subject: dto.subject.trim(),
           description: dto.description?.trim() || null,
+          contact: dto.contact?.trim() || null,
           category: dto.category,
           priority: dto.priority,
           last_message_at: new Date(),

@@ -55,7 +55,7 @@ export class AuditTrailService {
       old_data: this.serialize(event.oldData),
       new_data: this.serialize(event.newData),
     });
-    await this.repository.save(log);
+    await this.repository.insert(log);
   }
 
   contextFromRequest(request: Request): Partial<IAuditEvent> {

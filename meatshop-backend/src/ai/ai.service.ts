@@ -9,12 +9,48 @@ import { Product } from '../products/entities/product.entity';
 import { UnitAuthorizationService } from '../units/services/unit-authorization.service';
 import { User } from '../users/entities/user.entity';
 import { AiChatbotClient } from './ai-chatbot.client';
-import { AiConversationService } from './ai-conversation.service';
+import type { AiUpstreamStreamEvent } from './ai-chatbot-stream';
+import { AiConversationService, type AiHistoryMessage } from './ai-conversation.service';
 import { AiRateLimitService } from './ai-rate-limit.service';
-import type { AiChatResponse, AiConversationResponse, AiRecipeDraftResponse } from './ai.types';
+import { redactSensitiveText } from './ai-sensitive-data';
+import type {
+  AiChatResponse,
+  AiChatStreamEvent,
+  AiChatStreamSink,
+  AiConversationResponse,
+  AiRecipeDraftResponse,
+} from './ai.types';
 import { AiChatRequestDto } from './dtos/ai-chat-request.dto';
 import { GenerateRecipeDraftDto } from './dtos/generate-recipe-draft.dto';
 import { RecipeDraftFeedbackDto } from './dtos/recipe-draft-feedback.dto';
+import type { AiConversation } from './entities/ai-conversation.entity';
+
+type ChatContext = {
+  conversation: AiConversation;
+  history: AiHistoryMessage[];
+  message: string;
+};
+
+type ChatTracker = {
+  operation: 'chat' | 'chat_stream';
+  userId: number;
+  requestId?: string;
+  started: number;
+};
+
+type StreamOutcome = {
+  status: 'completed' | 'empty' | 'upstream_error' | 'incomplete' | 'aborted' | 'interrupted';
+  text: string;
+};
+
+const STREAM_ERROR_EVENT: AiChatStreamEvent = {
+  error: 'Não consegui concluir a resposta agora. Tente novamente em alguns instantes.',
+  code: 'AI_UPSTREAM_UNAVAILABLE',
+};
+
+function errorType(error: unknown): string {
+  return error instanceof Error ? error.constructor.name : 'Unknown';
+}
 
 @Injectable()
 export class AiService {
@@ -31,46 +67,159 @@ export class AiService {
 
   async chat(dto: AiChatRequestDto, user: User, requestId?: string): Promise<AiChatResponse> {
     await this.rateLimit.consume(user.id);
-    const started = Date.now();
+    const tracker = this.startTracking('chat', user.id, requestId);
     try {
-      const conversation = await this.conversations.getOrCreate(user.id, dto.conversation_id);
-      const history = await this.conversations.getHistory(conversation.id);
-      const upstream = await this.chatbot.chat(dto.message, history, user.id, requestId);
-      await this.conversations.appendExchange(conversation.id, dto.message, upstream.response);
-      const result: AiChatResponse = {
+      const context = await this.prepareChat(dto, user.id);
+      const upstream = await this.chatbot.chat(
+        context.message,
+        context.history,
+        user.id,
+        requestId,
+      );
+      const reply = redactSensitiveText(upstream.response);
+      await this.conversations.appendExchange(context.conversation.id, context.message, reply);
+      await this.recordChatSuccess(tracker, context.conversation, upstream.request_id);
+      return {
         ...upstream,
-        conversation_id: conversation.id,
-        expires_at: conversation.expires_at.toISOString(),
+        response: reply,
+        conversation_id: context.conversation.id,
+        expires_at: context.conversation.expires_at.toISOString(),
       };
-      this.metrics.observeAiRequest('chat', 'success', Date.now() - started);
-      await this.audit.safeRecord({
-        action: 'AI_CHAT',
-        entity: 'ai_conversation',
-        entityId: conversation.id,
-        userId: user.id,
-        correlationId: requestId,
-        description: 'Pergunta processada e armazenada conforme retenção de sete dias',
-        newData: {
-          request_id: result.request_id,
-          expires_at: result.expires_at,
-        },
-      });
-      return result;
     } catch (error) {
-      this.metrics.observeAiRequest('chat', 'error', Date.now() - started);
-      await this.audit.safeRecord({
-        action: 'AI_CHAT',
-        entity: 'ai_conversation',
-        userId: user.id,
-        correlationId: requestId,
-        outcome: AuditOutcome.FAILURE,
-        description: 'Falha ao processar pergunta no assistente',
-        newData: {
-          error_type: error instanceof Error ? error.constructor.name : 'Unknown',
-        },
-      });
+      await this.recordChatFailure(tracker, errorType(error), 'error');
       throw error;
     }
+  }
+
+  async chatStream(
+    dto: AiChatRequestDto,
+    user: User,
+    sink: AiChatStreamSink,
+    requestId?: string,
+  ): Promise<void> {
+    await this.rateLimit.consume(user.id);
+    const tracker = this.startTracking('chat_stream', user.id, requestId);
+    let context: ChatContext;
+    let events: AsyncGenerator<AiUpstreamStreamEvent>;
+    try {
+      context = await this.prepareChat(dto, user.id);
+      events = await this.chatbot.chatStream(
+        context.message,
+        context.history,
+        user.id,
+        sink.signal,
+        requestId,
+      );
+    } catch (error) {
+      await this.recordChatFailure(tracker, errorType(error), 'error');
+      throw error;
+    }
+    sink.open();
+    await this.deliverStream(context, events, sink, tracker);
+  }
+
+  private startTracking(
+    operation: ChatTracker['operation'],
+    userId: number,
+    requestId?: string,
+  ): ChatTracker {
+    return { operation, userId, requestId, started: Date.now() };
+  }
+
+  private async prepareChat(dto: AiChatRequestDto, userId: number): Promise<ChatContext> {
+    const conversation = await this.conversations.getOrCreate(userId, dto.conversation_id);
+    const history = await this.conversations.getHistory(conversation.id);
+    return { conversation, history, message: redactSensitiveText(dto.message) };
+  }
+
+  private async deliverStream(
+    context: ChatContext,
+    events: AsyncGenerator<AiUpstreamStreamEvent>,
+    sink: AiChatStreamSink,
+    tracker: ChatTracker,
+  ): Promise<void> {
+    const outcome = await this.relayStream(events, sink);
+    const failure =
+      outcome.status === 'completed'
+        ? await this.saveStreamedReply(context, outcome.text, tracker)
+        : outcome.status;
+    if (failure) {
+      await this.recordChatFailure(tracker, failure, sink.signal.aborted ? 'aborted' : 'error');
+      sink.send(STREAM_ERROR_EVENT);
+    }
+    sink.send({ done: true, conversation_id: context.conversation.id });
+    sink.close();
+  }
+
+  private async relayStream(
+    events: AsyncGenerator<AiUpstreamStreamEvent>,
+    sink: AiChatStreamSink,
+  ): Promise<StreamOutcome> {
+    let text = '';
+    try {
+      for await (const event of events) {
+        if (event.type === 'done') return { status: text ? 'completed' : 'empty', text };
+        if (event.type === 'error') return { status: 'upstream_error', text };
+        text += event.text;
+        sink.send({ delta: event.text });
+      }
+      return { status: 'incomplete', text };
+    } catch {
+      return { status: sink.signal.aborted ? 'aborted' : 'interrupted', text };
+    }
+  }
+
+  private async saveStreamedReply(
+    context: ChatContext,
+    text: string,
+    tracker: ChatTracker,
+  ): Promise<string | null> {
+    try {
+      const reply = redactSensitiveText(text);
+      await this.conversations.appendExchange(context.conversation.id, context.message, reply);
+      await this.recordChatSuccess(tracker, context.conversation, tracker.requestId ?? null);
+      return null;
+    } catch (error) {
+      return errorType(error);
+    }
+  }
+
+  private async recordChatSuccess(
+    tracker: ChatTracker,
+    conversation: AiConversation,
+    upstreamRequestId: string | null,
+  ): Promise<void> {
+    this.metrics.observeAiRequest(tracker.operation, 'success', Date.now() - tracker.started);
+    await this.audit.safeRecord({
+      action: 'AI_CHAT',
+      entity: 'ai_conversation',
+      entityId: conversation.id,
+      userId: tracker.userId,
+      correlationId: tracker.requestId,
+      description: 'Pergunta processada e armazenada conforme retenção de sete dias',
+      newData: {
+        request_id: upstreamRequestId,
+        expires_at: conversation.expires_at.toISOString(),
+        streamed: tracker.operation === 'chat_stream',
+      },
+    });
+  }
+
+  private async recordChatFailure(
+    tracker: ChatTracker,
+    failure: string,
+    outcome: 'error' | 'aborted',
+  ): Promise<void> {
+    this.metrics.observeAiRequest(tracker.operation, outcome, Date.now() - tracker.started);
+    await this.audit.safeRecord({
+      action: 'AI_CHAT',
+      entity: 'ai_conversation',
+      userId: tracker.userId,
+      correlationId: tracker.requestId,
+      outcome: AuditOutcome.FAILURE,
+      description: 'Falha ao processar pergunta no assistente',
+      newData: { error_type: failure, streamed: tracker.operation === 'chat_stream' },
+    });
   }
 
   async recipeDraft(

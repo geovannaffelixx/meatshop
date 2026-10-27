@@ -12,7 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { Buffer } from 'buffer';
-import { PaymentLifecycleService } from '../payments/payment-lifecycle.service';
+import { PaymentWebhookQueueService } from '../payments/payment-webhook-queue.service';
 import { Public } from '../common/decorators/public.decorator';
 @ApiTags('Payments')
 @Controller('webhooks')
@@ -20,7 +20,7 @@ export class MercadoPagoWebhookController {
   private readonly logger = new Logger(MercadoPagoWebhookController.name);
 
   constructor(
-    private readonly lifecycle: PaymentLifecycleService,
+    private readonly queue: PaymentWebhookQueueService,
     private readonly config: ConfigService,
   ) {}
 
@@ -51,15 +51,14 @@ export class MercadoPagoWebhookController {
       throw new UnauthorizedException('Invalid webhook signature');
     }
 
-    const unitId =
-      query.unit_id != null
-        ? Number(query.unit_id)
-        : payload?.user_id != null
-          ? await this.lifecycle.resolveSeller(paymentId, String(payload.user_id))
-          : NaN;
-    if (!Number.isSafeInteger(unitId) || unitId <= 0)
+    const unitId = query.unit_id != null ? Number(query.unit_id) : null;
+    const collectorId = payload?.user_id != null ? String(payload.user_id) : null;
+    if (
+      (unitId !== null && (!Number.isSafeInteger(unitId) || unitId <= 0)) ||
+      (unitId === null && !collectorId)
+    )
       throw new UnauthorizedException('Seller identity required');
-    await this.lifecycle.process(paymentId, unitId);
+    await this.queue.enqueue(paymentId, unitId, collectorId, String(payload?.id ?? xRequestId));
     return { ok: true };
   }
 

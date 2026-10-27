@@ -14,6 +14,7 @@ import { UnitAddressService } from '../../units/services/unit-address.service';
 import { Unit } from '../../units/entities/unit.entity';
 import { UserUnit } from '../../units/entities/user-unit.entity';
 import { User } from '../../users/entities/user.entity';
+import { UserIdentityService } from '../../users/services/user-identity.service';
 import { RegisterUnitDto } from '../dto/register-unit.dto';
 import { LoginUseCase } from './login.use-case';
 
@@ -25,8 +26,7 @@ export class RegisterUnitUseCase {
 
   constructor(
     private readonly legal: LegalPolicyService,
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+    private readonly identity: UserIdentityService,
     @InjectRepository(Unit)
     private readonly unitRepository: Repository<Unit>,
     @InjectDataSource()
@@ -39,35 +39,14 @@ export class RegisterUnitUseCase {
 
   async execute(dto: RegisterUnitDto) {
     await this.legal.validate(dto.legal_acceptance, true);
-    await this.ensureEmailIsUnique(dto.owner.email);
-    await this.ensureCpfIsUnique(dto.owner.cpf);
+    await this.identity.assertEmailAvailable(dto.owner.email);
+    await this.identity.assertCpfAvailable(dto.owner.cpf);
     await this.ensureCnpjIsUnique(dto.unit.cnpj);
 
     const coordinates = await this.geocoding.coordinatesFor(dto.unit);
-    const { user, unit } = await this.dataSource.transaction(async (manager) => {
-      const user = await this.createOwner(manager, dto.owner);
-
-      const unit = await manager.save(
-        Unit,
-        manager.create(Unit, {
-          ...dto.unit,
-          ...coordinates,
-          admin_id: user.id,
-        }),
-      );
-
-      await manager.save(
-        UserUnit,
-        manager.create(UserUnit, {
-          user_id: user.id,
-          unit_id: unit.id,
-          local_role: LocalRole.OWNER,
-        }),
-      );
-
-      await this.legal.record(manager, user.id, dto.legal_acceptance, unit.id);
-      return { user, unit };
-    });
+    const { user, unit } = await this.dataSource.transaction((manager) =>
+      this.persist(manager, dto, coordinates),
+    );
 
     this.logger.log(`Unit ${unit.id} registered with new owner ${user.id}`);
 
@@ -76,6 +55,28 @@ export class RegisterUnitUseCase {
     const tokens = await this.loginUseCase.execute(user);
 
     return { ...tokens, unit };
+  }
+
+  private async persist(
+    manager: EntityManager,
+    dto: RegisterUnitDto,
+    coordinates: Awaited<ReturnType<UnitAddressService['coordinatesFor']>>,
+  ): Promise<{ user: User; unit: Unit }> {
+    const user = await this.createOwner(manager, dto.owner);
+    const unit = await manager.save(
+      Unit,
+      manager.create(Unit, { ...dto.unit, ...coordinates, admin_id: user.id }),
+    );
+    await manager.save(
+      UserUnit,
+      manager.create(UserUnit, {
+        user_id: user.id,
+        unit_id: unit.id,
+        local_role: LocalRole.OWNER,
+      }),
+    );
+    await this.legal.record(manager, user.id, dto.legal_acceptance, unit.id);
+    return { user, unit };
   }
 
   private async createOwner(
@@ -94,28 +95,6 @@ export class RegisterUnitUseCase {
         email_verification_token: crypto.randomBytes(32).toString('hex'),
       }),
     );
-  }
-
-  private async ensureEmailIsUnique(email: string): Promise<void> {
-    const existing = await this.userRepository.findOne({
-      where: { email: email.toLowerCase().trim() },
-    });
-    if (existing) {
-      throw new ConflictException({
-        code: 'EMAIL_ALREADY_EXISTS',
-        message: 'An account with this email already exists.',
-      });
-    }
-  }
-
-  private async ensureCpfIsUnique(cpf: string): Promise<void> {
-    const existing = await this.userRepository.findOne({ where: { cpf } });
-    if (existing) {
-      throw new ConflictException({
-        code: 'CPF_ALREADY_EXISTS',
-        message: 'An account with this CPF already exists.',
-      });
-    }
   }
 
   private async ensureCnpjIsUnique(cnpj: string): Promise<void> {

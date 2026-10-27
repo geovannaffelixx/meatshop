@@ -6,6 +6,10 @@ rule_files:
 
 scrape_configs:
   - job_name: "meatshop-backend"
+    metrics_path: /metrics
+    authorization:
+      type: Bearer
+      credentials_file: /run/secrets/metrics_token
     dns_sd_configs:
       - names: ["backend"]
         type: A

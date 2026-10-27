@@ -24,6 +24,26 @@ async function bootstrap() {
   const winstonLogger = createAppLogger();
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  configureServer(app);
+  const appLogger = new AppLogger(winstonLogger);
+
+  configureLogging(app, appLogger);
+  configureValidation(app);
+  appLogger.info('CORS and CookieParser configured successfully');
+  configureDocumentation(app, appLogger);
+  await configureRealtime(app);
+
+  const port = Number(process.env.PORT ?? 3001);
+  await app.listen(port, '0.0.0.0');
+
+  const startupTimeMs = Date.now() - startAt;
+  appLogger.info('Backend iniciado', {
+    port,
+    env: process.env.NODE_ENV || 'development',
+    startupTimeMs,
+  });
+}
+function configureServer(app: NestExpressApplication): void {
   app.use(helmet());
   // Uploaded images are also displayed by the separately hosted frontend.
   app.use('/uploads', helmet.crossOriginResourcePolicy({ policy: 'cross-origin' }));
@@ -35,9 +55,9 @@ async function bootstrap() {
   });
 
   app.use(cookieParser());
+}
 
-  const appLogger = new AppLogger(winstonLogger);
-
+function configureLogging(app: NestExpressApplication, appLogger: AppLogger): void {
   let metricsService: MetricsService | null = null;
   try {
     metricsService = app.get(MetricsService);
@@ -51,7 +71,9 @@ async function bootstrap() {
   app.use((req: Request, res: Response, next: NextFunction) => {
     httpLogger.use(req, res, next);
   });
+}
 
+function configureValidation(app: NestExpressApplication): void {
   app.useGlobalFilters(app.get(AllExceptionsFilter));
 
   app.useGlobalPipes(
@@ -66,9 +88,19 @@ async function bootstrap() {
   app.enableCors({
     origin: getAllowedOrigins(process.env),
     credentials: true,
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Idempotency-Key',
+      'x-csrf-token',
+      'x-client-platform',
+      'x-firebase-appcheck',
+      'x-request-id',
+    ],
   });
-  appLogger.info('CORS and CookieParser configured successfully');
+}
 
+function configureDocumentation(app: NestExpressApplication, appLogger: AppLogger): void {
   const swaggerEnabled =
     process.env.SWAGGER_ENABLED === 'true' || process.env.NODE_ENV !== 'production';
 
@@ -76,21 +108,14 @@ async function bootstrap() {
     setupSwagger(app);
     appLogger.info('Swagger available at /docs');
   }
+}
 
+async function configureRealtime(app: NestExpressApplication): Promise<void> {
   if (process.env.SOCKET_IO_SHARED === 'true') {
     const adapter = new PostgresIoAdapter(app);
     await adapter.initialize();
     app.useWebSocketAdapter(adapter);
   }
-
-  const port = Number(process.env.PORT ?? 3001);
-  await app.listen(port, '0.0.0.0');
-
-  const startupTimeMs = Date.now() - startAt;
-  appLogger.info('Backend iniciado', {
-    port,
-    env: process.env.NODE_ENV || 'development',
-    startupTimeMs,
-  });
 }
+
 void bootstrap();

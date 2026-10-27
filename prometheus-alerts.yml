@@ -50,3 +50,43 @@ groups:
           severity: warning
         annotations:
           summary: Pico de falhas de login detectado
+      - alert: MeatshopPaymentWebhookBacklog
+        expr: max(payment_webhook_queue_pending) > 50
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Fila de webhooks de pagamento acumulada
+          description: Mais de 50 webhooks do Mercado Pago pendentes há pelo menos 10 minutos.
+      - alert: MeatshopPaymentWebhookFailures
+        expr: sum(increase(payment_webhook_processing_failures_total[15m])) > 5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: Falhas no processamento de webhooks de pagamento
+          description: Mais de 5 falhas de processamento de webhooks nos últimos 15 minutos.
+      - alert: MeatshopRateLimitRejectionsSpike
+        expr: sum by (scope) (rate(rate_limit_rejections_total[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Pico de requisições bloqueadas por rate limit
+          description: "Escopo {{ $labels.scope }} rejeitando mais de 1 requisição por segundo."
+      - alert: MeatshopHighCpuUsage
+        expr: sum by (instance) (rate(process_cpu_seconds_total{job="meatshop-backend"}[5m])) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Uso de CPU do backend acima de 80%
+          description: "Instância {{ $labels.instance }} consumindo mais de 0,8 núcleo por 10 minutos."
+      - alert: MeatshopHighMemoryUsage
+        expr: max by (instance) (process_resident_memory_bytes{job="meatshop-backend"}) > 400 * 1024 * 1024
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Uso de memória do backend acima de 400 MiB
+          description: "Instância {{ $labels.instance }} com memória residente acima de 400 MiB por 10 minutos."

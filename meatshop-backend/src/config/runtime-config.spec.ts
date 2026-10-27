@@ -16,6 +16,9 @@ describe('runtime config', () => {
   it('rejects insecure production configuration', () => {
     expect(() =>
       validateEnvironment({
+        DATA_ENCRYPTION_KEY: Buffer.alloc(32, 1).toString('base64'),
+        DATA_HASH_KEY: Buffer.alloc(32, 2).toString('base64'),
+        METRICS_TOKEN: 'm'.repeat(32),
         NODE_ENV: 'production',
         DB_TYPE: 'postgres',
         DB_SYNCHRONIZE: 'false',
@@ -38,6 +41,9 @@ describe('runtime config', () => {
     'validates a secure production server with MP_ENV=%s and PAYMENTS_ENABLED=%s',
     (mpEnv, enabled) => {
       const environment = {
+        DATA_ENCRYPTION_KEY: Buffer.alloc(32, 1).toString('base64'),
+        DATA_HASH_KEY: Buffer.alloc(32, 2).toString('base64'),
+        METRICS_TOKEN: 'm'.repeat(32),
         NODE_ENV: 'production',
         DB_TYPE: 'postgres',
         FIREBASE_WEB_API_KEY: 'public-api-key',
