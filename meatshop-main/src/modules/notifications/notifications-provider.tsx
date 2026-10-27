@@ -2,7 +2,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { io, type Socket } from "socket.io-client";
-import { API_URL, apiGet, apiPatch } from "@/shared/lib/api";
+import { socketEndpoint } from "@/shared/config/api-url";
+import { apiGet, apiPatch } from "@/shared/lib/api";
 import { toast } from "@/shared/lib/toast";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
 import type { PanelNotification } from "./types";
@@ -41,10 +42,8 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   useEffect(() => {
     if (!user) return;
 
-    const socket: Socket = io(`${API_URL}/notifications`, {
-      transports: ["websocket", "polling"],
-      withCredentials: true,
-    });
+    const { url, ...endpoint } = socketEndpoint("/notifications");
+    const socket: Socket = io(url, { ...endpoint, withCredentials: true });
     socket.on("notification:new", (notification: PanelNotification) => {
       if (notification.unit_id && notification.unit_id !== unitId) return;
       setNotifications((current) => [notification, ...current.filter(({ id }) => id !== notification.id)]);

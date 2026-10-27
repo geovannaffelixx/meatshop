@@ -32,8 +32,8 @@ import {
   DialogTitle,
 } from "@/shared/components/ui/dialog";
 import { Input } from "@/shared/components/ui/input";
+import { socketEndpoint } from "@/shared/config/api-url";
 import {
-  API_URL,
   apiDelete,
   apiGet,
   apiPatch,
@@ -172,10 +172,8 @@ export function DeliveriesScreen() {
 
   useEffect(() => {
     if (!unitId) return;
-    const socket: Socket = io(`${API_URL}/delivery`, {
-      transports: ["websocket", "polling"],
-      withCredentials: true,
-    });
+    const { url, ...endpoint } = socketEndpoint("/delivery");
+    const socket: Socket = io(url, { ...endpoint, withCredentials: true });
 
     let disposed = false;
     socket.on("connect", () => {
