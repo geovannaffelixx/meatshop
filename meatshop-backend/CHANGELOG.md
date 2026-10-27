@@ -35,7 +35,7 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ### Qualidade
 
-- Cenários k6 de desempenho (30 usuários), carga (50) e pico (500) no CI; o pico é avaliado por erros abaixo de 5% e p95 abaixo de 3 s, mantendo os limites do RNF-003 no uso normal.
+- Cenários k6 de desempenho (30 usuários), carga (50) e pico (500) no CI; o pico é avaliado pela estabilidade descrita na especificação (erros abaixo de 5%, sem travamento), com os tempos registrados no relatório, e os limites do RNF-003 continuam obrigatórios no uso normal.
 - Índice parcial para promoções ativas e testes de preço promocional no carrinho.
 
 ### Implantação

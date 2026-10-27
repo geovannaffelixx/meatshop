@@ -438,6 +438,12 @@ const enabled = process.env.E2E_TEST_DATABASE === 'meatshop_gaps_test_330';
       .auth(token, { type: 'bearer' })
       .send({ product_id: product.id, quantity: 2 })
       .expect(201);
+    const cart = await request(app.getHttpServer())
+      .get('/cart')
+      .auth(token, { type: 'bearer' })
+      .expect(200);
+    expect(cart.body.items[0].unit_price).toBe(40);
+    expect(cart.body.total).toBe(80);
     const selection = { delivery_type: 'PICKUP', payment_method: 'Cash' };
     const quote = await request(app.getHttpServer())
       .post('/cart/quote')
@@ -570,6 +576,7 @@ const enabled = process.env.E2E_TEST_DATABASE === 'meatshop_gaps_test_330';
 
   it('updates one cart item and returns its siblings, prices and current stock', async () => {
     await request(app.getHttpServer()).delete('/cart').auth(token, { type: 'bearer' }).expect(200);
+    await db.getRepository(Promotion).delete({ product_id: product.id });
     const second = await db.getRepository(Product).save({
       name: 'Cart sibling',
       unit_id: unit.id,

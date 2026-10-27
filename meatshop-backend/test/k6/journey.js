@@ -12,9 +12,7 @@ const reliability = { journey_errors: ['rate<0.05'], http_req_failed: ['rate<0.0
 export const thresholds = {
   search_latency: ['p(95)<2000'], cart_latency: ['p(95)<1000'], checkout_latency: ['p(95)<3000'], ...reliability,
 };
-export const spikeThresholds = {
-  search_latency: ['p(95)<3000'], cart_latency: ['p(95)<3000'], checkout_latency: ['p(95)<3000'], ...reliability,
-};
+export const spikeThresholds = reliability;
 export function setup() {
   if (!baseUrl || __ENV.K6_ALLOW_MUTATIONS !== 'true' || accounts.length < Number(__ENV.K6_MAX_VUS || 500)) {
     throw new Error('Provide BASE_URL, K6_ALLOW_MUTATIONS=true and a dedicated account per VU (K6_ACCOUNTS).');
