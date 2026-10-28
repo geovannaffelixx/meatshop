@@ -7,6 +7,7 @@ const CSRF_EXEMPT_PATHS = [
   "/auth/csrf",
   "/auth/login",
   "/auth/register",
+  "/auth/register-unit",
   "/auth/forgot-password",
   "/auth/reset-password",
   "/auth/verify-email",
@@ -42,7 +43,8 @@ async function getCsrfToken(): Promise<string | null> {
 
 function requiresCsrf(path: string, method = "GET") {
   if (SAFE_METHODS.includes(method.toUpperCase())) return false;
-  return !CSRF_EXEMPT_PATHS.some((exempt) => path.startsWith(exempt));
+  const pathname = path.split('?')[0].replace(/\/+$/, '') || '/';
+  return !CSRF_EXEMPT_PATHS.includes(pathname);
 }
 
 async function withCsrfHeader(path: string, init: RequestInit): Promise<RequestInit> {

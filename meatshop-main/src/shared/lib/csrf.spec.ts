@@ -25,6 +25,22 @@ describe('CSRF protection', () => {
     expect(csrfHeader(fetchMock.mock.calls[0])).toBeNull();
   });
 
+  it.each(['/auth/login', '/auth/register-unit', '/auth/register-unit/?source=web'])(
+    'does not require a CSRF token for public authentication at %s', async (path) => {
+      fetchMock.mockResolvedValueOnce(response(200, {}));
+      await apiPost(path, {});
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(csrfHeader(fetchMock.mock.calls[0])).toBeNull();
+    },
+  );
+
+  it('does not exempt routes merely sharing a public route prefix', async () => {
+    fetchMock.mockResolvedValueOnce(response(200, { csrf_token: 'token' }))
+      .mockResolvedValueOnce(response(200, {}));
+    await apiPost('/auth/register-unit/private', {});
+    expect(csrfHeader(fetchMock.mock.calls[1])).toBe('token');
+  });
+
   it('fetches the token lazily once and sends it on every mutating request', async () => {
     fetchMock
       .mockResolvedValueOnce(response(200, { csrf_token: 'token-a' }))
