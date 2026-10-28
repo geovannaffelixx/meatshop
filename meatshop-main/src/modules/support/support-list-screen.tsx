@@ -7,45 +7,22 @@ import { useApiQuery } from "@/shared/hooks/use-api-query";
 import { DataSkeleton } from "@/shared/components/data-skeleton";
 
 import { useState } from "react";
-import { ImagePlus, LifeBuoy, Plus } from "lucide-react";
+import { LifeBuoy, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { apiPost, apiUpload } from "@/shared/lib/api";
-import { Spinner } from "@/shared/components/ui/spinner";
-import { RequiredMark } from "@/shared/components/ui/required-mark";
 import { Button } from "@/shared/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/shared/components/ui/dialog";
-import { Input } from "@/shared/components/ui/input";
-import { Textarea } from "@/shared/components/ui/textarea";
+import { SupportTicketFormDialog } from "./support-ticket-form-dialog";
 import { PageHeader } from "@/shared/components/page-header";
 import { EmptyState } from "@/shared/components/empty-state";
-import { toast } from "@/shared/lib/toast";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
 import {
   categoryLabels,
   priorityLabels,
   statusLabels,
-  type SupportCategory,
-  type SupportPriority,
   type SupportStatus,
   type SupportTicket,
 } from "./types";
 
 type SearchResult = { data: SupportTicket[]; total: number };
-
-const initialForm = {
-  subject: "",
-  description: "",
-  category: "TECHNICAL" as SupportCategory,
-  priority: "NORMAL" as SupportPriority,
-  order_id: "",
-};
 
 export function SupportListScreen() {
   const router = useRouter();
@@ -53,39 +30,14 @@ export function SupportListScreen() {
   const isAdmin = user?.global_role === "SUPER_ADMIN";
   const [status, setStatus] = useState<SupportStatus | "">("");
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState(initialForm);
-  const [images, setImages] = useState<File[]>([]);
-  const [saving, setSaving] = useState(false);
 
   const { data: result = { data: [], total: 0 }, isPending: loading, refetch: load, error } = useApiQuery<SearchResult>(`/support-tickets/search${status ? `?status=${status}` : ''}`);
-
-  async function createTicket(event: React.FormEvent) {
-    event.preventDefault();
-    setSaving(true);
-    try {
-      const ticket = await apiPost("/support-tickets", {
-        ...form,
-        unit_id: isAdmin ? undefined : unitId ?? undefined,
-        order_id: form.order_id ? Number(form.order_id) : undefined,
-      });
-      if (images.length) {
-        const data = new FormData();
-        images.forEach((image) => data.append("images", image));
-        await apiUpload(`/support-tickets/${ticket.id}/messages`, data);
-      }
-      toast.success("Chamado enviado para a equipe MeatShop.");
-      setOpen(false);
-      router.push(`/support/${ticket.id}`);
-    } finally {
-      setSaving(false);
-    }
-  }
 
   if (error) return <div className="p-8 text-red-700" role="alert">{error.message}<Button onClick={() => void load()}>Tentar novamente</Button></div>;
 
   return (
     <div className="page-surface">
-    <section className="page-container max-w-6xl">
+    <section className="page-container">
       <PageHeader
         eyebrow={isAdmin ? "Administração" : "Atendimento"}
         title={isAdmin ? "Suporte MeatShop" : "Ajuda e suporte"}
@@ -178,132 +130,7 @@ export function SupportListScreen() {
         )}
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl">
-          <form onSubmit={createTicket} className="space-y-4">
-            <DialogHeader>
-              <DialogTitle>Novo chamado</DialogTitle>
-              <DialogDescription>
-                Descreva o que aconteceu para que a equipe possa ajudar.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="text-sm font-medium">
-                Categoria<RequiredMark />
-                <select
-                  value={form.category}
-                  onChange={(event) =>
-                    setForm({
-                      ...form,
-                      category: event.target.value as SupportCategory,
-                    })
-                  }
-                  className="input mt-1"
-                  required
-                >
-                  {Object.entries(categoryLabels).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="text-sm font-medium">
-                Prioridade
-                <select
-                  value={form.priority}
-                  onChange={(event) =>
-                    setForm({
-                      ...form,
-                      priority: event.target.value as SupportPriority,
-                    })
-                  }
-                  className="input mt-1"
-                >
-                  {Object.entries(priorityLabels).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <label className="block text-sm font-medium">
-              Assunto<RequiredMark />
-              <Input
-                required
-                maxLength={150}
-                value={form.subject}
-                onChange={(event) =>
-                  setForm({ ...form, subject: event.target.value })
-                }
-                className="mt-1"
-                placeholder="Ex.: Dúvida sobre um pedido"
-              />
-            </label>
-            <label className="block text-sm font-medium">
-              Descrição (opcional)
-              <Textarea
-                maxLength={2000}
-                rows={6}
-                value={form.description}
-                onChange={(event) =>
-                  setForm({ ...form, description: event.target.value })
-                }
-                className="mt-1"
-                placeholder="Ex.: Informe os detalhes que podem ajudar no atendimento."
-              />
-            </label>
-            <label className="block text-sm font-medium">
-              Pedido relacionado (opcional)
-              <Input
-                type="number"
-                min={1}
-                value={form.order_id}
-                onChange={(event) =>
-                  setForm({ ...form, order_id: event.target.value })
-                }
-                className="mt-1"
-                placeholder="Ex.: 1234"
-              />
-            </label>
-            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 p-4 text-sm text-slate-600 hover:bg-slate-50">
-              <ImagePlus className="size-5" />
-              {images.length
-                ? `${images.length} imagem(ns) selecionada(s)`
-                : "Adicionar até 4 imagens"}
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                multiple
-                className="sr-only"
-                onChange={(event) =>
-                  setImages(Array.from(event.target.files ?? []).slice(0, 4))
-                }
-              />
-            </label>
-            {images.length > 0 && (
-              <p className="text-xs text-slate-500">
-                {images.map(({ name }) => name).join(", ")}
-              </p>
-            )}
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={saving}
-                onClick={() => setOpen(false)}
-              >
-                Cancelar
-              </Button>
-              <Button disabled={saving}>
-                {saving && <Spinner />}
-                {saving ? "Enviando..." : "Enviar chamado"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {open && <SupportTicketFormDialog open={open} setOpen={setOpen} unitId={unitId} />}
     </section>
     </div>
   );

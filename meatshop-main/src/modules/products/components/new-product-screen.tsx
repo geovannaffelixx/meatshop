@@ -1,5 +1,7 @@
 "use client"
 
+import { Button } from "@/shared/components/ui/button";
+import { PageHeader } from "@/shared/components/page-header";
 import { useApiQuery } from "@/shared/hooks/use-api-query";
 import { DataSkeleton } from "@/shared/components/data-skeleton";
 
@@ -20,7 +22,7 @@ export function NewProductScreen() {
   const router = useRouter()
   const { unitId } = useManagedUnits()
 
-  const categoriesQuery = useApiQuery<Category[]>(unitId ? `/categories?unit_id=${unitId}` : null);
+  const categoriesQuery = useApiQuery<Category[]>(unitId ? `/categories/manage?unit_id=${unitId}` : null);
   const categories = categoriesQuery.data ?? [];
   const [form, setForm] = useState({
     name: "",
@@ -127,27 +129,25 @@ export function NewProductScreen() {
     }
   }
 
-  if (categoriesQuery.isPending) return <DataSkeleton variant="form" label="Carregando categorias do produto" />;
-  if (categoriesQuery.error) return <div className="p-6 text-red-700" role="alert">{categoriesQuery.error.message}<button onClick={() => void categoriesQuery.refetch()} className="ml-3 underline">Tentar novamente</button></div>;
+  if (categoriesQuery.isPending) return <div className="page-surface"><div className="page-container max-w-5xl"><PageHeader title="Novo produto" /><DataSkeleton variant="form" label="Carregando categorias do produto" /></div></div>;
+  if (categoriesQuery.error) return <div className="page-surface"><div className="page-container max-w-5xl"><PageHeader title="Novo produto" /><div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">{categoriesQuery.error.message}<Button type="button" variant="outline" className="mt-3" onClick={() => void categoriesQuery.refetch()}>Tentar novamente</Button></div></div></div>;
 
   return (
-    <div className="page-surface px-4 py-6 sm:px-6">
+    <div className="page-surface">
+      <div className="page-container max-w-5xl">
       <form
         onSubmit={(event) => {
           event.preventDefault()
           void handleSave()
         }}
-        className="mx-auto w-full max-w-5xl rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"
+        className="w-full rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"
       >
         <Link href="/products" className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-red-700">
           <ArrowLeft className="size-4" />
           Voltar aos produtos
         </Link>
 
-        <h2 className="text-2xl font-bold text-slate-950">
-          Novo produto
-        </h2>
-        <p className="mt-1 mb-6 text-sm text-slate-600">Cadastre informações comerciais, estoque e imagens.</p>
+        <div className="mb-6"><PageHeader title="Novo produto" description="Cadastre informações comerciais, estoque e imagens." /></div>
 
         {error && (
           <div className="mb-3 rounded-md bg-red-100 text-red-700 px-3 py-2 text-sm border border-red-300">
@@ -335,19 +335,14 @@ export function NewProductScreen() {
         </div>
 
         <div className="mt-6 flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end">
-          <Link href="/products" className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-            Cancelar
-          </Link>
-          <button
-            type="submit"
-            disabled={saving}
-            className="flex min-h-10 items-center justify-center gap-2 rounded-lg bg-red-700 px-8 py-2 font-semibold text-white shadow-sm hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
-          >
+          <Button asChild variant="outline"><Link href="/products">Cancelar</Link></Button>
+          <Button type="submit" disabled={saving} className="px-8">
             {saving && <Spinner />}
             {saving ? "Salvando..." : "Salvar produto"}
-          </button>
+          </Button>
         </div>
       </form>
+      </div>
     </div>
   )
 }

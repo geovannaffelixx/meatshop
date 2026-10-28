@@ -53,7 +53,7 @@ export function RecipesScreen() {
   const { units, unitId, loading: unitsLoading } = useManagedUnits()
 
   const [search, setSearch] = useState('');
-  const query = useServerList<Recipe>(unitId ? `/recipes?unit_id=${unitId}` : null, search);
+  const query = useServerList<Recipe>(unitId ? `/recipes/manage?unit_id=${unitId}` : null, search);
   const recipes = query.rows;
   const loading = query.isPending;
   const error = query.error?.message;
@@ -87,7 +87,7 @@ export function RecipesScreen() {
 
 
             {recipes.length > 0 && (
-              <Button asChild className="bg-red-600 hover:bg-red-700 text-white flex items-center gap-2">
+              <Button asChild className="flex items-center gap-2">
                 <Link href="/recipes/new">
                   <Plus size={18} />
                   Nova receita

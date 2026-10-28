@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHeader } from "@/shared/components/page-header";
 import { formatDateTime } from "@/shared/lib/formatters";
 
 import { useApiQuery } from "@/shared/hooks/use-api-query";
@@ -66,7 +67,7 @@ export function SupportDetailScreen({ ticketId }: { ticketId: number }) {
   if (loading && !ticket)
     return (
       <div className="page-surface">
-        <DataSkeleton label="Carregando chamado..." />
+        <div className="page-container max-w-5xl"><DataSkeleton label="Carregando chamado..." /></div>
       </div>
     );
   if (!ticket)
@@ -93,9 +94,7 @@ export function SupportDetailScreen({ ticketId }: { ticketId: number }) {
         <section aria-label="Conversa do chamado" className="overflow-hidden rounded-xl border bg-white shadow-sm">
           <header className="border-b p-5">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-xl font-bold">
-                #{ticket.id} · {ticket.subject}
-              </h1>
+              <PageHeader title={`#${ticket.id} · ${ticket.subject}`} />
               <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium">
                 {statusLabels[ticket.status]}
               </span>

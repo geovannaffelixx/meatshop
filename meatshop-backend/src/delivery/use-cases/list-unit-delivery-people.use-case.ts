@@ -10,6 +10,11 @@ import { UnitAuthorizationService } from '../../units/services/unit-authorizatio
 import { User } from '../../users/entities/user.entity';
 import { DeliveryPerson } from '../entities/delivery-person.entity';
 import { Vehicle } from '../entities/vehicle.entity';
+import {
+  PanelListQueryDto,
+  paginatedResult,
+  searchPattern,
+} from '../../common/dtos/panel-list-query.dto';
 
 @Injectable()
 export class ListUnitDeliveryPeopleUseCase {
@@ -25,17 +30,27 @@ export class ListUnitDeliveryPeopleUseCase {
     private readonly unitAuthorizationService: UnitAuthorizationService,
   ) {}
 
-  async execute(unitId: number, currentUser: User) {
+  async execute(unitId: number, currentUser: User, filters?: PanelListQueryDto) {
     await this.unitAuthorizationService.assertHasPermission(
       currentUser,
       unitId,
       UnitPermission.VIEW_DELIVERIES,
     );
-    const memberships = await this.membershipRepository.find({
-      where: { unit_id: unitId, local_role: LocalRole.DELIVERY },
-      relations: { user: true },
-      order: { created_at: 'ASC' },
-    });
+    const query = this.membershipRepository
+      .createQueryBuilder('membership')
+      .leftJoinAndSelect('membership.user', 'user')
+      .where('membership.unit_id = :unitId', { unitId })
+      .andWhere('membership.local_role = :role', { role: LocalRole.DELIVERY })
+      .orderBy('membership.created_at', 'ASC')
+      .addOrderBy('membership.id', 'ASC');
+    if (filters?.search?.trim()) {
+      query.andWhere('(user.name ILIKE :search OR user.email ILIKE :search)', {
+        search: searchPattern(filters.search),
+      });
+    }
+    const paginated = filters?.paginated === 'true';
+    if (paginated) query.skip((filters.page - 1) * filters.limit).take(filters.limit);
+    const [memberships, total] = await query.getManyAndCount();
     const userIds = memberships.map(({ user_id }) => user_id);
     const people = userIds.length
       ? await this.deliveryPersonRepository.find({
@@ -65,7 +80,7 @@ export class ListUnitDeliveryPeopleUseCase {
       activeOrders.map((order) => [order.delivery_person_id, order.id]),
     );
 
-    return memberships.map((membership) => {
+    const data = memberships.map((membership) => {
       const person = peopleByUser.get(membership.user_id);
       const vehicle = person ? vehicleByPerson.get(person.id) : undefined;
       return {
@@ -91,5 +106,6 @@ export class ListUnitDeliveryPeopleUseCase {
         activeOrderId: person ? (activeOrderByPerson.get(person.id) ?? null) : null,
       };
     });
+    return paginated ? paginatedResult(data, total, filters) : data;
   }
 }

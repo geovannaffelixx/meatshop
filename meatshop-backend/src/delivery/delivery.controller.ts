@@ -1,4 +1,5 @@
 import { DeliveryPageDto } from './dtos/delivery-page.dto';
+import { PanelListQueryDto } from '../common/dtos/panel-list-query.dto';
 import {
   Query,
   Body,
@@ -171,8 +172,9 @@ export class DeliveryController {
   listDeliveryPeople(
     @Param('unitId', ParseIntPipe) unitId: number,
     @CurrentUser() currentUser: User,
+    @Query() filters: PanelListQueryDto,
   ) {
-    return this.listUnitDeliveryPeopleUseCase.execute(unitId, currentUser);
+    return this.listUnitDeliveryPeopleUseCase.execute(unitId, currentUser, filters);
   }
 
   @ApiOperation({ summary: 'Approves a delivery person linked to the unit' })

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { Package } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog';
+import { DetailsDialog } from '@/shared/components/details-dialog';
 import { DataSkeleton } from '@/shared/components/data-skeleton';
 import { useApiQuery } from '@/shared/hooks/use-api-query';
 import { resolveAssetUrl } from '@/shared/lib/api';
@@ -22,12 +22,10 @@ export function ProductDetailsDialog({ productId, onClose }: { productId: number
   const data = query.data;
   const images = [...new Set([data?.product.image_url, ...(data?.images ?? []).map(image => image.image_url)].filter((url): url is string => Boolean(url)))];
   return (
-    <Dialog open onOpenChange={open => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader><DialogTitle>{data?.product.name ?? 'Detalhes do produto'}</DialogTitle><DialogDescription>Imagens e informações do catálogo e estoque.</DialogDescription></DialogHeader>
+    <DetailsDialog open onOpenChange={open => { if (!open) onClose(); }} title={data?.product.name ?? 'Detalhes do produto'} description="Imagens e informações do catálogo e estoque." icon={Package}>
         {query.isPending ? <DataSkeleton variant="form" label="Carregando produto..." /> : query.error ? (
           <div role="alert" className="space-y-3 text-sm text-red-700"><p>Não foi possível carregar o produto.</p><Button variant="outline" onClick={() => void query.refetch()}>Tentar novamente</Button></div>
-        ) : data && <div className="grid gap-6 sm:grid-cols-2">
+        ) : data && <div className="grid gap-6 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-2">
           <div className="space-y-3">
             <div className="grid aspect-square place-items-center overflow-hidden rounded-2xl border bg-slate-50">
               {images.length ? <Image unoptimized src={resolveAssetUrl(images[selected] ?? images[0])} alt={data.product.name} width={500} height={500} className="size-full object-contain" /> : <div className="text-center text-slate-600"><Package className="mx-auto mb-2 size-12" /><p className="text-sm">Sem imagens cadastradas</p></div>}
@@ -43,7 +41,6 @@ export function ProductDetailsDialog({ productId, onClose }: { productId: number
             ].map(([label, value]) => <div key={label}><dt className="text-slate-500">{label}</dt><dd className="mt-1 break-words font-semibold text-slate-900">{value}</dd></div>)}</dl>
           </div>
         </div>}
-      </DialogContent>
-    </Dialog>
+    </DetailsDialog>
   );
 }

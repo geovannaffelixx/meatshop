@@ -1,5 +1,17 @@
 import { FilterCategoriesDto } from './dtos/filter-categories.dto';
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
+import { UnitAuthorizationService } from '../units/services/unit-authorization.service';
+import { UnitPermission } from '../common/enums/unit-permission.enum';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
@@ -19,6 +31,7 @@ export class CategoriesController {
     private readonly updateCategoryUseCase: UpdateCategoryUseCase,
     private readonly listCategoriesUseCase: ListCategoriesUseCase,
     private readonly getCategoryUseCase: GetCategoryUseCase,
+    private readonly authorization: UnitAuthorizationService,
   ) {}
 
   @Public()
@@ -29,11 +42,33 @@ export class CategoriesController {
   })
   @Get()
   list(@Query() filters: FilterCategoriesDto) {
+    return this.listCategoriesUseCase.execute(filters.unit_id, true, filters, true);
+  }
+
+  @Get('manage')
+  async manage(@Query() filters: FilterCategoriesDto, @CurrentUser() user: User) {
+    if (!filters.unit_id) throw new BadRequestException('Choose a unit');
+    await this.authorization.assertHasPermission(
+      user,
+      filters.unit_id,
+      UnitPermission.MANAGE_CATEGORIES,
+    );
     return this.listCategoriesUseCase.execute(
       filters.unit_id,
       filters.active === undefined ? undefined : filters.active === 'true',
       filters,
     );
+  }
+
+  @Get('manage/:id')
+  async manageOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: User) {
+    const category = await this.getCategoryUseCase.execute(id);
+    await this.authorization.assertHasPermission(
+      user,
+      category.unit_id,
+      UnitPermission.MANAGE_CATEGORIES,
+    );
+    return category;
   }
 
   @Public()
@@ -42,7 +77,7 @@ export class CategoriesController {
   @ApiResponse({ status: 404, description: 'Category not found' })
   @Get(':id')
   getOne(@Param('id', ParseIntPipe) id: number) {
-    return this.getCategoryUseCase.execute(id);
+    return this.getCategoryUseCase.execute(id, true);
   }
 
   @ApiBearerAuth('access-token')

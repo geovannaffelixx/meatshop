@@ -1,5 +1,6 @@
 'use client';
 
+import { AuthLayout } from "@/shared/components/auth-layout";
 import { validatePassword as isPasswordValid } from "@/shared/lib/validators";
 
 import { DataSkeleton } from "@/shared/components/data-skeleton";
@@ -9,7 +10,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { PasswordInput } from "@/shared/components/ui/password-input";
 import { Button } from "@/shared/components/ui/button";
 import { Spinner } from "@/shared/components/ui/spinner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/shared/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
 import { LockIcon } from "lucide-react";
 import Link from "next/link";
@@ -65,16 +66,16 @@ function ResetPasswordFormContent() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 bg-[url('/backgroundClaro.png')] p-4">
-      <Card className="w-full max-w-md shadow-md">
-        <CardHeader className="flex flex-col items-center">
-          <LockIcon className="w-10 h-10 text-[#BE2C1B] mb-2" />
-          <CardTitle className="text-xl font-bold text-center text-[#BE2C1B]">
+    <AuthLayout>
+      <Card className="w-full gap-6 rounded-none border-0 bg-white py-0 shadow-none">
+        <CardHeader className="flex flex-col items-center px-0">
+          <LockIcon className="w-10 h-10 text-red-700 mb-2" />
+          <h1 className="text-center text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
             Defina uma nova senha
-          </CardTitle>
+          </h1>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <p className="text-center text-gray-600 text-sm">
+        <CardContent className="px-0 space-y-6">
+          <p className="text-center text-slate-600 text-sm">
             Sua nova senha deve ser diferente das anteriores.
           </p>
 
@@ -105,7 +106,7 @@ function ResetPasswordFormContent() {
             />
             </label>
 
-            <ul className="text-sm text-gray-500 list-disc pl-5">
+            <ul className="text-sm text-slate-500 list-disc pl-5">
               <li>Mínimo de 8 caracteres</li>
               <li>Maiúscula, minúscula, número e caractere especial</li>
             </ul>
@@ -115,7 +116,7 @@ function ResetPasswordFormContent() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#BE2C1B] hover:bg-[#BE2C1B]/70"
+              className="w-full min-h-11"
             >
               {loading && <Spinner />}
               {loading ? "Redefinindo..." : "Redefinir senha"}
@@ -123,7 +124,7 @@ function ResetPasswordFormContent() {
           </form>
 
           <div className="text-center">
-            <Link href="/login" className="text-sm text-[#BE2C1B] hover:underline">
+            <Link href="/login" className="text-sm font-semibold text-red-700 hover:underline">
               ← Voltar para login
             </Link>
           </div>
@@ -138,13 +139,13 @@ function ResetPasswordFormContent() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </AuthLayout>
   );
 }
 
 export function ResetPasswordScreen() {
   return (
-    <Suspense fallback={<DataSkeleton label="Carregando..." />}>
+    <Suspense fallback={<AuthLayout><DataSkeleton label="Carregando..." /></AuthLayout>}>
       <ResetPasswordFormContent />
     </Suspense>
   );

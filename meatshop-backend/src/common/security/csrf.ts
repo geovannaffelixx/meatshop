@@ -21,7 +21,9 @@ export function createCsrfToken(): string {
 }
 
 export function requiresCsrf(request: Request): boolean {
-  if (SAFE_METHODS.has(request.method) || EXEMPT_PATHS.has(request.path)) return false;
+  // Mounted middleware sees a path relative to its mount point in Express.
+  const path = (request.originalUrl || request.path).split('?')[0].replace(/\/+$/, '') || '/';
+  if (SAFE_METHODS.has(request.method) || EXEMPT_PATHS.has(path)) return false;
   if (/^Bearer\s+\S+$/i.test(request.get('authorization') ?? '')) return false;
   return Boolean(request.cookies?.access_token || request.cookies?.refresh_token);
 }

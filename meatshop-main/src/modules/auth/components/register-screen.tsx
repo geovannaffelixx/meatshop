@@ -1,5 +1,6 @@
 'use client';
 
+import { AuthLayout } from "@/shared/components/auth-layout";
 import { maskCNPJ, maskCEP, maskCPF } from "@/shared/lib/input-masks";
 import { validateCPF, validateCNPJ, validateEmail, validateName, validateUF, validateCEP, validatePassword as isPasswordValid, validateRequiredText, normalizeCNPJ } from "@/shared/lib/validators";
 
@@ -13,7 +14,7 @@ import { useRef, useState } from "react";
 import { AddressPinPicker, type AddressPin } from '@/shared/components/maps/address-pin-picker';
 import { Input } from "@/shared/components/ui/input";
 import { Button } from "@/shared/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/shared/components/ui/card";
 import { CheckCircle2, Image as ImageIcon, Search } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
 import { PasswordInput } from "@/shared/components/ui/password-input";
@@ -35,7 +36,7 @@ async function uploadUnitLogo(unitId: number | undefined, logo: File | null): Pr
 
 function RequiredLabel({ label, htmlFor, required = false }: { label: string; htmlFor: string; required?: boolean }) {
   return (
-    <label htmlFor={htmlFor} className="font-medium text-sm text-gray-700">
+    <label htmlFor={htmlFor} className="font-medium text-sm text-slate-700">
       {label}
       {required && <RequiredMark />}
     </label>
@@ -265,17 +266,17 @@ export function RegisterScreen() {
     errors[field] ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "";
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 bg-[url('/backgroundClaro.png')] p-4">
-      <Card className="w-full max-w-2xl">
-        <CardHeader>
-          <CardTitle className="text-center text-3xl font-bold tracking-tight text-red-700">
+    <AuthLayout wide>
+      <Card className="w-full gap-6 rounded-none border-0 bg-white py-0 shadow-none">
+        <CardHeader className="px-0">
+          <h1 className="text-center text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
             Crie sua unidade
-          </CardTitle>
+          </h1>
           <p className="text-center text-sm text-slate-600">
             Configure o açougue e o acesso do proprietário.
           </p>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="px-0 space-y-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <h2 className="font-semibold mb-2">Seu açougue</h2>
@@ -304,13 +305,13 @@ export function RegisterScreen() {
                 />
 
                 <label className="flex items-center gap-2 cursor-pointer w-fit px-4 py-2 border rounded-lg bg-gray-50 hover:bg-gray-100 mt-2">
-                  <ImageIcon className="w-5 h-5 text-gray-500" />
-                  <span className="text-sm text-gray-600">Selecionar logo</span>
+                  <ImageIcon className="w-5 h-5 text-slate-500" />
+                  <span className="text-sm text-slate-600">Selecionar logo</span>
                   <input type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
                 </label>
                 {previewUrl && (
                   <div className="mt-3 flex items-center gap-3">
-                    <span className="text-sm text-gray-600">Pré-visualização:</span>
+                    <span className="text-sm text-slate-600">Pré-visualização:</span>
                     <Image
                       src={previewUrl}
                       alt="Pré-visualização da logo"
@@ -365,7 +366,7 @@ export function RegisterScreen() {
                 </div>
                 <div className="space-y-2">
                   <AddressPinPicker initial={pin??approximate} onConfirm={setPin} />
-                  <p className="text-sm text-gray-600">{pin?'Ponto confirmado.':'Ajuste o pino na entrada da unidade após preencher o endereço.'}</p>
+                  <p className="text-sm text-slate-600">{pin?'Ponto confirmado.':'Ajuste o pino na entrada da unidade após preencher o endereço.'}</p>
                 </div>
                 {cepResolved && (
                   <p className="flex items-center gap-2 text-sm text-emerald-700">
@@ -493,7 +494,7 @@ export function RegisterScreen() {
                   placeholder="Repita a senha"
                   required
                 />
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-slate-500 mt-1">
                   Mínimo 8 caracteres, com maiúscula, minúscula, número e caractere especial.
                 </p>
                 {passwordError && (
@@ -509,7 +510,7 @@ export function RegisterScreen() {
             <Button
               type="submit"
               disabled={submitting || !legalAcceptance}
-              className="w-full bg-[#BE2C1B] hover:bg-[#BE2C1B]/70"
+              className="w-full min-h-11"
             >
               {submitting && <Spinner />}
               {submitting ? "Cadastrando..." : "Cadastrar"}
@@ -530,6 +531,6 @@ export function RegisterScreen() {
           </p>
         </CardContent>
       </Card>
-    </div>
+    </AuthLayout>
   );
 }

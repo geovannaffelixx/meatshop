@@ -1,5 +1,6 @@
 "use client"
 
+import { EmptyState } from "@/shared/components/empty-state";
 import { formatDateValue } from "@/shared/lib/date-time";
 
 import { useApiQuery } from "@/shared/hooks/use-api-query";
@@ -105,14 +106,14 @@ export function ReviewsScreen() {
             <button
               onClick={() => setFilter("all")}
               aria-pressed={filter === "all"}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium ${filter === "all" ? "bg-red-600 text-white" : "bg-white text-gray-700 border"}`}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium ${filter === "all" ? "bg-red-700 text-white" : "bg-white text-gray-700 border"}`}
             >
               Todas
             </button>
             <button
               onClick={() => setFilter("unit")}
               aria-pressed={filter === "unit"}
-              className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium ${filter === "unit" ? "bg-red-600 text-white" : "bg-white text-gray-700 border"}`}
+              className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium ${filter === "unit" ? "bg-red-700 text-white" : "bg-white text-gray-700 border"}`}
             >
               <Store size={14} />
               Sobre o açougue
@@ -122,7 +123,7 @@ export function ReviewsScreen() {
                 key={p.id}
                 onClick={() => setFilter(p.id)}
                 aria-pressed={filter === p.id}
-                className={`rounded-full px-4 py-1.5 text-sm font-medium ${filter === p.id ? "bg-red-600 text-white" : "bg-white text-gray-700 border"}`}
+                className={`rounded-full px-4 py-1.5 text-sm font-medium ${filter === p.id ? "bg-red-700 text-white" : "bg-white text-gray-700 border"}`}
               >
                 {p.name}
               </button>
@@ -136,11 +137,7 @@ export function ReviewsScreen() {
           ) : error ? (
             <div className="p-4 text-center font-semibold text-red-600">Erro: {error}</div>
           ) : filtered.length === 0 ? (
-            <Card className="bg-white/70 backdrop-blur-md shadow-lg">
-              <CardContent className="p-6 text-center italic text-gray-500">
-                {reviews.length === 0 ? "Nenhuma avaliação recebida ainda." : "Nenhuma avaliação para este filtro."}
-              </CardContent>
-            </Card>
+            <Card className="border-slate-200 bg-white py-0 shadow-sm"><EmptyState icon={Star} title={reviews.length === 0 ? "Nenhuma avaliação recebida ainda" : "Nenhuma avaliação para este filtro"} description={reviews.length === 0 ? "As avaliações dos clientes aparecerão aqui." : "Selecione outro filtro para consultar as avaliações."} /></Card>
           ) : (
             filtered.map((review) => (
               <Card key={review.id} className="border-0 bg-white shadow-sm">

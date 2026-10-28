@@ -194,7 +194,7 @@ export function ChatThread({ orderId, participantType, participantLabel, current
               const mine = item.sender_id === currentUserId;
               return (
                 <article key={item.id} className={mine ? 'flex justify-end' : 'flex justify-start'}>
-                  <div className={mine ? 'max-w-[82%] rounded-2xl rounded-br-md bg-red-600 px-4 py-2.5 text-white shadow-sm' : 'max-w-[82%] rounded-2xl rounded-bl-md border bg-white px-4 py-2.5 text-slate-800 shadow-sm'}>
+                  <div className={mine ? 'max-w-[82%] rounded-2xl rounded-br-md bg-red-700 px-4 py-2.5 text-white shadow-sm' : 'max-w-[82%] rounded-2xl rounded-bl-md border bg-white px-4 py-2.5 text-slate-800 shadow-sm'}>
                     {!mine && <p className='mb-1 text-xs font-semibold text-slate-500'>{item.sender_name}</p>}
                     <p className='whitespace-pre-wrap break-words text-sm leading-relaxed'>{item.message}</p>
                     <span className={mine ? 'mt-1 flex items-center justify-end gap-1 text-xs text-white' : 'mt-1 flex justify-end text-xs text-slate-600'}>
@@ -233,7 +233,7 @@ export function ChatThread({ orderId, participantType, participantLabel, current
               aria-label={`Mensagem para ${participantLabel}`}
             />
             <Button type='button' size='icon' disabled={sending || !draft.trim()}
-              onClick={() => void sendMessage()} className='size-11 shrink-0 bg-red-600 hover:bg-red-700' aria-label='Enviar mensagem'>
+              onClick={() => void sendMessage()} className='size-11 shrink-0 bg-red-700 hover:bg-red-800' aria-label='Enviar mensagem'>
               {sending ? <Spinner /> : <Send className='size-4' />}
             </Button>
           </div>

@@ -1,5 +1,7 @@
 "use client"
 
+import { Button } from "@/shared/components/ui/button";
+import { PageHeader } from "@/shared/components/page-header";
 import { toDateInput, isValidDate } from "@/shared/lib/date-time";
 
 import { peekApiData } from "@/shared/lib/query-cache";
@@ -57,7 +59,7 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
   const router = useRouter()
   const { unitId } = useManagedUnits()
   const isEditing = recipeId !== undefined
-  const cachedRecipe = recipeId ? peekApiData<RecipeDetail>(`/recipes/${recipeId}`) : undefined
+  const cachedRecipe = recipeId ? peekApiData<RecipeDetail>(`/recipes/manage/${recipeId}`) : undefined
 
   const [products, setProducts] = useState<Product[]>(() => unitId ? peekApiData<{ data: Product[] }>(`/products/manage?unit_id=${unitId}&limit=200`)?.data ?? [] : [])
   const [loadingRecipe, setLoadingRecipe] = useState(isEditing && !cachedRecipe)
@@ -94,7 +96,7 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
 
   useEffect(() => {
     if (!isEditing) return
-    apiGet(`/recipes/${recipeId}`)
+    apiGet(`/recipes/manage/${recipeId}`)
       .then((recipe: RecipeDetail) => {
         setTitle(recipe.title)
         setDescription(recipe.description ?? "")
@@ -274,30 +276,28 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
 
   if (loadingRecipe) {
     return (
-      <DataSkeleton label="Carregando receita..." />
+      <div className="page-surface"><div className="page-container max-w-5xl"><DataSkeleton variant="form" label="Carregando receita..." /></div></div>
     )
   }
 
   const coverSrc = stagedPreview ?? (imageUrl ? resolveAssetUrl(imageUrl) : null)
 
   return (
-    <div className="page-surface px-4 py-6 sm:px-6">
+    <div className="page-surface">
+      <div className="page-container max-w-5xl">
       <form
         onSubmit={(event) => {
           event.preventDefault()
           void handleSave()
         }}
-        className="mx-auto w-full max-w-5xl rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"
+        className="w-full rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"
       >
         <Link href="/recipes" className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-red-700">
           <ArrowLeft className="size-4" />
           Voltar às receitas
         </Link>
 
-        <h2 className="text-2xl font-bold text-slate-950">
-          {isEditing ? "Editar receita" : "Nova receita"}
-        </h2>
-        <p className="mt-1 mb-6 text-sm text-slate-600">Organize a capa, os ingredientes e o modo de preparo.</p>
+        <div className="mb-6"><PageHeader title={isEditing ? "Editar receita" : "Nova receita"} description="Organize a capa, os ingredientes e o modo de preparo." /></div>
 
         {error && (
           <div className="mb-3 rounded-md bg-red-100 text-red-700 px-3 py-2 text-sm border border-red-300">
@@ -305,9 +305,9 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
           </div>
         )}
 
-        <section className="mb-5 rounded-xl border border-violet-200 bg-violet-50/70 p-4" aria-labelledby="ai-draft-title">
+        <section className="mb-5 rounded-xl border border-[#932215]/20 bg-[#932215]/5 p-4" aria-labelledby="ai-draft-title">
           <div className="flex items-start gap-3">
-            <div className="rounded-lg bg-violet-700 p-2 text-white"><Sparkles className="size-5" /></div>
+            <div className="rounded-lg bg-[#932215] p-2 text-white"><Sparkles className="size-5" /></div>
             <div className="min-w-0 flex-1">
               <h3 id="ai-draft-title" className="font-bold text-slate-950">Rascunho com IA</h3>
               <p className="mt-1 text-sm text-slate-600">
@@ -346,7 +346,7 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
                 {products.map((product) => {
                   const selected = aiProductIds.includes(product.id)
                   return (
-                    <label key={product.id} className={`cursor-pointer rounded-full border px-3 py-1.5 text-xs font-semibold ${selected ? "border-violet-700 bg-violet-700 text-white" : "border-slate-300 bg-white text-slate-700"}`}>
+                    <label key={product.id} className={`cursor-pointer rounded-full border px-3 py-1.5 text-xs font-semibold ${selected ? "border-[#932215] bg-[#932215] text-white" : "border-slate-300 bg-white text-slate-700"}`}>
                       <input
                         type="checkbox"
                         className="sr-only"
@@ -364,17 +364,17 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
             type="button"
             onClick={() => void generateAiDraft()}
             disabled={generatingDraft}
-            className="mt-4 inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-violet-700 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-800 disabled:opacity-60"
+            className="mt-4 inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#932215] px-4 py-2 text-sm font-semibold text-white hover:bg-[#7a1c11] disabled:opacity-60"
           >
             {generatingDraft ? <Spinner /> : <Sparkles className="size-4" />}
             {generatingDraft ? "Gerando..." : "Gerar rascunho"}
           </button>
 
           {aiDraft && (
-            <div className="mt-4 rounded-lg border border-violet-300 bg-white p-4" role="status">
+            <div className="mt-4 rounded-lg border border-[#932215]/30 bg-white p-4" role="status">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wide text-violet-700">Prévia para revisão</p>
+                  <p className="text-xs font-bold uppercase tracking-wide text-[#932215]">Prévia para revisão</p>
                   <h4 className="mt-1 text-lg font-bold text-slate-950">{aiDraft.title}</h4>
                   <p className="mt-1 text-sm text-slate-600">{aiDraft.description}</p>
                   <p className="mt-2 text-xs text-amber-800"><strong>Segurança:</strong> {aiDraft.safety_notice}</p>
@@ -384,7 +384,7 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
                 </div>
                 <div className="flex shrink-0 gap-2">
                   <button type="button" onClick={discardAiDraft} className="min-h-10 rounded-lg border border-slate-300 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Descartar</button>
-                  <button type="button" onClick={applyAiDraft} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-violet-700 px-3 text-sm font-semibold text-white hover:bg-violet-800"><Check className="size-4" />Aplicar</button>
+                  <button type="button" onClick={applyAiDraft} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[#932215] px-3 text-sm font-semibold text-white hover:bg-[#7a1c11]"><Check className="size-4" />Aplicar</button>
                 </div>
               </div>
             </div>
@@ -593,19 +593,14 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
         </fieldset>
 
         <div className="mt-6 flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end">
-          <Link href="/recipes" className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-            Cancelar
-          </Link>
-          <button
-            type="submit"
-            disabled={saving}
-            className="flex min-h-10 items-center justify-center gap-2 rounded-lg bg-red-700 px-8 py-2 font-semibold text-white shadow-sm hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
-          >
+          <Button asChild variant="outline"><Link href="/recipes">Cancelar</Link></Button>
+          <Button type="submit" disabled={saving} className="px-8">
             {saving && <Spinner />}
             {saving ? "Salvando..." : "Salvar receita"}
-          </button>
+          </Button>
         </div>
       </form>
+      </div>
     </div>
   )
 }

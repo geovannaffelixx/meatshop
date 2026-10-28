@@ -13,6 +13,6 @@ export function panel() {
   cy.intercept('GET', 'http://localhost:3001/auth/csrf', { csrf_token: 'test-csrf-token' });
   cy.intercept('GET', 'http://localhost:3001/legal/pending*', { enforced: false, documents: [] });
   cy.intercept('GET', 'http://localhost:3001/notifications*', []);
-  cy.intercept('GET', 'http://localhost:3001/categories*', [{ id: 1, name: 'Carnes', active: true }]);
+  cy.intercept('GET', 'http://localhost:3001/categories/manage*', [{ id: 1, name: 'Carnes', active: true }]);
   cy.intercept('GET', 'http://localhost:3001/products/manage*', page([product]));
 }

@@ -8,9 +8,9 @@ import type { CurrentUser } from "@/shared/hooks/use-current-user";
 import type { PanelContext, PanelMembership, UnitPermission } from "@/shared/auth/panel-access";
 import { isPublicRoute } from "@/shared/auth/route-access";
 import { getRoutePermissions } from '@/shared/auth/route-access';
+import { resolveSelectedUnit, UNIT_STORAGE_KEY, UNIT_USER_STORAGE_KEY, UNIT_SELECTION_ROUTE, unitHomeRoute } from '@/shared/auth/unit-selection';
 import { usePathname, useRouter } from "next/navigation";
 
-const UNIT_STORAGE_KEY = "meatshop:selected-unit-id";
 const LEGACY_USER_STORAGE_KEY = "currentUser";
 type RefreshOptions = {
   signal?: AbortSignal;
@@ -58,13 +58,17 @@ export function PanelAccessProvider({ children }: { children: React.ReactNode })
       setUser(data.user);
       setPanel(nextPanel);
 
-      const stored = Number(localStorage.getItem(UNIT_STORAGE_KEY));
-      const selected = nextPanel.memberships.some((item) => item.unit_id === stored)
-        ? stored
-        : nextPanel.memberships[0]?.unit_id ?? null;
+      const selected = resolveSelectedUnit(nextPanel.memberships, data.user.id,
+        localStorage.getItem(UNIT_STORAGE_KEY), localStorage.getItem(UNIT_USER_STORAGE_KEY));
       setUnitIdState(selected);
       setApiCacheScope(`${data.user.id}:${selected ?? 'none'}`);
-      if (selected) localStorage.setItem(UNIT_STORAGE_KEY, String(selected));
+      if (selected) {
+        localStorage.setItem(UNIT_STORAGE_KEY, String(selected));
+        localStorage.setItem(UNIT_USER_STORAGE_KEY, String(data.user.id));
+      } else {
+        localStorage.removeItem(UNIT_STORAGE_KEY);
+        localStorage.removeItem(UNIT_USER_STORAGE_KEY);
+      }
     } catch (error) {
       if (options.signal?.aborted) return;
 
@@ -127,11 +131,17 @@ export function PanelAccessProvider({ children }: { children: React.ReactNode })
 
   const setUnitId = useCallback((nextUnitId: number) => {
     const membership = panel?.memberships.find((item) => item.unit_id === nextUnitId);
-    if (!membership || nextUnitId === unitId || switchingUnit) return;
-    setSwitchingUnit(membership.unit_name);
+    if (!user || !membership || nextUnitId === unitId || switchingUnit) return;
+    const choosingInitialUnit = pathname === UNIT_SELECTION_ROUTE;
+    if (!choosingInitialUnit) setSwitchingUnit(membership.unit_name);
     resetApiCache(`${user?.id}:${nextUnitId}`);
     localStorage.setItem(UNIT_STORAGE_KEY, String(nextUnitId));
+    localStorage.setItem(UNIT_USER_STORAGE_KEY, String(user.id));
     setUnitIdState(nextUnitId);
+    if (choosingInitialUnit) {
+      router.replace(unitHomeRoute(membership, user?.global_role === 'SUPER_ADMIN'));
+      return;
+    }
     const detail = pathname.match(/^\/(products|orders|recipes)\/(?:\d+|new)$/);
     const required = getRoutePermissions(pathname);
     const allowed = required?.some(permission => permission === 'AUTHENTICATED' ||
@@ -142,7 +152,7 @@ export function PanelAccessProvider({ children }: { children: React.ReactNode })
       setSwitchingUnit(null);
       switchTimer.current = null;
     }, 3000);
-  }, [panel, unitId, user?.id, user?.global_role, switchingUnit, pathname, router]);
+  }, [panel, unitId, user, switchingUnit, pathname, router]);
 
   useEffect(() => () => {
     if (switchTimer.current) clearTimeout(switchTimer.current);

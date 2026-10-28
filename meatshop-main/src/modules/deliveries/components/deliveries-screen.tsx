@@ -1,4 +1,8 @@
 "use client";
+
+import { AssignOrderDialog } from "./assign-order-dialog";
+import { EmptyState } from "@/shared/components/empty-state";
+import { PageHeader } from "@/shared/components/page-header";
 import { formatDateValue } from '@/shared/lib/date-time';
 
 import { DataSkeleton } from "@/shared/components/data-skeleton";
@@ -18,7 +22,6 @@ import {
   ShieldCheck,
   Truck,
   UserRound,
-  UsersRound,
 } from "lucide-react";
 import { io, type Socket } from "socket.io-client";
 import { Button } from "@/shared/components/ui/button";
@@ -41,6 +44,7 @@ import {
 } from "@/shared/lib/api";
 import { toast } from "@/shared/lib/toast";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
+import { DeliveryPeopleTable } from "./delivery-people-table";
 import { DeliveriesMap } from "./deliveries-map";
 import type {
   LiveDeliveriesSnapshot,
@@ -115,14 +119,14 @@ export function DeliveriesScreen() {
 
   const loadPeople = useCallback(
     async (silent = false) => {
-      if (!unitId) return;
+      if (!unitId || tab !== "operation") return;
       const data = (await apiGet(
         `/delivery/units/${unitId}/people`,
         silent ? { silent: true, cache: false } : undefined,
       )) as UnitDeliveryPerson[];
       if (latestUnit.current === unitId) setPeople(data);
     },
-    [unitId],
+    [unitId, tab],
   );
 
   const loadSnapshot = useCallback(
@@ -320,35 +324,25 @@ export function DeliveriesScreen() {
 
   if (accessLoading || loading) {
     return (
-      <DataSkeleton label="Carregando operação de entregas..." />
+      <div className="page-surface"><div className="page-container"><PageHeader eyebrow="Operação logística" title="Entregas ao vivo" /><DataSkeleton label="Carregando operação de entregas..." /></div></div>
     );
   }
 
   if (!unitId || !selectedMembership) {
     return (
-      <div className="p-8 text-center text-slate-600">
-        Selecione uma unidade para acompanhar as entregas.
-      </div>
+      <div className="page-surface"><div className="page-container"><PageHeader eyebrow="Operação logística" title="Entregas ao vivo" /><EmptyState icon={Truck} title="Selecione uma unidade" description="Selecione uma unidade para acompanhar as entregas." /></div></div>
     );
   }
 
   return (
-    <div className="page-surface px-4 py-6 lg:px-8">
-      <div className="mx-auto max-w-[1600px] space-y-6">
-        <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="text-sm font-medium text-red-700">
-              Operação logística
-            </p>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-950">
-              Entregas ao vivo
-            </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              {snapshot?.unit.name} · acompanhe responsáveis, status e última
-              posição.
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
+    <div className="page-surface">
+      <div className="page-container">
+        <PageHeader
+          eyebrow="Operação logística"
+          title="Entregas ao vivo"
+          description={`${snapshot?.unit.name ?? "Unidade selecionada"} · acompanhe responsáveis, status e última posição.`}
+          actions={
+<div className="flex flex-wrap items-center gap-3">
             <span
               className={[
                 "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold",
@@ -364,14 +358,15 @@ export function DeliveriesScreen() {
               <RefreshCw className="mr-2 h-4 w-4" /> Atualizar
             </Button>
           </div>
-        </header>
+          }
+        />
 
         <div className="flex w-fit rounded-xl border bg-white p-1 shadow-sm">
           <button
             type="button"
             onClick={() => setTab("operation")}
             className={`rounded-lg px-4 py-2 text-sm font-semibold ${
-              tab === "operation" ? "bg-slate-950 text-white" : "text-slate-600"
+              tab === "operation" ? "bg-red-700 text-white" : "text-slate-600"
             }`}
           >
             Operação
@@ -380,10 +375,10 @@ export function DeliveriesScreen() {
             type="button"
             onClick={() => setTab("people")}
             className={`rounded-lg px-4 py-2 text-sm font-semibold ${
-              tab === "people" ? "bg-slate-950 text-white" : "text-slate-600"
+              tab === "people" ? "bg-red-700 text-white" : "text-slate-600"
             }`}
           >
-            Entregadores ({people.length})
+            Entregadores
           </button>
         </div>
 
@@ -559,141 +554,9 @@ export function DeliveriesScreen() {
           </>
         )}
 
-        {tab === "people" && (
-          <Card className="overflow-hidden border-0 shadow-sm">
-            <CardContent className="p-0">
-              <div className="flex items-center gap-3 border-b p-5">
-                <UsersRound className="h-5 w-5 text-red-700" />
-                <div>
-                  <h2 className="font-bold text-slate-950">
-                    Entregadores da unidade
-                  </h2>
-                  <p className="text-sm text-slate-500">
-                    Aprove cadastros antes de atribuir pedidos.
-                  </p>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-slate-50 text-slate-600">
-                    <tr>
-                      <th className="p-4">Entregador</th>
-                      <th className="p-4">Perfil</th>
-                      <th className="p-4">Veículo</th>
-                      <th className="p-4">Operação</th>
-                      <th className="p-4 text-right">Ação</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {people.map((person) => (
-                      <tr key={person.membershipId} className="border-t">
-                        <td className="p-4">
-                          <strong>{person.user.name}</strong>
-                          <div className="text-slate-500">
-                            {person.user.email}
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          {person.profileStatus === "ACTIVE"
-                            ? "Aprovado"
-                            : person.profileStatus === "PENDING"
-                              ? "Pendente"
-                              : "Inativo"}
-                        </td>
-                        <td className="p-4">
-                          {person.vehicle
-                            ? `${person.vehicle.model} · ${person.vehicle.plate}`
-                            : person.deliveryPersonId
-                              ? person.profileStatus === "PENDING"
-                                ? "Cadastro inicial"
-                                : "Sem veículo ativo"
-                              : "Não cadastrado"}
-                        </td>
-                        <td className="p-4">
-                          {person.activeOrderId
-                            ? `Pedido #${person.activeOrderId}`
-                            : !person.isOnline
-                              ? "Offline"
-                              : !person.vehicle
-                                ? "Sem veículo ativo"
-                                : "Disponível"}
-                        </td>
-                        <td className="p-4 text-right">
-                          {canManage &&
-                            person.profileStatus === "PENDING" &&
-                            person.deliveryPersonId && (
-                              <Button
-                                size="sm"
-                                disabled={busy}
-                                onClick={() => void approve(person)}
-                              >
-                                Aprovar
-                              </Button>
-                            )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {people.length === 0 && (
-                  <p className="p-8 text-center text-slate-500">
-                    Nenhum entregador vinculado. Cadastre um em Equipe e
-                    acessos.
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {tab === "people" && unitId && <DeliveryPeopleTable key={unitId} unitId={unitId} canManage={canManage} busy={busy} onApprove={approve} />}
 
-        <Dialog
-          open={Boolean(assigningOrder)}
-          onOpenChange={(open) => !open && setAssigningOrder(null)}
-        >
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>
-                Atribuir pedido #{assigningOrder?.orderId}
-              </DialogTitle>
-              <DialogDescription>
-                O entregador receberá um código exclusivo para apresentar na
-                retirada.
-              </DialogDescription>
-            </DialogHeader>
-            <select
-              aria-label="Entregador"
-              value={deliveryPersonId}
-              onChange={(event) => setDeliveryPersonId(event.target.value)}
-              className="w-full rounded-md border px-3 py-2"
-            >
-              <option value="">Selecione um entregador disponível</option>
-              {availablePeople.map((person) => (
-                <option
-                  key={person.deliveryPersonId}
-                  value={person.deliveryPersonId ?? ""}
-                >
-                  {person.user.name}
-                </option>
-              ))}
-            </select>
-            {availablePeople.length === 0 && (
-              <p className="text-sm text-amber-700">
-                Não há entregadores aprovados e disponíveis.
-              </p>
-            )}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setAssigningOrder(null)}>
-                Cancelar
-              </Button>
-              <Button
-                disabled={busy || !deliveryPersonId}
-                onClick={() => void assign()}
-              >
-                {busy ? "Atribuindo..." : "Atribuir"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <AssignOrderDialog orderId={assigningOrder?.orderId} people={availablePeople} selectedId={deliveryPersonId} onSelect={setDeliveryPersonId} busy={busy} onClose={() => setAssigningOrder(null)} onAssign={() => void assign()} />
 
         <Dialog
           open={Boolean(verifyingOrder)}

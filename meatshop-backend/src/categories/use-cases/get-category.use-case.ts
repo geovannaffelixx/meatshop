@@ -10,9 +10,9 @@ export class GetCategoryUseCase {
     private readonly categoryRepository: Repository<Category>,
   ) {}
 
-  async execute(categoryId: number): Promise<Category> {
+  async execute(categoryId: number, publicOnly = false): Promise<Category> {
     const category = await this.categoryRepository.findOne({
-      where: { id: categoryId },
+      where: { id: categoryId, ...(publicOnly ? { active: true, unit: { is_active: true } } : {}) },
     });
 
     if (!category) {

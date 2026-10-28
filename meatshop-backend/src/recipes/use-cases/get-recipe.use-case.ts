@@ -20,9 +20,9 @@ export class GetRecipeUseCase {
     private readonly recipeProductRepository: Repository<RecipeProduct>,
   ) {}
 
-  async execute(recipeId: number): Promise<RecipeDetailResponseDto> {
+  async execute(recipeId: number, publicOnly = false): Promise<RecipeDetailResponseDto> {
     const recipe = await this.recipeRepository.findOne({
-      where: { id: recipeId },
+      where: { id: recipeId, ...(publicOnly ? { active: true, unit: { is_active: true } } : {}) },
     });
     if (!recipe) {
       throw new NotFoundException('Recipe not found');

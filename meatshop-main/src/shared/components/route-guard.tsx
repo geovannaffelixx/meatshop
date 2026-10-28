@@ -8,6 +8,7 @@ import {
 } from "@/shared/auth/route-access";
 import { LoadingOverlay } from "@/shared/components/loading-overlay";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
+import { UNIT_SELECTION_ROUTE } from '@/shared/auth/unit-selection';
 
 type RouteGuardProps = {
   children: React.ReactNode;
@@ -29,6 +30,7 @@ export function RouteGuard({ children }: RouteGuardProps) {
   const redirectTo = useMemo(() => {
     if (publicRoute || !initialized || loading) return null;
     if (!user) return "/login";
+    if (pathname !== UNIT_SELECTION_ROUTE && panel?.can_access && panel.memberships.length > 1 && !selectedMembership) return UNIT_SELECTION_ROUTE;
 
     const requiredPermissions = getRoutePermissions(pathname);
 
@@ -48,9 +50,10 @@ export function RouteGuard({ children }: RouteGuardProps) {
     initialized,
     loading,
     panel?.can_access,
+    panel?.memberships.length,
     pathname,
     publicRoute,
-    selectedMembership?.permissions,
+    selectedMembership,
     user,
   ]);
 

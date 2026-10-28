@@ -33,4 +33,9 @@ describe('server-side session guard', () => {
   it('does not trust a missing SameSite cookie on cross-site navigations', () => {
     expect(shouldRedirectToLogin({ ...sameHost, fetchSite: 'cross-site' })).toBe(false);
   });
+  it('protects private pages when API requests use the same-origin proxy', () => {
+    expect(shouldRedirectToLogin({ ...sameHost, apiUrl: '/api' })).toBe(true);
+    expect(shouldRedirectToLogin({ ...sameHost, apiUrl: '/api', hasSessionCookie: true })).toBe(false);
+    expect(shouldRedirectToLogin({ ...sameHost, apiUrl: '//other.example/api' })).toBe(false);
+  });
 });
