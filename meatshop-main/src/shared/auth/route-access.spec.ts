@@ -2,10 +2,12 @@ import { getRoutePermissions, isPublicRoute } from './route-access';
 import { unitPermissions } from './panel-access';
 
 describe('route access', () => {
-  it('keeps authentication routes public, including nested paths', () => {
+  it('keeps only the declared authentication routes public', () => {
     expect(isPublicRoute('/payment-return')).toBe(true);
     expect(isPublicRoute('/login')).toBe(true);
-    expect(isPublicRoute('/reset-password/token')).toBe(true);
+    expect(isPublicRoute('/reset-password/token')).toBe(false);
+    expect(isPublicRoute('/login/private')).toBe(false);
+    expect(isPublicRoute('/login/')).toBe(true);
     expect(isPublicRoute('/dashboard')).toBe(false);
   });
 

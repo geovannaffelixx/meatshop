@@ -15,9 +15,15 @@ export class ListCategoriesUseCase {
     private readonly categoryRepository: Repository<Category>,
   ) {}
 
-  async execute(unitId?: number, active?: boolean, filters?: PanelListQueryDto) {
+  async execute(
+    unitId?: number,
+    active?: boolean,
+    filters?: PanelListQueryDto,
+    publicOnly = false,
+  ) {
     if (filters?.paginated === 'true') {
       const query = this.categoryRepository.createQueryBuilder('category');
+      if (publicOnly) query.innerJoin('category.unit', 'unit').andWhere('unit.is_active = true');
       if (unitId) query.andWhere('category.unit_id = :unitId', { unitId });
       if (active !== undefined) query.andWhere('category.active = :active', { active });
       if (filters.search?.trim())
@@ -32,6 +38,7 @@ export class ListCategoriesUseCase {
       return paginatedResult(data, total, filters);
     }
     const where: Record<string, unknown> = {};
+    if (publicOnly) where.unit = { is_active: true };
     if (unitId) where.unit_id = unitId;
     if (active !== undefined) where.active = active;
     return this.categoryRepository.find({

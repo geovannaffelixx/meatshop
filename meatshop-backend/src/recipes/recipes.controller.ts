@@ -1,5 +1,6 @@
 import {
   Body,
+  BadRequestException,
   Controller,
   Delete,
   Get,
@@ -22,6 +23,8 @@ import { CreateRecipeUseCase } from './use-cases/create-recipe.use-case';
 import { DeleteRecipeUseCase } from './use-cases/delete-recipe.use-case';
 import { GetRecipeUseCase } from './use-cases/get-recipe.use-case';
 import { ListRecipesUseCase } from './use-cases/list-recipes.use-case';
+import { UnitAuthorizationService } from '../units/services/unit-authorization.service';
+import { UnitPermission } from '../common/enums/unit-permission.enum';
 import { UpdateRecipeUseCase } from './use-cases/update-recipe.use-case';
 
 @ApiTags('Recipes')
@@ -33,6 +36,7 @@ export class RecipesController {
     private readonly deleteRecipeUseCase: DeleteRecipeUseCase,
     private readonly getRecipeUseCase: GetRecipeUseCase,
     private readonly listRecipesUseCase: ListRecipesUseCase,
+    private readonly authorization: UnitAuthorizationService,
   ) {}
 
   @Public()
@@ -45,7 +49,29 @@ export class RecipesController {
   })
   @Get()
   list(@Query() filters: FilterRecipesDto) {
+    return this.listRecipesUseCase.execute({ ...filters, active: 'true' }, true);
+  }
+
+  @Get('manage')
+  async manage(@Query() filters: FilterRecipesDto, @CurrentUser() user: User) {
+    if (!filters.unit_id) throw new BadRequestException('Choose a unit');
+    await this.authorization.assertHasPermission(
+      user,
+      filters.unit_id,
+      UnitPermission.MANAGE_PRODUCTS,
+    );
     return this.listRecipesUseCase.execute(filters);
+  }
+
+  @Get('manage/:id')
+  async manageOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: User) {
+    const recipe = await this.getRecipeUseCase.execute(id);
+    await this.authorization.assertHasPermission(
+      user,
+      recipe.unit_id,
+      UnitPermission.MANAGE_PRODUCTS,
+    );
+    return recipe;
   }
 
   @Public()
@@ -56,7 +82,7 @@ export class RecipesController {
   @ApiResponse({ status: 404, description: 'Recipe not found' })
   @Get(':id')
   getOne(@Param('id', ParseIntPipe) id: number) {
-    return this.getRecipeUseCase.execute(id);
+    return this.getRecipeUseCase.execute(id, true);
   }
 
   @ApiBearerAuth('access-token')

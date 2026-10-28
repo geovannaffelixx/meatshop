@@ -59,7 +59,7 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
   const router = useRouter()
   const { unitId } = useManagedUnits()
   const isEditing = recipeId !== undefined
-  const cachedRecipe = recipeId ? peekApiData<RecipeDetail>(`/recipes/${recipeId}`) : undefined
+  const cachedRecipe = recipeId ? peekApiData<RecipeDetail>(`/recipes/manage/${recipeId}`) : undefined
 
   const [products, setProducts] = useState<Product[]>(() => unitId ? peekApiData<{ data: Product[] }>(`/products/manage?unit_id=${unitId}&limit=200`)?.data ?? [] : [])
   const [loadingRecipe, setLoadingRecipe] = useState(isEditing && !cachedRecipe)
@@ -96,7 +96,7 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
 
   useEffect(() => {
     if (!isEditing) return
-    apiGet(`/recipes/${recipeId}`)
+    apiGet(`/recipes/manage/${recipeId}`)
       .then((recipe: RecipeDetail) => {
         setTitle(recipe.title)
         setDescription(recipe.description ?? "")

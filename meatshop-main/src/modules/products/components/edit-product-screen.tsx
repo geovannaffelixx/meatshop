@@ -44,7 +44,7 @@ export function EditProductScreen() {
   const cached = peekApiData<{ product: Product; stock: Stock | null; images?: ProductImage[] }>(`/products/manage/${productId}`);
   const [product, setProduct] = useState<Product | null>(() => cached?.product ?? null)
   const [stock, setStock] = useState<Stock>(() => cached?.stock ?? { quantity: 0, min_quantity: 0 })
-  const [categories, setCategories] = useState<Category[]>(() => cached ? peekApiData<Category[]>(`/categories?unit_id=${cached.product.unit_id}`) ?? [] : [])
+  const [categories, setCategories] = useState<Category[]>(() => cached ? peekApiData<Category[]>(`/categories/manage?unit_id=${cached.product.unit_id}`) ?? [] : [])
   const [images, setImages] = useState<ProductImage[]>(() => cached?.images ?? [])
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -58,7 +58,7 @@ export function EditProductScreen() {
         setProduct(res.product)
         setStock(res.stock ?? { quantity: 0, min_quantity: 0 })
         setImages(res.images ?? [])
-        return apiGet(`/categories?unit_id=${res.product.unit_id}`)
+        return apiGet(`/categories/manage?unit_id=${res.product.unit_id}`)
       })
       .then((cats) => setCategories(cats ?? []))
       .catch((err) => setError(err.message))

@@ -53,7 +53,7 @@ export function RecipesScreen() {
   const { units, unitId, loading: unitsLoading } = useManagedUnits()
 
   const [search, setSearch] = useState('');
-  const query = useServerList<Recipe>(unitId ? `/recipes?unit_id=${unitId}` : null, search);
+  const query = useServerList<Recipe>(unitId ? `/recipes/manage?unit_id=${unitId}` : null, search);
   const recipes = query.rows;
   const loading = query.isPending;
   const error = query.error?.message;

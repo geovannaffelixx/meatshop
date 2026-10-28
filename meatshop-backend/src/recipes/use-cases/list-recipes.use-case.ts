@@ -13,9 +13,10 @@ export class ListRecipesUseCase {
     private readonly recipeRepository: Repository<Recipe>,
   ) {}
 
-  async execute(filters: FilterRecipesDto) {
+  async execute(filters: FilterRecipesDto, publicOnly = false) {
     if (filters.paginated === 'true') {
       const query = this.recipeRepository.createQueryBuilder('recipe');
+      if (publicOnly) query.innerJoin('recipe.unit', 'unit').andWhere('unit.is_active = true');
       if (filters.unit_id) query.andWhere('recipe.unit_id = :unitId', { unitId: filters.unit_id });
       if (filters.tag) query.andWhere('recipe.tag = :tag', { tag: filters.tag });
       if (filters.active !== undefined)
@@ -39,6 +40,7 @@ export class ListRecipesUseCase {
       );
     }
     const where: Record<string, unknown> = {};
+    if (publicOnly) where.unit = { is_active: true };
     if (filters.unit_id) where.unit_id = filters.unit_id;
     if (filters.tag) where.tag = filters.tag;
     if (filters.active !== undefined) where.active = filters.active === 'true';

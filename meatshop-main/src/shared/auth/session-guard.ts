@@ -12,6 +12,7 @@ export type SessionGuardInput = {
 };
 
 function sessionCookiesAreVisible(apiUrl: string, requestHostname: string) {
+  if (apiUrl.startsWith('/') && !apiUrl.startsWith('//')) return true;
   try {
     return new URL(apiUrl).hostname === requestHostname;
   } catch {

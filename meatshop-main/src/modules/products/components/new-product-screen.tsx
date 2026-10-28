@@ -22,7 +22,7 @@ export function NewProductScreen() {
   const router = useRouter()
   const { unitId } = useManagedUnits()
 
-  const categoriesQuery = useApiQuery<Category[]>(unitId ? `/categories?unit_id=${unitId}` : null);
+  const categoriesQuery = useApiQuery<Category[]>(unitId ? `/categories/manage?unit_id=${unitId}` : null);
   const categories = categoriesQuery.data ?? [];
   const [form, setForm] = useState({
     name: "",

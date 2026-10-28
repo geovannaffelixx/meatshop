@@ -4,11 +4,11 @@ import { panel, page } from '../fixtures/panel';
 describe('Catalog form dialogs', () => {
   beforeEach(() => {
     panel();
-    cy.intercept('GET', 'http://localhost:3001/categories*', page([]));
+    cy.intercept('GET', 'http://localhost:3001/categories/manage*', page([]));
   });
 
   it('creates a category through its labelled form', () => {
-    cy.intercept('GET', 'http://localhost:3001/categories*', page([]));
+    cy.intercept('GET', 'http://localhost:3001/categories/manage*', page([]));
     cy.intercept('POST', 'http://localhost:3001/categories', req => {
       expect(req.body).to.include({ name: 'Cortes especiais', unit_id: 1, active: true });
       req.reply({ id: 2, ...req.body });

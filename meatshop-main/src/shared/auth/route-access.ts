@@ -36,7 +36,7 @@ export const routePermissions = {
   "/notifications": [unitPermissions.viewDashboard],
   "/settings/account": ["AUTHENTICATED"],
   "/settings/legal": ["AUTHENTICATED"],
-  "/settings/security": [unitPermissions.viewDashboard],
+  "/settings/security": ["AUTHENTICATED"],
   "/settings/unit": [unitPermissions.manageUnit],
   "/settings/users": [unitPermissions.manageMembers],
   "/settings/profile": [unitPermissions.manageUnit],
@@ -48,7 +48,8 @@ function matchesRoute(pathname: string, route: string) {
 }
 
 export function isPublicRoute(pathname: string) {
-  return publicRoutes.some((route) => matchesRoute(pathname, route));
+  const normalized = pathname.replace(/\/+$/, '') || '/';
+  return publicRoutes.some((route) => normalized === route);
 }
 
 export function getRoutePermissions(

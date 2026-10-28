@@ -30,7 +30,7 @@ export function CategoriesScreen() {
   const { units, unitId, loading: unitsLoading } = useManagedUnits();
 
   const [search, setSearch] = useState("");
-  const query = useServerList<Category>(unitId ? `/categories?unit_id=${unitId}` : null, search);
+  const query = useServerList<Category>(unitId ? `/categories/manage?unit_id=${unitId}` : null, search);
   const pagination = query.pagination;
   const loading = query.isPending;
   const [actionError, setError] = useState<string | null>(null);
