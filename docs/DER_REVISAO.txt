@@ -1,0 +1,1102 @@
+# Revisão do DER — MeatShop 3.2.0
+
+Conferência das entidades, migrations, persistência utilizada pelos clientes e schema PostgreSQL local atualizado em 18/10/2026. O banco possui 55 tabelas de aplicação; o desenho enviado declara 30 delas. Faltam 25 entidades. A tabela técnica migrations foi excluída do DER de negócio.
+
+## Como aplicar
+
+Opção recomendada: substituir o conteúdo do diagrama pelo arquivo DER_ATUALIZADO.mmd. Ele contém todas as entidades e todas as FKs atuais.
+
+Para editar o original: (1) inserir as entidades novas abaixo antes da primeira relação User||--o{UserUnit; (2) substituir integralmente cada entidade existente listada na seção seguinte; (3) substituir todas as relações antigas pelas relações finais deste documento. Não acrescentar as relações finais mantendo as antigas, pois há cardinalidades divergentes.
+
+## Entidades novas
+
+Os nomes das entidades são rótulos do diagrama; a tabela física correspondente está indicada em cada título. Os atributos mantêm exatamente os nomes das colunas do banco.
+
+### AiConversation — ai_conversations
+
+```mermaid
+    AiConversation {
+        uuid id PK
+        int user_id FK
+        datetime created_at "com fuso horario"
+        datetime expires_at "com fuso horario"
+    }
+```
+
+### AiMessage — ai_messages
+
+```mermaid
+    AiMessage {
+        bigint id PK
+        uuid conversation_id FK
+        string role
+        text content
+        datetime created_at "com fuso horario"
+    }
+```
+
+### AiRateLimit — ai_rate_limits
+
+```mermaid
+    AiRateLimit {
+        int user_id PK,FK
+        datetime window_started_at "com fuso horario"
+        int request_count
+        datetime updated_at "com fuso horario"
+    }
+```
+
+### CouponRedemption — coupon_redemptions
+
+```mermaid
+    CouponRedemption {
+        int id PK
+        int coupon_id FK
+        int user_id FK
+        int order_id FK,UK
+        int unit_id FK
+        decimal discount_amount
+        string status "REDEEMED | RELEASED"
+        datetime redeemed_at
+        datetime released_at "opcional"
+    }
+```
+
+### CouponUnit — coupon_units
+
+```mermaid
+    CouponUnit {
+        int coupon_id PK,FK
+        int unit_id PK,FK
+    }
+```
+
+### DeliveryGoal — delivery_goals
+
+```mermaid
+    DeliveryGoal {
+        int id PK
+        int delivery_person_id FK
+        string period "daily | weekly | monthly"
+        decimal target
+        datetime updated_at
+    }
+```
+
+### DeliveryOfferRejection — delivery_offer_rejections
+
+```mermaid
+    DeliveryOfferRejection {
+        int id PK
+        int delivery_person_id FK
+        int order_id FK
+        jsonb reasons
+        datetime created_at
+    }
+```
+
+### DeliverySettlement — delivery_settlements
+
+```mermaid
+    DeliverySettlement {
+        int order_id PK,FK
+        int delivery_person_id FK
+        int actor_id FK
+        decimal amount
+        string reference
+        datetime paid_at "com fuso horario"
+    }
+```
+
+### Expense — expenses
+
+```mermaid
+    Expense {
+        int id PK
+        string supplierName
+        text type
+        decimal amount
+        decimal discount
+        decimal paidAmount
+        text postedAt "opcional"
+        text paidAt "opcional"
+        text paymentMethod
+        text notes "opcional"
+        text cpfCnpj "opcional"
+        text supplierId "opcional"
+        datetime createdAt
+        datetime updatedAt
+        int unit_id FK
+    }
+```
+
+### LegalAcceptance — legal_acceptances
+
+```mermaid
+    LegalAcceptance {
+        int id PK
+        int user_id FK
+        int document_id FK
+        int unit_id FK "opcional"
+        string channel
+        boolean authorized_representative
+        datetime accepted_at "com fuso horario"
+    }
+```
+
+### LegalDocument — legal_documents
+
+```mermaid
+    LegalDocument {
+        int id PK
+        string kind
+        string version
+        string title
+        text content
+        string content_hash
+        datetime published_at "com fuso horario"
+        boolean is_current
+    }
+```
+
+### PaymentManualEvent — payment_manual_events
+
+```mermaid
+    PaymentManualEvent {
+        uuid id PK
+        int order_id FK
+        int actor_id FK
+        string kind
+        decimal amount
+        string reference
+        datetime created_at "com fuso horario"
+    }
+```
+
+### PaymentNotification — payment_notifications
+
+```mermaid
+    PaymentNotification {
+        int id PK
+        int order_id FK
+        string status
+        datetime sent_at "opcional; com fuso horario"
+        datetime next_attempt_at "com fuso horario"
+        datetime created_at "com fuso horario"
+    }
+```
+
+### PaymentOAuthState — payment_oauth_states
+
+```mermaid
+    PaymentOAuthState {
+        string state_hash PK
+        int unit_id FK
+        int user_id FK
+        text verifier
+        datetime expires_at "com fuso horario"
+    }
+```
+
+### PaymentRefundAttempt — payment_refund_attempts
+
+```mermaid
+    PaymentRefundAttempt {
+        bigint id PK
+        uuid refund_id FK
+        uuid attempt_key
+        string provider_id "opcional"
+        string status
+        int actor_id FK "opcional"
+        datetime created_at "com fuso horario"
+    }
+```
+
+### PaymentRefund — payment_refunds
+
+```mermaid
+    PaymentRefund {
+        uuid id PK
+        string payment_id
+        int unit_id FK
+        int order_id FK "opcional"
+        decimal amount
+        string status
+        string reason
+        int requested_by "opcional"
+        string provider_id "opcional"
+        int attempts
+        datetime next_attempt_at "com fuso horario"
+        string last_error "opcional"
+        datetime created_at "com fuso horario"
+        datetime updated_at "com fuso horario"
+        uuid attempt_key
+        int retry_requested_by FK "opcional"
+    }
+```
+
+### PaymentSellerEvent — payment_seller_events
+
+```mermaid
+    PaymentSellerEvent {
+        bigint id PK
+        int unit_id FK
+        int actor_id FK "opcional"
+        string kind
+        string collector_id "opcional"
+        datetime created_at "com fuso horario"
+    }
+```
+
+### PaymentSeller — payment_sellers
+
+```mermaid
+    PaymentSeller {
+        int unit_id PK,FK
+        string collector_id
+        text access_token
+        text refresh_token
+        datetime expires_at "com fuso horario"
+        boolean enabled
+        string last_error "opcional"
+        datetime updated_at "com fuso horario"
+    }
+```
+
+### PaymentTransaction — payment_transactions
+
+```mermaid
+    PaymentTransaction {
+        string id PK
+        int unit_id FK
+        string reference
+        string status
+        decimal amount
+        decimal refunded_amount
+        datetime provider_updated_at "opcional; com fuso horario"
+        datetime updated_at "com fuso horario"
+    }
+```
+
+### ProductImage — product_images
+
+```mermaid
+    ProductImage {
+        int id PK
+        int product_id FK
+        string image_url
+        datetime created_at
+    }
+```
+
+### RefreshToken — refresh_tokens
+
+```mermaid
+    RefreshToken {
+        int id PK
+        text token_hash
+        int user_id FK
+        boolean revoked
+        datetime expires_at
+        datetime created_at
+    }
+```
+
+### Sale — sales
+
+```mermaid
+    Sale {
+        int id PK
+        string name
+        string image_url
+        decimal discountValue
+        boolean active
+        datetime starts_at "opcional"
+        datetime ends_at "opcional"
+        datetime created_at
+        datetime updated_at
+    }
+```
+
+### SupportAttachment — support_attachments
+
+```mermaid
+    SupportAttachment {
+        int id PK
+        int message_id FK
+        string file_url
+        string original_name
+        string mime_type
+        int size_bytes
+        datetime created_at
+    }
+```
+
+### SupportMessage — support_messages
+
+```mermaid
+    SupportMessage {
+        int id PK
+        int ticket_id FK
+        int sender_id FK
+        text message "opcional"
+        datetime created_at
+    }
+```
+
+### UserDeviceToken — user_device_tokens
+
+```mermaid
+    UserDeviceToken {
+        int id PK
+        int user_id FK
+        string fcm_token UK
+        string platform
+        datetime created_at
+        datetime last_seen_at
+        string app_version "opcional"
+    }
+```
+
+## Entidades existentes: blocos completos para substituição
+
+Também foram atualizados tipos, enumerações, nulabilidade e chaves nas entidades sem novos campos. Substituir cada bloco completo evita manter detalhes antigos.
+
+### Address — addresses
+
+Campos ausentes no original: `coordinate_source`, `latitude`, `longitude`.
+
+```mermaid
+    Address {
+        int id PK
+        int user_id FK
+        string street
+        string number
+        string complement "opcional"
+        string neighborhood
+        string city
+        string state
+        string zip_code
+        string label "Casa | Trabalho | Outro"
+        boolean is_default
+        decimal latitude "opcional"
+        decimal longitude "opcional"
+        string coordinate_source
+    }
+```
+
+### AuditLog — audit_logs
+
+Campos ausentes no original: `actor_identifier`, `actor_type`, `correlation_id`, `description`, `ip_address`, `method`, `outcome`, `path`, `status_code`, `unit_id`, `user_agent`.
+
+```mermaid
+    AuditLog {
+        int id PK
+        int user_id FK "opcional"
+        string action
+        string entity
+        string entity_id "opcional"
+        text old_data "opcional"
+        text new_data "opcional"
+        datetime created_at
+        int unit_id FK "opcional"
+        string actor_type
+        string actor_identifier "opcional"
+        string description
+        string outcome "SUCCESS | FAILURE"
+        string method "opcional"
+        string path "opcional"
+        string correlation_id "opcional"
+        string ip_address "opcional"
+        string user_agent "opcional"
+        int status_code "opcional"
+    }
+```
+
+### BusinessHours — business_hours
+
+```mermaid
+    BusinessHours {
+        int id PK
+        int unit_id FK
+        string weekday "SUNDAY | MONDAY | TUESDAY | WEDNESDAY | THURSDAY | FRIDAY | SATURDAY"
+        time opening_time "opcional"
+        time closing_time "opcional"
+        boolean is_open
+    }
+```
+
+### Cart — cart
+
+```mermaid
+    Cart {
+        int id PK
+        int user_id FK,UK
+        datetime created_at
+    }
+```
+
+### CartItem — cart_items
+
+```mermaid
+    CartItem {
+        int id PK
+        int cart_id FK
+        int product_id FK
+        decimal quantity
+        decimal unit_price
+    }
+```
+
+### Category — categories
+
+```mermaid
+    Category {
+        int id PK
+        string name
+        string description "opcional"
+        boolean active
+        int unit_id FK
+    }
+```
+
+### Chat — chat_messages
+
+Campos ausentes no original: `read_at`.
+
+```mermaid
+    Chat {
+        int id PK
+        int order_id FK
+        int sender_id FK
+        int receiver_id FK
+        string participant_type "UNIT | DELIVERY_PERSON | UNIT_DELIVERY_PERSON"
+        text message
+        datetime sent_at
+        datetime read_at "opcional"
+    }
+```
+
+### Coupon — coupons
+
+Campos ausentes no original: `created_by`, `current_usage_count`, `description`, `discount_amount`, `discount_type`, `maximum_discount`, `minimum_order_value`, `name`, `starts_at`, `total_usage_limit`, `type`, `unit_id`, `updated_at`, `usage_limit_per_user`.
+
+Remover campos inexistentes: `discount_percentage`, `discount_value`.
+
+```mermaid
+    Coupon {
+        int id PK
+        string code UK
+        datetime expires_at
+        boolean active
+        datetime created_at
+        string name
+        text description "opcional"
+        string type "PLATFORM | UNIT"
+        int unit_id FK "opcional"
+        string discount_type "PERCENTAGE | FIXED"
+        decimal discount_amount
+        decimal maximum_discount "opcional"
+        decimal minimum_order_value
+        datetime starts_at
+        int total_usage_limit "opcional"
+        int usage_limit_per_user "opcional"
+        int current_usage_count
+        int created_by FK
+        datetime updated_at
+    }
+```
+
+### DeliveryPerson — delivery_persons
+
+Campos ausentes no original: `affiliation_type`, `availability_updated_at`, `is_online`.
+
+```mermaid
+    DeliveryPerson {
+        int id PK
+        int user_id FK,UK
+        string vehicle "MOTORCYCLE | BIKE | CAR | ON_FOOT"
+        string status "PENDING | ACTIVE | INACTIVE"
+        decimal average_rating "opcional"
+        datetime created_at
+        boolean is_online
+        datetime availability_updated_at "opcional"
+        string affiliation_type "AUTONOMOUS | UNIT"
+    }
+```
+
+### DeliveryReview — delivery_reviews
+
+```mermaid
+    DeliveryReview {
+        int id PK
+        int order_id FK,UK
+        int client_id FK
+        int delivery_person_id FK
+        int rating
+        text comment "opcional"
+        datetime created_at
+    }
+```
+
+### DeliveryTracking — delivery_tracking
+
+Campos ausentes no original: `accuracy`, `captured_at`, `delivery_person_id`, `sample_id`.
+
+```mermaid
+    DeliveryTracking {
+        int id PK
+        int order_id FK
+        decimal latitude
+        decimal longitude
+        datetime created_at
+        decimal accuracy "opcional"
+        int delivery_person_id "opcional"
+        uuid sample_id "opcional"
+        datetime captured_at "opcional; com fuso horario"
+    }
+```
+
+### Notification — notifications
+
+Campos ausentes no original: `action_url`, `title`, `unit_id`.
+
+```mermaid
+    Notification {
+        int id PK
+        int user_id FK
+        text message
+        string type "ORDER | DELIVERY | PROMOTION | SYSTEM"
+        boolean read
+        datetime created_at
+        int unit_id FK "opcional"
+        string title
+        string action_url "opcional"
+    }
+```
+
+### OrderItem — order_items
+
+Campos ausentes no original: `product_snapshot`.
+
+```mermaid
+    OrderItem {
+        int id PK
+        int order_id FK
+        int product_id FK
+        decimal quantity
+        decimal unit_price
+        jsonb product_snapshot "opcional"
+    }
+```
+
+### OrderStatusHistory — order_status_history
+
+```mermaid
+    OrderStatusHistory {
+        int id PK
+        int order_id FK
+        int updated_by FK "opcional"
+        string status "PENDING | CONFIRMED | PREPARING | READY | OUT_FOR_DELIVERY | DELIVERED | CANCELLED"
+        datetime created_at
+    }
+```
+
+### Order — orders
+
+Campos ausentes no original: `change_for`, `checkout_id`, `checkout_request_hash`, `delivery_code_attempts`, `delivery_code_ciphertext`, `delivery_code_expires_at`, `delivery_code_hash`, `delivery_code_locked_until`, `delivery_verified_at`, `destination_snapshot`, `payment_due_at`, `pickup_code_attempts`, `pickup_code_expires_at`, `pickup_code_hash`, `pickup_code_locked_until`, `pickup_verified_at`, `tracking_consent_at`, `tracking_consent_user_id`, `tracking_revoked_at`, `tracking_session_id`, `updated_at`.
+
+```mermaid
+    Order {
+        int id PK
+        int client_id FK
+        int unit_id FK
+        int delivery_person_id FK "opcional"
+        datetime order_date
+        string status "PENDING | CONFIRMED | PREPARING | READY | OUT_FOR_DELIVERY | DELIVERED | CANCELLED"
+        string delivery_status "opcional; WAITING_DELIVERY_PERSON | PICKUP | ON_THE_WAY | DELIVERED"
+        string delivery_step "opcional; PICKUP | DELIVERING"
+        decimal total_amount
+        decimal subtotal
+        decimal discount_amount
+        decimal delivery_fee
+        text cancellation_reason "opcional"
+        datetime cancelled_at "opcional"
+        string cancelled_by "opcional; CLIENT | UNIT | SYSTEM"
+        int address_id FK "opcional"
+        int coupon_id FK "opcional"
+        datetime scheduled_delivery_date "opcional"
+        boolean is_scheduled
+        string delivery_type "DELIVERY | PICKUP"
+        string payment_status "PENDING | PAID | REJECTED | REFUNDED | CANCELLED | PARTIALLY_REFUNDED | CHARGED_BACK"
+        datetime updated_at
+        string pickup_code_hash "opcional"
+        string delivery_code_hash "opcional"
+        datetime pickup_code_expires_at "opcional"
+        datetime delivery_code_expires_at "opcional"
+        int pickup_code_attempts
+        int delivery_code_attempts
+        datetime pickup_code_locked_until "opcional"
+        datetime delivery_code_locked_until "opcional"
+        datetime pickup_verified_at "opcional"
+        datetime delivery_verified_at "opcional"
+        uuid checkout_id "opcional"
+        string delivery_code_ciphertext "opcional"
+        jsonb destination_snapshot "opcional"
+        uuid tracking_session_id "opcional"
+        int tracking_consent_user_id "opcional"
+        datetime tracking_consent_at "opcional; com fuso horario"
+        datetime tracking_revoked_at "opcional; com fuso horario"
+        datetime payment_due_at "opcional; com fuso horario"
+        decimal change_for "opcional"
+        string checkout_request_hash "opcional"
+    }
+```
+
+### Payment — payments
+
+Campos ausentes no original: `created_at`, `fee_amount`, `mp_checkout_url`, `mp_last_event_at`, `mp_preference_id`, `mp_status_detail`, `payment_reference`, `receipt_reference`, `received_by`, `reconcile_after`, `refund_status`, `refunded_amount`, `updated_at`.
+
+```mermaid
+    Payment {
+        int id PK
+        int order_id FK,UK
+        string method "opcional; Pix | Credit | Debit | Cash | Bank Slip | Mercado Pago Balance | Card on Delivery"
+        string status "PENDING | PAID | REJECTED | REFUNDED | CANCELLED | PARTIALLY_REFUNDED | CHARGED_BACK"
+        datetime payment_date "opcional; com fuso horario"
+        string transaction_id "opcional"
+        string mp_preference_id "opcional"
+        string mp_status_detail "opcional"
+        datetime mp_last_event_at "opcional"
+        datetime created_at
+        datetime updated_at
+        string mp_checkout_url "opcional"
+        decimal refunded_amount
+        decimal fee_amount
+        string refund_status "opcional"
+        datetime reconcile_after "com fuso horario"
+        int received_by "opcional"
+        string receipt_reference "opcional"
+        string payment_reference "opcional"
+    }
+```
+
+### Product — products
+
+```mermaid
+    Product {
+        int id PK
+        string name
+        text description "opcional"
+        decimal price
+        string unit_of_measure
+        boolean active
+        int unit_id FK
+        int category_id FK
+        string brand "opcional"
+        string image_url "opcional"
+    }
+```
+
+### Promotion — promotions
+
+Campos ausentes no original: `created_by`.
+
+```mermaid
+    Promotion {
+        int id PK
+        int unit_id FK
+        int product_id FK
+        string title
+        text description "opcional"
+        decimal discount_percentage "opcional"
+        decimal promotional_price "opcional"
+        datetime starts_at
+        datetime ends_at
+        boolean active
+        datetime created_at
+        int created_by FK
+    }
+```
+
+### RecipeIngredient — recipe_ingredients
+
+```mermaid
+    RecipeIngredient {
+        int id PK
+        int recipe_id FK
+        string name
+        string quantity
+        string tip "opcional"
+    }
+```
+
+### RecipeProduct — recipe_products
+
+```mermaid
+    RecipeProduct {
+        int id PK
+        int recipe_id FK
+        int product_id FK
+        string call_to_action
+    }
+```
+
+### RecipeStep — recipe_steps
+
+Campos ausentes no original: `tip`.
+
+```mermaid
+    RecipeStep {
+        int id PK
+        int recipe_id FK
+        int step_number
+        text description
+        text tip "opcional"
+    }
+```
+
+### Recipe — recipes
+
+```mermaid
+    Recipe {
+        int id PK
+        int unit_id FK
+        string title
+        text description "opcional"
+        string image_url "opcional"
+        string video_url "opcional"
+        string tag "opcional"
+        boolean active
+        int display_order
+        datetime week_start "opcional"
+        datetime created_at
+    }
+```
+
+### Review — reviews
+
+```mermaid
+    Review {
+        int id PK
+        int order_id FK
+        int client_id FK
+        int unit_id FK
+        int product_id FK "opcional"
+        int rating
+        text comment "opcional"
+        datetime created_at
+    }
+```
+
+### SavedPaymentMethod — saved_payment_methods
+
+```mermaid
+    SavedPaymentMethod {
+        int id PK
+        int user_id FK
+        string mp_card_id
+        string mp_customer_id
+        string brand
+        string last_four
+        string holder_name
+        string expiration_month
+        string expiration_year
+        boolean is_default
+        datetime created_at
+    }
+```
+
+### Stock — stock
+
+Campos ausentes no original: `min_quantity`.
+
+```mermaid
+    Stock {
+        int id PK
+        int product_id FK,UK
+        decimal quantity
+        datetime updated_at
+        decimal min_quantity
+    }
+```
+
+### SupportTicket — support_tickets
+
+Campos ausentes no original: `assigned_to`, `category`, `closed_at`, `last_message_at`, `order_id`, `priority`, `responded_at`, `responded_by`, `response`, `unit_id`, `updated_at`.
+
+```mermaid
+    SupportTicket {
+        int id PK
+        int user_id FK
+        string subject
+        text description "opcional"
+        string status "OPEN | ANSWERED | CLOSED | WAITING_SUPPORT | WAITING_USER"
+        text response "opcional"
+        int responded_by FK "opcional"
+        datetime responded_at "opcional"
+        datetime created_at
+        int unit_id FK "opcional"
+        int order_id FK "opcional"
+        int assigned_to FK "opcional"
+        string category "ACCOUNT | BILLING | ORDER | TECHNICAL | SUGGESTION | OTHER"
+        string priority "LOW | NORMAL | HIGH | URGENT"
+        datetime closed_at "opcional"
+        datetime last_message_at
+        datetime updated_at
+    }
+```
+
+### Unit — units
+
+Campos ausentes no original: `complement`, `coordinate_source`, `cover_url`, `delivery_radius_km`, `image_url`, `latitude`, `longitude`, `neighborhood`, `number`, `street`.
+
+```mermaid
+    Unit {
+        int id PK
+        string name
+        string cnpj UK
+        string city
+        string zip_code
+        string state
+        int admin_id FK
+        datetime created_at
+        string street "opcional"
+        string number "opcional"
+        string complement "opcional"
+        string neighborhood "opcional"
+        decimal latitude "opcional"
+        decimal longitude "opcional"
+        string image_url "opcional"
+        string cover_url "opcional"
+        string coordinate_source
+        decimal delivery_radius_km
+    }
+```
+
+### UserUnit — user_units
+
+```mermaid
+    UserUnit {
+        int id PK
+        int user_id FK
+        int unit_id FK
+        string local_role "OWNER | MANAGER | OPERATOR | DELIVERY"
+        string status "ACTIVE | INACTIVE"
+        datetime created_at
+    }
+```
+
+### User — users
+
+Campos ausentes no original: `avatar_url`, `email_verification_token`, `email_verified`, `failed_login_attempts`, `firebase_uid`, `is_active`, `locked_until`, `password_reset_expires_at`, `password_reset_token`, `phone`, `profile_complete`.
+
+```mermaid
+    User {
+        int id PK
+        string name "opcional"
+        string email UK
+        string cpf UK "opcional"
+        string password_hash "opcional"
+        string global_role "SUPER_ADMIN | USER"
+        string app_profile "opcional; CLIENT | DELIVERY | BOTH"
+        int failed_login_attempts
+        datetime locked_until "opcional"
+        boolean email_verified
+        string email_verification_token "opcional"
+        string password_reset_token "opcional"
+        datetime password_reset_expires_at "opcional"
+        datetime created_at
+        string avatar_url "opcional"
+        string firebase_uid "opcional"
+        string phone "opcional"
+        boolean profile_complete
+        boolean is_active
+    }
+```
+
+### Vehicle — vehicles
+
+Campos ausentes no original: `is_enabled`, `photo_urls`.
+
+```mermaid
+    Vehicle {
+        int id PK
+        int delivery_person_id FK
+        string type "MOTORCYCLE | BIKE | CAR | SCOOTER"
+        string model
+        string plate
+        string color
+        int year
+        boolean is_active
+        datetime created_at
+        boolean is_enabled
+        jsonb photo_urls
+    }
+```
+
+## Relações: substituir todo o trecho final
+
+O lado o| admite ausência do pai porque a FK aceita NULL. O lado o{ admite zero ou vários filhos. Um filho único é representado por o| quando a FK é também PK ou possui unicidade individual. A existência de um pai não obriga que já exista um filho.
+
+```mermaid
+    User ||--o{ Address : "user_id"
+    User ||--o{ AiConversation : "user_id"
+    AiConversation ||--o{ AiMessage : "conversation_id"
+    User ||--o| AiRateLimit : "user_id"
+    Unit o|--o{ AuditLog : "unit_id"
+    User o|--o{ AuditLog : "user_id"
+    Unit ||--o{ BusinessHours : "unit_id"
+    User ||--o| Cart : "user_id"
+    Cart ||--o{ CartItem : "cart_id"
+    Product ||--o{ CartItem : "product_id"
+    Unit ||--o{ Category : "unit_id"
+    Order ||--o{ Chat : "order_id"
+    User ||--o{ Chat : "receiver_id"
+    User ||--o{ Chat : "sender_id"
+    Coupon ||--o{ CouponRedemption : "coupon_id"
+    Order ||--o| CouponRedemption : "order_id"
+    Unit ||--o{ CouponRedemption : "unit_id"
+    User ||--o{ CouponRedemption : "user_id"
+    Coupon ||--o{ CouponUnit : "coupon_id"
+    Unit ||--o{ CouponUnit : "unit_id"
+    User ||--o{ Coupon : "created_by"
+    Unit o|--o{ Coupon : "unit_id"
+    DeliveryPerson ||--o{ DeliveryGoal : "delivery_person_id"
+    DeliveryPerson ||--o{ DeliveryOfferRejection : "delivery_person_id"
+    Order ||--o{ DeliveryOfferRejection : "order_id"
+    User ||--o| DeliveryPerson : "user_id"
+    User ||--o{ DeliveryReview : "client_id"
+    DeliveryPerson ||--o{ DeliveryReview : "delivery_person_id"
+    Order ||--o| DeliveryReview : "order_id"
+    User ||--o{ DeliverySettlement : "actor_id"
+    DeliveryPerson ||--o{ DeliverySettlement : "delivery_person_id"
+    Order ||--o| DeliverySettlement : "order_id"
+    Order ||--o{ DeliveryTracking : "order_id"
+    Unit ||--o{ Expense : "unit_id"
+    LegalDocument ||--o{ LegalAcceptance : "document_id"
+    Unit o|--o{ LegalAcceptance : "unit_id"
+    User ||--o{ LegalAcceptance : "user_id"
+    Unit o|--o{ Notification : "unit_id"
+    User ||--o{ Notification : "user_id"
+    Order ||--o{ OrderItem : "order_id"
+    Product ||--o{ OrderItem : "product_id"
+    Order ||--o{ OrderStatusHistory : "order_id"
+    User o|--o{ OrderStatusHistory : "updated_by"
+    Address o|--o{ Order : "address_id"
+    User ||--o{ Order : "client_id"
+    Coupon o|--o{ Order : "coupon_id"
+    DeliveryPerson o|--o{ Order : "delivery_person_id"
+    Unit ||--o{ Order : "unit_id"
+    User ||--o{ PaymentManualEvent : "actor_id"
+    Order ||--o{ PaymentManualEvent : "order_id"
+    Order ||--o{ PaymentNotification : "order_id"
+    Unit ||--o{ PaymentOAuthState : "unit_id"
+    User ||--o{ PaymentOAuthState : "user_id"
+    User o|--o{ PaymentRefundAttempt : "actor_id"
+    PaymentRefund ||--o{ PaymentRefundAttempt : "refund_id"
+    Order o|--o{ PaymentRefund : "order_id"
+    User o|--o{ PaymentRefund : "retry_requested_by"
+    Unit ||--o{ PaymentRefund : "unit_id"
+    User o|--o{ PaymentSellerEvent : "actor_id"
+    Unit ||--o{ PaymentSellerEvent : "unit_id"
+    Unit ||--o| PaymentSeller : "unit_id"
+    Unit ||--o{ PaymentTransaction : "unit_id"
+    Order ||--o| Payment : "order_id"
+    Product ||--o{ ProductImage : "product_id"
+    Category ||--o{ Product : "category_id"
+    Unit ||--o{ Product : "unit_id"
+    User ||--o{ Promotion : "created_by"
+    Product ||--o{ Promotion : "product_id"
+    Unit ||--o{ Promotion : "unit_id"
+    Recipe ||--o{ RecipeIngredient : "recipe_id"
+    Product ||--o{ RecipeProduct : "product_id"
+    Recipe ||--o{ RecipeProduct : "recipe_id"
+    Recipe ||--o{ RecipeStep : "recipe_id"
+    Unit ||--o{ Recipe : "unit_id"
+    User ||--o{ RefreshToken : "user_id"
+    User ||--o{ Review : "client_id"
+    Order ||--o{ Review : "order_id"
+    Product o|--o{ Review : "product_id"
+    Unit ||--o{ Review : "unit_id"
+    User ||--o{ SavedPaymentMethod : "user_id"
+    Product ||--o| Stock : "product_id"
+    SupportMessage ||--o{ SupportAttachment : "message_id"
+    User ||--o{ SupportMessage : "sender_id"
+    SupportTicket ||--o{ SupportMessage : "ticket_id"
+    User o|--o{ SupportTicket : "assigned_to"
+    Order o|--o{ SupportTicket : "order_id"
+    User o|--o{ SupportTicket : "responded_by"
+    Unit o|--o{ SupportTicket : "unit_id"
+    User ||--o{ SupportTicket : "user_id"
+    User ||--o{ Unit : "admin_id"
+    User ||--o{ UserDeviceToken : "user_id"
+    Unit ||--o{ UserUnit : "unit_id"
+    User ||--o{ UserUnit : "user_id"
+    DeliveryPerson ||--o{ Vehicle : "delivery_person_id"
+```
+
+## Correções e limites importantes
+
+- Renomear eliveryTracking para DeliveryTracking: o original define uma entidade com erro de digitação e utiliza outro nome nas relações.
+- Remover a relação active_vehicle. Não existe active_vehicle_id em DeliveryPerson. A escolha é feita por vehicles.is_active, com índice único parcial por entregador.
+- Stock.quantity, CartItem.quantity e OrderItem.quantity são decimais; Vehicle.year é inteiro; Chat.id e Notification.id são inteiros.
+- UserUnit.local_role: OWNER, MANAGER, OPERATOR e DELIVERY.
+- Coupon não tem discount_percentage nem discount_value. O modelo usa discount_type e discount_amount, limites, abrangência, vínculos e resgates.
+- Product/Stock, Order/Payment e User/Cart possuem relação com zero ou um filho, não com vários ou obrigatoriamente um.
+- Sale representa a divulgação de ofertas/banners da vitrine no módulo finance. A tabela sales não possui FK para Order, User ou Unit. Não inventar esses vínculos.
+- SavedPaymentMethod permanece no banco por compatibilidade. Cadastro e escolha de cartão padrão têm endpoints descontinuados (HTTP 410); a existência da tabela não significa que esses fluxos estejam ativos.
+- O diagrama completo registra FKs reais. orders.tracking_consent_user_id, delivery_tracking.delivery_person_id, payments.received_by, payment_refunds.requested_by, payments.transaction_id e payment_refunds.payment_id são referências utilizadas pela aplicação sem FK correspondente. Não foram marcadas FK.
+- payment_transactions.reference é uma referência textual que pode apontar para pedido ou checkout. checkout_id e tracking_session_id são identificadores de agrupamento/sessão, não tabelas adicionais.
+- Preferências, rascunhos e sessão locais do mobile, Firebase Auth e arquivos em storage não são tabelas deste PostgreSQL. Os identificadores e URLs persistidos estão representados nas entidades correspondentes.
+- Os arquivos descrevem a estrutura; não contêm valores de usuários, credenciais ou tokens.
+
+## Unicidades compostas e parciais
+
+PK,FK nos atributos de CouponUnit indica que ambos compõem a chave primária, não que cada coluna seja única isoladamente. Restrições compostas/parciais não podem ser expressas integralmente pela cardinalidade simples do Mermaid. Abaixo estão os índices e constraints de unicidade para conferir essas regras.
+
+- `users`: `UNIQUE (email)`.
+- `users`: `UNIQUE (cpf)`.
+- `units`: `UNIQUE (cnpj)`.
+- `stock`: `UNIQUE (product_id)`.
+- `cart`: `UNIQUE (user_id)`.
+- `coupons`: `UNIQUE (code)`.
+- `delivery_persons`: `UNIQUE (user_id)`.
+- `payments`: `UNIQUE (order_id)`.
+- `delivery_reviews`: `UNIQUE (order_id)`.
+- `user_device_tokens`: `UNIQUE (fcm_token)`.
+- `coupon_redemptions`: `UNIQUE (order_id)`.
+- `delivery_offer_rejections`: `UNIQUE (delivery_person_id, order_id)`.
+- `delivery_goals`: `UNIQUE (delivery_person_id, period)`.
+- `payment_refunds`: `UNIQUE (payment_id, order_id)`.
+- `payment_manual_events`: `UNIQUE (order_id, kind)`.
+- `payment_notifications`: `UNIQUE (order_id, status)`.
+- `legal_documents`: `UNIQUE (kind, version)`.
+- `vehicles`: `CREATE UNIQUE INDEX "UQ_vehicles_active_per_person" ON public.vehicles USING btree (delivery_person_id) WHERE (is_active = true)`.
+- `reviews`: `CREATE UNIQUE INDEX "UQ_reviews_order_product" ON public.reviews USING btree (order_id, product_id) WHERE (product_id IS NOT NULL)`.
+- `reviews`: `CREATE UNIQUE INDEX "UQ_reviews_order_unit_only" ON public.reviews USING btree (order_id) WHERE (product_id IS NULL)`.
+- `users`: `CREATE UNIQUE INDEX "UQ_users_firebase_uid" ON public.users USING btree (firebase_uid) WHERE (firebase_uid IS NOT NULL)`.
+- `users`: `CREATE UNIQUE INDEX "UQ_users_phone" ON public.users USING btree (phone) WHERE (phone IS NOT NULL)`.
+- `addresses`: `CREATE UNIQUE INDEX "UQ_addresses_user_default" ON public.addresses USING btree (user_id) WHERE (is_default = true)`.
+- `orders`: `CREATE UNIQUE INDEX "IDX_orders_client_checkout_unit" ON public.orders USING btree (client_id, checkout_id, unit_id) WHERE (checkout_id IS NOT NULL)`.
+- `delivery_tracking`: `CREATE UNIQUE INDEX idx_tracking_sample ON public.delivery_tracking USING btree (order_id, sample_id) WHERE (sample_id IS NOT NULL)`.
+- `payment_refunds`: `CREATE UNIQUE INDEX payment_duplicate_refund ON public.payment_refunds USING btree (payment_id) WHERE (order_id IS NULL)`.
+- `payments`: `CREATE UNIQUE INDEX payment_transaction_owner ON public.payments USING btree (transaction_id) WHERE (transaction_id IS NOT NULL)`.
+- `legal_documents`: `CREATE UNIQUE INDEX idx_legal_current_kind ON public.legal_documents USING btree (kind) WHERE is_current`.
+- `legal_acceptances`: `CREATE UNIQUE INDEX idx_legal_user_document ON public.legal_acceptances USING btree (user_id, document_id) WHERE (unit_id IS NULL)`.
+- `legal_acceptances`: `CREATE UNIQUE INDEX idx_legal_unit_document ON public.legal_acceptances USING btree (user_id, document_id, unit_id) WHERE (unit_id IS NOT NULL)`.
+
+## Referências lógicas opcionais
+
+Inserir este bloco somente se a documentação também representar referências de aplicação. Elas não são FKs do PostgreSQL. O traço pontilhado é uma convenção deste documento para indicar essa distinção; o Mermaid não valida integridade referencial e o traço pontilhado, isoladamente, não prova ausência de FK.
+
+```mermaid
+    User o|..o{ Order : "logica: tracking_consent_user_id"
+    DeliveryPerson o|..o{ DeliveryTracking : "logica: delivery_person_id"
+    User o|..o{ Payment : "logica: received_by"
+    User o|..o{ PaymentRefund : "logica: requested_by"
+    PaymentTransaction o|..o| Payment : "logica: transaction_id"
+    PaymentTransaction o|..o{ PaymentRefund : "logica: payment_id"
+```
+
+A cardinalidade opcional no lado do registro referenciado indica que a presença desse registro não é garantida por FK. Não criar uma relação fixa para payment_transactions.reference, pois sua interpretação depende do tipo de referência.

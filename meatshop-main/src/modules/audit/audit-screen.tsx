@@ -1,5 +1,6 @@
 "use client";
 
+import { AuditEventDialog } from "./audit-event-dialog";
 import { useApiQuery } from "@/shared/hooks/use-api-query";
 import { DataSkeleton } from "@/shared/components/data-skeleton";
 
@@ -17,13 +18,7 @@ import { API_URL, apiGet } from "@/shared/lib/api";
 import { saveBlob } from "@/shared/lib/download";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
 import type { AuditLog, AuditResult, AuditSummary } from "./types";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/shared/components/ui/dialog";
+
 
 const emptyResult: AuditResult = {
   data: [],
@@ -173,7 +168,7 @@ export function AuditScreen() {
             />
           </>
         )}
-        {selected && <AuditDetail log={selected} onClose={() => setSelected(null)} />}
+        {selected && <AuditEventDialog log={selected} onClose={() => setSelected(null)} />}
       </div>
     </div>
   );
@@ -266,55 +261,6 @@ function Filters({
           onChange={(e) => onChange({ ...filters, date_to: e.target.value })}
         />
       </label>
-    </div>
-  );
-}
-function AuditDetail({ log, onClose }: { log: AuditLog; onClose: () => void }) {
-  return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-5xl">
-        <DialogHeader>
-          <DialogTitle>Evento #{log.id}</DialogTitle>
-          <DialogDescription>{log.description}</DialogDescription>
-        </DialogHeader>
-        <dl className="grid gap-3 text-sm sm:grid-cols-3">
-          <Field label="Data" value={formatDateTime(log.created_at)} />
-          <Field
-            label="HTTP"
-            value={`${log.method ?? "—"} ${log.path ?? ""} · ${log.status_code ?? "—"}`}
-          />
-          <Field label="Correlação" value={log.correlation_id ?? "—"} />
-          <Field label="Responsável" value={log.user?.name ?? "Não identificado"} />
-          <Field label="IP" value={log.ip_address ?? "—"} />
-          <Field label="Unidade" value={log.unit?.name ?? "—"} />
-        </dl>
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Snapshot title="Antes" value={log.old_data} />
-          <Snapshot title="Depois / contexto" value={log.new_data} />
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-function Field({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="text-slate-500">{label}</dt>
-      <dd className="break-all font-medium">{value}</dd>
-    </div>
-  );
-}
-function Snapshot({ title, value }: { title: string; value: string | null }) {
-  let formatted = value ?? "Sem dados";
-  try {
-    formatted = JSON.stringify(JSON.parse(value ?? "null"), null, 2);
-  } catch {}
-  return (
-    <div>
-      <h3 className="mb-2 font-semibold">{title}</h3>
-      <pre className="max-h-80 overflow-auto rounded-lg bg-slate-950 p-4 text-xs text-slate-100">
-        {formatted}
-      </pre>
     </div>
   );
 }

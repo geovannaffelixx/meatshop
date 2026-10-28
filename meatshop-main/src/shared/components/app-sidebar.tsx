@@ -203,7 +203,7 @@ export function AppSidebar(props: AppSidebarProps) {
   return <Sidebar {...props}>
     <SidebarHeader className="gap-5 px-3 pb-4 pt-5">
       <div className="relative flex min-h-10 items-center justify-center px-3 group-data-[collapsible=icon]:hidden">
-        <Image src="/logoEscuraEscrita.png" alt="MeatShop" width={140} height={40} className="h-8 w-auto object-contain" priority />
+        <Image src="/logoEscuraAnimais.png" alt="MeatShop" width={688} height={514} className="h-14 w-auto object-contain" priority />
         <button type="button" aria-label="Fechar menu" onClick={() => setOpenMobile(false)} className="absolute right-0 rounded-lg p-2 text-slate-500 hover:bg-slate-100 focus-visible:outline-red-600 md:hidden"><X className="size-4" /></button>
       </div>
       {memberships.length > 1 ? <DropdownMenu>
@@ -214,7 +214,7 @@ export function AppSidebar(props: AppSidebarProps) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={8} className="w-72 max-w-[calc(100vw-2rem)] rounded-2xl p-2 shadow-xl">
           <DropdownMenuLabel className="px-3 py-2 text-xs text-slate-500">Escolha sua unidade</DropdownMenuLabel>
-          <DropdownMenuRadioGroup value={String(unitId)} onValueChange={value => { setOpenMobile(false); setUnitId(Number(value)); }}>
+          <DropdownMenuRadioGroup className="max-h-[min(20rem,50dvh)] overflow-y-auto overscroll-contain pr-1" value={String(unitId)} onValueChange={value => { setOpenMobile(false); setUnitId(Number(value)); }}>
             {memberships.map(membership => <DropdownMenuRadioItem key={membership.unit_id} value={String(membership.unit_id)} className="my-1 rounded-xl py-3 pr-3 focus:bg-red-50 focus:text-red-700">
               <span className="min-w-0"><span className="block break-words font-medium">{membership.unit_name}</span><span className="mt-0.5 block text-xs text-slate-500">{membership.unit_id === unitId ? 'Unidade selecionada' : 'Acessar unidade'}</span></span>
             </DropdownMenuRadioItem>)}

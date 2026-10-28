@@ -13,7 +13,7 @@ export class ListAuditLogsUseCase {
 
   async execute(filters: FilterAuditLogDto) {
     const page = filters.page ?? 1;
-    const limit = filters.limit ?? 20;
+    const limit = filters.limit ?? 10;
     const [data, total] = await this.buildQuery(filters)
       .skip((page - 1) * limit)
       .take(limit)
@@ -35,7 +35,8 @@ export class ListAuditLogsUseCase {
       .leftJoinAndSelect('audit.user', 'user')
       .leftJoinAndSelect('audit.unit', 'unit')
       .select(['audit', 'user.id', 'user.name', 'unit.id', 'unit.name'])
-      .orderBy('audit.created_at', 'DESC');
+      .orderBy('audit.created_at', 'DESC')
+      .addOrderBy('audit.id', 'DESC');
     this.applyExact(query, filters);
     this.applySearch(query, filters);
     return query;

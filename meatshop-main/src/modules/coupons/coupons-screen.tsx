@@ -1,11 +1,16 @@
 "use client";
 
-import { toDatetimeLocal as toLocal, datetimeLocalToISO, validateDateRange } from "@/shared/lib/date-time";
+import {
+  toDatetimeLocal as toLocal,
+  datetimeLocalToISO,
+  validateDateRange,
+} from "@/shared/lib/date-time";
 
 import { DataSkeleton } from "@/shared/components/data-skeleton";
 
 import { useApiQuery } from "@/shared/hooks/use-api-query";
 
+import { CouponFormDialog, type CouponFormState } from "./coupon-form-dialog";
 import { useMemo, useState } from "react";
 import { BadgePercent, History, Plus, TicketPercent } from "lucide-react";
 import { apiGet, apiPatch, apiPost } from "@/shared/lib/api";
@@ -14,14 +19,10 @@ import { toast } from "@/shared/lib/toast";
 import { useManagedUnits } from "@/shared/hooks/use-managed-units";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
 import { Button } from "@/shared/components/ui/button";
-import { Input } from "@/shared/components/ui/input";
-import { Spinner } from "@/shared/components/ui/spinner";
-import { RequiredMark } from "@/shared/components/ui/required-mark";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/ui/dialog";
@@ -29,33 +30,9 @@ import { SearchField } from "@/shared/components/search-field";
 import { PageHeader } from "@/shared/components/page-header";
 import { EmptyState } from "@/shared/components/empty-state";
 import { DataPagination } from "@/shared/components/data-pagination";
-import type {
-  Coupon,
-  CouponResult,
-  CouponType,
-  DiscountType,
-  Redemption,
-} from "./types";
+import type { Coupon, CouponResult, Redemption } from "./types";
 
-type FormState = {
-  code: string;
-  name: string;
-  description: string;
-  type: CouponType;
-  unit_id: string;
-  allowed_unit_ids: number[];
-  discount_type: DiscountType;
-  discount_amount: string;
-  maximum_discount: string;
-  minimum_order_value: string;
-  starts_at: string;
-  expires_at: string;
-  total_usage_limit: string;
-  usage_limit_per_user: string;
-  active: boolean;
-};
-
-const emptyForm: FormState = {
+const emptyForm: CouponFormState = {
   code: "",
   name: "",
   description: "",
@@ -79,10 +56,11 @@ export function CouponsScreen() {
   const isAdmin = user?.global_role === "SUPER_ADMIN";
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [form, setForm] = useState<FormState>(emptyForm);
+  const [form, setForm] = useState<CouponFormState>(emptyForm);
   const [editing, setEditing] = useState<Coupon | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [history, setHistory] = useState<{
     coupon: Coupon;
     items: Redemption[];
@@ -99,7 +77,11 @@ export function CouponsScreen() {
     [isAdmin, page, search, unitId],
   );
 
-  const { data: result = { data: [], meta: { page: 1, total: 0, totalPages: 1 } }, isPending: loading, refetch: load } = useApiQuery<CouponResult>(isAdmin || unitId ? `/coupons?${query}` : null);
+  const {
+    data: result = { data: [], meta: { page: 1, total: 0, totalPages: 1 } },
+    isPending: loading,
+    refetch: load,
+  } = useApiQuery<CouponResult>(isAdmin || unitId ? `/coupons?${query}` : null);
 
   function startCreate() {
     setEditing(null);
@@ -108,19 +90,23 @@ export function CouponsScreen() {
       type: isAdmin ? "PLATFORM" : "UNIT",
       unit_id: !isAdmin && unitId ? String(unitId) : "",
     });
+    setFormError(null);
     setFormOpen(true);
   }
 
   function startEdit(coupon: Coupon) {
     setEditing(coupon);
     setForm(toForm(coupon));
+    setFormError(null);
     setFormOpen(true);
   }
 
   async function save(event: React.FormEvent) {
     event.preventDefault();
+    if (saving) return;
+    setFormError(null);
     if (!validateDateRange(form.starts_at, form.expires_at)) {
-      toast.warning("O término deve ser posterior ao início do cupom.");
+      setFormError("O término deve ser posterior ao início do cupom.");
       return;
     }
 
@@ -135,8 +121,12 @@ export function CouponsScreen() {
       toast.success(editing ? "Cupom atualizado." : "Cupom criado.");
       setFormOpen(false);
       await load();
-    } catch {
-      return;
+    } catch (error) {
+      setFormError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível salvar o cupom. Tente novamente.",
+      );
     } finally {
       setSaving(false);
     }
@@ -164,10 +154,7 @@ export function CouponsScreen() {
   const activeOnPage = result.data.filter(
     (coupon) => coupon.active && new Date(coupon.expires_at) > new Date(),
   ).length;
-  const usageOnPage = result.data.reduce(
-    (total, coupon) => total + coupon.current_usage_count,
-    0,
-  );
+  const usageOnPage = result.data.reduce((total, coupon) => total + coupon.current_usage_count, 0);
 
   return (
     <div className="page-surface">
@@ -195,7 +182,16 @@ export function CouponsScreen() {
         </section>
 
         <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <SearchField value={search} onValueChange={value => { setSearch(value); setPage(1); }} label="Buscar cupons" placeholder="Buscar por código ou nome" className="max-w-xl" />
+          <SearchField
+            value={search}
+            onValueChange={(value) => {
+              setSearch(value);
+              setPage(1);
+            }}
+            label="Buscar cupons"
+            placeholder="Buscar por código ou nome"
+            className="max-w-xl"
+          />
         </section>
 
         <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -209,14 +205,6 @@ export function CouponsScreen() {
                 search
                   ? "Tente buscar por outro código ou nome."
                   : "Crie o primeiro cupom para oferecer um benefício aos clientes."
-              }
-              action={
-                !search ? (
-                  <Button onClick={startCreate}>
-                    <Plus />
-                    Novo cupom
-                  </Button>
-                ) : undefined
               }
             />
           ) : (
@@ -260,7 +248,7 @@ export function CouponsScreen() {
         </section>
       </div>
 
-      <CouponForm
+      <CouponFormDialog
         open={formOpen}
         onOpenChange={setFormOpen}
         form={form}
@@ -270,6 +258,7 @@ export function CouponsScreen() {
         editing={editing}
         saving={saving}
         onSave={save}
+        error={formError}
       />
       <HistoryDialog data={history} onClose={() => setHistory(null)} />
     </div>
@@ -337,9 +326,7 @@ function CouponRow({
       <td>
         <span
           className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-            enabled
-              ? "bg-emerald-50 text-emerald-700"
-              : "bg-slate-100 text-slate-600"
+            enabled ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"
           }`}
         >
           {expired ? "Expirado" : coupon.active ? "Ativo" : "Inativo"}
@@ -347,217 +334,18 @@ function CouponRow({
       </td>
       <td>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={onEdit}>Editar</Button>
+          <Button variant="outline" size="sm" onClick={onEdit}>
+            Editar
+          </Button>
           <Button variant="ghost" size="sm" onClick={onToggle}>
             {coupon.active ? "Desativar" : "Ativar"}
           </Button>
-          <Button variant="ghost" size="sm" onClick={onHistory}>Usos</Button>
+          <Button variant="ghost" size="sm" onClick={onHistory}>
+            Usos
+          </Button>
         </div>
       </td>
     </tr>
-  );
-}
-
-function CouponForm({
-  open,
-  onOpenChange,
-  form,
-  setForm,
-  units,
-  isAdmin,
-  editing,
-  saving,
-  onSave,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  form: FormState;
-  setForm: React.Dispatch<React.SetStateAction<FormState>>;
-  units: Array<{ id: number; name: string }>;
-  isAdmin: boolean;
-  editing: Coupon | null;
-  saving: boolean;
-  onSave: (event: React.FormEvent) => void;
-}) {
-  const update = <Key extends keyof FormState,>(key: Key, value: FormState[Key]) =>
-    setForm((current) => ({ ...current, [key]: value }));
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl">
-        <form onSubmit={onSave} className="space-y-5">
-          <DialogHeader>
-            <DialogTitle>{editing ? "Editar cupom" : "Novo cupom"}</DialogTitle>
-            <DialogDescription>
-              Defina o escopo, o benefício, a validade e os limites de utilização.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Código" required>
-              <Input
-                required
-                disabled={Boolean(editing)}
-                value={form.code}
-                onChange={(event) => update("code", event.target.value.toUpperCase())}
-                pattern="[A-Za-z0-9_-]+"
-                placeholder="Ex.: BEMVINDO10"
-              />
-            </Field>
-            <Field label="Nome" required>
-              <Input required value={form.name} onChange={(event) => update("name", event.target.value)} placeholder="Ex.: Boas-vindas" />
-            </Field>
-            <Field label="Descrição (opcional)" className="sm:col-span-2">
-              <textarea
-                value={form.description}
-                onChange={(event) => update("description", event.target.value)}
-                rows={3}
-                className="input h-auto resize-y"
-                placeholder="Ex.: Desconto para a primeira compra."
-              />
-            </Field>
-
-            {isAdmin && (
-              <Field label="Tipo" required>
-                <select
-                  value={form.type}
-                  onChange={(event) => {
-                    update("type", event.target.value as CouponType);
-                    update("unit_id", "");
-                    update("allowed_unit_ids", []);
-                  }}
-                  className="input"
-                >
-                  <option value="PLATFORM">Plataforma</option>
-                  <option value="UNIT">Unidade</option>
-                </select>
-              </Field>
-            )}
-
-            {form.type === "UNIT" && (
-              <Field label="Unidade" required>
-                <select
-                  required
-                  value={form.unit_id}
-                  disabled={!isAdmin}
-                  onChange={(event) => update("unit_id", event.target.value)}
-                  className="input"
-                >
-                  <option value="">Selecione</option>
-                  {units.map((unit) => (
-                    <option key={unit.id} value={unit.id}>{unit.name}</option>
-                  ))}
-                </select>
-              </Field>
-            )}
-
-            {form.type === "PLATFORM" && (
-              <div className="sm:col-span-2">
-                <span className="text-sm font-medium text-slate-700">Unidades permitidas</span>
-                <p className="mb-2 text-xs text-slate-500">Sem seleção, o cupom será válido em todas as unidades.</p>
-                <div className="grid max-h-36 gap-2 overflow-y-auto rounded-lg border border-slate-200 p-3 sm:grid-cols-2">
-                  {units.map((unit) => (
-                    <label key={unit.id} className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={form.allowed_unit_ids.includes(unit.id)}
-                        onChange={() =>
-                          update(
-                            "allowed_unit_ids",
-                            form.allowed_unit_ids.includes(unit.id)
-                              ? form.allowed_unit_ids.filter((id) => id !== unit.id)
-                              : [...form.allowed_unit_ids, unit.id],
-                          )
-                        }
-                      />
-                      {unit.name}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <Field label="Modalidade" required>
-              <select
-                value={form.discount_type}
-                onChange={(event) => {
-                  update("discount_type", event.target.value as DiscountType);
-                  update("maximum_discount", "");
-                }}
-                className="input"
-              >
-                <option value="PERCENTAGE">Percentual</option>
-                <option value="FIXED">Valor fixo</option>
-              </select>
-            </Field>
-            <Field label={form.discount_type === "PERCENTAGE" ? "Desconto (%)" : "Desconto (R$)"} required>
-              <Input
-                required
-                type="number"
-                min="0.01"
-                max={form.discount_type === "PERCENTAGE" ? 100 : undefined}
-                step="0.01"
-                value={form.discount_amount}
-                onChange={(event) => update("discount_amount", event.target.value)}
-                placeholder={form.discount_type === "PERCENTAGE" ? "Ex.: 10" : "Ex.: 15,00"}
-              />
-            </Field>
-            {form.discount_type === "PERCENTAGE" && (
-              <Field label="Teto do desconto (R$)">
-                <Input type="number" min="0.01" step="0.01" value={form.maximum_discount} onChange={(event) => update("maximum_discount", event.target.value)} />
-              </Field>
-            )}
-            <Field label="Pedido mínimo (R$)">
-              <Input type="number" min="0" step="0.01" value={form.minimum_order_value} onChange={(event) => update("minimum_order_value", event.target.value)} />
-            </Field>
-            <Field label="Limite total">
-              <Input type="number" min="1" value={form.total_usage_limit} onChange={(event) => update("total_usage_limit", event.target.value)} />
-            </Field>
-            <Field label="Limite por cliente">
-              <Input type="number" min="1" value={form.usage_limit_per_user} onChange={(event) => update("usage_limit_per_user", event.target.value)} />
-            </Field>
-            <Field label="Início" required>
-              <Input required type="datetime-local" value={form.starts_at} onChange={(event) => update("starts_at", event.target.value)} />
-            </Field>
-            <Field label="Término" required>
-              <Input required type="datetime-local" value={form.expires_at} onChange={(event) => update("expires_at", event.target.value)} />
-            </Field>
-          </div>
-
-          <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-            <input type="checkbox" checked={form.active} onChange={(event) => update("active", event.target.checked)} />
-            Cupom ativo
-          </label>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button disabled={saving}>
-              {saving && <Spinner />}
-              {saving ? "Salvando..." : "Salvar cupom"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function Field({
-  label,
-  className = "",
-  required = false,
-  children,
-}: {
-  label: string;
-  className?: string;
-  required?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className={`block text-sm font-medium text-slate-700 ${className}`}>
-      {label}{required && <RequiredMark />}
-      <div className="mt-1">{children}</div>
-    </label>
   );
 }
 
@@ -591,7 +379,9 @@ function HistoryDialog({
             <tbody>
               {!data?.items.length ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-slate-500">Ainda não utilizado.</td>
+                  <td colSpan={6} className="p-8 text-center text-slate-500">
+                    Ainda não utilizado.
+                  </td>
                 </tr>
               ) : (
                 data.items.map((item) => (
@@ -613,7 +403,7 @@ function HistoryDialog({
   );
 }
 
-function toPayload(form: FormState, isAdmin: boolean, editing: boolean) {
+function toPayload(form: CouponFormState, isAdmin: boolean, editing: boolean) {
   return {
     code: form.code,
     name: form.name,
@@ -648,9 +438,7 @@ function toPayload(form: FormState, isAdmin: boolean, editing: boolean) {
   };
 }
 
-
-
-function toForm(coupon: Coupon): FormState {
+function toForm(coupon: Coupon): CouponFormState {
   return {
     code: coupon.code,
     name: coupon.name,

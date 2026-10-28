@@ -20,7 +20,6 @@ import {
   ShieldCheck,
   Truck,
   UserRound,
-  UsersRound,
 } from "lucide-react";
 import { io, type Socket } from "socket.io-client";
 import { Button } from "@/shared/components/ui/button";
@@ -43,6 +42,7 @@ import {
 } from "@/shared/lib/api";
 import { toast } from "@/shared/lib/toast";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
+import { DeliveryPeopleTable } from "./delivery-people-table";
 import { DeliveriesMap } from "./deliveries-map";
 import type {
   LiveDeliveriesSnapshot,
@@ -117,14 +117,14 @@ export function DeliveriesScreen() {
 
   const loadPeople = useCallback(
     async (silent = false) => {
-      if (!unitId) return;
+      if (!unitId || tab !== "operation") return;
       const data = (await apiGet(
         `/delivery/units/${unitId}/people`,
         silent ? { silent: true, cache: false } : undefined,
       )) as UnitDeliveryPerson[];
       if (latestUnit.current === unitId) setPeople(data);
     },
-    [unitId],
+    [unitId, tab],
   );
 
   const loadSnapshot = useCallback(
@@ -376,7 +376,7 @@ export function DeliveriesScreen() {
               tab === "people" ? "bg-red-700 text-white" : "text-slate-600"
             }`}
           >
-            Entregadores ({people.length})
+            Entregadores
           </button>
         </div>
 
@@ -552,92 +552,7 @@ export function DeliveriesScreen() {
           </>
         )}
 
-        {tab === "people" && (
-          <Card className="overflow-hidden border-0 shadow-sm">
-            <CardContent className="p-0">
-              <div className="flex items-center gap-3 border-b p-5">
-                <UsersRound className="h-5 w-5 text-red-700" />
-                <div>
-                  <h2 className="font-bold text-slate-950">
-                    Entregadores da unidade
-                  </h2>
-                  <p className="text-sm text-slate-500">
-                    Aprove cadastros antes de atribuir pedidos.
-                  </p>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-slate-50 text-slate-600">
-                    <tr>
-                      <th className="p-4">Entregador</th>
-                      <th className="p-4">Perfil</th>
-                      <th className="p-4">Veículo</th>
-                      <th className="p-4">Operação</th>
-                      <th className="p-4 text-right">Ação</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {people.map((person) => (
-                      <tr key={person.membershipId} className="border-t">
-                        <td className="p-4">
-                          <strong>{person.user.name}</strong>
-                          <div className="text-slate-500">
-                            {person.user.email}
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          {person.profileStatus === "ACTIVE"
-                            ? "Aprovado"
-                            : person.profileStatus === "PENDING"
-                              ? "Pendente"
-                              : "Inativo"}
-                        </td>
-                        <td className="p-4">
-                          {person.vehicle
-                            ? `${person.vehicle.model} · ${person.vehicle.plate}`
-                            : person.deliveryPersonId
-                              ? person.profileStatus === "PENDING"
-                                ? "Cadastro inicial"
-                                : "Sem veículo ativo"
-                              : "Não cadastrado"}
-                        </td>
-                        <td className="p-4">
-                          {person.activeOrderId
-                            ? `Pedido #${person.activeOrderId}`
-                            : !person.isOnline
-                              ? "Offline"
-                              : !person.vehicle
-                                ? "Sem veículo ativo"
-                                : "Disponível"}
-                        </td>
-                        <td className="p-4 text-right">
-                          {canManage &&
-                            person.profileStatus === "PENDING" &&
-                            person.deliveryPersonId && (
-                              <Button
-                                size="sm"
-                                disabled={busy}
-                                onClick={() => void approve(person)}
-                              >
-                                Aprovar
-                              </Button>
-                            )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {people.length === 0 && (
-                  <p className="p-8 text-center text-slate-500">
-                    Nenhum entregador vinculado. Cadastre um em Equipe e
-                    acessos.
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {tab === "people" && unitId && <DeliveryPeopleTable key={unitId} unitId={unitId} canManage={canManage} busy={busy} onApprove={approve} />}
 
         <Dialog
           open={Boolean(assigningOrder)}

@@ -49,12 +49,14 @@ export function UserProfileDrawer() {
         </button>
       </SheetTrigger>
       <SheetContent side="right" className="w-full gap-0 overflow-y-auto bg-white sm:max-w-sm">
-        <SheetHeader className="border-b border-slate-100 px-6 py-6">
-          <SheetTitle>Meu perfil</SheetTitle>
-          <SheetDescription>Sua identidade e acesso nesta unidade.</SheetDescription>
+        <SheetHeader className="shrink-0 border-b border-slate-200 bg-slate-50 px-6 py-6 pr-12">
+          <div className="flex items-start gap-3">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-red-100 bg-white text-red-700"><UserRound className="size-5" aria-hidden="true" /></span>
+            <div className="min-w-0"><SheetTitle className="text-xl font-bold tracking-tight text-slate-950">Meu perfil</SheetTitle><SheetDescription className="mt-1 text-sm text-slate-600">Sua conta e seus acessos.</SheetDescription></div>
+          </div>
         </SheetHeader>
         <div className="space-y-5 p-6">
-          <section className="flex flex-col items-center gap-4 rounded-2xl bg-slate-50 p-6 text-center">
+          <section className="flex flex-col items-center gap-4 rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm">
             <UserAvatar name={user.name} src={user.avatar_url} size="lg" />
             <div><p className="break-words font-semibold text-slate-900">{user.name}</p><p className="mt-1 break-all text-sm text-slate-500">{user.email}</p></div>
           </section>
