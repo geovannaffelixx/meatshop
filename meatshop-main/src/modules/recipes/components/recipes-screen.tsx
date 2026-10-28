@@ -87,7 +87,7 @@ export function RecipesScreen() {
 
 
             {recipes.length > 0 && (
-              <Button asChild className="bg-red-600 hover:bg-red-700 text-white flex items-center gap-2">
+              <Button asChild className="flex items-center gap-2">
                 <Link href="/recipes/new">
                   <Plus size={18} />
                   Nova receita

@@ -356,7 +356,7 @@ export function FinanceScreen() {
 
   return (
     <div className="page-surface">
-      <div className="page-container max-w-7xl">
+      <div className="page-container">
         <PageHeader
           eyebrow="Gestão"
           title="Financeiro"
@@ -485,7 +485,7 @@ export function FinanceScreen() {
                   <DialogTrigger asChild>
                     <Button
                       onClick={openCreateDialog}
-                      className="bg-red-600 hover:bg-red-700 rounded-full w-8 h-8 flex items-center justify-center text-white shadow-md"
+                      type="button" size="icon" aria-label="Nova despesa"
                     >
                       <Plus size={18} />
                     </Button>
@@ -669,7 +669,7 @@ export function FinanceScreen() {
                         </Button>
                         <Button
                           disabled={saving}
-                          className="bg-red-600 hover:bg-red-700 text-white"
+
                           onClick={handleSaveExpense}
                         >
                           {saving && <Spinner />}

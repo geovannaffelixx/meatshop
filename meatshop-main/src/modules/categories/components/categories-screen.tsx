@@ -159,7 +159,7 @@ export function CategoriesScreen() {
                     Nova categoria
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-gray-50 border border-gray-300 rounded-2xl shadow-2xl max-w-md">
+                <DialogContent className="max-w-md">
                   <DialogHeader>
                     <DialogTitle className="text-xl font-bold text-red-700">
                       {editingId ? "Editar categoria" : "Nova categoria"}
@@ -205,7 +205,7 @@ export function CategoriesScreen() {
                       <Button
                         disabled={saving}
                         onClick={handleSave}
-                        className="bg-red-600 hover:bg-red-700 text-white"
+
                       >
                         {saving && <Spinner />}
                         {saving ? "Salvando..." : "Salvar"}

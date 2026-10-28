@@ -18,7 +18,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
         <SidebarInset>
           <header className="sticky top-0 z-40 flex h-20 items-center justify-between border-b border-slate-800 bg-slate-950 px-4 shadow-sm sm:px-6">
             <SidebarTrigger className="text-white hover:bg-white/10 hover:text-white" />
-            <Image src="/logoClaraEscrita.png" alt="MeatShop" width={160} height={48} className="absolute left-1/2 h-10 w-auto max-w-[42vw] -translate-x-1/2 object-contain md:hidden" />
+            <Image src="/logoClaraAnimais.png" alt="MeatShop" width={688} height={514} priority className="pointer-events-none absolute left-1/2 top-1/2 h-12 w-auto max-w-[36vw] -translate-x-1/2 -translate-y-1/2 object-contain" />
             <div className="flex items-center gap-2"><NotificationBell /><UserProfileDrawer /></div>
           </header>
 

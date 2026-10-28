@@ -1,11 +1,12 @@
 'use client';
 
+import { AuthLayout } from "@/shared/components/auth-layout";
 import { validateEmail } from "@/shared/lib/validators";
 
 import { useState } from "react";
 import { Input } from "@/shared/components/ui/input";
 import { Button } from "@/shared/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/shared/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
 import { Spinner } from "@/shared/components/ui/spinner";
 import { MailIcon } from "lucide-react";
@@ -45,22 +46,22 @@ export function ForgotPasswordScreen() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 bg-[url('/backgroundClaro.png')] p-4">
-      <Card className="w-full max-w-md shadow-md">
-        <CardHeader className="flex flex-col items-center">
-          <MailIcon className="w-10 h-10 mb-2" />
-          <CardTitle className="text-xl font-bold text-center">
+    <AuthLayout>
+      <Card className="w-full gap-6 rounded-none border-0 bg-white py-0 shadow-none">
+        <CardHeader className="flex flex-col items-center px-0">
+          <MailIcon className="mb-2 size-10 text-red-700" aria-hidden="true" />
+          <h1 className="text-center text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
             Esqueceu sua senha?
-          </CardTitle>
+          </h1>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <p className="text-center text-gray-600 text-sm">
+        <CardContent className="px-0 space-y-6">
+          <p className="text-center text-slate-600 text-sm">
             Informe seu e-mail para receber o link de redefinição de senha.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="recovery-email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="recovery-email" className="block text-sm font-medium text-slate-700 mb-1">
                 E-mail<RequiredMark />
               </label>
               <Input
@@ -74,14 +75,14 @@ export function ForgotPasswordScreen() {
               />
             </div>
 
-            <Button type="submit" disabled={submitting} className="w-full bg-[#BE2C1B] hover:bg-[#BE2C1B]/70">
+            <Button type="submit" disabled={submitting} className="w-full min-h-11">
               {submitting && <Spinner />}
               {submitting ? "Enviando..." : "Enviar link de redefinição"}
             </Button>
           </form>
 
           <div className="text-center">
-            <Link href="/login" className="text-sm text-[#BE2C1B] hover:underline">
+            <Link href="/login" className="text-sm font-semibold text-red-700 hover:underline">
               ← Voltar para login
             </Link>
           </div>
@@ -94,6 +95,6 @@ export function ForgotPasswordScreen() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </AuthLayout>
   );
 }

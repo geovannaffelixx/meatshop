@@ -1,5 +1,6 @@
 "use client"
 
+import { PageHeader } from "@/shared/components/page-header";
 import { toDatetimeLocal, datetimeLocalToISO, isValidDateTime } from "@/shared/lib/date-time";
 
 import { DataSkeleton } from "@/shared/components/data-skeleton";
@@ -141,7 +142,7 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="page-surface flex min-h-[calc(100dvh-5rem)] items-center justify-center px-4">
         <p className="text-red-600 font-semibold">Erro ao carregar pedido: {error}</p>
       </div>
     )
@@ -149,7 +150,7 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
 
   if (!order)
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="page-surface flex min-h-[calc(100dvh-5rem)] items-center justify-center px-4">
         <DataSkeleton label="Carregando pedido..." />
       </div>
     )
@@ -158,15 +159,13 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
   const nextAction = allowsPreparation ? getNextAction(order.status, order.delivery_type) : null
 
   return (
-    <div className="page-surface p-4 sm:p-6">
-      <div className="mx-auto w-full max-w-5xl rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+    <div className="page-surface">
+      <div className="page-container max-w-5xl"><div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
         <Link href="/orders" className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-red-700">
           <ArrowLeft className="size-4" />
           Voltar aos pedidos
         </Link>
-        <h1 className="text-2xl font-bold text-slate-950">
-          Pedido #{order.id}
-        </h1>
+        <PageHeader eyebrow="Pedidos" title={`Pedido #${order.id}`} />
         <span className="mt-2 mb-6 inline-flex rounded-full bg-red-50 px-3 py-1 text-sm font-semibold text-red-700">
           {ORDER_STATUS_LABELS[order.status] ?? order.status}
         </span>
@@ -298,7 +297,7 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
               <Button
                 disabled={working}
                 onClick={handleAdvance}
-                className="bg-red-600 hover:bg-red-700 text-white"
+
               >
                 {working && <Spinner />}
                 {working ? "Salvando..." : nextAction.label}
@@ -354,7 +353,7 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
               <Button
                 disabled={working || !cancelReason.trim()}
                 onClick={handleCancel}
-                className="bg-red-600 hover:bg-red-700 text-white"
+
               >
                 {working && <Spinner />}
                 {working ? "Cancelando..." : "Confirmar cancelamento"}
@@ -385,7 +384,7 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
               <Button
                 disabled={working || !scheduleDate}
                 onClick={handleReschedule}
-                className="bg-red-600 hover:bg-red-700 text-white"
+
               >
                 {working && <Spinner />}
                 {working ? "Salvando..." : "Confirmar agendamento"}
@@ -394,6 +393,6 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </div></div>
   )
 }

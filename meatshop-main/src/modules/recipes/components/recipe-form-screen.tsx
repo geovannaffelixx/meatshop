@@ -1,5 +1,7 @@
 "use client"
 
+import { Button } from "@/shared/components/ui/button";
+import { PageHeader } from "@/shared/components/page-header";
 import { toDateInput, isValidDate } from "@/shared/lib/date-time";
 
 import { peekApiData } from "@/shared/lib/query-cache";
@@ -274,30 +276,28 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
 
   if (loadingRecipe) {
     return (
-      <DataSkeleton label="Carregando receita..." />
+      <div className="page-surface"><div className="page-container max-w-5xl"><DataSkeleton variant="form" label="Carregando receita..." /></div></div>
     )
   }
 
   const coverSrc = stagedPreview ?? (imageUrl ? resolveAssetUrl(imageUrl) : null)
 
   return (
-    <div className="page-surface px-4 py-6 sm:px-6">
+    <div className="page-surface">
+      <div className="page-container max-w-5xl">
       <form
         onSubmit={(event) => {
           event.preventDefault()
           void handleSave()
         }}
-        className="mx-auto w-full max-w-5xl rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"
+        className="w-full rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"
       >
         <Link href="/recipes" className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-red-700">
           <ArrowLeft className="size-4" />
           Voltar às receitas
         </Link>
 
-        <h2 className="text-2xl font-bold text-slate-950">
-          {isEditing ? "Editar receita" : "Nova receita"}
-        </h2>
-        <p className="mt-1 mb-6 text-sm text-slate-600">Organize a capa, os ingredientes e o modo de preparo.</p>
+        <div className="mb-6"><PageHeader title={isEditing ? "Editar receita" : "Nova receita"} description="Organize a capa, os ingredientes e o modo de preparo." /></div>
 
         {error && (
           <div className="mb-3 rounded-md bg-red-100 text-red-700 px-3 py-2 text-sm border border-red-300">
@@ -593,19 +593,14 @@ export function RecipeFormScreen({ recipeId }: { recipeId?: number }) {
         </fieldset>
 
         <div className="mt-6 flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end">
-          <Link href="/recipes" className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-            Cancelar
-          </Link>
-          <button
-            type="submit"
-            disabled={saving}
-            className="flex min-h-10 items-center justify-center gap-2 rounded-lg bg-red-700 px-8 py-2 font-semibold text-white shadow-sm hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
-          >
+          <Button asChild variant="outline"><Link href="/recipes">Cancelar</Link></Button>
+          <Button type="submit" disabled={saving} className="px-8">
             {saving && <Spinner />}
             {saving ? "Salvando..." : "Salvar receita"}
-          </button>
+          </Button>
         </div>
       </form>
+      </div>
     </div>
   )
 }

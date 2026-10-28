@@ -90,8 +90,8 @@ export function ChatScreen() {
   if (!user) return null;
 
   return (
-    <main className="flex min-h-[calc(100dvh-5rem)] flex-col bg-slate-50 p-4 sm:p-6">
-      <div className="mb-5">
+    <div className="page-surface"><div className="page-container flex min-h-[calc(100dvh-5rem)] flex-col">
+      <div>
         <PageHeader eyebrow="Operação" title="Mensagens"
           description="Converse com clientes e entregadores em canais separados por pedido." />
       </div>
@@ -173,7 +173,7 @@ export function ChatScreen() {
                   type="button"
                   onClick={() => setChannel("UNIT")}
                   className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium ${
-                    channel === "UNIT" ? "bg-red-600 text-white" : "bg-slate-100 text-slate-700"
+                    channel === "UNIT" ? "bg-red-700 text-white" : "bg-slate-100 text-slate-700"
                   }`}
                 >
                   <UserRound className="size-4" /> Cliente
@@ -184,7 +184,7 @@ export function ChatScreen() {
                   onClick={() => setChannel("UNIT_DELIVERY_PERSON")}
                   className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-45 ${
                     channel === "UNIT_DELIVERY_PERSON"
-                      ? "bg-red-600 text-white"
+                      ? "bg-red-700 text-white"
                       : "bg-slate-100 text-slate-700"
                   }`}
                   title={selectedOrder.delivery_person_id ? undefined : "Aguardando entregador assumir o pedido"}
@@ -207,6 +207,6 @@ export function ChatScreen() {
           )}
         </section>
       </div>
-    </main>
+    </div></div>
   );
 }

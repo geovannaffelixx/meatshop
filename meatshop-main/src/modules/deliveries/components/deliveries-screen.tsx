@@ -1,4 +1,6 @@
 "use client";
+import { EmptyState } from "@/shared/components/empty-state";
+import { PageHeader } from "@/shared/components/page-header";
 import { formatDateValue } from '@/shared/lib/date-time';
 
 import { DataSkeleton } from "@/shared/components/data-skeleton";
@@ -320,35 +322,25 @@ export function DeliveriesScreen() {
 
   if (accessLoading || loading) {
     return (
-      <DataSkeleton label="Carregando operação de entregas..." />
+      <div className="page-surface"><div className="page-container"><PageHeader eyebrow="Operação logística" title="Entregas ao vivo" /><DataSkeleton label="Carregando operação de entregas..." /></div></div>
     );
   }
 
   if (!unitId || !selectedMembership) {
     return (
-      <div className="p-8 text-center text-slate-600">
-        Selecione uma unidade para acompanhar as entregas.
-      </div>
+      <div className="page-surface"><div className="page-container"><PageHeader eyebrow="Operação logística" title="Entregas ao vivo" /><EmptyState icon={Truck} title="Selecione uma unidade" description="Selecione uma unidade para acompanhar as entregas." /></div></div>
     );
   }
 
   return (
-    <div className="page-surface px-4 py-6 lg:px-8">
-      <div className="mx-auto max-w-[1600px] space-y-6">
-        <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="text-sm font-medium text-red-700">
-              Operação logística
-            </p>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-950">
-              Entregas ao vivo
-            </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              {snapshot?.unit.name} · acompanhe responsáveis, status e última
-              posição.
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
+    <div className="page-surface">
+      <div className="page-container">
+        <PageHeader
+          eyebrow="Operação logística"
+          title="Entregas ao vivo"
+          description={`${snapshot?.unit.name ?? "Unidade selecionada"} · acompanhe responsáveis, status e última posição.`}
+          actions={
+<div className="flex flex-wrap items-center gap-3">
             <span
               className={[
                 "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold",
@@ -364,14 +356,15 @@ export function DeliveriesScreen() {
               <RefreshCw className="mr-2 h-4 w-4" /> Atualizar
             </Button>
           </div>
-        </header>
+          }
+        />
 
         <div className="flex w-fit rounded-xl border bg-white p-1 shadow-sm">
           <button
             type="button"
             onClick={() => setTab("operation")}
             className={`rounded-lg px-4 py-2 text-sm font-semibold ${
-              tab === "operation" ? "bg-slate-950 text-white" : "text-slate-600"
+              tab === "operation" ? "bg-red-700 text-white" : "text-slate-600"
             }`}
           >
             Operação
@@ -380,7 +373,7 @@ export function DeliveriesScreen() {
             type="button"
             onClick={() => setTab("people")}
             className={`rounded-lg px-4 py-2 text-sm font-semibold ${
-              tab === "people" ? "bg-slate-950 text-white" : "text-slate-600"
+              tab === "people" ? "bg-red-700 text-white" : "text-slate-600"
             }`}
           >
             Entregadores ({people.length})

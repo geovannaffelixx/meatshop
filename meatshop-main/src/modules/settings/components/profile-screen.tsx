@@ -264,7 +264,7 @@ function UnitSettings() {
 
   return (
     <div className="page-surface">
-    <div className="page-container max-w-6xl">
+    <div className="page-container max-w-5xl">
       <PageHeader eyebrow="Configurações" title="Unidade" description="Gerencie a apresentação do açougue, o endereço e a operação de entrega."
         actions={unitId ? <UnitStatusToggle unitId={unitId} isActive={unit.is_active ?? true} canManage={selectedMembership?.role === "OWNER"}
           onChanged={(isActive) => { setUnit((current) => ({ ...current, is_active: isActive })); void refresh(); }} /> : undefined} />
@@ -274,7 +274,7 @@ function UnitSettings() {
           setUnit(current => ({ ...current, image_url: updated.image_url, cover_url: updated.cover_url, gallery_urls: updated.gallery_urls }));
           await refresh();
         }} />}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <h2 className="text-lg font-semibold text-slate-900">Dados da unidade</h2>
         <p className="mt-1 text-sm text-slate-500">Identificação pública do açougue.</p>
         <form onSubmit={saveUnit} className="mt-6 grid gap-4 md:grid-cols-2">
@@ -350,17 +350,14 @@ function UnitSettings() {
             </div>
           )}
           <div className="md:col-span-2">
-            <button
-              disabled={saving}
-              className="flex items-center gap-2 rounded-md bg-red-600 px-5 py-2 font-semibold text-white disabled:opacity-50"
-            >
+            <Button type="submit" disabled={saving}>
               {saving && <Spinner />}
               {saving ? "Salvando..." : "Salvar dados"}
-            </button>
+            </Button>
           </div>
         </form>
       </section>
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <h2 className="text-xl font-semibold">Horários de funcionamento</h2>
         <div className="mt-4 rounded-md border bg-gray-50 p-4">
           <label className="flex items-center gap-2 font-medium">

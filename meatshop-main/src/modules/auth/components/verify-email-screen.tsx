@@ -1,10 +1,11 @@
 'use client';
 
+import { AuthLayout } from "@/shared/components/auth-layout";
 import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { MailCheck } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/shared/components/ui/card";
 import { Spinner } from "@/shared/components/ui/spinner";
 import { DataSkeleton } from "@/shared/components/data-skeleton";
 import { apiPost } from "@/shared/lib/api";
@@ -37,13 +38,13 @@ function VerifyEmailContent() {
   const token = useSearchParams().get("token") ?? "";
   const { status, message } = useEmailVerification(token);
   return (
-    <main id="main-content" tabIndex={-1} className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-4">
-      <Card className="w-full max-w-md shadow-md">
-        <CardHeader className="flex flex-col items-center">
+    <AuthLayout>
+      <Card className="w-full gap-6 rounded-none border-0 bg-white py-0 shadow-none">
+        <CardHeader className="flex flex-col items-center px-0">
           <MailCheck className="mb-2 size-10 text-red-700" aria-hidden="true" />
-          <CardTitle className="text-center text-xl font-bold text-red-700">Confirmação de e-mail</CardTitle>
+          <h1 className="text-center text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Confirmação de e-mail</h1>
         </CardHeader>
-        <CardContent className="space-y-6 text-center">
+        <CardContent className="px-0 space-y-6 text-center">
           <p role={status === "error" ? "alert" : "status"} className={`flex items-center justify-center gap-2 text-sm ${status === "error" ? "text-red-700" : "text-slate-700"}`}>
             {status === "loading" && <Spinner />}
             {message}
@@ -51,13 +52,13 @@ function VerifyEmailContent() {
           {status !== "loading" && <Link href="/login" className="text-sm font-semibold text-red-700 hover:underline">Ir para o login</Link>}
         </CardContent>
       </Card>
-    </main>
+    </AuthLayout>
   );
 }
 
 export function VerifyEmailScreen() {
   return (
-    <Suspense fallback={<DataSkeleton label="Carregando..." />}>
+    <Suspense fallback={<AuthLayout><DataSkeleton label="Carregando..." /></AuthLayout>}>
       <VerifyEmailContent />
     </Suspense>
   );

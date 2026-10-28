@@ -1,5 +1,7 @@
 "use client"
 
+import { Button } from "@/shared/components/ui/button";
+import { PageHeader } from "@/shared/components/page-header";
 import { peekApiData } from "@/shared/lib/query-cache";
 
 import { DataSkeleton } from "@/shared/components/data-skeleton";
@@ -128,7 +130,7 @@ export function EditProductScreen() {
 
   if (error && !product) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-red-600 text-lg">
+      <div className="page-surface flex items-center justify-center px-4 text-sm text-red-700">
         Erro ao carregar produto: {error}
       </div>
     )
@@ -136,18 +138,19 @@ export function EditProductScreen() {
 
   if (!product) {
     return (
-      <DataSkeleton label="Carregando produto..." />
+      <div className="page-surface"><div className="page-container max-w-5xl"><DataSkeleton variant="form" label="Carregando produto..." /></div></div>
     )
   }
 
   return (
-    <div className="page-surface px-4 py-6 sm:px-6">
+    <div className="page-surface">
+      <div className="page-container max-w-5xl">
       <form
         onSubmit={(event) => {
           event.preventDefault()
           void handleSave()
         }}
-        className="mx-auto w-full max-w-5xl rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"
+        className="w-full rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"
       >
         <Link href="/products" className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-red-700">
           <ArrowLeft className="size-4" />
@@ -165,10 +168,7 @@ export function EditProductScreen() {
           </div>
         )}
 
-        <h2 className="text-2xl font-bold text-slate-950">
-          Editar produto #{productKey}
-        </h2>
-        <p className="mt-1 mb-6 text-sm text-slate-600">Atualize informações comerciais, estoque e imagens.</p>
+        <div className="mb-6"><PageHeader title={`Editar produto #${productKey}`}  description="Atualize informações comerciais, estoque e imagens." /></div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
           <fieldset className="border-2 border-[#A0332C] rounded-md px-3 py-1">
@@ -348,19 +348,14 @@ export function EditProductScreen() {
         </div>
 
         <div className="mt-6 flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end">
-          <Link href="/products" className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-            Cancelar
-          </Link>
-          <button
-            type="submit"
-            disabled={saving}
-            className="flex min-h-10 items-center justify-center gap-2 rounded-lg bg-red-700 px-8 py-2 font-semibold text-white shadow-sm hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
-          >
+          <Button asChild variant="outline"><Link href="/products">Cancelar</Link></Button>
+          <Button type="submit" disabled={saving} className="px-8">
             {saving && <Spinner />}
             {saving ? "Salvando..." : "Salvar alterações"}
-          </button>
+          </Button>
         </div>
       </form>
+      </div>
     </div>
   )
 }

@@ -14,6 +14,7 @@ import { Spinner } from "@/shared/components/ui/spinner";
 import { PasswordInput } from "@/shared/components/ui/password-input";
 import { API_URL, apiUpload, apiPatch, apiPost } from "@/shared/lib/api";
 import { toast } from "@/shared/lib/toast";
+import { Button } from "@/shared/components/ui/button";
 import { PageHeader } from "@/shared/components/page-header";
 import { ExportDataDialog } from "./export-data-dialog";
 import { RequiredMark } from "@/shared/components/ui/required-mark";
@@ -124,7 +125,7 @@ function AccountForm() {
         actions={<ExportDataDialog />}
         description="Gerencie seus dados pessoais e a segurança do acesso."
       />
-      <section className="rounded-xl border bg-white p-6">
+      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <h2 className="text-lg font-semibold text-gray-900">Dados pessoais</h2>
         <p className="mt-1 text-sm text-gray-600">Informações utilizadas para identificar sua conta.</p>
 
@@ -193,18 +194,15 @@ function AccountForm() {
           </p>
 
           <div className="md:col-span-2">
-            <button
-              disabled={saving}
-              className="flex items-center gap-2 rounded-md bg-red-600 px-5 py-2 font-semibold text-white disabled:opacity-50"
-            >
+            <Button type="submit" disabled={saving}>
               {saving && <Spinner />}
               {saving ? "Salvando..." : "Salvar alterações"}
-            </button>
+            </Button>
           </div>
         </form>
       </section>
 
-      <section id="security" className="scroll-mt-24 rounded-xl border bg-white p-6">
+      <section id="security" className="scroll-mt-24 rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <h2 className="text-lg font-semibold text-gray-900">Segurança</h2>
         <p className="mt-1 text-sm text-gray-600">
           Atualize sua senha de acesso com segurança.
@@ -247,13 +245,10 @@ function AccountForm() {
             Use pelo menos 8 caracteres, incluindo maiúscula, minúscula, número e caractere especial.
           </p>
           <div className="md:col-span-2">
-            <button
-              disabled={changingPassword}
-              className="flex items-center gap-2 rounded-md bg-red-600 px-5 py-2 font-semibold text-white disabled:opacity-50"
-            >
+            <Button type="submit" disabled={changingPassword}>
               {changingPassword && <Spinner />}
               {changingPassword ? "Alterando..." : "Alterar senha"}
-            </button>
+            </Button>
           </div>
         </form>
       </section>

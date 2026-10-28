@@ -237,7 +237,7 @@ export function PromotionsScreen() {
                   Nova promoção
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-gray-50 border border-gray-300 rounded-2xl shadow-2xl max-w-lg">
+              <DialogContent className="max-w-lg">
                 <DialogHeader>
                   <DialogTitle className="text-xl font-bold text-red-700">
                     {editingId ? "Editar promoção" : "Nova promoção"}
@@ -364,7 +364,7 @@ export function PromotionsScreen() {
                     <Button
                       disabled={saving}
                       onClick={handleSave}
-                      className="bg-red-600 hover:bg-red-700 text-white"
+
                     >
                       {saving && <Spinner />}
                       {saving ? "Salvando..." : editingId ? "Salvar alterações" : "Criar promoção"}

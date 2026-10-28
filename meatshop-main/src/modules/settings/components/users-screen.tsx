@@ -147,7 +147,7 @@ function TeamManager() {
           onChange={(event) =>
             setForm((current) => ({ ...current, [key]: key === "cpf" ? maskCPF(event.target.value) : event.target.value }))
           }
-          className="mt-1 w-full rounded-md border px-3 py-2"
+          className="input mt-1"
           placeholder={key === "name" ? "Ex.: João da Silva" : key === "email" ? "nome@empresa.com.br" : "000.000.000-00"}
           required
         />
@@ -167,16 +167,13 @@ function TeamManager() {
 
   return (
     <div className="page-surface">
-    <div className="page-container max-w-6xl">
-      <section className="rounded-xl border bg-white p-6">
-        <PageHeader eyebrow="Configurações" title="Equipe e acessos" />
-        <p className="mt-1 text-sm text-gray-600">
-          Crie contas para funcionários e determine o que cada pessoa pode
-          administrar nesta unidade.
-        </p>
+    <div className="page-container">
+      <PageHeader eyebrow="Configurações" title="Equipe e acessos" description="Crie contas para funcionários e determine o que cada pessoa pode administrar nesta unidade." />
+      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <h2 className="text-lg font-semibold text-slate-950">Novo integrante</h2>
         <form
           onSubmit={createMember}
-          className="mt-6 grid gap-4 md:grid-cols-2"
+          className="mt-4 grid gap-4 md:grid-cols-2"
         >
           {input("name", "Nome completo")}
           {input("email", "E-mail", "email")}
@@ -192,7 +189,7 @@ function TeamManager() {
                   local_role: event.target.value as NewMember["local_role"],
                 }))
               }
-              className="mt-1 w-full rounded-md border px-3 py-2"
+              className="input mt-1"
               required
             >
               <option value="OPERATOR">Operador</option>
@@ -211,7 +208,7 @@ function TeamManager() {
                     vehicle: event.target.value as NewMember["vehicle"],
                   }))
                 }
-                className="mt-1 w-full rounded-md border px-3 py-2"
+                className="input mt-1"
                 required
               >
                 <option value="MOTORCYCLE">Moto</option>
@@ -222,13 +219,14 @@ function TeamManager() {
             </label>
           )}
           <div className="flex items-end">
-            <button
+            <Button
+              type="submit"
               disabled={saving}
-              className="flex items-center gap-2 rounded-md bg-red-600 px-5 py-2 font-semibold text-white disabled:opacity-50"
+
             >
               {saving && <Spinner />}
               {saving ? "Criando..." : "Criar usuário"}
-            </button>
+            </Button>
           </div>
         </form>
         <p className="mt-3 text-xs text-gray-500">

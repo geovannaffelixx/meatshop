@@ -85,7 +85,7 @@ export function SupportListScreen() {
 
   return (
     <div className="page-surface">
-    <section className="page-container max-w-6xl">
+    <section className="page-container">
       <PageHeader
         eyebrow={isAdmin ? "Administração" : "Atendimento"}
         title={isAdmin ? "Suporte MeatShop" : "Ajuda e suporte"}
