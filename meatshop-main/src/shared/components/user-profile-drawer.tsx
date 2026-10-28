@@ -30,6 +30,7 @@ export function UserProfileDrawer() {
       await apiPost('/auth/logout', {});
       resetApiCache();
       localStorage.removeItem('meatshop:selected-unit-id');
+      localStorage.removeItem('meatshop:selected-unit-user-id');
       window.dispatchEvent(new Event('currentUserUpdated'));
       setOpen(false);
       router.replace('/login');

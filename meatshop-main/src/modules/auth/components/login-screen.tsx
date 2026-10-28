@@ -13,6 +13,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiGet, apiPost } from "@/shared/lib/api";
 import { toast } from "@/shared/lib/toast";
+import { UNIT_SELECTION_ROUTE, UNIT_STORAGE_KEY, UNIT_USER_STORAGE_KEY, unitHomeRoute } from '@/shared/auth/unit-selection';
 
 export function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -40,11 +41,16 @@ export function LoginScreen() {
       });
       const session = await apiGet("/users/me");
 
+      localStorage.removeItem(UNIT_STORAGE_KEY);
+      localStorage.removeItem(UNIT_USER_STORAGE_KEY);
+
       window.dispatchEvent(new Event("currentUserUpdated"));
 
       toast.success("Login realizado. Redirecionando...");
 
-      const destination = session?.panel?.can_access ? "/dashboard" : "/no-panel-access";
+      const destination = !session?.panel?.can_access ? '/no-panel-access'
+        : session.panel.memberships.length > 1 ? UNIT_SELECTION_ROUTE
+        : unitHomeRoute(session.panel.memberships[0] ?? null, session.user?.global_role === 'SUPER_ADMIN');
       router.push(destination);
     } catch {
       setSubmitting(false);

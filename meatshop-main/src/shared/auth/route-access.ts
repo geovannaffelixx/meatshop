@@ -20,6 +20,7 @@ export type RoutePermission =
   | "SUPER_ADMIN";
 
 export const routePermissions = {
+  "/select-unit": ["AUTHENTICATED"],
   "/dashboard": [unitPermissions.viewDashboard],
   "/orders": [unitPermissions.manageOrders],
   "/chat": [unitPermissions.manageOrders],

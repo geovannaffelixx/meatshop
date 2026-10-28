@@ -19,6 +19,8 @@ describe('Unit switching', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     localStorage.clear();
+    localStorage.setItem('meatshop:selected-unit-id', '6');
+    localStorage.setItem('meatshop:selected-unit-user-id', '1');
     resetApiCache();
     Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
     jest.mocked(apiGet).mockResolvedValue({ user: { id: 1, name: 'Manager', global_role: 'USER' }, panel: { can_access: true, memberships: [
@@ -48,7 +50,7 @@ describe('Unit switching', () => {
     await act(async () => root.render(<PanelAccessProvider><Probe /></PanelAccessProvider>));
     expect(container.querySelector('[data-testid="unit"]')?.textContent).toBe('6');
     expect(localStorage.getItem('currentUser')).toBeNull();
-    expect(Object.keys(localStorage)).toEqual(['meatshop:selected-unit-id']);
+    expect(Object.keys(localStorage).sort()).toEqual(['meatshop:selected-unit-id', 'meatshop:selected-unit-user-id'].sort());
   });
   it('ignores the current unit and units outside the membership list', async () => {
     await act(async () => root.render(<PanelAccessProvider><Probe /></PanelAccessProvider>));
@@ -56,5 +58,11 @@ describe('Unit switching', () => {
     await act(async () => (container.querySelectorAll('button')[2] as HTMLButtonElement).click());
     expect(container.querySelector('[role="dialog"]')).toBeNull();
     expect(container.querySelector('[data-testid="unit"]')?.textContent).toBe('6');
+  });
+  it('requires a choice instead of selecting the first unit for a fresh multi-unit session', async () => {
+    localStorage.clear();
+    await act(async () => root.render(<PanelAccessProvider><Probe /></PanelAccessProvider>));
+    expect(container.querySelector('[data-testid="unit"]')?.textContent).toBe('');
+    expect(localStorage.getItem('meatshop:selected-unit-id')).toBeNull();
   });
 });

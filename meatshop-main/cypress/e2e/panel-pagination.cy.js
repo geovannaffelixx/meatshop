@@ -32,7 +32,8 @@ describe('Panel pagination and account controls', () => {
   it('scrolls a long unit list and shows the updated profile drawer header', () => {
     admin(40);
     cy.viewport(1440, 900);
-    cy.visit('/audit');
+    cy.visit('/select-unit');
+    cy.get('button[aria-label="Acessar Unidade 1 como Administrador do sistema"]').click();
     cy.get('button[aria-label="Trocar unidade"]').click();
     cy.get('[role="menu"] [role="group"]').then(group => expect(group[0].scrollHeight).to.be.greaterThan(group[0].clientHeight));
     cy.get('[role="menuitemradio"]').last().scrollIntoView().should('be.visible');

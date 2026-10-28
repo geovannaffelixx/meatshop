@@ -19,7 +19,7 @@ export function LegalGate({ children }: { children: React.ReactNode }) {
   const key = `${user?.id}:${scope ?? ''}`;
   const exempt =
     isPublicRoute(pathname) ||
-    ['/support', '/settings/account', '/settings/legal'].some(
+    ['/select-unit', '/support', '/settings/account', '/settings/legal'].some(
       (route) => pathname === route || pathname.startsWith(`${route}/`),
     );
   const { catalog, loading, error, reload } = useLegalPending(key, Boolean(user && !exempt), scope);
