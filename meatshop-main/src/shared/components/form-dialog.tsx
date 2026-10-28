@@ -19,6 +19,7 @@ export function FormDialog({
   saving,
   submitLabel,
   error,
+  submitDisabled = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -30,6 +31,7 @@ export function FormDialog({
   saving: boolean;
   submitLabel: string;
   error?: string | null;
+  submitDisabled?: boolean;
 }) {
   const errorNotice = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -94,7 +96,7 @@ export function FormDialog({
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={saving}>
+            <Button type="submit" disabled={saving || submitDisabled}>
               {saving && <Spinner />}
               {saving ? "Salvando..." : submitLabel}
             </Button>

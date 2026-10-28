@@ -1,5 +1,7 @@
 "use client";
 
+import { maskCNPJ } from "@/shared/lib/input-masks";
+
 import { validateRequiredText, validateCEP, validateUF } from "@/shared/lib/validators";
 
 import { peekApiData } from "@/shared/lib/query-cache";
@@ -252,7 +254,7 @@ function UnitSettings() {
       {label}
       <input
         disabled={disabled}
-        value={unit[key] ?? ""}
+        value={key === "cnpj" ? maskCNPJ(unit[key] ?? "") : unit[key] ?? ""}
         onChange={(event) =>
           { if(['street','number','city','state','neighborhood'].includes(key))setPin(null);
             setUnit((current) => ({ ...current, [key]: event.target.value })); }

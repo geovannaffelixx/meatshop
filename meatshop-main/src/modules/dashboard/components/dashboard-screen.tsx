@@ -60,7 +60,16 @@ type DashboardData = {
   topProducts: { product_id: number; product_name: string; quantity_sold: number; revenue: number }[]
 }
 
-type Sale = { id: number; name: string; imageUrl: string; discountValue: number }
+type ActivePromotions = {
+  data: {
+    id: number;
+    title: string;
+    discount_percentage: number | string | null;
+    promotional_price: number | string | null;
+    product: { name: string; price: number | string; image_url?: string | null } | null;
+  }[];
+  meta: { total: number };
+}
 
 export function DashboardScreen() {
   const promotionAutoplay = useMemo(
@@ -72,8 +81,14 @@ export function DashboardScreen() {
   const dashboard = query.data;
   const loading = query.isPending;
   const error = query.error?.message;
-  const salesQuery = useApiQuery<Sale[]>(unitId ? `/sales?unit_id=${unitId}` : null);
-  const sales = salesQuery.data ?? [];
+  const salesQuery = useApiQuery<ActivePromotions>(unitId ? `/promotions/manage?unit_id=${unitId}&paginated=true&status=Ativa&page=1&limit=10` : null);
+  const sales = (salesQuery.data?.data ?? []).map(promotion => {
+    const price = Number(promotion.product?.price ?? 0);
+    const discountValue = promotion.promotional_price != null
+      ? Math.max(0, price - Number(promotion.promotional_price))
+      : price * Number(promotion.discount_percentage ?? 0) / 100;
+    return { id: promotion.id, name: promotion.title, imageUrl: promotion.product?.image_url, discountValue };
+  });
   const loadingSales = salesQuery.isPending;
   const errorSales = salesQuery.error?.message;
 
@@ -147,7 +162,7 @@ export function DashboardScreen() {
               <div>
                 <p className="text-sm text-slate-500">Promoções ativas</p>
                 <strong className="mt-1 block text-2xl text-slate-950">
-                  {sales.length}
+                  {salesQuery.data?.meta.total ?? 0}
                 </strong>
               </div>
               <span className="rounded-xl bg-red-50 p-3 text-red-700">
@@ -225,7 +240,7 @@ export function DashboardScreen() {
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h2 className="font-bold text-slate-950">Promoções ativas</h2>
-                <p className="text-sm text-slate-500">Campanhas disponíveis para os clientes.</p>
+                <p className="text-sm text-slate-500">Campanhas em vigência na unidade.</p>
               </div>
               <Link href="/promotions" className="text-sm font-semibold text-red-700 hover:underline">Gerenciar</Link>
             </div>
@@ -247,14 +262,14 @@ export function DashboardScreen() {
                     <CarouselItem key={s.id} className="basis-full sm:basis-1/2 lg:basis-1/3">
                       <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
                         <div className="flex h-28 w-full items-center justify-center bg-white">
-                          <Image
+                          {s.imageUrl ? <Image
                             src={resolveAssetUrl(s.imageUrl)}
                             alt={s.name}
                             width={160}
                             height={120}
                             unoptimized
                             className="h-full w-full object-contain p-2"
-                          />
+                          /> : <PackageOpen className="size-10 text-slate-300" aria-label="Produto sem imagem" />}
                         </div>
                         <div className="p-3">
                           <span className="block truncate text-sm font-semibold text-slate-900">{s.name}</span>

@@ -13,7 +13,7 @@ describe('Choosing a unit', () => {
   beforeEach(() => {
     panel(); session();
     cy.intercept('GET', 'http://localhost:3001/dashboard*', { revenueThisMonth: 0, weeklyChart: { series: [] }, recentOrders: [], pendingOrdersCount: 0, lowStockCount: 0, topProducts: [] });
-    cy.intercept('GET', 'http://localhost:3001/sales*', []);
+    cy.intercept('GET', 'http://localhost:3001/promotions/manage*', { data: [], meta: { total: 0 } });
   });
 
   it('shows cards after login even when another unit was previously saved', () => {

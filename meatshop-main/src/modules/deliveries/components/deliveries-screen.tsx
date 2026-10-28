@@ -1,4 +1,6 @@
 "use client";
+
+import { AssignOrderDialog } from "./assign-order-dialog";
 import { EmptyState } from "@/shared/components/empty-state";
 import { PageHeader } from "@/shared/components/page-header";
 import { formatDateValue } from '@/shared/lib/date-time';
@@ -554,54 +556,7 @@ export function DeliveriesScreen() {
 
         {tab === "people" && unitId && <DeliveryPeopleTable key={unitId} unitId={unitId} canManage={canManage} busy={busy} onApprove={approve} />}
 
-        <Dialog
-          open={Boolean(assigningOrder)}
-          onOpenChange={(open) => !open && setAssigningOrder(null)}
-        >
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>
-                Atribuir pedido #{assigningOrder?.orderId}
-              </DialogTitle>
-              <DialogDescription>
-                O entregador receberá um código exclusivo para apresentar na
-                retirada.
-              </DialogDescription>
-            </DialogHeader>
-            <select
-              aria-label="Entregador"
-              value={deliveryPersonId}
-              onChange={(event) => setDeliveryPersonId(event.target.value)}
-              className="w-full rounded-md border px-3 py-2"
-            >
-              <option value="">Selecione um entregador disponível</option>
-              {availablePeople.map((person) => (
-                <option
-                  key={person.deliveryPersonId}
-                  value={person.deliveryPersonId ?? ""}
-                >
-                  {person.user.name}
-                </option>
-              ))}
-            </select>
-            {availablePeople.length === 0 && (
-              <p className="text-sm text-amber-700">
-                Não há entregadores aprovados e disponíveis.
-              </p>
-            )}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setAssigningOrder(null)}>
-                Cancelar
-              </Button>
-              <Button
-                disabled={busy || !deliveryPersonId}
-                onClick={() => void assign()}
-              >
-                {busy ? "Atribuindo..." : "Atribuir"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <AssignOrderDialog orderId={assigningOrder?.orderId} people={availablePeople} selectedId={deliveryPersonId} onSelect={setDeliveryPersonId} busy={busy} onClose={() => setAssigningOrder(null)} onAssign={() => void assign()} />
 
         <Dialog
           open={Boolean(verifyingOrder)}
