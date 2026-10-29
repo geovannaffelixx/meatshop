@@ -17,6 +17,13 @@ export class PublicUnitDto {
   @ApiPropertyOptional({ nullable: true }) cover_url: string | null;
   @ApiPropertyOptional({ nullable: true }) distance_km?: number | null;
   @ApiProperty() average_rating: number;
+  @ApiPropertyOptional({
+    nullable: true,
+    description:
+      'Mean base price per kilogram of available products; null when no comparable products exist',
+  })
+  average_price_per_kg: number | null;
+
   @ApiProperty() review_count: number;
   @ApiProperty() is_active: boolean;
 
@@ -26,6 +33,7 @@ export class PublicUnitDto {
     unit: Unit,
     distanceKm?: number | null,
     ratings: { average: number; count: number } = { average: 0, count: 0 },
+    averagePricePerKg: number | null = null,
   ): PublicUnitDto {
     const dto = new PublicUnitDto();
     dto.id = unit.id;
@@ -44,6 +52,7 @@ export class PublicUnitDto {
     dto.gallery_urls = unit.gallery_urls ?? [];
     if (distanceKm !== undefined) dto.distance_km = distanceKm;
     dto.average_rating = ratings.average;
+    dto.average_price_per_kg = averagePricePerKg;
     dto.review_count = ratings.count;
     dto.is_active = unit.is_active;
     return dto;

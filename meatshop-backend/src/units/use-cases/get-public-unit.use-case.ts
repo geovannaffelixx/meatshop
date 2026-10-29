@@ -4,6 +4,7 @@ import { IsNull, Repository } from 'typeorm';
 import { PublicUnitDto } from '../dtos/public-unit.dto';
 import { Unit } from '../entities/unit.entity';
 import { Review } from '../../reviews/entities/review.entity';
+import { unitPricesPerKg } from '../utils/unit-price-summary';
 
 @Injectable()
 export class GetPublicUnitUseCase {
@@ -24,9 +25,15 @@ export class GetPublicUnitUseCase {
         : Number(
             (reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1),
           );
-    return PublicUnitDto.fromEntity(unit, undefined, {
-      average,
-      count: reviews.length,
-    });
+    const prices = await unitPricesPerKg(this.units.manager, [unit.id]);
+    return PublicUnitDto.fromEntity(
+      unit,
+      undefined,
+      {
+        average,
+        count: reviews.length,
+      },
+      prices.get(unit.id) ?? null,
+    );
   }
 }
