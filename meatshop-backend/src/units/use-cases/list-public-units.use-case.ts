@@ -6,6 +6,7 @@ import { FilterPublicUnitsDto } from '../dtos/filter-public-units.dto';
 import { PublicUnitDto } from '../dtos/public-unit.dto';
 import { Unit } from '../entities/unit.entity';
 import { distanceMeters } from '../../delivery/services/tracking-policy';
+import { unitPricesPerKg } from '../utils/unit-price-summary';
 
 const DEFAULT_RADIUS_KM = 25;
 const METERS_PER_KM = 1000;
@@ -39,9 +40,18 @@ export class ListPublicUnitsUseCase {
       .take(filters.limit);
     const [units, total] = await query.getManyAndCount();
     const ratings = await this.ratingsByUnit(units);
+    const prices = await unitPricesPerKg(
+      this.units.manager,
+      units.map((unit) => unit.id),
+    );
     return {
       data: units.map((unit) =>
-        PublicUnitDto.fromEntity(unit, this.distanceKm(unit, filters), ratings.get(unit.id)),
+        PublicUnitDto.fromEntity(
+          unit,
+          this.distanceKm(unit, filters),
+          ratings.get(unit.id),
+          prices.get(unit.id) ?? null,
+        ),
       ),
       meta: {
         page: filters.page,

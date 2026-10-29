@@ -1,5 +1,7 @@
 "use client";
 
+import { VEHICLE_TYPES, type VehicleType } from "@/shared/lib/vehicle-types";
+
 import { maskCPF } from "@/shared/lib/input-masks";
 import { validateName, validateEmail, validateCPF, validatePassword } from "@/shared/lib/validators";
 
@@ -42,7 +44,7 @@ type NewMember = {
   cpf: string;
   password: string;
   local_role: "MANAGER" | "OPERATOR" | "DELIVERY";
-  vehicle: "MOTORCYCLE" | "BIKE" | "CAR" | "ON_FOOT";
+  vehicle: VehicleType;
 };
 
 const emptyMember: NewMember = {
@@ -211,10 +213,11 @@ function TeamManager() {
                 className="input mt-1"
                 required
               >
-                <option value="MOTORCYCLE">Moto</option>
-                <option value="BIKE">Bicicleta</option>
-                <option value="CAR">Carro</option>
-                <option value="ON_FOOT">A pé</option>
+                {VEHICLE_TYPES.map((type) => (
+                  <option key={type.value} value={type.value}>
+                    {type.label}
+                  </option>
+                ))}
               </select>
             </label>
           )}

@@ -13,11 +13,17 @@ export class VerifyMobilePasswordUseCase {
   async execute(email: string, password: string): Promise<{ allowed: true }> {
     const key = this.config.get<string>('FIREBASE_WEB_API_KEY');
     if (!key) throw new ServiceUnavailableException('Authentication is unavailable');
+    const emulator = this.config.get<string>('FIREBASE_AUTH_EMULATOR_HOST');
+    const useEmulator =
+      ['development', 'test'].includes(this.config.get<string>('NODE_ENV') ?? '') && emulator;
+    const origin = useEmulator
+      ? `http://${emulator}/identitytoolkit.googleapis.com`
+      : 'https://identitytoolkit.googleapis.com';
     const result = await new CredentialAttemptsService(this.db).authenticate(email, async () => {
       let response: Response;
       try {
         response = await globalThis.fetch(
-          `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${encodeURIComponent(key)}`,
+          `${origin}/v1/accounts:signInWithPassword?key=${encodeURIComponent(key)}`,
           {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
