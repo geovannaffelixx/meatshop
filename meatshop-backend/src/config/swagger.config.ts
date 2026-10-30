@@ -1,5 +1,6 @@
 import type { INestApplication } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { version } from '../../package.json';
 
 export function setupSwagger(app: INestApplication): void {
   const config = new DocumentBuilder()
@@ -7,7 +8,7 @@ export function setupSwagger(app: INestApplication): void {
     .setDescription(
       'MeatShop API - delivery and management platform for butcher shops, units, catalog, cart, promotions, orders, and deliveries.',
     )
-    .setVersion('1.0')
+    .setVersion(version)
     .addBearerAuth(
       {
         type: 'http',
