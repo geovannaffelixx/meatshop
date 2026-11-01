@@ -2,6 +2,14 @@
 
 Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Changelog e Semantic Versioning.
 
+## [3.5.0] - 2026-11-01 - Exportação de relatórios
+
+- Relatórios filtrados e cálculos no backend, com autorização de papel e unidade.
+- Arquivos Excel com ExcelJS e PDF com PDFKit; JSON restrito ao SUPER_ADMIN.
+- Reutilização dos cálculos financeiros e filtros de pagamentos existentes.
+- Auditoria de exportações e testes de SQL em PostgreSQL isolado em memória.
+- Endpoint de dados pessoais passa a exigir unit_id e format; o mobile será integrado na próxima etapa.
+
 ## [3.4.0] - 2026-10-26 - Conformidade com a especificação
 
 ### Adicionado

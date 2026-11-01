@@ -1,5 +1,19 @@
 # Releases do backend
 
+## 3.5.0 — Exportação de relatórios
+
+Trabalho preparado em 1º de novembro de 2026.
+
+A API gera relatórios em Excel com ExcelJS e PDF com PDFKit para financeiro, pagamentos, pedidos, entregadores, catálogo e estoque, desempenho por produto, cupons, promoções, atendimento e avaliações. Filtros e cálculos são processados no backend por unidade, reutilizando os cálculos financeiros e as visões de pagamentos existentes. O desempenho por produto considera somente pedidos entregues com pagamento recebido.
+
+Usuários comuns precisam de vínculo ativo OWNER ou MANAGER na unidade solicitada e podem exportar Excel ou PDF. SUPER_ADMIN também pode exportar JSON e consultar as unidades para seleção no modal. A autorização é conferida no banco a cada solicitação; tentativas, sucessos e falhas que chegam aos casos de uso de exportação são registrados na auditoria.
+
+Os endpoints `GET /exports/reports` e `GET /exports/units` atendem o novo fluxo. `GET /users/me/export` passa a exigir `unit_id` e `format`, mantendo somente os dados pessoais da conta autenticada, inclusive atividades em outras unidades. A auditoria substitui CSV por Excel/PDF/JSON, exclusivamente para SUPER_ADMIN e com unidade obrigatória. Consultas detalhadas recusam resultados acima de 10 mil linhas por seção; dados pessoais têm limite de 10 mil campos exportados.
+
+Não há novas tabelas ou migrations nesta versão. A execução local com Docker foi validada com frontend, backend e banco saudáveis e migrator sem pendências. Typecheck, lint e build passaram, assim como 97 suítes e 1.373 testes no backend. A atualização deve ser coordenada com o painel web 3.5.0; o mobile permanece inalterado e sua futura integração deverá respeitar o novo contrato de exportação pessoal. Não houve publicação ou deploy em produção.
+
+Detalhes em [Exportações web — 3.5.0](../docs/EXPORTACOES_3_5_0.md).
+
 ## 3.4.0 — Conformidade com a especificação
 
 Trabalho preparado em 26 de outubro de 2026.

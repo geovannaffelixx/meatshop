@@ -1,5 +1,19 @@
 # 🥩 MeatShop — Backend (NestJS + PostgreSQL + Docker + Observabilidade)
 
+## Versão 3.5.0 — Exportação de relatórios
+
+A API gera arquivos Excel com **ExcelJS** e PDF com **PDFKit**, com filtros e cálculos por unidade para financeiro, pagamentos, pedidos, entregadores, catálogo e estoque, desempenho por produto, cupons, promoções, atendimento e avaliações. Desempenho considera somente pedidos entregues com pagamento recebido; atendimento inclui todos os chamados vinculados à unidade escolhida.
+
+- **OWNER/MANAGER:** vínculo ativo na unidade e formatos Excel/PDF.
+- **SUPER_ADMIN:** Excel/PDF/JSON e seleção de unidade pelo painel.
+- **Dados pessoais:** conteúdo da própria conta; `GET /users/me/export` exige `unit_id` e `format`.
+- **Auditoria:** exclusiva do SUPER_ADMIN, com unidade obrigatória e Excel/PDF/JSON.
+- **Limites:** até 10 mil linhas por seção detalhada; dados pessoais, até 10 mil campos. Resultados maiores são recusados com mensagem, sem truncamento silencioso.
+
+Os arquivos têm identificação, filtros e data de geração; respostas usam `Cache-Control: no-store`, e os casos de uso registram sucesso e falha na auditoria. Esta versão não adiciona migrations. O fluxo Docker continua executando o migrator antes de iniciar o backend.
+
+Consulte [RELEASES.md](./RELEASES.md), [CHANGELOG.md](./CHANGELOG.md) e a [documentação das exportações](../docs/EXPORTACOES_3_5_0.md). A integração do mobile será tratada na próxima etapa.
+
 ![Build Status](https://img.shields.io/github/actions/workflow/status/geovannaffelixx/meatshop/ci.yml?label=CI%2FCD&logo=github)
 ![Último Commit](https://img.shields.io/github/last-commit/geovannaffelixx/meatshop)
 ![Linguagem](https://img.shields.io/github/languages/top/geovannaffelixx/meatshop)

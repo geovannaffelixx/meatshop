@@ -1,6 +1,16 @@
 
 MEATSHOP
 
+## Versão 3.5.0 — Exportação de relatórios
+
+O painel oferece exportação em financeiro, pagamentos, pedidos, entregadores, catálogo e estoque, cupons, promoções, atendimento e avaliações. O modal começa com os filtros aplicados na tela e permite refiná-los; a paginação da listagem não limita o arquivo. O desempenho por produto fica no modal do catálogo e considera somente pedidos entregues com pagamento recebido.
+
+**OWNER** e **MANAGER** com vínculo ativo podem baixar Excel ou PDF da unidade selecionada. **SUPER_ADMIN** também pode baixar JSON e escolhe a unidade no modal. Os cálculos e arquivos são gerados no backend com ExcelJS e PDFKit. A auditoria permanece exclusiva do SUPER_ADMIN; “Meus dados” mantém o conteúdo pessoal da conta, com os novos papéis e formatos.
+
+O fluxo apresenta carregamento, bloqueia cliques duplicados, informa erros e permite tentar novamente. Ao trocar de unidade ou sair da tela, cancela a requisição em andamento. O download usa o cliente HTTP autenticado, incluindo renovação de sessão.
+
+Consulte [RELEASES.md](./RELEASES.md), [CHANGELOG.md](./CHANGELOG.md) e a [documentação das exportações](../docs/EXPORTACOES_3_5_0.md). O painel e a API estão na versão 3.5.0; o mobile não foi alterado nesta etapa.
+
 O MeatShop é um e-commerce de carnes, que conecta açougues e cliente em uma única plataforma.
 Vendedor: Os vendedores podem cadastar seu açougue, gerenciar seus produtos, acompanhar pedidos e acessar relatórios e estatísticas de vendas.
 Cliente: O cliente tem a possibilidade de visualizar os açougues disponíveis, navegar pelos produtos, fazer pedidos diretamente pelo aplicativo e acompanhar o status da compra.
@@ -54,7 +64,7 @@ As regras de `StatusDTO` do exemplo pertencem a etapas de venda configuráveis. 
 
 A identidade no cabeçalho e no drawer mostra `avatar_url`, com a inicial como alternativa quando não há foto ou quando ela falha. Mensagens usa o cabeçalho de Operação.
 
-A exportação na conta é temporariamente uma prévia: abre um modal com Excel, JSON e PDF e mostra um toast de demonstração. Nenhum desses botões faz requisição ou baixa arquivo nesta etapa. O endpoint de exportação permanece no backend para a integração futura.
+A exportação na conta está integrada à API: OWNER e MANAGER podem baixar seus dados pessoais em Excel ou PDF, e SUPER_ADMIN também pode escolher JSON. O arquivo preserva o conteúdo da conta autenticada, inclusive atividades em outras unidades; a unidade informada determina a autorização de exportação. Carregamento, erro e download seguem o modal compartilhado dos relatórios.
 
 `API_CACHE_STALE_TIME` centraliza os cinco minutos para chamadas diretas e hooks. Depois desse prazo, a próxima consulta busca a API novamente; não há uma busca automática por expiração enquanto a tela está parada. O descarte de consultas inativas continua em dez minutos. Polling existente e exclusões de cache permanecem.
 

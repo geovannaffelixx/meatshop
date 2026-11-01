@@ -4,6 +4,9 @@ import type { Response } from 'express';
 import { Roles } from '../common/decorators/roles.decorator';
 import { GlobalRole } from '../common/enums/global-role.enum';
 import { FilterAuditLogDto } from './dtos/filter-audit-log.dto';
+import { ExportAuditLogDto } from './dtos/export-audit-log.dto';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { User } from '../users/entities/user.entity';
 import { ExportAuditLogsUseCase } from './use-cases/export-audit-logs.use-case';
 import { GetAuditLogUseCase } from './use-cases/get-audit-log.use-case';
 import { GetAuditSummaryUseCase } from './use-cases/get-audit-summary.use-case';
@@ -27,13 +30,18 @@ export class AuditController {
     return this.getSummary.execute();
   }
 
-  @ApiOperation({ summary: 'Exports up to 10,000 filtered events as CSV' })
+  @ApiOperation({ summary: 'Exports filtered unit events as Excel, PDF or JSON for SUPER_ADMIN' })
   @Get('export')
-  async export(@Query() filters: FilterAuditLogDto, @Res() response: Response): Promise<void> {
-    const csv = await this.exportLogs.execute(filters);
-    response.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    response.setHeader('Content-Disposition', `attachment; filename=auditoria-${Date.now()}.csv`);
-    response.send(`\uFEFF${csv}`);
+  async export(
+    @Query() filters: ExportAuditLogDto,
+    @CurrentUser() user: User,
+    @Res() response: Response,
+  ): Promise<void> {
+    const file = await this.exportLogs.execute(filters, user);
+    response.setHeader('Content-Type', file.mime);
+    response.setHeader('Cache-Control', 'no-store');
+    response.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
+    response.send(file.buffer);
   }
 
   @ApiOperation({ summary: 'Lists audit events with filters' })

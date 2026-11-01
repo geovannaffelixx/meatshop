@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { UnitPermission } from '../../common/enums/unit-permission.enum';
 import { Order } from '../../orders/entities/order.entity';
 import { UnitAuthorizationService } from '../../units/services/unit-authorization.service';
@@ -30,10 +30,15 @@ export class GetMonthlyRevenueUseCase {
     return this.forUnit(unitId, query.month);
   }
 
-  async forUnit(unitId: number, month: string): Promise<MonthlyRevenueResult> {
+  async forUnit(
+    unitId: number,
+    month: string,
+    manager?: EntityManager,
+  ): Promise<MonthlyRevenueResult> {
     const { start, end, daysInMonth } = normalizeMonthRange(month);
 
-    const rows = await this.orderRepository
+    const repository = manager?.getRepository(Order) ?? this.orderRepository;
+    const rows = await repository
       .createQueryBuilder('o')
       .innerJoin('payments', 'p', 'p.order_id=o.id')
       .select([

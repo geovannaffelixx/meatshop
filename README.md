@@ -25,11 +25,21 @@ variável local `GROQ_API_KEY`. Consulte [SETUP.md](./SETUP.md).
 ![Frontend NextJS](https://img.shields.io/badge/Next.js-Frontend-black?logo=next.js)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-blue?logo=postgresql)
 ![Docker Ready](https://img.shields.io/badge/Docker-ready-0db7ed?logo=docker)
-![Versão](https://img.shields.io/badge/versão-3.3.0-green)
+![Versão](https://img.shields.io/badge/versão-3.5.0-green)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow?logo=open-source-initiative&logoColor=white)
 
 
 ---
+
+## Versão 3.5.0 — Exportação de relatórios
+
+O painel web e a API estão na versão **3.5.0**, preparada em 1º de novembro de 2026. Financeiro, pagamentos, pedidos, entregadores, catálogo e estoque, cupons, promoções, atendimento e avaliações possuem exportação com filtros. O desempenho por produto fica no modal do catálogo e considera somente pedidos entregues com pagamento recebido.
+
+Usuários com vínculo ativo de **OWNER** ou **MANAGER** exportam Excel ou PDF da unidade selecionada. O **SUPER_ADMIN** também pode exportar JSON e escolhe a unidade no modal. Os cálculos e arquivos são gerados no backend com ExcelJS e PDFKit; dados pessoais e auditoria seguem as mesmas regras de formatos e acesso, mantendo a auditoria exclusiva do SUPER_ADMIN.
+
+Os arquivos incluem identificação da unidade, filtros e data de geração. Resultados acima de 10 mil linhas por seção são recusados com orientação para refinar os filtros, sem truncamento silencioso. Esta versão não adiciona migrations; o Compose executa o migrator antes do backend e preserva os volumes existentes.
+
+Consulte a [documentação das exportações](./docs/EXPORTACOES_3_5_0.md), as [releases do backend](./meatshop-backend/RELEASES.md) e as [releases do painel web](./meatshop-main/RELEASES.md). O mobile permanece inalterado nesta etapa.
 
 # 📚 Índice
 
@@ -53,7 +63,7 @@ variável local `GROQ_API_KEY`. Consulte [SETUP.md](./SETUP.md).
 
 O **MeatShop** é uma plataforma completa para gestão de açougues e vendas online, integrando:
 
-- Painel web (Next.js 15)
+- Painel web (Next.js 16)
 - API backend (NestJS + PostgreSQL)
 - Observabilidade e monitoramento (Prometheus + Grafana)
 - CI/CD via GitHub Actions
@@ -77,11 +87,11 @@ Local: `/meatshop-backend`
 - Logging estruturado
 - Seeds de usuário/admin
 
-### ✔ Frontend (Next.js 15 + App Router)
+### ✔ Frontend (Next.js 16 + App Router)
 
 Local: `/meatshop-main`
 
-- Next.js 15 (App Router)
+- Next.js 16 (App Router)
 - TailwindCSS
 - Radix UI + ShadCN components
 - Testes com Jest
