@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import PDFDocument = require('pdfkit');
-import { displayCell, ReportSection, UnitReport } from '../report.types';
+import { displayCell, reportIdentity, ReportSection, ReportDocument } from '../report.types';
 
 @Injectable()
 export class PdfReportRenderer {
-  async render(report: UnitReport): Promise<Buffer> {
+  async render(report: ReportDocument): Promise<Buffer> {
     const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 36, bufferPages: true });
     const chunks: Buffer[] = [];
     const output = new Promise<Buffer>((resolve, reject) => {
@@ -28,15 +28,13 @@ export class PdfReportRenderer {
 
   private heading(
     doc: InstanceType<typeof PDFDocument>,
-    report: UnitReport,
+    report: ReportDocument,
     section: string,
   ): void {
     doc.fillColor('#b91c1c').font('Helvetica-Bold').fontSize(20).text('MeatShop');
     doc.fillColor('#0f172a').fontSize(14).text(report.title);
     doc.font('Helvetica').fontSize(9).fillColor('#475569');
-    doc.text(
-      `${report.unit.name} (#${report.unit.id}) · ${displayCell(report.generatedAt, 'date')}`,
-    );
+    doc.text(`${reportIdentity(report)} · ${displayCell(report.generatedAt, 'date')}`);
     report.filters.forEach((filter) => doc.text(filter));
     doc
       .moveDown()
@@ -49,7 +47,7 @@ export class PdfReportRenderer {
 
   private table(
     doc: InstanceType<typeof PDFDocument>,
-    report: UnitReport,
+    report: ReportDocument,
     section: ReportSection,
   ): void {
     const width = (doc.page.width - 72) / section.columns.length;

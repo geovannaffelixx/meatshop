@@ -15,6 +15,10 @@ import { Unit } from '../units/entities/unit.entity';
 import { UnitAuthorizationService } from '../units/services/unit-authorization.service';
 import { BuildUnitReportUseCase } from './build-unit-report.use-case';
 import { ExportsModule } from './exports.module';
+import { DeliveryExportsModule } from '../delivery/exports/delivery-exports.module';
+import { BuildDeliveryReportService } from '../delivery/exports/build-delivery-report.service';
+import { DeliveryPerson } from '../delivery/entities/delivery-person.entity';
+import { AppProfile } from '../common/enums/app-profile.enum';
 
 const repository = { insert: async () => undefined, create: (value: unknown) => value };
 const source = {
@@ -24,11 +28,13 @@ const source = {
   getRepository: (entity: unknown) => ({
     ...repository,
     findOneBy: async ({ user_id: userId }: { user_id?: number }) =>
-      entity === Unit
-        ? { id: 1, name: 'Unidade teste' }
-        : userId === 1
-          ? { local_role: 'OWNER' }
-          : { local_role: 'OPERATOR' },
+      entity === DeliveryPerson
+        ? { id: Number(userId) + 90, user_id: userId }
+        : entity === Unit
+          ? { id: 1, name: 'Unidade teste' }
+          : userId === 1
+            ? { local_role: 'OWNER' }
+            : { local_role: 'OPERATOR' },
   }),
 };
 
@@ -49,10 +55,22 @@ describe('Export HTTP contracts and module wiring', () => {
   let app: INestApplication;
   beforeAll(async () => {
     const module = await Test.createTestingModule({
-      imports: [TestInfrastructure, ExportsModule, AuditModule],
+      imports: [TestInfrastructure, ExportsModule, AuditModule, DeliveryExportsModule],
     })
       .overrideProvider(UnitAuthorizationService)
       .useValue({ resolveRequiredUnitId: async () => 1 })
+      .overrideProvider(BuildDeliveryReportService)
+      .useValue({
+        build: async () => ({
+          title: 'Ganhos',
+          person: { id: 91, name: 'Entregador teste' },
+          generatedAt: new Date(),
+          filters: [],
+          sections: [
+            { title: 'Ganhos', columns: [{ key: 'id', label: 'Pedido' }], rows: [{ id: 1 }] },
+          ],
+        }),
+      })
       .overrideProvider(BuildUnitReportUseCase)
       .useValue({
         execute: async () => ({
@@ -76,6 +94,8 @@ describe('Export HTTP contracts and module wiring', () => {
         req.user = {
           id: Number(req.headers['x-test-user'] ?? 1),
           global_role: req.headers['x-test-admin'] ? GlobalRole.SUPER_ADMIN : GlobalRole.USER,
+          is_active: true,
+          app_profile: req.headers['x-test-profile'] ?? AppProfile.CLIENT,
         };
         next();
       },
@@ -97,6 +117,32 @@ describe('Export HTTP contracts and module wiring', () => {
     expect(result.headers['content-type']).toContain('spreadsheetml');
     expect(result.headers['cache-control']).toBe('no-store');
     expect(result.headers['content-disposition']).toContain('.xlsx');
+  });
+
+  it('exports personal driver data without a unit or administrative role', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/delivery/me/exports?report=personal&format=pdf')
+      .set('x-test-profile', 'DELIVERY')
+      .expect(200);
+    expect(response.headers['content-type']).toContain('application/pdf');
+    expect(response.headers['cache-control']).toBe('no-store');
+    expect(response.headers['content-disposition']).toContain('.pdf');
+  });
+
+  it('rejects mobile client access, JSON and attempts to select another identity or unit', async () => {
+    await request(app.getHttpServer())
+      .get('/delivery/me/exports?report=personal&format=pdf')
+      .expect(403);
+    await request(app.getHttpServer())
+      .get('/delivery/me/exports?report=personal&format=json')
+      .set('x-test-profile', 'DELIVERY')
+      .expect(400);
+    for (const argument of ['user_id', 'unit_id', 'delivery_person_id']) {
+      await request(app.getHttpServer())
+        .get(`/delivery/me/exports?report=personal&format=pdf&${argument}=99`)
+        .set('x-test-profile', 'DELIVERY')
+        .expect(400);
+    }
   });
   it('rejects invalid formats and missing units before querying report data', async () => {
     await request(app.getHttpServer())

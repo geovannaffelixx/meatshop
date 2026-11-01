@@ -31,13 +31,7 @@ export function personalReport(
   data: Record<string, unknown>,
   unit: UnitReport['unit'],
 ): UnitReport {
-  const sections = Object.entries(data).map(([name, records]) =>
-    personalSection(name, records as Record<string, unknown>[]),
-  );
-  if (sections.reduce((sum, section) => sum + section.rows.length, 0) > MAX_REPORT_ROWS)
-    throw new PayloadTooLargeException(
-      'Seus dados ultrapassam o limite desta exportação. Entre em contato com o suporte.',
-    );
+  const sections = personalReportSections(data);
   return {
     title: 'Meus dados pessoais',
     unit: { id: unit.id, name: unit.name },
@@ -47,6 +41,18 @@ export function personalReport(
     ],
     sections,
   };
+}
+
+export function personalReportSections(data: Record<string, unknown>): ReportSection[] {
+  const sections = Object.entries(data).map(([name, records]) =>
+    personalSection(name, records as Record<string, unknown>[]),
+  );
+  if (sections.reduce((sum, section) => sum + section.rows.length, 0) > MAX_REPORT_ROWS)
+    throw new PayloadTooLargeException({
+      code: 'EXPORT_TOO_LARGE',
+      message: 'Seus dados ultrapassam o limite desta exportação. Entre em contato com o suporte.',
+    });
+  return sections;
 }
 
 function personalSection(name: string, records: Record<string, unknown>[]): ReportSection {

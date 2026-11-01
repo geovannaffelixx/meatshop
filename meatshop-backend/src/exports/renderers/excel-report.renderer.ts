@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { displayCell } from '../report.types';
+import { displayCell, reportIdentity } from '../report.types';
 import { Workbook, Worksheet } from 'exceljs';
-import { UnitReport, ReportSection, ReportCell } from '../report.types';
+import { ReportDocument, ReportSection, ReportCell } from '../report.types';
 
 @Injectable()
 export class ExcelReportRenderer {
-  async render(report: UnitReport): Promise<Buffer> {
+  async render(report: ReportDocument): Promise<Buffer> {
     const workbook = new Workbook();
     workbook.creator = 'MeatShop';
     workbook.created = report.generatedAt;
@@ -13,7 +13,7 @@ export class ExcelReportRenderer {
     return Buffer.from(await workbook.xlsx.writeBuffer());
   }
 
-  private addSheet(workbook: Workbook, report: UnitReport, section: ReportSection): void {
+  private addSheet(workbook: Workbook, report: ReportDocument, section: ReportSection): void {
     const sheet = workbook.addWorksheet(section.title.slice(0, 31));
     sheet.columns = section.columns.map((column) => ({
       key: column.key,
@@ -45,11 +45,11 @@ export class ExcelReportRenderer {
     sheet.headerFooter.oddFooter = '&LMeatShop&C&P / &N';
   }
 
-  private addHeading(sheet: Worksheet, report: UnitReport, section: ReportSection): void {
+  private addHeading(sheet: Worksheet, report: ReportDocument, section: ReportSection): void {
     sheet.addRow([`MeatShop · ${report.title}`]);
     sheet.getRow(1).font = { size: 18, bold: true, color: { argb: 'FFB91C1C' } };
     sheet.getRow(1).height = 34;
-    sheet.addRow([`Unidade: ${report.unit.name} (#${report.unit.id})`]);
+    sheet.addRow([reportIdentity(report)]);
     sheet.addRow([
       `Gerado em: ${report.generatedAt.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`,
     ]);

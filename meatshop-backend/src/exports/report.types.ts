@@ -20,6 +20,16 @@ export type UnitReport = {
   sections: ReportSection[];
 };
 
+export type ReportDocument = Omit<UnitReport, 'unit'> & {
+  unit?: UnitReport['unit'];
+  person?: { id: number; name: string };
+};
+
+export function reportIdentity(report: ReportDocument): string {
+  if (report.person) return `Entregador: ${report.person.name} (#${report.person.id})`;
+  return report.unit ? `Unidade: ${report.unit.name} (#${report.unit.id})` : 'MeatShop';
+}
+
 export function displayCell(value: ReportCell, kind?: ReportColumn['kind']): string {
   if (value === null || value === undefined) return '—';
   if (kind === 'label') return reportLabel(String(value));

@@ -10,7 +10,9 @@ Usuários comuns precisam de vínculo ativo OWNER ou MANAGER na unidade solicita
 
 Os endpoints `GET /exports/reports` e `GET /exports/units` atendem o novo fluxo. `GET /users/me/export` passa a exigir `unit_id` e `format`, mantendo somente os dados pessoais da conta autenticada, inclusive atividades em outras unidades. A auditoria substitui CSV por Excel/PDF/JSON, exclusivamente para SUPER_ADMIN e com unidade obrigatória. Consultas detalhadas recusam resultados acima de 10 mil linhas por seção; dados pessoais têm limite de 10 mil campos exportados.
 
-Não há novas tabelas ou migrations nesta versão. A execução local com Docker foi validada com frontend, backend e banco saudáveis e migrator sem pendências. Typecheck, lint e build passaram, assim como 97 suítes e 1.373 testes no backend. A atualização deve ser coordenada com o painel web 3.5.0; o mobile permanece inalterado e sua futura integração deverá respeitar o novo contrato de exportação pessoal. Não houve publicação ou deploy em produção.
+O mobile 3.5.0 usa a rota independente `GET /delivery/me/exports`, com Excel/PDF e acesso pessoal do entregador, sem seleção de unidade. Os relatórios incluem ganhos, histórico, despesas, demonstrativo financeiro, acertos, dados pessoais e atendimento. A identidade vem da sessão; filtros não podem informar outro usuário ou entregador. Consulte a [documentação mobile](../docs/EXPORTACOES_MOBILE_3_5_0.md).
+
+Não há novas tabelas ou migrations nesta versão. A atualização deve ser coordenada com o painel web e o mobile 3.5.0. Build, typecheck e lint passaram, assim como 99 suítes com 1.392 testes, incluindo isolamento pessoal, filtros, cálculos e autorização. Frontend, backend e banco foram validados saudáveis no Docker, com migrator sem pendências. Não houve publicação ou deploy em produção.
 
 Detalhes em [Exportações web — 3.5.0](../docs/EXPORTACOES_3_5_0.md).
 

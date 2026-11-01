@@ -52,6 +52,6 @@ import { UserIdentityService } from './services/user-identity.service';
     DeleteAddressUseCase,
     DeleteAccountUseCase,
   ],
-  exports: [TypeOrmModule, UserIdentityService],
+  exports: [TypeOrmModule, UserIdentityService, ExportPersonalDataUseCase],
 })
 export class UsersModule {}

@@ -9,7 +9,7 @@ O painel oferece exportação em financeiro, pagamentos, pedidos, entregadores, 
 
 O fluxo apresenta carregamento, bloqueia cliques duplicados, informa erros e permite tentar novamente. Ao trocar de unidade ou sair da tela, cancela a requisição em andamento. O download usa o cliente HTTP autenticado, incluindo renovação de sessão.
 
-Consulte [RELEASES.md](./RELEASES.md), [CHANGELOG.md](./CHANGELOG.md) e a [documentação das exportações](../docs/EXPORTACOES_3_5_0.md). O painel e a API estão na versão 3.5.0; o mobile não foi alterado nesta etapa.
+Consulte [RELEASES.md](./RELEASES.md), [CHANGELOG.md](./CHANGELOG.md) e a [documentação das exportações](../docs/EXPORTACOES_3_5_0.md). O painel, a API e o mobile estão na versão 3.5.0. O aplicativo possui exportação pessoal separada para entregadores, descrita na [documentação mobile](../docs/EXPORTACOES_MOBILE_3_5_0.md).
 
 O MeatShop é um e-commerce de carnes, que conecta açougues e cliente em uma única plataforma.
 Vendedor: Os vendedores podem cadastar seu açougue, gerenciar seus produtos, acompanhar pedidos e acessar relatórios e estatísticas de vendas.

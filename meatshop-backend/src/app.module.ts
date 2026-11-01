@@ -1,4 +1,5 @@
 import { ExportsModule } from './exports/exports.module';
+import { DeliveryExportsModule } from './delivery/exports/delivery-exports.module';
 import { AuditRequestContextMiddleware } from './audit/audit-request-context';
 import { CsrfMiddleware } from './common/middleware/csrf.middleware';
 import { MonitoringModule } from './monitoring/monitoring.module';
@@ -178,6 +179,7 @@ const APP_ENTITIES = [
       },
     }),
 
+    DeliveryExportsModule,
     ExportsModule,
     FinanceModule,
     DashboardModule,

@@ -10,7 +10,7 @@ OWNER e MANAGER com vínculo ativo exportam Excel ou PDF da unidade atual. SUPER
 
 Os arquivos são preparados pelo backend. O painel informa carregamento, impede solicitações duplicadas, apresenta erros com possibilidade de tentar novamente e cancela a requisição ao trocar de unidade ou sair da tela. O download reutiliza o cliente HTTP autenticado e a renovação de sessão. Relatórios acima do limite informado pela API orientam o usuário a refinar os filtros.
 
-Typecheck, lint e build passaram, assim como 39 suítes e 195 testes no web. A versão 3.5.0 foi validada localmente com a API e o banco em Docker, sem alterar o repositório mobile. A implantação deve ser coordenada com a API 3.5.0. Não houve publicação ou deploy em produção.
+Typecheck, lint e build passaram, assim como 39 suítes e 195 testes no web. A versão 3.5.0 foi validada localmente com a API e o banco em Docker. O mobile 3.5.0 possui sua própria exportação pessoal para entregadores, sem alterar os controles de acesso do painel. A implantação deve ser coordenada com a API 3.5.0. Não houve publicação ou deploy em produção.
 
 Detalhes em [Exportações web — 3.5.0](../docs/EXPORTACOES_3_5_0.md).
 

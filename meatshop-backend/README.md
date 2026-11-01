@@ -12,7 +12,9 @@ A API gera arquivos Excel com **ExcelJS** e PDF com **PDFKit**, com filtros e c�
 
 Os arquivos têm identificação, filtros e data de geração; respostas usam `Cache-Control: no-store`, e os casos de uso registram sucesso e falha na auditoria. Esta versão não adiciona migrations. O fluxo Docker continua executando o migrator antes de iniciar o backend.
 
-Consulte [RELEASES.md](./RELEASES.md), [CHANGELOG.md](./CHANGELOG.md) e a [documentação das exportações](../docs/EXPORTACOES_3_5_0.md). A integração do mobile será tratada na próxima etapa.
+O mobile 3.5.0 usa `GET /delivery/me/exports` para relatórios pessoais do entregador em Excel/PDF. Essa rota não exige papel administrativo nem unidade, deriva a identidade da sessão e bloqueia clientes sem perfil de entregador. Abrange ganhos, entregas, despesas, demonstrativo, acertos, dados pessoais e atendimentos próprios.
+
+Consulte [RELEASES.md](./RELEASES.md), [CHANGELOG.md](./CHANGELOG.md), a [documentação web](../docs/EXPORTACOES_3_5_0.md) e a [integração mobile](../docs/EXPORTACOES_MOBILE_3_5_0.md).
 
 ![Build Status](https://img.shields.io/github/actions/workflow/status/geovannaffelixx/meatshop/ci.yml?label=CI%2FCD&logo=github)
 ![Último Commit](https://img.shields.io/github/last-commit/geovannaffelixx/meatshop)

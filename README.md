@@ -39,7 +39,9 @@ Usuários com vínculo ativo de **OWNER** ou **MANAGER** exportam Excel ou PDF d
 
 Os arquivos incluem identificação da unidade, filtros e data de geração. Resultados acima de 10 mil linhas por seção são recusados com orientação para refinar os filtros, sem truncamento silencioso. Esta versão não adiciona migrations; o Compose executa o migrator antes do backend e preserva os volumes existentes.
 
-Consulte a [documentação das exportações](./docs/EXPORTACOES_3_5_0.md), as [releases do backend](./meatshop-backend/RELEASES.md) e as [releases do painel web](./meatshop-main/RELEASES.md). O mobile permanece inalterado nesta etapa.
+O mobile 3.5.0 adiciona exportações pessoais exclusivas do entregador em Excel/PDF, sem seleção de unidade: ganhos, entregas, despesas, demonstrativo financeiro, acertos, dados pessoais e atendimentos. O acesso usa a própria sessão e é separado das permissões administrativas.
+
+Consulte a [documentação das exportações web](./docs/EXPORTACOES_3_5_0.md), a [integração mobile](./docs/EXPORTACOES_MOBILE_3_5_0.md), as [releases do backend](./meatshop-backend/RELEASES.md) e as [releases do painel web](./meatshop-main/RELEASES.md).
 
 # 📚 Índice
 

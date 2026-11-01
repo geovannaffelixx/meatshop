@@ -4,11 +4,14 @@ Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Cha
 
 ## [3.5.0] - 2026-11-01 - Exportação de relatórios
 
+- Acesso pessoal separado para entregadores em `GET /delivery/me/exports`, sem seleção de unidade, com Excel/PDF e identidade derivada da sessão.
+- Relatórios pessoais de ganhos, entregas, despesas, demonstrativo financeiro, acertos recebidos, dados pessoais e suporte; cálculos e geração no backend.
+- Separação entre conclusão de entregas e datas de recebimento para o resultado de caixa, com isolamento entre contas e auditoria das exportações pessoais.
 - Relatórios filtrados e cálculos no backend, com autorização de papel e unidade.
 - Arquivos Excel com ExcelJS e PDF com PDFKit; JSON restrito ao SUPER_ADMIN.
 - Reutilização dos cálculos financeiros e filtros de pagamentos existentes.
 - Auditoria de exportações e testes de SQL em PostgreSQL isolado em memória.
-- Endpoint de dados pessoais passa a exigir unit_id e format; o mobile será integrado na próxima etapa.
+- Endpoint administrativo de dados pessoais exige unit_id e format; o mobile usa a rota pessoal separada para o entregador.
 
 ## [3.4.0] - 2026-10-26 - Conformidade com a especificação
 

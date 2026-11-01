@@ -76,6 +76,6 @@ O modal impede cliques duplicados, apresenta carregamento, permite tentar novame
 
 ## Compatibilidade
 
-A versão 3.5.0 é aplicada ao frontend e backend. O repositório mobile permanece inalterado nesta etapa. A integração futura do mobile deve enviar unit_id e format ao endpoint de dados pessoais e respeitar os papéis definidos.
+A versão 3.5.0 é aplicada ao frontend e backend. O mobile 3.5.0 usa uma rota pessoal separada, exclusiva do entregador, sem unidade e sem papel OWNER/MANAGER. A rota administrativa de dados pessoais descrita aqui continua exigindo unit_id e format. Consulte [Exportações pessoais do entregador](./EXPORTACOES_MOBILE_3_5_0.md).
 
 A nova interface de auditoria substitui CSV por Excel/PDF/JSON. Não há publicação ou commit automático.

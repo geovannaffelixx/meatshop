@@ -1,10 +1,11 @@
-import { BadRequestException, PayloadTooLargeException } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 import type { EntityManager } from 'typeorm';
 import { searchPattern } from '../../common/dtos/panel-list-query.dto';
 import type { ExportReportDto } from '../dtos/export-report.dto';
-import type { ReportCell, ReportColumn, ReportSection } from '../report.types';
+import type { ReportColumn, ReportSection } from '../report.types';
 
-export const MAX_REPORT_ROWS = 10000;
+import { queryReportSection } from './query-report-section';
+export { MAX_REPORT_ROWS } from './query-report-section';
 
 export class ReportQuery {
   readonly values: unknown[];
@@ -57,21 +58,13 @@ export class ReportQuery {
     sql: string,
     order = '',
   ): Promise<ReportSection> {
-    const rows: Record<string, ReportCell>[] = await this.manager.query(
-      `${sql} ${this.conditions.length ? `AND ${this.conditions.join(' AND ')}` : ''} ${order} LIMIT ${MAX_REPORT_ROWS + 1}`,
+    return queryReportSection(
+      this.manager,
+      title,
+      columns,
+      `${sql} ${this.conditions.length ? `AND ${this.conditions.join(' AND ')}` : ''} ${order}`,
       this.values,
     );
-    if (rows.length > MAX_REPORT_ROWS)
-      throw new PayloadTooLargeException(
-        'Este relatório tem mais de 10 mil registros. Reduza o período ou use mais filtros.',
-      );
-    rows.forEach((row) =>
-      columns.forEach((column) => {
-        if (column.kind === 'money' || column.kind === 'number')
-          row[column.key] = Number(row[column.key] ?? 0);
-      }),
-    );
-    return { title, columns, rows };
   }
 }
 
