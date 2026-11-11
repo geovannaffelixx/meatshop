@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { Input } from '@/shared/components/ui/input';
 import { ExportField, ReportFilters } from './report-options';
 
@@ -9,6 +10,7 @@ type Props = {
 };
 
 export function ReportFilterFields({ fields, values, disabled, onChange }: Props) {
+  const id = useId();
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       {fields.map((field) => (
@@ -34,10 +36,22 @@ export function ReportFilterFields({ fields, values, disabled, onChange }: Props
           ) : (
             <Input
               type={field.type ?? 'text'}
+              placeholder={field.placeholder}
+              className="placeholder:text-slate-400"
+              aria-describedby={
+                field.type === 'date' || field.type === 'month'
+                  ? `${id}-${field.key}-example`
+                  : undefined
+              }
               disabled={disabled}
               value={values[field.key] ?? ''}
               onChange={(event) => onChange(field.key, event.target.value)}
             />
+          )}
+          {(field.type === 'date' || field.type === 'month') && (
+            <span id={`${id}-${field.key}-example`} className="block text-xs font-normal text-slate-500">
+              {field.placeholder}
+            </span>
           )}
         </label>
       ))}

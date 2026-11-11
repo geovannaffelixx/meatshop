@@ -18,13 +18,23 @@ export type ExportField = {
   key: string;
   label: string;
   type?: string;
+  placeholder?: string;
   options?: [string, string][];
 };
 const period: ExportField[] = [
-  { key: 'date_from', label: 'Data inicial', type: 'date' },
-  { key: 'date_to', label: 'Data final', type: 'date' },
+  { key: 'date_from', label: 'Data inicial', type: 'date', placeholder: 'Ex.: 01/11/2026' },
+  { key: 'date_to', label: 'Data final', type: 'date', placeholder: 'Ex.: 30/11/2026' },
 ];
 const search: ExportField = { key: 'search', label: 'Buscar' };
+const month: ExportField = {
+  key: 'month',
+  label: 'Competência',
+  type: 'month',
+  placeholder: 'Ex.: novembro de 2026',
+};
+const productSearch: ExportField = { ...search, placeholder: 'Ex.: Picanha bovina' };
+const productCode: ExportField = { key: 'id', label: 'Código do produto', placeholder: 'Ex.: 123' };
+const category: ExportField = { key: 'category', label: 'Categoria', placeholder: 'Ex.: Cortes bovinos' };
 const active: ExportField = {
   key: 'active',
   label: 'Disponibilidade',
@@ -35,9 +45,9 @@ const active: ExportField = {
   ],
 };
 const fields: Record<ReportKind, ExportField[]> = {
-  finance: [{ key: 'month', label: 'Competência', type: 'month' }],
+  finance: [month],
   payments: [
-    { key: 'month', label: 'Competência', type: 'month' },
+    month,
     {
       key: 'view',
       label: 'Pagamentos',
@@ -52,10 +62,16 @@ const fields: Record<ReportKind, ExportField[]> = {
   ],
   orders: [
     ...period,
-    { key: 'scheduled_from', label: 'Agendamento inicial', type: 'date' },
-    { key: 'scheduled_to', label: 'Agendamento final', type: 'date' },
-    { key: 'id', label: 'Número do pedido' },
-    { ...search, label: 'Cliente' },
+    {
+      key: 'scheduled_from', label: 'Agendamento inicial', type: 'date',
+      placeholder: 'Ex.: 01/11/2026',
+    },
+    {
+      key: 'scheduled_to', label: 'Agendamento final', type: 'date',
+      placeholder: 'Ex.: 30/11/2026',
+    },
+    { key: 'id', label: 'Número do pedido', placeholder: 'Ex.: 1024' },
+    { ...search, label: 'Cliente', placeholder: 'Ex.: Maria da Silva' },
     {
       key: 'status',
       label: 'Situação',
@@ -72,9 +88,9 @@ const fields: Record<ReportKind, ExportField[]> = {
     },
   ],
   catalog: [
-    search,
-    { key: 'id', label: 'Código do produto' },
-    { key: 'category', label: 'Categoria' },
+    productSearch,
+    productCode,
+    category,
     active,
     {
       key: 'stock',
@@ -89,14 +105,14 @@ const fields: Record<ReportKind, ExportField[]> = {
   ],
   performance: [
     ...period,
-    search,
-    { key: 'id', label: 'Código do produto' },
-    { key: 'category', label: 'Categoria' },
+    productSearch,
+    productCode,
+    category,
     active,
   ],
-  coupons: [search, active],
+  coupons: [{ ...search, placeholder: 'Ex.: BEMVINDO10 ou Boas-vindas' }, active],
   promotions: [
-    search,
+    { ...search, placeholder: 'Ex.: Oferta de domingo ou Picanha' },
     {
       key: 'status',
       label: 'Situação',
@@ -109,7 +125,11 @@ const fields: Record<ReportKind, ExportField[]> = {
       ],
     },
   ],
-  deliveries: [{ ...search, label: 'Nome ou e-mail do entregador' }],
+  deliveries: [{
+    ...search,
+    label: 'Nome ou e-mail do entregador',
+    placeholder: 'Ex.: João da Silva ou joao@exemplo.com',
+  }],
   reviews: [
     ...period,
     {
@@ -123,7 +143,7 @@ const fields: Record<ReportKind, ExportField[]> = {
   ],
   support: [
     ...period,
-    search,
+    { ...search, placeholder: 'Ex.: Dúvida sobre um pedido' },
     {
       key: 'status',
       label: 'Situação',
@@ -139,7 +159,7 @@ const fields: Record<ReportKind, ExportField[]> = {
   ],
   audit: [
     ...period,
-    search,
+    { ...search, placeholder: 'Ex.: Maria da Silva ou produtos' },
     {
       key: 'outcome',
       label: 'Resultado',
