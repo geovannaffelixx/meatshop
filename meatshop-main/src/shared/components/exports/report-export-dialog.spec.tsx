@@ -72,6 +72,10 @@ describe('Report export dialog', () => {
     await open();
     expect(document.querySelector('option[value="json"]')).toBeNull();
     expect(document.querySelector('[role="dialog"]')?.textContent).toContain('Açougue Centro');
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain('Escopo');
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain('Conteúdo');
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain('Formato');
+    expect(button('Cancelar')).toBeDefined();
     await act(async () => button('Baixar arquivo').click());
     const path = jest.mocked(apiGet).mock.calls[0][0];
     expect(path).toContain('unit_id=8');
