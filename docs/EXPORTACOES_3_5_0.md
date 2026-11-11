@@ -33,6 +33,7 @@ Nenhuma tabela ou migração é adicionada. Relatórios leem os dados existentes
 | Rota | Uso |
 | --- | --- |
 | GET /exports/units | Lista de id/nome das unidades para o seletor do SUPER_ADMIN |
+| GET /exports/review-products | Produtos avaliados da unidade autorizada; alimenta o filtro do modal |
 | GET /exports/reports | unit_id, report, format e filtros do relatório |
 | GET /users/me/export | unit_id e format; dados da conta autenticada |
 | GET /audit-logs/export | unit_id, format e filtros de auditoria; SUPER_ADMIN |
@@ -58,11 +59,15 @@ Os DTOs e o Swagger documentam os campos aceitos. O modal inicia com os filtros 
 | Atendimento | Todos os solicitantes com chamados vinculados à unidade; protocolo, assunto, categoria, prioridade, situação e datas |
 | Avaliações | Avaliações da unidade e produtos, notas, comentários, datas e nota média do conjunto filtrado |
 
-Horários são apresentados em America/Sao_Paulo. Datas finais de filtros incluem o dia inteiro. Excel mantém valores monetários e quantidades como números, com formatação, filtros e cabeçalho congelado. PDF repete o cabeçalho nas páginas e inclui paginação. Valores textuais no Excel são strings, não fórmulas.
+Horários são apresentados em America/Sao_Paulo. Datas finais de filtros incluem o dia inteiro. Todo relatório usa o mesmo template MeatShop: identidade visual vermelha, identificação da unidade ou pessoa, data de geração, filtros, cabeçalhos repetidos e estado vazio explícito. Excel mantém valores monetários e quantidades como números, aplica larguras proporcionais, bordas, faixas alternadas, filtro, cabeçalho congelado e configuração de impressão. PDF repete contexto e cabeçalho nas páginas, inclui bordas e paginação; relatórios com mais de oito colunas usam A3 paisagem e fonte adaptativa. Valores textuais no Excel são strings, não fórmulas.
+
+No relatório de avaliações, a lista de produtos é carregada da unidade selecionada dentro do modal. Ao trocar a unidade como SUPER_ADMIN, o filtro volta para “Todas” e as opções são buscadas novamente, evitando reaproveitar produtos da unidade exibida na tela.
 
 ## Limites e erros
 
-Consultas detalhadas recusam resultados acima de 10.000 linhas por seção com HTTP 413 e orientação para refinar filtros; não truncam silenciosamente. Dados pessoais usam limite de 10.000 campos exportados. Datas inválidas ou invertidas são recusadas. Falhas inesperadas retornam mensagens em português e são registradas sem conteúdo do relatório.
+Consultas detalhadas recusam resultados acima de 10.000 linhas por seção com HTTP 413 e orientação para refinar filtros; não truncam silenciosamente. A geração também recusa conteúdo-fonte acima de 8 MB, células acima de 30 mil caracteres e arquivo final acima de 25 MB. Dados pessoais usam limite de 10.000 campos exportados. Datas inválidas ou invertidas são recusadas. Falhas inesperadas retornam mensagens em português e são registradas sem conteúdo do relatório.
+
+“Meus dados pessoais” cobre perfil, endereços, compras, itens, pagamentos, transações, reembolsos, histórico de status, cupons utilizados, carrinho, avaliações, suporte, conversas, notificações, aceites legais, vínculos, dados do entregador, atribuições, rastreamento de localização, recusas, despesas, veículos, metas, avaliações e acertos do entregador, IA e eventos de auditoria da conta. Senhas, hashes, tokens, URLs sensíveis de checkout, segredos e textos antigos/novos de auditoria são removidos para não expor credenciais ou dados de terceiros.
 
 O modal impede cliques duplicados, apresenta carregamento, permite tentar novamente e cancela a requisição quando o usuário muda de unidade ou sai da tela. O download usa o cliente HTTP existente, incluindo renovação de sessão e tratamento de erros.
 

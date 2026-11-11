@@ -8,6 +8,11 @@ const groupNames: Record<string, string> = {
   orders: 'Compras',
   order_items: 'Itens comprados',
   payments: 'Pagamentos',
+  payment_transactions: 'Transações de pagamento',
+  payment_refunds: 'Reembolsos',
+  payment_refund_attempts: 'Tentativas de reembolso',
+  order_status_history: 'Histórico de pedidos',
+  coupon_redemptions: 'Cupons utilizados',
   cart: 'Carrinho',
   reviews: 'Avaliações',
   support: 'Chamados',
@@ -17,6 +22,9 @@ const groupNames: Record<string, string> = {
   notification_preferences: 'Preferências de notificação',
   legal_acceptances: 'Aceites legais',
   delivery_profile: 'Perfil de entregador',
+  delivery_assignments: 'Entregas atribuídas',
+  delivery_tracking: 'Histórico de localização em entregas',
+  delivery_offer_rejections: 'Ofertas de entrega recusadas',
   delivery_expenses: 'Despesas de entregador',
   vehicles: 'Veículos',
   unit_memberships: 'Vínculos com unidades',
@@ -25,6 +33,7 @@ const groupNames: Record<string, string> = {
   delivery_receipts: 'Acertos de entregador',
   ai_conversations: 'Conversas com IA',
   ai_messages: 'Mensagens com IA',
+  audit_events: 'Eventos de auditoria da conta',
 };
 
 export function personalReport(

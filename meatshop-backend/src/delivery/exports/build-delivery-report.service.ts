@@ -7,6 +7,7 @@ import { ReportDocument, ReportSection } from '../../exports/report.types';
 import { DeliveryExportDto, DeliveryReportKind } from './dtos/delivery-export.dto';
 import {
   deliveryEarningsReport,
+  deliveryHistoryReport,
   deliverySettlementsReport,
 } from './queries/delivery-earnings.query';
 import { deliveryExpensesReport } from './queries/delivery-expenses.query';
@@ -74,8 +75,9 @@ export class BuildDeliveryReportService {
         paid,
       ];
     }
+    if (filters.report === 'history')
+      return [await deliveryHistoryReport(manager, personId, filters)];
     const earnings = await deliveryEarningsReport(manager, personId, filters);
-    if (filters.report === 'history') earnings.title = 'Histórico de entregas concluídas';
     return [deliveryEarningsSummary(earnings), earnings];
   }
 
@@ -108,7 +110,7 @@ export class BuildDeliveryReportService {
   private validate(filters: DeliveryExportDto): void {
     if (filters.report !== 'personal') deliveryExportRange(filters);
     const invalid =
-      (filters.payment && !['earnings', 'history'].includes(filters.report)) ||
+      (filters.payment && filters.report !== 'earnings') ||
       (filters.category && filters.report !== 'expenses') ||
       (filters.status && filters.report !== 'support') ||
       (filters.report === 'personal' && (filters.from || filters.to));

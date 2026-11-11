@@ -19,7 +19,6 @@ type Props = {
   report: ReportKind;
   filters?: ReportFilters;
   label?: string;
-  products?: { id: number; name: string }[];
 };
 type ContentProps = Props & { admin: boolean; currentUnit: number | null; unitName?: string };
 type Form = ReturnType<typeof useExportForm>;
@@ -75,7 +74,7 @@ function ExportHeading({ report }: { report: ReportKind }) {
   );
 }
 
-function ExportBody({ form, admin, report, unitName, products }: ContentProps & { form: Form }) {
+function ExportBody({ form, admin, report, unitName }: ContentProps & { form: Form }) {
   const common = { state: form.state, disabled: form.busy, onChange: form.change };
   return (
     <>
@@ -89,7 +88,15 @@ function ExportBody({ form, admin, report, unitName, products }: ContentProps & 
         </p>
       )}
       {report === 'catalog' && <ExportKind {...common} />}
-      <ExportFilters {...common} products={products} />
+      <ExportFilters {...common} products={form.products.data ?? []} />
+      {report === 'reviews' && form.products.error && (
+        <p role="alert" className="text-sm text-red-700">
+          Não foi possível carregar os produtos da unidade. A exportação geral continua disponível.{' '}
+          <button type="button" onClick={() => void form.products.refetch()}>
+            Tentar novamente
+          </button>
+        </p>
+      )}
       <ExportFormat {...common} admin={admin} />
     </>
   );

@@ -13,7 +13,7 @@ A rota administrativa do web e a exportação pessoal administrativa mantêm as 
 | report | earnings, history, expenses, financial, settlements, personal, support |
 | format | xlsx ou pdf; JSON/CSV recusados |
 | from/to | Datas YYYY-MM-DD, obrigatórias exceto em personal; fim inclusivo no calendário America/Sao_Paulo |
-| payment | all, received, pending; somente ganhos e histórico |
+| payment | all, received, pending; somente ganhos |
 | category | Categoria existente da despesa; somente despesas |
 | status | Situação existente do chamado; somente atendimento |
 
@@ -23,14 +23,15 @@ Filtros desconhecidos são recusados pelo ValidationPipe. Identificadores são d
 
 ## Relatórios e cálculos
 
-- Ganhos/histórico: entregas com delivery_status DELIVERED; data de conclusão usa delivery_verified_at, com updated_at como alternativa para registros antigos. Exibe taxa, recebido, saldo e data do acerto. Valores recebidos desses pedidos refletem o estado na emissão, mesmo quando o pagamento foi feito fora do período de conclusão.
+- Ganhos: visão financeira das entregas concluídas; exibe taxa, recebido, saldo e data do acerto. Valores recebidos desses pedidos refletem o estado na emissão, mesmo quando o pagamento foi feito fora do período de conclusão.
+- Histórico: visão operacional das entregas concluídas, sem repetir valores financeiros; exibe pedido, unidade, modalidade, agendamento, confirmação de retirada e conclusão. A data de conclusão usa delivery_verified_at, com updated_at como alternativa para registros antigos.
 - Acertos: valores efetivamente registrados em delivery_settlements, filtrados pela data paid_at.
 - Despesas: registros pessoais em delivery_expenses, filtrados por incurred_on e categoria.
 - Demonstrativo: ganhos pela conclusão, recebimentos pela data do acerto, despesas pela data informada; resultado de caixa = recebimentos menos despesas do período. Um pagamento de entrega antiga pode entrar no caixa atual.
 - Atendimento: somente chamados com user_id da sessão e suas mensagens. O período corresponde à abertura do chamado; mensagens desses chamados são incluídas até a emissão. Anexos não são empacotados.
 - Dados pessoais: reutiliza a coleta e a remoção de credenciais do exportador existente. Os campos são apresentados em seções legíveis, com identificação pessoal e sem unidade fictícia.
 
-Cálculos monetários de resumo usam centavos. Detalhes e resumo são lidos na mesma transação REPEATABLE READ. Limites: 10 mil linhas por seção e 10 mil campos na cópia pessoal. Resultados maiores retornam EXPORT_TOO_LARGE, sem truncamento silencioso. Não há novas tabelas ou migrations.
+Cálculos monetários de resumo usam centavos. Detalhes e resumo são lidos na mesma transação REPEATABLE READ. Limites: 10 mil linhas por seção, 10 mil campos na cópia pessoal, 8 MB de conteúdo-fonte, 30 mil caracteres por célula e 25 MB no arquivo final. Resultados maiores retornam EXPORT_TOO_LARGE, sem truncamento silencioso. Não há novas tabelas ou migrations.
 
 ## Arquitetura e interface
 
@@ -56,7 +57,7 @@ Atalhos no aplicativo:
 
 O aplicativo não recalcula o conteúdo dos arquivos. O cliente HTTP preserva Bearer, App Check existente, renovação de sessão, timeout e cancelamento para respostas binárias. Erros HTTP continuam sendo interpretados como JSON e traduzidos pelos códigos da API. O repositório verifica a assinatura básica PDF/ZIP antes de encaminhar o arquivo ao compartilhamento.
 
-O controlador impede duplicação, cancela ao fechar e verifica novamente a conta e o perfil antes de compartilhar. A opção de salvar é fornecida pelo compartilhamento do sistema e depende dos aplicativos instalados. Cancelar a folha de compartilhamento não é informado como arquivo salvo. Os antigos geradores locais PDF/CSV e o serviço JSON foram substituídos; não há novas dependências de execução do mobile.
+O controlador impede duplicação, cancela ao fechar e verifica novamente a conta e o perfil antes de compartilhar. O retorno nativo é tratado em três estados: compartilhado, cancelado ou indisponível. A opção de salvar depende dos aplicativos instalados; indisponibilidade apresenta erro orientativo e nunca é informada como sucesso. Os antigos geradores locais PDF/CSV e o serviço JSON foram substituídos; não há novas dependências de execução do mobile.
 
 ## Validação e execução
 

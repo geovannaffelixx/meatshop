@@ -31,6 +31,27 @@ export async function deliveryEarningsReport(
   );
 }
 
+export async function deliveryHistoryReport(
+  manager: EntityManager,
+  personId: number,
+  filters: DeliveryExportDto,
+) {
+  return queryReportSection(
+    manager,
+    'Histórico operacional de entregas',
+    [
+      c('order_id', 'Pedido'),
+      c('unit', 'Unidade'),
+      c('delivery_type', 'Modalidade', 'label'),
+      c('scheduled', 'Agendada'),
+      c('pickup_at', 'Retirada confirmada', 'date'),
+      c('completed_at', 'Entrega concluída', 'date'),
+    ],
+    `SELECT o.id AS order_id,u.name AS unit,o.delivery_type,CASE WHEN o.is_scheduled THEN 'Sim' ELSE 'Não' END AS scheduled,o.pickup_verified_at AS pickup_at,COALESCE(o.delivery_verified_at,o.updated_at) AS completed_at FROM orders o JOIN units u ON u.id=o.unit_id WHERE o.delivery_person_id=$1 AND o.delivery_status='DELIVERED' AND COALESCE(o.delivery_verified_at,o.updated_at)>=$2 AND COALESCE(o.delivery_verified_at,o.updated_at)<$3 ORDER BY completed_at DESC,o.id DESC`,
+    [personId, ...deliveryExportRange(filters)],
+  );
+}
+
 export async function deliverySettlementsReport(
   manager: EntityManager,
   personId: number,

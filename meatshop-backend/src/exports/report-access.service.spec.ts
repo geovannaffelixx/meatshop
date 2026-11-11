@@ -17,7 +17,10 @@ describe('Report authorization', () => {
     findOneBy: jest.fn<() => Promise<Unit>>().mockResolvedValue(unit as Unit),
     find: jest.fn(),
   };
-  const db = { getRepository: jest.fn((entity) => (entity === Unit ? units : membership)) };
+  const db = {
+    getRepository: jest.fn((entity) => (entity === Unit ? units : membership)),
+    query: jest.fn<() => Promise<unknown[]>>(),
+  };
   const authorization = {
     resolveRequiredUnitId: jest.fn<() => Promise<number>>().mockResolvedValue(1),
   };
@@ -63,5 +66,12 @@ describe('Report authorization', () => {
   it('does not expose the administrative unit picker to ordinary users', async () => {
     await expect(service.units(user)).rejects.toBeInstanceOf(ForbiddenException);
     expect(units.find).not.toHaveBeenCalled();
+  });
+  it('loads reviewed products only after authorizing the selected unit', async () => {
+    membership.findOneBy.mockResolvedValue({ local_role: LocalRole.MANAGER });
+    db.query.mockResolvedValue([{ id: 10, name: 'Picanha' }]);
+    await expect(service.reviewProducts(user, 1)).resolves.toEqual([{ id: 10, name: 'Picanha' }]);
+    expect(authorization.resolveRequiredUnitId).toHaveBeenCalledWith(user, 1, expect.anything());
+    expect(db.query).toHaveBeenCalledWith(expect.stringContaining('r.unit_id=$1'), [1]);
   });
 });

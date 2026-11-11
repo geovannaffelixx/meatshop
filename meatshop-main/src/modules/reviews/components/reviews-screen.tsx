@@ -80,7 +80,7 @@ export function ReviewsScreen() {
         <PageHeader
           eyebrow="Clientes"
           title="Avaliações"
-          actions={<ReportExportDialog report="reviews" filters={{ product_id: String(filter) }} products={products} />}
+          actions={<ReportExportDialog report="reviews" filters={{ product_id: String(filter) }} />}
           description="Acompanhe a satisfação com a unidade e com os produtos."
         />
 

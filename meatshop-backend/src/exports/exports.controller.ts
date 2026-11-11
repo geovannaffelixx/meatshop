@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Res } from '@nestjs/common';
+import { Controller, Get, ParseIntPipe, Query, Res } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -20,6 +20,12 @@ export class ExportsController {
   @ApiOperation({ summary: 'Lists report unit options for SUPER_ADMIN' })
   units(@CurrentUser() user: User) {
     return this.access.units(user);
+  }
+
+  @Get('review-products')
+  @ApiOperation({ summary: 'Lists reviewed product options for the selected report unit' })
+  reviewProducts(@Query('unit_id', ParseIntPipe) unitId: number, @CurrentUser() user: User) {
+    return this.access.reviewProducts(user, unitId);
   }
 
   @Get('reports')

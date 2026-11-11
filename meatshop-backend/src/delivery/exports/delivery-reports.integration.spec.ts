@@ -7,6 +7,7 @@ import type { ExportPersonalDataUseCase } from '../../users/use-cases/export-per
 import { BuildDeliveryReportService } from './build-delivery-report.service';
 import {
   deliveryEarningsReport,
+  deliveryHistoryReport,
   deliverySettlementsReport,
 } from './queries/delivery-earnings.query';
 import { deliveryExpensesReport } from './queries/delivery-expenses.query';
@@ -28,8 +29,10 @@ describe('Delivery personal reports with isolated PostgreSQL', () => {
     await db.exec(
       readFileSync(join(__dirname, '../../exports/queries/report-fixture.sql'), 'utf8'),
     );
-    await db.exec(`ALTER TABLE orders ADD COLUMN delivery_status text, ADD COLUMN delivery_verified_at timestamptz, ADD COLUMN updated_at timestamptz;
-      UPDATE orders SET delivery_status=CASE WHEN status='DELIVERED' THEN 'DELIVERED' END,delivery_verified_at=order_date,updated_at=order_date;
+    await db.exec(`CREATE TABLE units(id int PRIMARY KEY,name text);
+      INSERT INTO units VALUES(1,'Centro'),(2,'Filial');
+      ALTER TABLE orders ADD COLUMN delivery_status text, ADD COLUMN delivery_verified_at timestamptz, ADD COLUMN updated_at timestamptz, ADD COLUMN delivery_type text DEFAULT 'DELIVERY', ADD COLUMN is_scheduled boolean DEFAULT false, ADD COLUMN pickup_verified_at timestamptz;
+      UPDATE orders SET delivery_status=CASE WHEN status='DELIVERED' THEN 'DELIVERED' END,delivery_verified_at=order_date,updated_at=order_date,pickup_verified_at=order_date - INTERVAL '20 minutes';
       UPDATE orders SET updated_at='2026-12-15 12:00Z' WHERE id=1;
       INSERT INTO orders(id,unit_id,client_id,order_date,status,delivery_status,delivery_fee,delivery_person_id,updated_at,delivery_verified_at) VALUES(7,2,2,'2026-11-02 12:00Z','DELIVERED','DELIVERED',8,1,'2026-11-02 12:00Z','2026-11-02 12:00Z');
       INSERT INTO delivery_settlements VALUES(3,1,5,'2026-11-10 12:00Z','OLD-DELIVERY');
@@ -71,6 +74,19 @@ describe('Delivery personal reports with isolated PostgreSQL', () => {
         (row) => row.order_id,
       ),
     ).toEqual([7, 6]);
+  });
+  it('keeps delivery history operational and separate from earnings', async () => {
+    const history = await deliveryHistoryReport(manager, 1, { ...filters, report: 'history' });
+    expect(history.rows.map((row) => row.order_id)).toEqual([7, 6, 1]);
+    expect(history.columns.map((column) => column.key)).toEqual([
+      'order_id',
+      'unit',
+      'delivery_type',
+      'scheduled',
+      'pickup_at',
+      'completed_at',
+    ]);
+    expect(history.columns.map((column) => column.key)).not.toContain('amount');
   });
   it('includes receipts by payment date even for deliveries from a previous period', async () => {
     const paid = await deliverySettlementsReport(manager, 1, filters);
@@ -119,6 +135,9 @@ describe('Delivery personal reports with isolated PostgreSQL', () => {
     ).rejects.toThrow();
     await expect(
       service.build({ ...filters, report: 'financial', category: 'FUEL' }, {} as User, 1),
+    ).rejects.toThrow();
+    await expect(
+      service.build({ ...filters, report: 'history', payment: 'received' }, {} as User, 1),
     ).rejects.toThrow();
   });
   it('returns an actionable error instead of silently truncating a large report', async () => {

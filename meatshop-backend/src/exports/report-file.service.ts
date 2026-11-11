@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ExcelReportRenderer } from './renderers/excel-report.renderer';
 import { PdfReportRenderer } from './renderers/pdf-report.renderer';
 import { ReportDocument } from './report.types';
+import { assertReportFileSize, assertReportSize } from './report-size';
 
 export const REPORT_MIME = {
   xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -18,12 +19,14 @@ export class ReportFileService {
   ) {}
 
   async create(report: ReportDocument, format: ReportFormat, name: string, json: unknown = report) {
+    assertReportSize(report);
     const buffer =
       format === 'xlsx'
         ? await this.excel.render(report)
         : format === 'pdf'
           ? await this.pdf.render(report)
           : Buffer.from(JSON.stringify(json, null, 2));
+    assertReportFileSize(buffer);
     return {
       buffer,
       mime: REPORT_MIME[format],

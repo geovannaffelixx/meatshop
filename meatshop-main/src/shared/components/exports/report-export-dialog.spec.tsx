@@ -2,6 +2,7 @@ import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { ReportExportDialog } from './report-export-dialog';
 import { apiGet } from '@/shared/lib/api';
+import { useApiQuery } from '@/shared/hooks/use-api-query';
 
 const mockAccess = {
   user: { id: 1, global_role: 'USER' },
@@ -10,14 +11,14 @@ const mockAccess = {
 };
 jest.mock('@/shared/providers/panel-access-provider', () => ({ usePanelAccess: () => mockAccess }));
 jest.mock('@/shared/hooks/use-api-query', () => ({
-  useApiQuery: () => ({
+  useApiQuery: jest.fn(() => ({
     data: [
       { id: 8, name: 'Açougue Centro' },
       { id: 9, name: 'Filial' },
     ],
     error: null,
     refetch: jest.fn(),
-  }),
+  })),
 }));
 jest.mock('@/shared/lib/api', () => ({ apiGet: jest.fn() }));
 jest.mock('@/shared/lib/toast', () => ({ toast: { success: jest.fn() } }));
@@ -90,6 +91,21 @@ describe('Report export dialog', () => {
       select.dispatchEvent(new Event('change', { bubbles: true }));
     });
     expect(button('Baixar arquivo').disabled).toBe(false);
+  });
+  it('reloads review products for the unit selected by SUPER_ADMIN', async () => {
+    mockAccess.user.global_role = 'SUPER_ADMIN';
+    await act(async () => root.render(<ReportExportDialog report="reviews" />));
+    await open();
+    const select = document.querySelector('select')!;
+    await act(async () => {
+      select.value = '9';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    expect(jest.mocked(useApiQuery)).toHaveBeenCalledWith('/exports/review-products?unit_id=9');
+    const reviewFilter = Array.from(document.querySelectorAll('label')).find((label) =>
+      label.textContent?.startsWith('Avaliações'),
+    )?.querySelector('select');
+    expect(reviewFilter?.value).toBe('all');
   });
   it('shows a useful failure and allows retrying', async () => {
     jest

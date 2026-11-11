@@ -34,6 +34,8 @@ describe('Export files', () => {
     expect((row.getCell(3).value as Date).toISOString()).toBe('2026-11-01T09:00:00.000Z');
     expect(sheet.autoFilter).toBeDefined();
     expect(sheet.views[0].state).toBe('frozen');
+    expect(sheet.views[0].showGridLines).toBe(false);
+    expect(row.getCell(1).border.bottom?.style).toBe('thin');
   });
   it('renders an empty report as a valid PDF', async () => {
     const buffer = await new PdfReportRenderer().render({
@@ -58,6 +60,25 @@ describe('Export files', () => {
       ],
     });
     expect((buffer.toString('latin1').match(/\/Type \/Page\b/g) ?? []).length).toBeGreaterThan(4);
+    expect(buffer.subarray(-20).toString()).toContain('%%EOF');
+  });
+  it('uses a wider page for reports with nine or more columns', async () => {
+    const columns = Array.from({ length: 9 }, (_, index) => ({
+      key: `field_${index}`,
+      label: `Campo ${index + 1}`,
+    }));
+    const buffer = await new PdfReportRenderer().render({
+      ...report,
+      sections: [
+        {
+          title: 'Relatório amplo',
+          columns,
+          rows: [Object.fromEntries(columns.map((column) => [column.key, 'Conteúdo']))],
+        },
+      ],
+    });
+    const mediaBox = buffer.toString('latin1').match(/\/MediaBox \[0 0 ([\d.]+) ([\d.]+)\]/);
+    expect(Number(mediaBox?.[1])).toBeGreaterThan(1000);
     expect(buffer.subarray(-20).toString()).toContain('%%EOF');
   });
 });

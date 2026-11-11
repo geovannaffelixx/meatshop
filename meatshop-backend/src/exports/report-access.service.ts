@@ -44,4 +44,16 @@ export class ReportAccessService {
       .getRepository(Unit)
       .find({ select: { id: true, name: true }, order: { name: 'ASC' } });
   }
+
+  async reviewProducts(user: User, unitId: number) {
+    await this.assert(user, unitId, 'xlsx');
+    return this.db.query(
+      `SELECT DISTINCT p.id,p.name
+       FROM reviews r
+       JOIN products p ON p.id=r.product_id
+       WHERE r.unit_id=$1 AND p.unit_id=$1
+       ORDER BY p.name,p.id`,
+      [unitId],
+    ) as Promise<{ id: number; name: string }[]>;
+  }
 }
