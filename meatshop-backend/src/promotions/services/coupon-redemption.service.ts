@@ -22,7 +22,7 @@ export class CouponRedemptionService {
     const coupon = await manager
       .getRepository(Coupon)
       .createQueryBuilder('coupon')
-      .setLock('pessimistic_write')
+      .setLock('pessimistic_write', undefined, ['coupon'])
       .leftJoinAndSelect('coupon.allowed_units', 'allowed')
       .where('coupon.code = :code', { code: code.toUpperCase().trim() })
       .getOne();
