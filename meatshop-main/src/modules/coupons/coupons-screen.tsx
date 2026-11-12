@@ -22,6 +22,7 @@ import { Button } from "@/shared/components/ui/button";
 import { CouponHistoryDialog } from "./coupon-history-dialog";
 import { SearchField } from "@/shared/components/search-field";
 import { PageHeader } from "@/shared/components/page-header";
+import { ReportExportDialog } from '@/shared/components/exports/report-export-dialog';
 import { EmptyState } from "@/shared/components/empty-state";
 import { DataPagination } from "@/shared/components/data-pagination";
 import type { Coupon, CouponResult, Redemption } from "./types";
@@ -162,10 +163,13 @@ export function CouponsScreen() {
               : "Crie e acompanhe os cupons da unidade selecionada."
           }
           actions={
+            <>
+            <ReportExportDialog report="coupons" filters={{ search }} />
             <Button onClick={startCreate}>
               <Plus />
               Novo cupom
             </Button>
+            </>
           }
         />
 

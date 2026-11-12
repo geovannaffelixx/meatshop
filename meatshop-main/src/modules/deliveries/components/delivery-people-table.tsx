@@ -6,6 +6,7 @@ import { ReusableTable, type TableColumn } from "@/shared/components/reusable-ta
 import { DataPagination } from "@/shared/components/data-pagination";
 import { SearchField } from "@/shared/components/search-field";
 import { Button } from "@/shared/components/ui/button";
+import { ReportExportDialog } from '@/shared/components/exports/report-export-dialog';
 import { useServerList } from "@/shared/hooks/use-server-list";
 import type { UnitDeliveryPerson } from "../types";
 
@@ -100,6 +101,7 @@ export function DeliveryPeopleTable({
   ];
   return (
     <section className="space-y-4">
+      <div className="flex justify-end"><ReportExportDialog report="deliveries" filters={{ search }} /></div>
       <div className="flex items-start gap-3">
         <span className="rounded-xl bg-red-50 p-2 text-red-700">
           <UsersRound className="size-5" aria-hidden="true" />

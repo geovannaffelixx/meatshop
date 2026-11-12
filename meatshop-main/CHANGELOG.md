@@ -2,6 +2,13 @@
 
 Todas as mudanças notáveis são documentadas neste arquivo conforme Keep a Changelog e Semantic Versioning.
 
+## [3.5.0] - 2026-11-01 - Exportação de relatórios
+
+- Modais de exportação por unidade em financeiro, pagamentos, pedidos, entregadores, catálogo, cupons, promoções, atendimento e avaliações.
+- Desempenho por produto acessível pelo modal do catálogo.
+- Excel/PDF para OWNER e MANAGER; Excel/PDF/JSON e seleção de unidade para SUPER_ADMIN.
+- Dados pessoais e auditoria integrados ao fluxo de arquivos, com feedback de progresso e falha.
+
 ## [3.4.0] - 2026-10-26 - Conformidade com a especificação
 
 ### Adicionado

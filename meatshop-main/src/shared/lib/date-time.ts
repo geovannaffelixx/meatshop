@@ -65,3 +65,8 @@ export function validateDateRange(start: string, end: string) {
   if (!isValidDateTime(start) || !isValidDateTime(end)) return false;
   try { return datetimeLocalToISO(end) > datetimeLocalToISO(start); } catch { return false; }
 }
+
+export function dateBoundaryToISO(value: string, endOfDay = false) {
+  const instant = datetimeLocalToISO(`${value}T${endOfDay ? '23:59' : '00:00'}`);
+  return endOfDay ? new Date(new Date(instant).getTime() + 59_999).toISOString() : instant;
+}

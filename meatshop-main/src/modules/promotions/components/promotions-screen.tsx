@@ -23,6 +23,7 @@ import { toast } from "@/shared/lib/toast";
 import { useManagedUnits } from "@/shared/hooks/use-managed-units";
 import { SearchField } from "@/shared/components/search-field";
 import { PageHeader } from "@/shared/components/page-header";
+import { ReportExportDialog } from '@/shared/components/exports/report-export-dialog';
 
 type Promotion = {
   id: number;
@@ -259,10 +260,13 @@ export function PromotionsScreen() {
           title="Promoções"
           description="Planeje campanhas por produto, período e tipo de desconto."
           actions={
+            <>
+            <ReportExportDialog report="promotions" filters={{ search, status: statusFilter }} />
             <Button type="button" onClick={openCreate} disabled={products.length === 0}>
               <Plus size={18} />
               Nova promoção
             </Button>
+            </>
           }
         />
 

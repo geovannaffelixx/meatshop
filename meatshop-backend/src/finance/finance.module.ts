@@ -24,6 +24,6 @@ import { UpdateExpenseUseCase } from './use-cases/update-expense.use-case';
     UpdateExpenseUseCase,
     DeleteExpenseUseCase,
   ],
-  exports: [TypeOrmModule, GetMonthlyRevenueUseCase],
+  exports: [TypeOrmModule, GetMonthlyRevenueUseCase, GetFinanceSummaryUseCase],
 })
 export class FinanceModule {}

@@ -1,5 +1,6 @@
 "use client"
 import { expenseTypeLabel, expensePaymentLabel } from '../utils/expense-labels';
+import { ReportExportDialog } from '@/shared/components/exports/report-export-dialog';
 
 import { formatDate as formatLocalDate } from "@/shared/lib/formatters";
 
@@ -361,6 +362,7 @@ export function FinanceScreen() {
           eyebrow="Gestão"
           title="Financeiro"
           description="Acompanhe receitas, despesas, saldo e formas de pagamento."
+          actions={<ReportExportDialog report="finance" filters={{ month }} />}
         />
 
         <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:flex-wrap sm:items-end rounded-xl border border-slate-200 bg-white p-4 shadow-sm">

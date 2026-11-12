@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/shared/components/ui/card"
 import { ProductsTable } from "./products-table"
 import { PageHeader } from "@/shared/components/page-header"
 import { Plus, RotateCcw, Search } from "lucide-react"
+import { ReportExportDialog } from '@/shared/components/exports/report-export-dialog';
 
 export function ProductsScreen() {
   const router = useRouter()
@@ -49,10 +50,13 @@ export function ProductsScreen() {
             title="Produtos e estoque"
             description="Gerencie o catálogo, os preços e a disponibilidade dos produtos."
             actions={
+              <>
+              <ReportExportDialog report="catalog" filters={{ id: appliedFilters.id, search: appliedFilters.name, category: appliedFilters.category, active: appliedFilters.status ? String(appliedFilters.status === 'ATIVO') : '' }} />
               <Button onClick={handleAddNew}>
                 <Plus />
                 Novo produto
               </Button>
+              </>
             }
           />
 

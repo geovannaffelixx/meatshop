@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Like, Repository } from 'typeorm';
+import { EntityManager, IsNull, Like, Repository } from 'typeorm';
 import { UnitPermission } from '../../common/enums/unit-permission.enum';
 import { Order } from '../../orders/entities/order.entity';
 import { UnitAuthorizationService } from '../../units/services/unit-authorization.service';
@@ -28,16 +28,44 @@ export class GetFinanceSummaryUseCase {
     private readonly getMonthlyRevenueUseCase: GetMonthlyRevenueUseCase,
   ) {}
 
-  async execute(query: FinanceReportQueryDto, currentUser: User): Promise<FinanceSummaryResult> {
+  async execute(
+    query: FinanceReportQueryDto,
+    currentUser: User,
+    manager?: EntityManager,
+  ): Promise<FinanceSummaryResult> {
     const unitId = await this.unitAuthorizationService.resolveRequiredUnitId(
       currentUser,
       query.unit_id,
       UnitPermission.VIEW_FINANCE,
     );
-    const { year, month, start, end, daysInMonth } = normalizeMonthRange(query.month);
-    const mm = String(month).padStart(2, '0');
+    const expenseRepository = manager?.getRepository(Expense) ?? this.expenseRepository;
+    const orderRepository = manager?.getRepository(Order) ?? this.orderRepository;
+    const expensesByDay = await this.expenseSeries(
+      unitId,
+      query.month,
+      expenseRepository,
+      orderRepository,
+    );
+    const expensesTotal = expensesByDay.reduce((sum, point) => sum + point.value, 0);
+    const payments = await this.paymentBreakdown(unitId, query.month, orderRepository);
+    const { revenueTotal } = await this.getMonthlyRevenueUseCase.forUnit(
+      unitId,
+      query.month,
+      manager,
+    );
 
-    const expenses = await this.expenseRepository.find({
+    return { revenueTotal, expensesTotal, payments, expensesByDay };
+  }
+
+  private async expenseSeries(
+    unitId: number,
+    monthKey: string,
+    expenseRepository: Repository<Expense>,
+    orderRepository: Repository<Order>,
+  ) {
+    const { year, month, start, end, daysInMonth } = normalizeMonthRange(monthKey);
+    const mm = String(month).padStart(2, '0');
+    const expenses = await expenseRepository.find({
       where: [
         { unit_id: unitId, paidAt: Like(`${year}-${mm}-%`) },
         {
@@ -47,11 +75,10 @@ export class GetFinanceSummaryUseCase {
         },
       ],
     });
-    const deliveryCosts: { day: string; total: string }[] =
-      await this.orderRepository.manager.query(
-        "SELECT TO_CHAR(s.paid_at AT TIME ZONE 'America/Sao_Paulo','DD') AS day,SUM(s.amount) AS total FROM delivery_settlements s JOIN orders o ON o.id=s.order_id WHERE o.unit_id=$1 AND s.paid_at >= $2 AND s.paid_at < $3 GROUP BY 1",
-        [unitId, start, end],
-      );
+    const deliveryCosts: { day: string; total: string }[] = await orderRepository.manager.query(
+      "SELECT TO_CHAR(s.paid_at AT TIME ZONE 'America/Sao_Paulo','DD') AS day,SUM(s.amount) AS total FROM delivery_settlements s JOIN orders o ON o.id=s.order_id WHERE o.unit_id=$1 AND s.paid_at >= $2 AND s.paid_at < $3 GROUP BY 1",
+      [unitId, start, end],
+    );
     const byDay = new Map<number, number>();
     for (const e of expenses) {
       const day = Number(String(e.paidAt ?? e.postedAt).slice(8, 10));
@@ -63,9 +90,16 @@ export class GetFinanceSummaryUseCase {
       day: i + 1,
       value: byDay.get(i + 1) ?? 0,
     }));
-    const expensesTotal = expensesByDay.reduce((sum, p) => sum + p.value, 0);
+    return expensesByDay;
+  }
 
-    const { entities: orders, raw } = await this.orderRepository
+  private async paymentBreakdown(
+    unitId: number,
+    monthKey: string,
+    orderRepository: Repository<Order>,
+  ) {
+    const { start, end } = normalizeMonthRange(monthKey);
+    const { entities: orders, raw } = await orderRepository
       .createQueryBuilder('o')
       .leftJoin('payments', 'p', 'p.order_id = o.id')
       .addSelect('p.method', 'payment_method')
@@ -94,12 +128,9 @@ export class GetFinanceSummaryUseCase {
       );
     });
 
-    const payments = Array.from(paymentsMap.entries()).map(([name, value]) => ({
+    return Array.from(paymentsMap.entries()).map(([name, value]) => ({
       name,
       value,
     }));
-    const { revenueTotal } = await this.getMonthlyRevenueUseCase.forUnit(unitId, query.month);
-
-    return { revenueTotal, expensesTotal, payments, expensesByDay };
   }
 }
