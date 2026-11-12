@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/shared/components/ui/button";
 import { SupportTicketFormDialog } from "./support-ticket-form-dialog";
 import { PageHeader } from "@/shared/components/page-header";
+import { ReportExportDialog } from '@/shared/components/exports/report-export-dialog';
 import { EmptyState } from "@/shared/components/empty-state";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
 import {
@@ -47,12 +48,13 @@ export function SupportListScreen() {
             : "Fale diretamente com a equipe da plataforma MeatShop."
         }
         actions={
+          <><ReportExportDialog report="support" filters={{ status }} />{
           !isAdmin ? (
             <Button onClick={() => setOpen(true)}>
               <Plus />
               Novo chamado
             </Button>
-          ) : undefined
+          ) : undefined}</>
         }
       />
 

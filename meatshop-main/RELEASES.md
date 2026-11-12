@@ -1,5 +1,19 @@
 # Releases do painel web
 
+## 3.5.0 — Exportação de relatórios
+
+Trabalho preparado em 1º de novembro de 2026.
+
+Financeiro, pagamentos, pedidos, entregadores, catálogo e estoque, cupons, promoções, atendimento e avaliações recebem botão e modal de exportação no padrão visual da aplicação. O modal inicia com os filtros aplicados na tela e permite refiná-los, exportando também os resultados das outras páginas. No catálogo, é possível escolher o relatório de desempenho por produto, considerando somente pedidos entregues com pagamento recebido.
+
+OWNER e MANAGER com vínculo ativo exportam Excel ou PDF da unidade atual. SUPER_ADMIN dispõe também de JSON e escolhe a unidade no modal. “Exportar meus dados” continua gerando a cópia pessoal da conta com os formatos e papéis definidos; a auditoria permanece exclusiva do SUPER_ADMIN e substitui CSV por Excel/PDF/JSON.
+
+Os arquivos são preparados pelo backend. O painel informa carregamento, impede solicitações duplicadas, apresenta erros com possibilidade de tentar novamente e cancela a requisição ao trocar de unidade ou sair da tela. O download reutiliza o cliente HTTP autenticado e a renovação de sessão. Relatórios acima do limite informado pela API orientam o usuário a refinar os filtros.
+
+Typecheck, lint e build passaram, assim como 39 suítes e 195 testes no web. A versão 3.5.0 foi validada localmente com a API e o banco em Docker. O mobile 3.5.0 possui sua própria exportação pessoal para entregadores, sem alterar os controles de acesso do painel. A implantação deve ser coordenada com a API 3.5.0. Não houve publicação ou deploy em produção.
+
+Detalhes em [Exportações web — 3.5.0](../docs/EXPORTACOES_3_5_0.md).
+
 ## 3.4.0 — Conformidade com a especificação
 
 Trabalho preparado em 26 de outubro de 2026.

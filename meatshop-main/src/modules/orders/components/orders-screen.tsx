@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/shared/components/ui/card"
 import { OrdersTable } from "./orders-table"
 import { ORDER_STATUS_LABELS } from "../utils/status-labels"
 import { PageHeader } from "@/shared/components/page-header"
+import { ReportExportDialog } from '@/shared/components/exports/report-export-dialog';
 import { RotateCcw, Search } from "lucide-react"
 
 export function OrdersScreen() {
@@ -44,6 +45,7 @@ export function OrdersScreen() {
     <div className="page-surface">
         <div className="page-container">
           <PageHeader
+            actions={<ReportExportDialog report="orders" filters={{ date_from: appliedFilters.orderDate.from, date_to: appliedFilters.orderDate.to, scheduled_from: appliedFilters.scheduledDate.from, scheduled_to: appliedFilters.scheduledDate.to, search: appliedFilters.customer.name, id: appliedFilters.customer.orderId, status: appliedFilters.status }} />}
             eyebrow="Operação"
             title="Pedidos"
             description="Localize, confirme e acompanhe os pedidos da unidade."

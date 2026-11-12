@@ -1,6 +1,6 @@
 {
   "name": "meatshop-backend",
-  "version": "3.4.0",
+  "version": "3.5.0",
   "private": true,
   "scripts": {
     "start": "node dist/main.js",
@@ -8,8 +8,8 @@
     "build": "nest build",
     "lint": "eslint src test --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test": "jest --runInBand --passWithNoTests",
-    "test:coverage": "jest --runInBand --coverage",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --passWithNoTests",
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --coverage",
     "test:e2e": "jest --config jest.e2e.config.cjs --runInBand",
     "typeorm": "typeorm-ts-node-commonjs -d src/database/data-source.ts",
     "migration:generate": "cross-env DOTENV_CONFIG_PATH=.env.local-migrations typeorm-ts-node-commonjs migration:generate -d src/database/data-source.ts",
@@ -41,6 +41,7 @@
     "cloudinary": "^2.11.0",
     "cookie-parser": "^1.4.7",
     "dotenv": "17.4.2",
+    "exceljs": "4.4.0",
     "firebase-admin": "14.5.0",
     "helmet": "^8.3.0",
     "mercadopago": "3.6.0",
@@ -49,6 +50,7 @@
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
+    "pdfkit": "0.20.2",
     "pg": "8.23.0",
     "prom-client": "^15.1.3",
     "reflect-metadata": "0.2.2",
@@ -67,6 +69,7 @@
     "body-parser": "2.4.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.14",
     "@eslint/js": "^9.37.0",
     "@nestjs/cli": "11.0.24",
     "@nestjs/schematics": "11.1.0",
@@ -81,6 +84,7 @@
     "@types/nodemailer": "8.0.1",
     "@types/passport-jwt": "^4.0.1",
     "@types/passport-local": "^1.0.38",
+    "@types/pdfkit": "0.17.7",
     "@types/pg": "^8.23.1",
     "@types/supertest": "^6.0.3",
     "@typescript-eslint/eslint-plugin": "8.69.0",

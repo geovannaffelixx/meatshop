@@ -1,4 +1,6 @@
 import { ExportPersonalDataUseCase } from './use-cases/export-personal-data.use-case';
+import { ExportPersonalReportUseCase } from './use-cases/export-personal-report.use-case';
+import { ExportsModule } from '../exports/exports.module';
 import { PersonalDataRetentionService } from './services/personal-data-retention.service';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -26,12 +28,18 @@ import { UserIdentitySubscriber } from './subscribers/user-identity.subscriber';
 import { UserIdentityService } from './services/user-identity.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Address, Unit, Order]), UnitsModule, EmailModule],
+  imports: [
+    ExportsModule,
+    TypeOrmModule.forFeature([User, Address, Unit, Order]),
+    UnitsModule,
+    EmailModule,
+  ],
   controllers: [UsersController, UsersUploadController, AddressesController, GeocodingController],
   providers: [
     UserIdentitySubscriber,
     UserIdentityService,
     ExportPersonalDataUseCase,
+    ExportPersonalReportUseCase,
     PersonalDataRetentionService,
     GetUserProfileUseCase,
     GetPanelContextUseCase,
@@ -44,6 +52,6 @@ import { UserIdentityService } from './services/user-identity.service';
     DeleteAddressUseCase,
     DeleteAccountUseCase,
   ],
-  exports: [TypeOrmModule, UserIdentityService],
+  exports: [TypeOrmModule, UserIdentityService, ExportPersonalDataUseCase],
 })
 export class UsersModule {}

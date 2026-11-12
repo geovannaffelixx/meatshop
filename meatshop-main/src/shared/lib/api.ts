@@ -71,6 +71,7 @@ async function handleResponse(res: Response) {
 }
 
 type RequestOptions = {
+  responseType?: 'blob';
   cache?: boolean;
   silent?: boolean;
   retried?: boolean;
@@ -118,7 +119,7 @@ async function request(path: string, init: RequestInit, options: RequestOptions 
       window.dispatchEvent(new Event("auth:session-expired"));
     }
 
-    const result = await handleResponse(res);
+    const result = res.ok && options.responseType === 'blob' ? await res.blob() : await handleResponse(res);
     if (init.method !== 'GET') await invalidateAfterMutation(path);
     return result;
   } catch (error) {

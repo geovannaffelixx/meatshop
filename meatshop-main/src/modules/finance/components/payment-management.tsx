@@ -1,6 +1,7 @@
 "use client"
 
 import { formatDateValue } from "@/shared/lib/date-time";
+import { ReportExportDialog } from '@/shared/components/exports/report-export-dialog';
 
 import { useApiQuery } from "@/shared/hooks/use-api-query";
 
@@ -402,6 +403,7 @@ export function PaymentManagement({
       className="min-w-0 space-y-6"
       aria-label="Recebimentos e integração Mercado Pago"
     >
+      <div className="flex justify-end"><ReportExportDialog report="payments" filters={{ month: month ?? '', view }} /></div>
       {hasPermission("MANAGE_FINANCE") && (
         <Card className="gap-4 border-slate-200 bg-white shadow-sm">
           <CardHeader className="px-4 sm:px-6">

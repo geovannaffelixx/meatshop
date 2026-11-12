@@ -1,3 +1,4 @@
+import { PAYMENT_VIEWS } from './payment-list.policy';
 import { SendOrderStatusNotificationUseCase } from '../notifications/use-cases/send-order-status-notification.use-case';
 import { SellerAccountsService } from './seller-accounts.service';
 import {
@@ -466,15 +467,7 @@ export class PaymentLifecycleService {
     await this.units.assertHasPermission(user, unitId, UnitPermission.VIEW_FINANCE);
     if (!Number.isSafeInteger(page) || page < 0 || page > MAX_PAGE)
       throw new BadRequestException('Invalid page');
-    const conditions: Record<string, string> = {
-      all: 'true',
-      pending: "p.status IN ('PENDING','REJECTED') AND o.status<>'CANCELLED'",
-      receivable:
-        "p.status='PENDING' AND p.method IN ('Cash','Card on Delivery') AND o.status<>'CANCELLED'",
-      refunds:
-        "EXISTS(SELECT 1 FROM payment_refunds r WHERE r.unit_id=o.unit_id AND (r.order_id=o.id OR r.payment_id IN (SELECT t.id FROM payment_transactions t WHERE t.unit_id=o.unit_id AND t.reference IN (o.id::text,o.checkout_id::text))) AND r.status IN ('PENDING','FAILED'))",
-      issues: "p.status='CHARGED_BACK' OR p.refund_status='FAILED'",
-    };
+    const conditions = PAYMENT_VIEWS;
     if (!(view in conditions)) throw new BadRequestException('Invalid payment view');
     const range = month ? normalizeMonthRange(month) : null;
     return this.db.query(

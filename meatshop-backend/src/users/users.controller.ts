@@ -1,4 +1,6 @@
-import { ExportPersonalDataUseCase } from './use-cases/export-personal-data.use-case';
+import { ExportPersonalReportUseCase } from './use-cases/export-personal-report.use-case';
+import { ExportPersonalReportDto } from '../exports/dtos/export-personal-report.dto';
+import type { Response } from 'express';
 import { PersonalDataRetentionService } from './services/personal-data-retention.service';
 import {
   Body,
@@ -10,6 +12,8 @@ import {
   HttpCode,
   HttpStatus,
   Patch,
+  Query,
+  Res,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -24,7 +28,7 @@ import { DeleteAccountUseCase } from './use-cases/delete-account.use-case';
 @Controller('users')
 export class UsersController {
   constructor(
-    private readonly exportData: ExportPersonalDataUseCase,
+    private readonly exportData: ExportPersonalReportUseCase,
     private readonly retention: PersonalDataRetentionService,
     private readonly getUserProfileUseCase: GetUserProfileUseCase,
     private readonly getPanelContextUseCase: GetPanelContextUseCase,
@@ -34,9 +38,18 @@ export class UsersController {
 
   @Get('me/export')
   @Header('Cache-Control', 'no-store')
-  @Header('Content-Disposition', 'attachment; filename="meatshop-personal-data.json"')
-  exportMe(@CurrentUser() user: User) {
-    return this.exportData.execute(user.id);
+  @ApiOperation({
+    summary: 'Exports own personal data; OWNER/MANAGER: Excel/PDF, SUPER_ADMIN: Excel/PDF/JSON',
+  })
+  async exportMe(
+    @CurrentUser() user: User,
+    @Query() filters: ExportPersonalReportDto,
+    @Res() response: Response,
+  ) {
+    const file = await this.exportData.execute(filters, user);
+    response.setHeader('Content-Type', file.mime);
+    response.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
+    response.send(file.buffer);
   }
 
   @Get('me/retention-policy')

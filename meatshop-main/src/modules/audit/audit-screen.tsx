@@ -12,10 +12,11 @@ import { SearchField } from "@/shared/components/search-field";
 import { DataPagination } from "@/shared/components/data-pagination";
 import { ReusableTable, type TableColumn } from "@/shared/components/reusable-table";
 import { formatDateTime } from "@/shared/lib/formatters";
+import { dateBoundaryToISO } from '@/shared/lib/date-time';
 import { useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, Download, Eye, History } from "lucide-react";
-import { API_URL, apiGet } from "@/shared/lib/api";
-import { saveBlob } from "@/shared/lib/download";
+import { AlertTriangle, CheckCircle2, Eye, History } from "lucide-react";
+import { apiGet } from "@/shared/lib/api";
+import { ReportExportDialog } from '@/shared/components/exports/report-export-dialog';
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
 import type { AuditLog, AuditResult, AuditSummary } from "./types";
 
@@ -99,10 +100,7 @@ export function AuditScreen() {
           description="Rastreabilidade de operações críticas, acessos e falhas."
           actions={
             user?.global_role === "SUPER_ADMIN" && (
-              <Button type="button" variant="outline" onClick={() => void downloadCsv(query)}>
-                <Download aria-hidden="true" />
-                Exportar CSV
-              </Button>
+              <ReportExportDialog report="audit" filters={filters} />
             )
           }
         />
@@ -181,16 +179,11 @@ function buildQuery(filters: Record<string, string>, page: number): string {
       params.set(
         key,
         key.startsWith("date_")
-          ? new Date(`${value}${key === "date_to" ? "T23:59:59" : "T00:00:00"}`).toISOString()
+          ? dateBoundaryToISO(value, key === 'date_to')
           : value,
       );
   });
   return params.toString();
-}
-async function downloadCsv(query: string) {
-  const response = await fetch(`${API_URL}/audit-logs/export?${query}`, { credentials: "include" });
-  if (!response.ok) return;
-  saveBlob(await response.blob(), "auditoria-meatshop.csv");
 }
 function Metric({
   icon: Icon,

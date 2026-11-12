@@ -15,6 +15,7 @@ import { Star, Store } from "lucide-react"
 
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
 import { PageHeader } from "@/shared/components/page-header"
+import { ReportExportDialog } from '@/shared/components/exports/report-export-dialog';
 
 type Review = {
   id: number
@@ -79,6 +80,7 @@ export function ReviewsScreen() {
         <PageHeader
           eyebrow="Clientes"
           title="Avaliações"
+          actions={<ReportExportDialog report="reviews" filters={{ product_id: String(filter) }} />}
           description="Acompanhe a satisfação com a unidade e com os produtos."
         />
 
