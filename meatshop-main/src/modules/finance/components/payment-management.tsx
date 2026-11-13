@@ -5,7 +5,7 @@ import { ReportExportDialog } from '@/shared/components/exports/report-export-di
 
 import { useApiQuery } from "@/shared/hooks/use-api-query";
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import { apiPost } from "@/shared/lib/api"
 
@@ -107,9 +107,11 @@ type PaymentRow = {
 export function PaymentActions({
   order,
   onChange,
+  receiptRequest = 0,
 }: {
   order: PaymentRow
   onChange: () => void
+  receiptRequest?: number
 }) {
   const { hasPermission } = usePanelAccess()
 
@@ -124,6 +126,12 @@ export function PaymentActions({
   const [error, setError] = useState("")
 
   const offline = ["Cash", "Card on Delivery"].includes(order.method ?? "")
+  const lastReceiptRequest = useRef(0)
+  useEffect(() => {
+    if (receiptRequest <= lastReceiptRequest.current) return
+    lastReceiptRequest.current = receiptRequest
+    if (offline && order.payment_status === "PENDING" && hasPermission("MANAGE_FINANCE")) setAction("receipt")
+  }, [receiptRequest, offline, order.payment_status, hasPermission])
 
   const run = async (endpoint: string, body: object = {}) => {
     setBusy(true)

@@ -31,4 +31,15 @@ describe('Counter pickup confirmation', () => {
     expect(confirm).toHaveBeenCalledTimes(1);
     expect((await render('PAID', '123456', true)).disabled).toBe(true);
   });
+  it('provides a receipt action while keeping delivery confirmation blocked for pending payment', async () => {
+    const record = jest.fn();
+    await act(async () => root.render(<CounterPickupPanel paymentStatus="PENDING" code="123456" busy={false} onCodeChange={() => {}} onConfirm={confirm} onRecordPayment={record} />));
+    const buttons = [...container.querySelectorAll('button')];
+    const receipt = buttons.find((button) => button.textContent?.includes('Registrar pagamento'))!;
+    expect(receipt.disabled).toBe(false);
+    await act(async () => receipt.click());
+    expect(record).toHaveBeenCalledTimes(1);
+    expect(buttons.find((button) => button.textContent?.includes('Validar código'))?.disabled).toBe(true);
+    expect(container.textContent).toContain('O botão será liberado');
+  });
 });

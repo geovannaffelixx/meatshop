@@ -40,10 +40,13 @@ describe('Counter pickup in the unit panel', () => {
       cy.visit('/orders/7'); cy.wait('@order');
       cy.contains('Pronto para retirada').should('be.visible');
       cy.contains('button', 'Validar código e confirmar retirada').should('be.disabled');
-      cy.contains('button', 'Registrar recebimento').click();
+      cy.document().then(doc => expect(doc.documentElement.scrollWidth).to.be.at.most(width));
+      cy.screenshot(`counter-pickup-ready-${width}`);
+      cy.get('#counter-pickup-code').type('123456');
+      cy.contains('button', 'Registrar pagamento no balcão').click();
       cy.contains('label', 'Referência / comprovante').find('input').type('Dinheiro recebido no balcão');
       cy.contains('button', 'Confirmar registro').click(); cy.wait('@receipt'); cy.wait('@order');
-      cy.get('#counter-pickup-code').type('000000');
+      cy.get('#counter-pickup-code').should('have.value', '123456').clear().type('000000');
       cy.contains('button', 'Validar código e confirmar retirada').click(); cy.wait('@complete');
       cy.get('section[aria-labelledby="counter-pickup-title"] [role="alert"]').should('contain', 'Código incorreto');
       cy.get('#counter-pickup-code').clear().type('123456');

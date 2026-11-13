@@ -1,5 +1,6 @@
 "use client"
 import { CounterPickupPanel } from "./counter-pickup-panel"
+import { usePanelAccess } from "@/shared/providers/panel-access-provider"
 
 import { PageHeader } from "@/shared/components/page-header";
 import { toDatetimeLocal, datetimeLocalToISO, isValidDateTime } from "@/shared/lib/date-time";
@@ -71,6 +72,8 @@ interface OrderDetailScreenProps {
 
 
 export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
+  const { hasPermission } = usePanelAccess()
+  const [receiptRequest, setReceiptRequest] = useState(0)
   const [order, setOrder] = useState<Order | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -219,10 +222,14 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
           </div>
         </div>
 
-        {order.payment && <PaymentActions order={{...order,...order.payment,payment_status:order.payment_status,status:order.status}} onChange={loadOrder} />}
+        <div id="order-payment" className="scroll-mt-24">{order.payment && <PaymentActions order={{...order,...order.payment,payment_status:order.payment_status,status:order.status}} onChange={loadOrder} receiptRequest={receiptRequest} />}</div>
         {!allowsPreparation && order.status !== "CANCELLED" && <p className="text-amber-700">O preparo depende da confirmação do pagamento.</p>}
           {order.delivery_type === "PICKUP" && order.status === "READY" && (
             <CounterPickupPanel paymentStatus={order.payment_status} code={pickupCode} busy={working} error={actionError}
+              onRecordPayment={hasPermission("MANAGE_FINANCE") && order.payment_status === "PENDING" && ["Cash", "Card on Delivery"].includes(order.payment?.method ?? "") ? () => {
+                setReceiptRequest((value) => value + 1)
+                document.getElementById("order-payment")?.scrollIntoView({ behavior: "smooth", block: "start" })
+              } : undefined}
               onCodeChange={(code) => { setPickupCode(code); setActionError(null) }} onConfirm={handleAdvance} />
           )}
           <div className="overflow-x-auto">
