@@ -11,10 +11,10 @@ export function getNextAction(status: string, deliveryType: string): NextAction 
     case "CONFIRMED":
       return { label: "Iniciar preparo", endpoint: "status", targetStatus: "PREPARING" }
     case "PREPARING":
-      return { label: "Marcar como pronto", endpoint: "status", targetStatus: "READY" }
+      return { label: deliveryType === "PICKUP" ? "Pronto para retirada" : "Marcar como pronto", endpoint: "status", targetStatus: "READY" }
     case "READY":
       return deliveryType === "PICKUP"
-        ? { label: "Marcar como entregue", endpoint: "status", targetStatus: "DELIVERED" }
+        ? { label: "Confirmar retirada", endpoint: "status", targetStatus: "DELIVERED" }
         : null
     case "OUT_FOR_DELIVERY":
       return null

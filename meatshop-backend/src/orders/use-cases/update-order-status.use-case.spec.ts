@@ -14,7 +14,11 @@ describe('UpdateOrderStatusUseCase', () => {
     'rejects generic delivery transition to %s',
     async (status) => {
       const orders = {
-        findOne: async () => ({ id: 9, delivery_type: 'DELIVERY', status: 'READY' }),
+        findOne: async () => ({
+          id: 9,
+          delivery_type: 'DELIVERY',
+          status: 'READY',
+        }),
       };
       const authorization = { assertCanManageOrder: async () => undefined };
       const transition = jest.fn();
@@ -23,7 +27,6 @@ describe('UpdateOrderStatusUseCase', () => {
         authorization as unknown as OrderAuthorizationService,
         { transition } as unknown as OrderStatusService,
         new OrderStatusTransitionValidator(),
-        {} as never,
       );
       await expect(service.execute(9, { status }, { id: 1 } as User)).rejects.toBeInstanceOf(
         BadRequestException,

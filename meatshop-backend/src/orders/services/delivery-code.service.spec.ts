@@ -1,4 +1,4 @@
-import { BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 import { beforeEach, jest } from '@jest/globals';
 import type { Repository } from 'typeorm';
@@ -46,9 +46,7 @@ describe('DeliveryCodeService', () => {
     const code = service.issue(order, 'DELIVERY');
     const invalid = code === '000000' ? '000001' : '000000';
 
-    await expect(service.verify(order, 'DELIVERY', invalid)).rejects.toBeInstanceOf(
-      UnauthorizedException,
-    );
+    await expect(service.verify(order, 'DELIVERY', invalid)).rejects.toBeInstanceOf(BadRequestException);
     expect(order.delivery_code_attempts).toBe(1);
   });
 
@@ -70,9 +68,7 @@ describe('DeliveryCodeService', () => {
     second.delivery_code_hash = first.delivery_code_hash;
     second.delivery_code_expires_at = first.delivery_code_expires_at;
 
-    await expect(service.verify(second, 'DELIVERY', code)).rejects.toBeInstanceOf(
-      UnauthorizedException,
-    );
+    await expect(service.verify(second, 'DELIVERY', code)).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('rejects expired codes', async () => {

@@ -1,4 +1,5 @@
 "use client"
+import { CounterPickupPanel } from "./counter-pickup-panel"
 
 import { PageHeader } from "@/shared/components/page-header";
 import { toDatetimeLocal, datetimeLocalToISO, isValidDateTime } from "@/shared/lib/date-time";
@@ -12,7 +13,9 @@ import { ArrowLeft, MessageSquare } from "lucide-react"
 import { apiGet, apiPatch } from "@/shared/lib/api"
 import {
   DELIVERY_TYPE_LABELS,
-  ORDER_STATUS_LABELS,
+  orderStatusLabel,
+  paymentMethodLabel,
+  canCompletePickup,
   PAYMENT_STATUS_LABELS,
 } from "@/modules/orders/utils/status-labels"
 import { canCancel, canReschedule, getNextAction } from "@/modules/orders/utils/status-transitions"
@@ -81,7 +84,7 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
   const [scheduleDate, setScheduleDate] = useState("")
 
   const loadOrder = () => {
-    apiGet(`/orders/${orderId}`)
+    return apiGet(`/orders/${orderId}`)
       .then((data) => {
         setOrder(data)
         setError(null)
@@ -90,6 +93,8 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
   }
 
   useEffect(() => {
+    setPickupCode("")
+    setActionError(null)
     loadOrder()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId])
@@ -99,7 +104,7 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
     setActionError(null)
     try {
       await action()
-      loadOrder()
+      await loadOrder()
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "Erro ao atualizar o pedido.")
     } finally {
@@ -116,6 +121,10 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
       return
     }
 
+    if (order.delivery_type === "PICKUP" && next.targetStatus === "DELIVERED" && !canCompletePickup(order.payment_status)) {
+      setActionError("Registre o recebimento do pagamento antes de confirmar a retirada.")
+      return
+    }
     runAction(() =>
       next.endpoint === "confirm"
         ? apiPatch(`/orders/${order.id}/confirm`, {})
@@ -167,7 +176,7 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
         </Link>
         <PageHeader eyebrow="Pedidos" title={`Pedido #${order.id}`} />
         <span className="mt-2 mb-6 inline-flex rounded-full bg-red-50 px-3 py-1 text-sm font-semibold text-red-700">
-          {ORDER_STATUS_LABELS[order.status] ?? order.status}
+          {orderStatusLabel(order.status, order.delivery_type)}
         </span>
 
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-6">
@@ -184,7 +193,7 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
             </div>
           </div>
           <div>
-            <label className="text-xs text-gray-500">Entrega</label>
+            <label className="text-xs text-gray-500">Modalidade</label>
             <div className="border rounded-md px-3 py-2 bg-gray-50 font-semibold">
               {DELIVERY_TYPE_LABELS[order.delivery_type] ?? order.delivery_type}
               {order.is_scheduled && order.scheduled_delivery_date
@@ -198,7 +207,7 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
           <div className="sm:col-span-3">
             <label className="text-xs text-gray-500">Pagamento</label>
             <div className="border rounded-md px-3 py-2 bg-gray-50 font-semibold">
-              {order.payment?.method ?? "-"} (
+              {paymentMethodLabel(order.payment?.method, order.delivery_type)} (
               {PAYMENT_STATUS_LABELS[order.payment_status] ?? order.payment_status})
             </div>
           </div>
@@ -213,10 +222,8 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
         {order.payment && <PaymentActions order={{...order,...order.payment,payment_status:order.payment_status,status:order.status}} onChange={loadOrder} />}
         {!allowsPreparation && order.status !== "CANCELLED" && <p className="text-amber-700">O preparo depende da confirmação do pagamento.</p>}
           {order.delivery_type === "PICKUP" && order.status === "READY" && (
-            <label className="block text-sm font-medium">Código de retirada do cliente
-              <Input aria-label="Código de retirada do cliente" value={pickupCode} inputMode="numeric" maxLength={6}
-                onChange={(event) => setPickupCode(event.target.value.replace(/\D/g, ""))} />
-            </label>
+            <CounterPickupPanel paymentStatus={order.payment_status} code={pickupCode} busy={working} error={actionError}
+              onCodeChange={(code) => { setPickupCode(code); setActionError(null) }} onConfirm={handleAdvance} />
           )}
           <div className="overflow-x-auto">
           <table className="data-table">
@@ -251,8 +258,8 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
             <h3 className="font-semibold text-gray-700 mb-2 border-b pb-1">
               Status
             </h3>
-            <p><strong>PEDIDO:</strong> {ORDER_STATUS_LABELS[order.status] ?? order.status}</p>
-            {order.delivery_status && (
+            <p><strong>PEDIDO:</strong> {orderStatusLabel(order.status, order.delivery_type)}</p>
+            {order.delivery_type === "DELIVERY" && order.delivery_status && (
               <p><strong>ENTREGA:</strong> {order.delivery_status}</p>
             )}
             {order.status === "CANCELLED" && (
@@ -269,13 +276,13 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
             </h3>
             <p><strong>Subtotal:</strong> {formatCurrency(order.subtotal)}</p>
             <p><strong>Desconto:</strong> {formatCurrency(order.discount_amount)}</p>
-            <p><strong>Taxa de entrega:</strong> {formatCurrency(order.delivery_fee)}</p>
+            <p><strong>{order.delivery_type === "PICKUP" ? "Retirada:" : "Taxa de entrega:"}</strong> {order.delivery_type === "PICKUP" ? "Sem taxa" : formatCurrency(order.delivery_fee)}</p>
             <p><strong>Total:</strong> {formatCurrency(order.total_amount)}</p>
           </div>
         </div>
 
         <div className="mt-8 border-t pt-6">
-          {actionError && (
+          {actionError && !(order.delivery_type === "PICKUP" && order.status === "READY") && (
             <p className="text-sm text-red-600 text-center mb-4">{actionError}</p>
           )}
           <div className="flex flex-wrap justify-center gap-3">
@@ -293,7 +300,7 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
                 {order.status === "READY" && <Link href="/deliveries" className="ml-1 font-semibold text-red-700 underline">Abrir entregas</Link>}
               </p>
             )}
-            {nextAction && (
+            {nextAction && !(order.delivery_type === "PICKUP" && order.status === "READY") && (
               <Button
                 disabled={working}
                 onClick={handleAdvance}
@@ -313,7 +320,7 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
                   setScheduleOpen(true)
                 }}
               >
-                {order.is_scheduled ? "Alterar agendamento" : "Agendar entrega"}
+                {order.is_scheduled ? "Alterar agendamento" : order.delivery_type === "PICKUP" ? "Agendar retirada" : "Agendar entrega"}
               </Button>
             )}
 
@@ -366,7 +373,7 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
       <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Agendar entrega do pedido #{order.id}</DialogTitle>
+            <DialogTitle>{order.delivery_type === "PICKUP" ? "Agendar retirada" : "Agendar entrega"} do pedido #{order.id}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <label htmlFor="scheduled-delivery-date" className="text-sm font-medium text-gray-700">Data e horário</label>

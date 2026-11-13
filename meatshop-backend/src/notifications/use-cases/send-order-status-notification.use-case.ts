@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Order } from '../../orders/entities/order.entity';
 import { OrderStatus } from '../../orders/enums/order-status.enum';
+import { DeliveryType } from '../../orders/enums/delivery-type.enum';
 import { PaymentStatus } from '../../orders/enums/payment-status.enum';
 import { Unit } from '../../units/entities/unit.entity';
 import { UserUnit } from '../../units/entities/user-unit.entity';
@@ -63,11 +64,18 @@ export class SendOrderStatusNotificationUseCase {
   }
 
   async notifyCustomerOfStatusChange(order: Order): Promise<void> {
+    const pickup = order.delivery_type === DeliveryType.PICKUP;
+    const message =
+      pickup && order.status === OrderStatus.READY
+        ? 'está pronto para retirada no balcão. Apresente seu código na unidade.'
+        : pickup && order.status === OrderStatus.DELIVERED
+          ? 'teve a retirada confirmada na unidade'
+          : STATUS_MESSAGES[order.status];
     await this.sendNotificationUseCase.execute({
       user_id: order.client_id,
       unit_id: order.unit_id,
       title: 'Atualização do pedido',
-      message: `Seu pedido #${order.id} ${STATUS_MESSAGES[order.status]}`,
+      message: `Seu pedido #${order.id} ${message}`,
       action_url: `/orders/${order.id}`,
       type: NotificationType.ORDER,
     });
@@ -97,7 +105,10 @@ export class SendOrderStatusNotificationUseCase {
     await this.sendNotificationUseCase.execute({
       user_id: order.client_id,
       unit_id: order.unit_id,
-      title: 'Código de confirmação da entrega',
+      title:
+        order.delivery_type === DeliveryType.PICKUP
+          ? 'Código de retirada no balcão'
+          : 'Código de confirmação da entrega',
       message: `O código de confirmação do pedido #${order.id} está disponível apenas na tela protegida do pedido.`,
       action_url: `/orders/${order.id}`,
       type: NotificationType.DELIVERY,

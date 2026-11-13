@@ -2,16 +2,24 @@ import { beforeEach, jest } from '@jest/globals';
 import { SendOrderStatusNotificationUseCase } from './send-order-status-notification.use-case';
 import { OrderStatus } from '../../orders/enums/order-status.enum';
 import type { Order } from '../../orders/entities/order.entity';
+import { DeliveryType } from '../../orders/enums/delivery-type.enum';
 
 describe('Order notification language', () => {
   const execute = jest.fn(async () => undefined);
   const service = new SendOrderStatusNotificationUseCase(
     { findOne: jest.fn(async () => ({ id: 2 })) } as never,
-    { find: jest.fn(async () => [{ user_id: 3, local_role: 'OWNER' }]) } as never,
+    {
+      find: jest.fn(async () => [{ user_id: 3, local_role: 'OWNER' }]),
+    } as never,
     { canAccessPanel: () => true, has: () => true } as never,
     { execute } as never,
   );
-  const order = { id: 90, unit_id: 2, client_id: 4, total_amount: 1234.56 } as Order;
+  const order = {
+    id: 90,
+    unit_id: 2,
+    client_id: 4,
+    total_amount: 1234.56,
+  } as Order;
   beforeEach(() => {
     execute.mockClear();
   });
@@ -53,6 +61,31 @@ describe('Order notification language', () => {
         message: `Pedido #90 recebido, no valor de ${Number(1234.56).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}.`,
       }),
     );
+  });
+
+  it.each([
+    [OrderStatus.READY, 'pronto para retirada no balcão'],
+    [OrderStatus.DELIVERED, 'retirada confirmada na unidade'],
+  ])('uses counter pickup wording for %s', async (status, text) => {
+    await service.notifyCustomerOfStatusChange({
+      ...order,
+      status,
+      delivery_type: DeliveryType.PICKUP,
+    } as Order);
+    expect(execute).toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringContaining(text) }),
+    );
+  });
+
+  it('identifies the customer counter code without exposing it in notifications', async () => {
+    await service.notifyCustomerOfDeliveryCode(
+      { ...order, delivery_type: DeliveryType.PICKUP } as Order,
+      '654321',
+    );
+    expect(execute).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Código de retirada no balcão' }),
+    );
+    expect(JSON.stringify(execute.mock.calls)).not.toContain('654321');
   });
 
   it('keeps confirmation secrets out of localized notifications', async () => {

@@ -9,7 +9,7 @@ import { socketEndpoint } from "@/shared/config/api-url";
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, MessageSquare, Search, Truck, UserRound } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { ORDER_STATUS_LABELS } from "@/modules/orders/utils/status-labels";
+import { orderStatusLabel } from "@/modules/orders/utils/status-labels";
 import { Input } from "@/shared/components/ui/input";
 
 import { apiGet } from "@/shared/lib/api";
@@ -101,7 +101,7 @@ export function ChatScreen() {
   }, [user?.id, unitId]);
 
   useEffect(() => {
-    if (selectedOrder && !selectedOrder.delivery_person_id && channel === "UNIT_DELIVERY_PERSON") {
+    if (selectedOrder && (selectedOrder.delivery_type === "PICKUP" || !selectedOrder.delivery_person_id) && channel === "UNIT_DELIVERY_PERSON") {
       setChannel("UNIT");
     }
   }, [channel, selectedOrder]);
@@ -174,7 +174,7 @@ export function ChatScreen() {
                       <span className="shrink-0 text-xs text-slate-600">#{order.id}</span>
                     </span>
                     <span className="mt-1 flex items-center justify-between gap-2 text-xs text-slate-500">
-                      <span>{ORDER_STATUS_LABELS[order.status] ?? order.status}</span>
+                      <span>{orderStatusLabel(order.status, order.delivery_type)}</span>
                       <time>{formatDateValue(order.chat_last_message_at ?? order.order_date, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</time>
                     </span>
                   </button>
@@ -219,7 +219,7 @@ export function ChatScreen() {
                 >
                   <UserRound className="size-4" /> Cliente {(selectedOrder.chat_unread?.client ?? 0) > 0 && <span className="rounded-full bg-white px-1.5 text-red-700" aria-label="Mensagens não lidas do cliente">{selectedOrder.chat_unread!.client}</span>}
                 </button>
-                <button
+                {selectedOrder.delivery_type !== "PICKUP" && <button
                   type="button"
                   disabled={!selectedOrder.delivery_person_id}
                   onClick={() => setChannel("UNIT_DELIVERY_PERSON")}
@@ -231,8 +231,9 @@ export function ChatScreen() {
                   title={selectedOrder.delivery_person_id ? undefined : "Aguardando entregador assumir o pedido"}
                 >
                   <Truck className="size-4" /> Entregador {(selectedOrder.chat_unread?.delivery ?? 0) > 0 && <span className="rounded-full bg-white px-1.5 text-red-700" aria-label="Mensagens não lidas do entregador">{selectedOrder.chat_unread!.delivery}</span>}
-                </button>
-                {!selectedOrder.delivery_person_id && (
+                </button>}
+                {selectedOrder.delivery_type === "PICKUP" && <span className="text-xs text-slate-600">Retirada no balcão · conversa com o cliente</span>}
+                {selectedOrder.delivery_type !== "PICKUP" && !selectedOrder.delivery_person_id && (
                   <span className="text-xs text-slate-600">Disponível após atribuição do entregador</span>
                 )}
               </div>
