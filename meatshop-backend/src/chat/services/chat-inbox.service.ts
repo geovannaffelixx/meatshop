@@ -1,3 +1,4 @@
+import { chatParticipant } from './chat-participant';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
@@ -115,16 +116,15 @@ export class ChatInboxService {
     userId: number,
   ): ChatConversationResponseDto {
     const latest = entries[0];
-    const opponentId = this.opponentId(order, latest.participant_type, userId);
-    const participant = this.opponent(order, latest.participant_type, userId);
+    const participant = chatParticipant(order, latest.participant_type, userId);
     return {
       id,
       order_id: order.id,
       participant_type: latest.participant_type,
       participant: {
-        id: opponentId,
+        id: participant.id,
         name: participant.name,
-        avatar_url: participant.avatarUrl,
+        avatar_url: participant.avatar_url,
       },
       last_message: latest.message,
       last_message_at: latest.sent_at,
@@ -142,59 +142,6 @@ export class ChatInboxService {
         return message.sender_id !== userId;
       }).length,
       closed: CLOSED_STATUSES.includes(order.status),
-    };
-  }
-
-  private opponentId(order: Order, type: ChatParticipantType, userId: number): number {
-    const deliveryUserId = order.delivery_person?.user_id;
-    if (type === ChatParticipantType.UNIT) {
-      return order.client_id === userId ? order.unit.admin_id : order.client_id;
-    }
-    if (type === ChatParticipantType.DELIVERY_PERSON) {
-      return order.client_id === userId ? (deliveryUserId ?? 0) : order.client_id;
-    }
-    return deliveryUserId === userId ? order.unit.admin_id : (deliveryUserId ?? 0);
-  }
-
-  private opponentName(order: Order, type: ChatParticipantType, userId: number): string {
-    if (type === ChatParticipantType.UNIT) {
-      return order.client_id === userId ? order.unit.name : (order.client.name ?? 'Cliente');
-    }
-    if (type === ChatParticipantType.DELIVERY_PERSON) {
-      return order.client_id === userId
-        ? (order.delivery_person?.user?.name ?? 'Entregador')
-        : (order.client.name ?? 'Cliente');
-    }
-    return order.delivery_person?.user_id === userId
-      ? order.unit.name
-      : (order.delivery_person?.user?.name ?? 'Entregador');
-  }
-
-  private opponent(
-    order: Order,
-    type: ChatParticipantType,
-    userId: number,
-  ): { name: string; avatarUrl: string | null } {
-    const isClient = order.client_id === userId;
-    const isDelivery = order.delivery_person?.user_id === userId;
-    if (
-      (type === ChatParticipantType.UNIT && isClient) ||
-      (type === ChatParticipantType.UNIT_DELIVERY_PERSON && isDelivery)
-    ) {
-      return { name: order.unit.name, avatarUrl: null };
-    }
-    if (
-      (type === ChatParticipantType.DELIVERY_PERSON && isClient) ||
-      (type === ChatParticipantType.UNIT_DELIVERY_PERSON && !isDelivery)
-    ) {
-      return {
-        name: order.delivery_person?.user?.name ?? 'Entregador',
-        avatarUrl: order.delivery_person?.user?.avatar_url ?? null,
-      };
-    }
-    return {
-      name: order.client.name ?? 'Cliente',
-      avatarUrl: order.client.avatar_url ?? null,
     };
   }
 

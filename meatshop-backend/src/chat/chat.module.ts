@@ -17,6 +17,7 @@ import { ChatAuthorizationService } from './services/chat-authorization.service'
 import { ListOrderChatUseCase } from './use-cases/list-order-chat.use-case';
 import { SendMessageUseCase } from './use-cases/send-message.use-case';
 import { MarkChatReadUseCase } from './use-cases/mark-chat-read.use-case';
+import { GetChatParticipantUseCase } from './use-cases/get-chat-participant.use-case';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { MarkChatReadUseCase } from './use-cases/mark-chat-read.use-case';
     SendMessageUseCase,
     ListOrderChatUseCase,
     MarkChatReadUseCase,
+    GetChatParticipantUseCase,
   ],
 })
 export class ChatModule {}
