@@ -80,6 +80,31 @@ describe('DeliveryMobileService', () => {
     jest.mocked(memberships.find).mockResolvedValue([]);
   });
 
+  it('reports the courier fee separately from the purchase total and labels earnings in Portuguese', async () => {
+    jest.mocked(orders.find).mockResolvedValue([
+      {
+        id: 97,
+        total_amount: 194.15,
+        delivery_fee: 8.5,
+        updated_at: new Date(),
+      } as Order,
+    ]);
+    const query = jest
+      .fn<() => Promise<unknown[]>>()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ total: '8.50', deliveries: 1 }]);
+    Object.assign(orders, { manager: { query } });
+    const result = await service.earnings(user);
+    expect(result.entries[0]).toMatchObject({
+      order_id: '97',
+      label: 'Pedido #97',
+      amount: 8.5,
+      paid_at: null,
+    });
+    expect(result.total).toBe(8.5);
+    expect(result.entries[0].amount).not.toBe(194.15);
+  });
+
   it.each(['POSTAL_CODE', 'UNRESOLVED', 'USER_PIN'])(
     'uses only confirmed pins for navigation (%s)',
     async (source) => {
