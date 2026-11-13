@@ -89,9 +89,9 @@ export function ChatScreen() {
           description="Converse com clientes e entregadores em canais separados por pedido." />
       </div>
 
-      <div className="grid min-h-0 flex-1 overflow-hidden rounded-2xl border bg-white shadow-sm lg:grid-cols-[21rem_1fr]">
-        <aside className={`${mobileThreadOpen ? "hidden lg:flex" : "flex"} min-h-0 flex-col border-r bg-white`}>
-          <div className="border-b p-4">
+      <div className="grid min-h-0 min-w-0 flex-1 overflow-hidden rounded-2xl border bg-white shadow-sm lg:grid-cols-[21rem_minmax(0,1fr)]">
+        <aside className={`${mobileThreadOpen ? "hidden lg:flex" : "flex"} min-h-0 min-w-0 flex-col border-r bg-white`}>
+          <div className="shrink-0 border-b p-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-600" />
               <Input
@@ -142,10 +142,10 @@ export function ChatScreen() {
               })
             )}
           </div>
-          <DataPagination page={page} pageSize={10} totalItems={total} totalPages={totalPages} onPageChange={setPage} isLoading={loading} maxVisiblePages={1} />
+          <DataPagination compact page={page} pageSize={10} totalItems={total} totalPages={totalPages} onPageChange={setPage} isLoading={loading} />
         </aside>
 
-        <section className={`${mobileThreadOpen ? "flex" : "hidden lg:flex"} min-h-0 flex-col`}>
+        <section className={`${mobileThreadOpen ? "flex" : "hidden lg:flex"} min-h-0 min-w-0 flex-col`}>
           {!selectedOrder ? (
             <div className="flex flex-1 flex-col items-center justify-center text-center text-slate-500">
               <MessageSquare className="mb-3 size-9 text-slate-300" />

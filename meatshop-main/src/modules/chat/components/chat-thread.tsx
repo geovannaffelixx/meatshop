@@ -212,10 +212,10 @@ export function ChatThread({ orderId, participantType, participantLabel, current
   }
 
   return (
-    <section className='flex min-h-0 flex-1 flex-col bg-slate-50'>
-      <header className='flex items-center justify-between border-b bg-white px-5 py-3'>
-        <div>
-          <h2 className='font-semibold text-slate-900'>{participantLabel}</h2>
+    <section className='flex min-h-0 min-w-0 flex-1 flex-col bg-slate-50'>
+      <header className='flex shrink-0 flex-wrap items-center justify-between gap-2 border-b bg-white px-5 py-3'>
+        <div className='min-w-0'>
+          <h2 className='break-words font-semibold text-slate-900'>{participantLabel}</h2>
           <p className='text-xs text-slate-500'>Pedido #{orderId}</p>
         </div>
         <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${connected ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
@@ -257,7 +257,7 @@ export function ChatThread({ orderId, participantType, participantLabel, current
         {otherIsTyping && <p className='text-xs italic text-slate-500'>{participantLabel} está digitando...</p>}
         <div ref={bottomRef} />
       </div>
-      <footer className='border-t bg-white p-4'>
+      <footer className='shrink-0 border-t bg-white p-4'>
         {closed ? (
           <p className='rounded-lg bg-slate-100 px-4 py-3 text-center text-sm text-slate-600'>
             Esta conversa foi encerrada junto com o pedido. O histórico continua disponível.
