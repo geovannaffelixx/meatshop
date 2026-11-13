@@ -30,6 +30,9 @@ export class OrderListItemDto {
   })
   order_date: Date;
 
+  @ApiPropertyOptional({ nullable: true })
+  chat_last_message_at?: Date | null;
+
   @ApiProperty({ description: 'Current order status', example: 'PENDING' })
   status: string;
 
@@ -62,7 +65,9 @@ export class OrderListItemDto {
   delivery_person_user_id: number | null;
   delivery_person_id: number | null;
 
-  static fromEntity(order: Order & { payment_method?: string | null }): OrderListItemDto {
+  static fromEntity(
+    order: Order & { payment_method?: string | null; chat_last_message_at?: Date | null },
+  ): OrderListItemDto {
     const dto = new OrderListItemDto();
     dto.id = order.id;
     dto.client_id = order.client_id;
@@ -72,6 +77,7 @@ export class OrderListItemDto {
     dto.delivery_person_id = order.delivery_person_id;
     dto.unit_id = order.unit_id;
     dto.order_date = order.order_date;
+    dto.chat_last_message_at = order.chat_last_message_at;
     dto.status = order.status;
     dto.delivery_status = order.delivery_status;
     dto.delivery_type = order.delivery_type;

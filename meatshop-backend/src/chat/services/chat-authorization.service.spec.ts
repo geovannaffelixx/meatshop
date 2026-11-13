@@ -49,6 +49,20 @@ describe('ChatAuthorizationService', () => {
     } as DeliveryPerson);
   });
 
+  it('rejects inactive outsiders and delivery-only members from the unit inbox', async () => {
+    jest.mocked(userUnitRepository.findOne).mockResolvedValueOnce(null);
+    await expect(service.assertCanAccessInbox(2, { id: 99 } as User)).rejects.toThrow(
+      ForbiddenException,
+    );
+    jest
+      .mocked(userUnitRepository.findOne)
+      .mockResolvedValueOnce({ local_role: LocalRole.DELIVERY } as UserUnit);
+    await expect(service.assertCanAccessInbox(2, { id: 4 } as User)).rejects.toThrow(
+      ForbiddenException,
+    );
+    await expect(service.assertCanAccessInbox(2, { id: 3 } as User)).resolves.toBeUndefined();
+  });
+
   it('rejects realtime participation while legal acceptance is pending', async () => {
     legal.assertUser.mockRejectedValueOnce(new ForbiddenException('LEGAL_ACCEPTANCE_REQUIRED'));
     await expect(

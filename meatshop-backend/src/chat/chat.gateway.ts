@@ -24,6 +24,7 @@ import { ChatAuthorizationService } from './services/chat-authorization.service'
 import { SendMessageUseCase } from './use-cases/send-message.use-case';
 import { AuditTrailService } from '../audit/audit-trail.service';
 import { AuditOutcome } from '../audit/entities/audit-log.entity';
+import { JoinChatInboxDto } from './dtos/join-chat-inbox.dto';
 
 function roomName(orderId: number, participantType: ChatParticipantType): string {
   return `order:${orderId}:${participantType}`;
@@ -126,10 +127,38 @@ export class ChatGateway implements OnGatewayConnection {
     }
   }
 
+  @SubscribeMessage('chat:inbox:join')
+  async handleInboxJoin(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() dto: JoinChatInboxDto,
+  ): Promise<void> {
+    try {
+      if (!client.data.user) throw new Error('Acesso não autorizado.');
+      await this.chatAuthorizationService.assertCanAccessInbox(dto.unit_id, client.data.user);
+      await client.join(`inbox:unit:${dto.unit_id}`);
+    } catch (error) {
+      client.emit('chat:error', { message: (error as Error).message });
+    }
+  }
+
   emitMessage(message: ChatMessageResponseDto): void {
     this.server
       .to(roomName(message.order_id, message.participant_type))
       .emit('chat:message', message);
+    void this.emitInboxActivity(message);
+  }
+
+  private async emitInboxActivity(message: ChatMessageResponseDto): Promise<void> {
+    if (message.participant_type === ChatParticipantType.DELIVERY_PERSON) return;
+    try {
+      const order = await this.loadOrder(message.order_id);
+      this.server.to(`inbox:unit:${order.unit_id}`).emit('chat:inbox:updated', {
+        unit_id: order.unit_id,
+        order_id: order.id,
+      });
+    } catch (error) {
+      this.logger.warn(`Failed to refresh chat inbox: ${(error as Error).message}`);
+    }
   }
 
   emitReadReceipt(receipt: ChatReadResponseDto): void {
@@ -149,8 +178,7 @@ export class ChatGateway implements OnGatewayConnection {
         client.data.user,
       );
 
-      const room = roomName(dto.order_id, dto.participant_type);
-      this.server.to(room).emit('chat:message', message);
+      this.emitMessage(message);
       await this.recordSocketEvent(client, dto.order_id, AuditOutcome.SUCCESS);
       return message;
     } catch (error) {

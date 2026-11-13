@@ -4,6 +4,8 @@ import { formatDateValue } from "@/shared/lib/date-time";
 
 import { DataSkeleton } from "@/shared/components/data-skeleton";
 
+import { io } from "socket.io-client";
+import { socketEndpoint } from "@/shared/config/api-url";
 import { useEffect, useState } from "react";
 import { ArrowLeft, MessageSquare, Search, Truck, UserRound } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -25,7 +27,9 @@ export function ChatScreen() {
   const searchParams = useSearchParams();
   const { user, unitId } = usePanelAccess();
   const [orders, setOrders] = useState<ChatOrder[]>([]);
-  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<ChatOrder | null>(null);
+  const selectedOrderId = selectedOrder?.id ?? null;
+  const [activityVersion, setActivityVersion] = useState(0);
   const [channel, setChannel] = useState<ChatParticipantType>("UNIT");
   const [search, setSearch] = useState(searchParams.get("order") ?? "");
   const [page, setPage] = useState(1);
@@ -39,7 +43,7 @@ export function ChatScreen() {
     const controller = new AbortController();
     setLoading(true);
     setError(null);
-    const params = new URLSearchParams({paginated: 'true', page: String(page), limit: '10', search: search.trim()});
+    const params = new URLSearchParams({paginated: 'true', page: String(page), limit: '10', search: search.trim(), sort: 'chat_activity'});
     if (unitId !== null) params.set('unit_id', String(unitId));
     const url = '/orders?' + params;
     type OrderPage = {data: ChatOrder[]; meta: {total: number; totalPages: number}};
@@ -51,8 +55,8 @@ export function ChatScreen() {
       setTotalPages(data.meta.totalPages);
       if (page > data.meta.totalPages) { setPage(data.meta.totalPages); return; }
       const requestedId = Number(searchParams.get('order'));
-      setSelectedOrderId(current => data.data.some(order => order.id === current)
-        ? current : data.data.find(order => order.id === requestedId)?.id ?? data.data[0]?.id ?? null);
+      setSelectedOrder(current => data.data.find(order => order.id === current?.id)
+        ?? current ?? data.data.find(order => order.id === requestedId) ?? data.data[0] ?? null);
     };
     const timer = setTimeout(() => {
       void apiGet(url, {signal: controller.signal, silent: true})
@@ -66,13 +70,27 @@ export function ChatScreen() {
       void apiGet(url, {signal: controller.signal, silent: true}).then(accept).catch(() => undefined);
     }, 10000);
     return () => { clearTimeout(timer); clearInterval(refreshTimer); controller.abort(); };
-  }, [searchParams, unitId, search, page]);
+  }, [searchParams, unitId, search, page, activityVersion]);
 
   useEffect(() => {
     if (searchParams.get('channel') === 'UNIT_DELIVERY_PERSON') setChannel('UNIT_DELIVERY_PERSON');
   }, [searchParams]);
 
-  const selectedOrder = orders.find((order) => order.id === selectedOrderId) ?? null;
+  useEffect(() => {
+    if (unitId === null) return;
+    const { url, ...endpoint } = socketEndpoint('/chat');
+    const socket = io(url, { ...endpoint, withCredentials: true });
+    socket.on('chat:ready', () => {
+      socket.emit('chat:inbox:join', { unit_id: unitId });
+      setActivityVersion(value => value + 1);
+    });
+    socket.on('chat:inbox:updated', (event: {unit_id: number}) => {
+      if (event.unit_id !== unitId) return;
+      setPage(1);
+      setActivityVersion(value => value + 1);
+    });
+    return () => { socket.disconnect(); };
+  }, [user?.id, unitId]);
 
   useEffect(() => {
     if (selectedOrder && !selectedOrder.delivery_person_id && channel === "UNIT_DELIVERY_PERSON") {
@@ -96,7 +114,7 @@ export function ChatScreen() {
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-600" />
               <Input
                 value={search}
-                onChange={(event) => { setSearch(event.target.value); setPage(1); }}
+                onChange={(event) => { setSearch(event.target.value); setPage(1); setSelectedOrder(null); }}
                 placeholder="Buscar pedido ou cliente"
                 className="pl-9"
               />
@@ -120,7 +138,7 @@ export function ChatScreen() {
                     key={order.id}
                     type="button"
                     onClick={() => {
-                      setSelectedOrderId(order.id);
+                      setSelectedOrder(order);
                       setMobileThreadOpen(true);
                     }}
                     className={`w-full border-b px-4 py-3 text-left transition-colors ${
@@ -135,14 +153,14 @@ export function ChatScreen() {
                     </span>
                     <span className="mt-1 flex items-center justify-between gap-2 text-xs text-slate-500">
                       <span>{ORDER_STATUS_LABELS[order.status] ?? order.status}</span>
-                      <time>{formatDateValue(order.order_date, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</time>
+                      <time>{formatDateValue(order.chat_last_message_at ?? order.order_date, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</time>
                     </span>
                   </button>
                 );
               })
             )}
           </div>
-          <DataPagination compact page={page} pageSize={10} totalItems={total} totalPages={totalPages} onPageChange={setPage} isLoading={loading} />
+          <DataPagination compact page={page} pageSize={10} totalItems={total} totalPages={totalPages} onPageChange={next => { setPage(next); setSelectedOrder(null); }} isLoading={loading} />
         </aside>
 
         <section className={`${mobileThreadOpen ? "flex" : "hidden lg:flex"} min-h-0 min-w-0 flex-col`}>

@@ -2,6 +2,9 @@ import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import type { Socket } from 'socket.io';
 import { ChatGateway } from './chat.gateway';
 import { ChatParticipantType } from './enums/chat-participant-type.enum';
+import type { Server } from 'socket.io';
+import type { ChatMessageResponseDto } from './dtos/chat-message-response.dto';
+import { setImmediate } from 'node:timers';
 
 describe('ChatGateway typing events', () => {
   afterEach(() => {
@@ -14,7 +17,7 @@ describe('ChatGateway typing events', () => {
     const authorize = jest.fn(async () => {
       if (denied) throw new Error('Acesso negado.');
     });
-    const findOne = jest.fn(async () => ({ id: 10 }));
+    const findOne = jest.fn(async () => ({ id: 10, unit_id: 2 }));
     const gateway = new ChatGateway(
       {} as never,
       {} as never,
@@ -52,5 +55,24 @@ describe('ChatGateway typing events', () => {
     await gateway.handleTyping(socket, event);
     expect(emit).toHaveBeenCalledWith('chat:error', { message: 'Acesso negado.' });
     expect(broadcast).not.toHaveBeenCalled();
+  });
+
+  it('broadcasts inbox activity without exposing client-courier conversations', async () => {
+    const { gateway } = setup();
+    const emit = jest.fn();
+    const to = jest.fn(() => ({ emit }));
+    gateway.server = { to } as unknown as Server;
+    const message = {
+      order_id: 10,
+      participant_type: ChatParticipantType.UNIT,
+    } as ChatMessageResponseDto;
+    gateway.emitMessage(message);
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(to).toHaveBeenCalledWith('inbox:unit:2');
+    expect(emit).toHaveBeenCalledWith('chat:inbox:updated', { unit_id: 2, order_id: 10 });
+    emit.mockClear();
+    gateway.emitMessage({ ...message, participant_type: ChatParticipantType.DELIVERY_PERSON });
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(emit).not.toHaveBeenCalledWith('chat:inbox:updated', expect.anything());
   });
 });
