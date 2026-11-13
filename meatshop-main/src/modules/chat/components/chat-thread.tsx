@@ -23,6 +23,8 @@ type ChatThreadProps = {
   closed: boolean;
 };
 
+type MessagePage = { items: ChatMessage[]; has_more: boolean; next_before_id: number | null };
+
 type TypingEvent = {
   order_id: number;
   participant_type: ChatParticipantType;
@@ -33,13 +35,20 @@ type TypingEvent = {
 function mergeMessage(current: ChatMessage[], incoming: ChatMessage): ChatMessage[] {
   if (current.some((item) => item.id === incoming.id)) return current;
   return [...current, incoming].sort(
-    (a, b) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime(),
+    (a, b) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime() || a.id - b.id,
   );
 }
 
 
 export function ChatThread({ orderId, participantType, participantLabel, currentUserId, closed }: ChatThreadProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [olderCursor, setOlderCursor] = useState<number | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const previousHeight = useRef<number | null>(null);
+  const pinnedToBottom = useRef(true);
+  const historyController = useRef<AbortController | null>(null);
   const [draft, setDraft] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -65,17 +74,25 @@ export function ChatThread({ orderId, participantType, participantLabel, current
     setOtherIsTyping(false);
     setLoading(true);
     setMessages([]);
+    setHasMore(false);
+    setOlderCursor(null);
+    setLoadingOlder(false);
+    previousHeight.current = null;
+    pinnedToBottom.current = true;
     void apiGet(
-      `/orders/${orderId}/chat?participant_type=${participantType}&page=1&limit=100`,
+      `/orders/${orderId}/chat?participant_type=${participantType}&paginated=true&limit=30`,
       { signal: controller.signal, silent: true },
     )
       .then((data: unknown) => {
-        if (Array.isArray(data)) {
-          setMessages(data as ChatMessage[]);
+        if (!controller.signal.aborted && !Array.isArray(data)) {
+          const batch = data as MessagePage;
+          setMessages(current => batch.items.reduce(mergeMessage, current));
+          setHasMore(batch.has_more);
+          setOlderCursor(batch.next_before_id);
           void markRead();
         }
       })
-      .catch(() => toast.error('Falha ao carregar a conversa.'))
+      .catch(() => { if (!controller.signal.aborted) toast.error('Falha ao carregar a conversa.'); })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
@@ -116,6 +133,7 @@ export function ChatThread({ orderId, participantType, participantLabel, current
     socket.on('chat:error', () => toast.error('Não foi possível conectar à conversa.'));
     return () => {
       controller.abort();
+      historyController.current?.abort();
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       if (otherTypingTimeoutRef.current) clearTimeout(otherTypingTimeoutRef.current);
       socket.emit('chat:leave', room);
@@ -125,7 +143,12 @@ export function ChatThread({ orderId, participantType, participantLabel, current
   }, [currentUserId, markRead, orderId, participantType]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    if (previousHeight.current !== null && scrollRef.current) {
+      scrollRef.current.scrollTop += scrollRef.current.scrollHeight - previousHeight.current;
+      previousHeight.current = null;
+    } else if (pinnedToBottom.current) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
   }, [messages, otherIsTyping]);
 
   function handleDraftChange(value: string) {
@@ -145,6 +168,28 @@ export function ChatThread({ orderId, participantType, participantLabel, current
     }, 1200);
   }
 
+  async function loadOlder() {
+    if (loadingOlder || !hasMore || olderCursor === null) return;
+    setLoadingOlder(true);
+    const controller = new AbortController();
+    historyController.current = controller;
+    try {
+      const batch = await apiGet(
+        '/orders/' + orderId + '/chat?participant_type=' + participantType + '&paginated=true&limit=30&before_id=' + olderCursor,
+        { signal: controller.signal, silent: true },
+      ) as MessagePage;
+      if (controller.signal.aborted) return;
+      previousHeight.current = scrollRef.current?.scrollHeight ?? null;
+      setMessages(current => batch.items.reduce(mergeMessage, current));
+      setHasMore(batch.has_more);
+      setOlderCursor(batch.next_before_id);
+    } catch {
+      if (!controller.signal.aborted) toast.error('Não foi possível carregar mensagens anteriores. Tente novamente.');
+    } finally {
+      if (!controller.signal.aborted) setLoadingOlder(false);
+    }
+  }
+
   async function sendMessage() {
     const message = draft.trim();
     if (!message || sending || closed) return;
@@ -153,6 +198,7 @@ export function ChatThread({ orderId, participantType, participantLabel, current
       const sent = (await apiPost(`/orders/${orderId}/chat`, {
         participant_type: participantType, message,
       })) as ChatMessage;
+      pinnedToBottom.current = true;
       setMessages((current) => mergeMessage(current, sent));
       setDraft('');
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
@@ -177,7 +223,8 @@ export function ChatThread({ orderId, participantType, participantLabel, current
           {connected ? 'Tempo real conectado' : 'Reconectando...'}
         </span>
       </header>
-      <div className='min-h-0 flex-1 space-y-3 overflow-y-auto p-5' aria-live='polite'>
+      <div ref={scrollRef} onScroll={() => { const el = scrollRef.current; if (el) pinnedToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80; }} className='min-h-0 flex-1 space-y-3 overflow-y-auto p-5' aria-live='polite'>
+        {hasMore && <div className='text-center'><Button type='button' variant='outline' disabled={loadingOlder} onClick={() => void loadOlder()}>{loadingOlder ? 'Carregando...' : 'Carregar mensagens anteriores'}</Button></div>}
         {loading ? (
           <DataSkeleton label="Carregando conversa..." />
         ) : messages.length === 0 ? (

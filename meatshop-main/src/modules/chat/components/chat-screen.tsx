@@ -4,7 +4,7 @@ import { formatDateValue } from "@/shared/lib/date-time";
 
 import { DataSkeleton } from "@/shared/components/data-skeleton";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, MessageSquare, Search, Truck, UserRound } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { ORDER_STATUS_LABELS } from "@/modules/orders/utils/status-labels";
@@ -16,6 +16,8 @@ import { PageHeader } from "@/shared/components/page-header";
 import { ChatThread } from "./chat-thread";
 import type { ChatOrder, ChatParticipantType } from "../types";
 
+import { DataPagination } from "@/shared/components/data-pagination";
+
 const terminalStatuses = new Set(["DELIVERED", "CANCELLED"]);
 
 
@@ -25,7 +27,10 @@ export function ChatScreen() {
   const [orders, setOrders] = useState<ChatOrder[]>([]);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [channel, setChannel] = useState<ChatParticipantType>("UNIT");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(searchParams.get("order") ?? "");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mobileThreadOpen, setMobileThreadOpen] = useState(false);
@@ -34,50 +39,38 @@ export function ChatScreen() {
     const controller = new AbortController();
     setLoading(true);
     setError(null);
-    void apiGet("/orders", { signal: controller.signal, silent: true })
-      .then((data: unknown) => {
-        if (!Array.isArray(data)) return;
-        const available = (data as ChatOrder[]).filter(
-          (order) => unitId === null || order.unit_id === unitId,
-        );
-        setOrders(available);
-        const requestedId = Number(searchParams.get("order"));
-        const requestedChannel = searchParams.get("channel");
-        setSelectedOrderId(
-          available.some((order) => order.id === requestedId)
-            ? requestedId
-            : available[0]?.id ?? null,
-        );
-        if (requestedChannel === "UNIT_DELIVERY_PERSON") {
-          setChannel("UNIT_DELIVERY_PERSON");
-        }
-      })
-      .catch((requestError: unknown) => {
-        if (requestError instanceof Error && requestError.name === "AbortError") return;
-        setError("Não foi possível carregar os pedidos para conversa.");
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
-      });
+    const params = new URLSearchParams({paginated: 'true', page: String(page), limit: '10', search: search.trim()});
+    if (unitId !== null) params.set('unit_id', String(unitId));
+    const url = '/orders?' + params;
+    type OrderPage = {data: ChatOrder[]; meta: {total: number; totalPages: number}};
+    const accept = (data: OrderPage) => {
+      if (controller.signal.aborted) return;
+      setError(null);
+      setOrders(data.data);
+      setTotal(data.meta.total);
+      setTotalPages(data.meta.totalPages);
+      if (page > data.meta.totalPages) { setPage(data.meta.totalPages); return; }
+      const requestedId = Number(searchParams.get('order'));
+      setSelectedOrderId(current => data.data.some(order => order.id === current)
+        ? current : data.data.find(order => order.id === requestedId)?.id ?? data.data[0]?.id ?? null);
+    };
+    const timer = setTimeout(() => {
+      void apiGet(url, {signal: controller.signal, silent: true})
+        .then(accept)
+        .catch(() => {
+          if (!controller.signal.aborted) setError('Não foi possível carregar os pedidos para conversa.');
+        })
+        .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    }, 250);
     const refreshTimer = setInterval(() => {
-      void apiGet("/orders", { signal: controller.signal, silent: true })
-        .then((data: unknown) => {
-          if (Array.isArray(data) && !controller.signal.aborted) {
-            setOrders((data as ChatOrder[]).filter((order) => unitId === null || order.unit_id === unitId));
-          }
-        }).catch(() => undefined);
+      void apiGet(url, {signal: controller.signal, silent: true}).then(accept).catch(() => undefined);
     }, 10000);
-    return () => { clearInterval(refreshTimer); controller.abort(); };
-  }, [searchParams, unitId]);
+    return () => { clearTimeout(timer); clearInterval(refreshTimer); controller.abort(); };
+  }, [searchParams, unitId, search, page]);
 
-  const filteredOrders = useMemo(() => {
-    const term = search.trim().toLocaleLowerCase("pt-BR");
-    if (!term) return orders;
-    return orders.filter((order) =>
-      String(order.id).includes(term) ||
-      (order.client_name ?? "").toLocaleLowerCase("pt-BR").includes(term),
-    );
-  }, [orders, search]);
+  useEffect(() => {
+    if (searchParams.get('channel') === 'UNIT_DELIVERY_PERSON') setChannel('UNIT_DELIVERY_PERSON');
+  }, [searchParams]);
 
   const selectedOrder = orders.find((order) => order.id === selectedOrderId) ?? null;
 
@@ -90,20 +83,20 @@ export function ChatScreen() {
   if (!user) return null;
 
   return (
-    <div className="page-surface"><div className="page-container flex min-h-[calc(100dvh-5rem)] flex-col">
+    <div className="page-surface"><div className="page-container flex h-[calc(100dvh-5rem)] min-h-[32rem] flex-col">
       <div>
         <PageHeader eyebrow="Operação" title="Mensagens"
           description="Converse com clientes e entregadores em canais separados por pedido." />
       </div>
 
-      <div className="grid min-h-[36rem] flex-1 overflow-hidden rounded-2xl border bg-white shadow-sm lg:grid-cols-[21rem_1fr]">
+      <div className="grid min-h-0 flex-1 overflow-hidden rounded-2xl border bg-white shadow-sm lg:grid-cols-[21rem_1fr]">
         <aside className={`${mobileThreadOpen ? "hidden lg:flex" : "flex"} min-h-0 flex-col border-r bg-white`}>
           <div className="border-b p-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-600" />
               <Input
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => { setSearch(event.target.value); setPage(1); }}
                 placeholder="Buscar pedido ou cliente"
                 className="pl-9"
               />
@@ -114,13 +107,13 @@ export function ChatScreen() {
               <DataSkeleton label="Carregando pedidos..." />
             ) : error ? (
               <p className="p-6 text-sm text-red-600">{error}</p>
-            ) : filteredOrders.length === 0 ? (
+            ) : orders.length === 0 ? (
               <div className="p-8 text-center text-sm text-slate-500">
                 <MessageSquare className="mx-auto mb-3 size-7" />
                 Nenhum pedido encontrado.
               </div>
             ) : (
-              filteredOrders.map((order) => {
+              orders.map((order) => {
                 const active = order.id === selectedOrderId;
                 return (
                   <button
@@ -149,6 +142,7 @@ export function ChatScreen() {
               })
             )}
           </div>
+          <DataPagination page={page} pageSize={10} totalItems={total} totalPages={totalPages} onPageChange={setPage} isLoading={loading} maxVisiblePages={1} />
         </aside>
 
         <section className={`${mobileThreadOpen ? "flex" : "hidden lg:flex"} min-h-0 flex-col`}>
