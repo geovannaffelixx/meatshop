@@ -6,7 +6,7 @@ import { DataSkeleton } from "@/shared/components/data-skeleton";
 
 import { io } from "socket.io-client";
 import { socketEndpoint } from "@/shared/config/api-url";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, MessageSquare, Search, Truck, UserRound } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { ORDER_STATUS_LABELS } from "@/modules/orders/utils/status-labels";
@@ -38,6 +38,14 @@ export function ChatScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mobileThreadOpen, setMobileThreadOpen] = useState(false);
+  const [desktop, setDesktop] = useState(true);
+  useEffect(() => {
+    const media = window.matchMedia?.("(min-width: 1024px)");
+    if (!media) return;
+    const update = () => setDesktop(media.matches);
+    update(); media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -56,7 +64,7 @@ export function ChatScreen() {
       if (page > data.meta.totalPages) { setPage(data.meta.totalPages); return; }
       const requestedId = Number(searchParams.get('order'));
       setSelectedOrder(current => data.data.find(order => order.id === current?.id)
-        ?? current ?? data.data.find(order => order.id === requestedId) ?? data.data[0] ?? null);
+        ?? current ?? data.data.find(order => order.id === requestedId) ?? null);
     };
     const timer = setTimeout(() => {
       void apiGet(url, {signal: controller.signal, silent: true})
@@ -84,9 +92,9 @@ export function ChatScreen() {
       socket.emit('chat:inbox:join', { unit_id: unitId });
       setActivityVersion(value => value + 1);
     });
-    socket.on('chat:inbox:updated', (event: {unit_id: number}) => {
+    socket.on('chat:inbox:updated', (event: {unit_id: number; reason?: string}) => {
       if (event.unit_id !== unitId) return;
-      setPage(1);
+      if (event.reason !== 'read') setPage(1);
       setActivityVersion(value => value + 1);
     });
     return () => { socket.disconnect(); };
@@ -97,6 +105,21 @@ export function ChatScreen() {
       setChannel("UNIT");
     }
   }, [channel, selectedOrder]);
+
+  const handleRead = useCallback((id: number, type: ChatParticipantType) => {
+    const clear = (order: ChatOrder) => order.id !== id ? order : {...order, chat_unread: {
+      client: type === 'UNIT' ? 0 : order.chat_unread?.client ?? 0,
+      delivery: type === 'UNIT_DELIVERY_PERSON' ? 0 : order.chat_unread?.delivery ?? 0,
+    }};
+    setOrders(current => current.map(clear));
+    setSelectedOrder(current => current ? clear(current) : null);
+  }, []);
+
+  function openOrder(order: ChatOrder, target?: ChatParticipantType) {
+    setSelectedOrder(order);
+    setChannel(target ?? ((order.chat_unread?.client ?? 0) > 0 ? 'UNIT' : (order.chat_unread?.delivery ?? 0) > 0 ? 'UNIT_DELIVERY_PERSON' : 'UNIT'));
+    setMobileThreadOpen(true);
+  }
 
   if (!user) return null;
 
@@ -134,14 +157,13 @@ export function ChatScreen() {
               orders.map((order) => {
                 const active = order.id === selectedOrderId;
                 return (
+                  <div key={order.id} className="border-b">
                   <button
-                    key={order.id}
                     type="button"
                     onClick={() => {
-                      setSelectedOrder(order);
-                      setMobileThreadOpen(true);
+                      openOrder(order);
                     }}
-                    className={`w-full border-b px-4 py-3 text-left transition-colors ${
+                    className={`w-full px-4 py-3 text-left transition-colors ${
                       active ? "border-l-4 border-l-red-600 bg-red-50" : "hover:bg-slate-50"
                     }`}
                   >
@@ -156,6 +178,13 @@ export function ChatScreen() {
                       <time>{formatDateValue(order.chat_last_message_at ?? order.order_date, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</time>
                     </span>
                   </button>
+                  {((order.chat_unread?.client ?? 0) + (order.chat_unread?.delivery ?? 0)) > 0 && (
+                    <div className="flex flex-wrap gap-2 px-4 pb-3">
+                      {(order.chat_unread?.client ?? 0) > 0 && <button type="button" onClick={() => openOrder(order, 'UNIT')} className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700" aria-label={order.chat_unread!.client + ' mensagens não lidas do cliente no pedido ' + order.id}><UserRound className="size-3.5" />Cliente <strong>{order.chat_unread!.client > 99 ? '99+' : order.chat_unread!.client}</strong></button>}
+                      {(order.chat_unread?.delivery ?? 0) > 0 && <button type="button" onClick={() => openOrder(order, 'UNIT_DELIVERY_PERSON')} className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700" aria-label={order.chat_unread!.delivery + ' mensagens não lidas do entregador no pedido ' + order.id}><Truck className="size-3.5" />Entregador <strong>{order.chat_unread!.delivery > 99 ? '99+' : order.chat_unread!.delivery}</strong></button>}
+                    </div>
+                  )}
+                  </div>
                 );
               })
             )}
@@ -188,7 +217,7 @@ export function ChatScreen() {
                     channel === "UNIT" ? "bg-red-700 text-white" : "bg-slate-100 text-slate-700"
                   }`}
                 >
-                  <UserRound className="size-4" /> Cliente
+                  <UserRound className="size-4" /> Cliente {(selectedOrder.chat_unread?.client ?? 0) > 0 && <span className="rounded-full bg-white px-1.5 text-red-700" aria-label="Mensagens não lidas do cliente">{selectedOrder.chat_unread!.client}</span>}
                 </button>
                 <button
                   type="button"
@@ -201,20 +230,21 @@ export function ChatScreen() {
                   }`}
                   title={selectedOrder.delivery_person_id ? undefined : "Aguardando entregador assumir o pedido"}
                 >
-                  <Truck className="size-4" /> Entregador
+                  <Truck className="size-4" /> Entregador {(selectedOrder.chat_unread?.delivery ?? 0) > 0 && <span className="rounded-full bg-white px-1.5 text-red-700" aria-label="Mensagens não lidas do entregador">{selectedOrder.chat_unread!.delivery}</span>}
                 </button>
                 {!selectedOrder.delivery_person_id && (
                   <span className="text-xs text-slate-600">Disponível após atribuição do entregador</span>
                 )}
               </div>
-              <ChatThread
+              {(desktop || mobileThreadOpen) && <ChatThread
                 key={`${selectedOrder.id}:${channel}`}
                 orderId={selectedOrder.id}
                 participantType={channel}
                 participantLabel={channel === "UNIT" ? selectedOrder.client_name?.trim() || "Cliente" : selectedOrder.delivery_person_name?.trim() || "Entregador"}
                 currentUserId={user.id}
+                onRead={handleRead}
                 closed={terminalStatuses.has(selectedOrder.status)}
-              />
+              />}
             </>
           )}
         </section>

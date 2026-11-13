@@ -96,7 +96,6 @@ export class ChatInboxService {
       where,
       relations: { client: true, unit: true, delivery_person: { user: true } },
       order: { updated_at: 'DESC' },
-      take: 500,
     });
   }
 

@@ -21,6 +21,7 @@ type ChatThreadProps = {
   participantLabel: string;
   currentUserId: number;
   closed: boolean;
+  onRead?: (orderId: number, channel: ChatParticipantType) => void;
 };
 
 type MessagePage = { items: ChatMessage[]; has_more: boolean; next_before_id: number | null };
@@ -40,7 +41,7 @@ function mergeMessage(current: ChatMessage[], incoming: ChatMessage): ChatMessag
 }
 
 
-export function ChatThread({ orderId, participantType, participantLabel, currentUserId, closed }: ChatThreadProps) {
+export function ChatThread({ orderId, participantType, participantLabel, currentUserId, closed, onRead }: ChatThreadProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [olderCursor, setOlderCursor] = useState<number | null>(null);
   const [hasMore, setHasMore] = useState(false);
@@ -59,17 +60,21 @@ export function ChatThread({ orderId, participantType, participantLabel, current
   const lastTypingRef = useRef<number | null>(null);
   const otherTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const historyLoaded = useRef(false);
 
   const markRead = useCallback(async () => {
+    if (document.visibilityState !== 'visible' || !historyLoaded.current) return;
     try {
       await apiPatch(`/orders/${orderId}/chat/read?participant_type=${participantType}`, {}, { silent: true });
+      onRead?.(orderId, participantType);
     } catch {
       return;
     }
-  }, [orderId, participantType]);
+  }, [orderId, participantType, onRead]);
 
   useEffect(() => {
     const controller = new AbortController();
+    historyLoaded.current = false;
     lastTypingRef.current = null;
     setOtherIsTyping(false);
     setLoading(true);
@@ -89,6 +94,7 @@ export function ChatThread({ orderId, participantType, participantLabel, current
           setMessages(current => batch.items.reduce(mergeMessage, current));
           setHasMore(batch.has_more);
           setOlderCursor(batch.next_before_id);
+          historyLoaded.current = true;
           void markRead();
         }
       })
@@ -96,6 +102,8 @@ export function ChatThread({ orderId, participantType, participantLabel, current
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
+    const onVisible = () => { if (document.visibilityState === 'visible') void markRead(); };
+    document.addEventListener('visibilitychange', onVisible);
     const { url, ...endpoint } = socketEndpoint('/chat');
     const socket = io(url, {
       ...endpoint,
@@ -105,6 +113,9 @@ export function ChatThread({ orderId, participantType, participantLabel, current
     socketRef.current = socket;
     const room = { order_id: orderId, participant_type: participantType };
     socket.on('connect', () => {
+      setConnected(true);
+    });
+    socket.on('chat:ready', () => {
       setConnected(true);
       socket.emit('chat:join', room);
     });
@@ -133,6 +144,7 @@ export function ChatThread({ orderId, participantType, participantLabel, current
     socket.on('chat:error', () => toast.error('Não foi possível conectar à conversa.'));
     return () => {
       controller.abort();
+      document.removeEventListener('visibilitychange', onVisible);
       historyController.current?.abort();
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       if (otherTypingTimeoutRef.current) clearTimeout(otherTypingTimeoutRef.current);

@@ -33,6 +33,7 @@ export type ChatOrder = {
   delivery_person_name?: string | null;
   order_date: string;
   chat_last_message_at?: string | null;
+  chat_unread?: { client: number; delivery: number };
   status: string;
   delivery_type: string;
   total_amount: number;

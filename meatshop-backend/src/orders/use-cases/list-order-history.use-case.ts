@@ -92,19 +92,43 @@ export class ListOrderHistoryUseCase {
             .createQueryBuilder(Chat, 'chat')
             .select('chat.order_id', 'order_id')
             .addSelect('MAX(chat.sent_at)', 'last_message_at')
+            .addSelect(
+              "COUNT(*) FILTER (WHERE chat.read_at IS NULL AND chat.participant_type = 'UNIT' AND chat.sender_id = chat_order.client_id)",
+              'client_unread',
+            )
+            .addSelect(
+              "COUNT(*) FILTER (WHERE chat.read_at IS NULL AND chat.participant_type = 'UNIT_DELIVERY_PERSON' AND chat.sender_id = chat_delivery.user_id)",
+              'delivery_unread',
+            )
+            .innerJoin('chat.order', 'chat_order')
+            .leftJoin('chat_order.delivery_person', 'chat_delivery')
             .where('chat.order_id IN (:...ids)', { ids: orders.map((order) => order.id) })
             .andWhere('chat.participant_type IN (:...channels)', {
               channels: [ChatParticipantType.UNIT, ChatParticipantType.UNIT_DELIVERY_PERSON],
             })
             .groupBy('chat.order_id')
-            .getRawMany<{ order_id: number; last_message_at: Date }>()
+            .getRawMany<{
+              order_id: number;
+              last_message_at: Date;
+              client_unread: string;
+              delivery_unread: string;
+            }>()
         : [];
     const lastMessages = new Map(activity.map((row) => [row.order_id, row.last_message_at]));
+    const unread = new Map(
+      activity.map((row) => [
+        row.order_id,
+        { client: Number(row.client_unread), delivery: Number(row.delivery_unread) },
+      ]),
+    );
     return paginatedResult(
       orders.map((order) =>
         Object.assign(order, {
           payment_method: methods.get(order.id) ?? null,
           chat_last_message_at: lastMessages.get(order.id) ?? null,
+          ...(filters.sort === 'chat_activity'
+            ? { chat_unread: unread.get(order.id) ?? { client: 0, delivery: 0 } }
+            : {}),
         }),
       ),
       total,

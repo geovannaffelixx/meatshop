@@ -66,6 +66,7 @@ export class ChatGateway implements OnGatewayConnection {
         throw new Error('Usuário não encontrado ou inativo.');
       }
       client.data.user = user;
+      await client.join(`inbox:user:${user.id}`);
       client.emit('chat:ready', { user_id: user.id });
     } catch (error) {
       this.logger.warn(`Chat connection rejected: ${(error as Error).message}`);
@@ -149,12 +150,21 @@ export class ChatGateway implements OnGatewayConnection {
   }
 
   private async emitInboxActivity(message: ChatMessageResponseDto): Promise<void> {
+    this.server
+      .to([`inbox:user:${message.sender_id}`, `inbox:user:${message.receiver_id}`])
+      .emit('chat:inbox:updated', {
+        order_id: message.order_id,
+        participant_type: message.participant_type,
+        reason: 'message',
+      });
     if (message.participant_type === ChatParticipantType.DELIVERY_PERSON) return;
     try {
       const order = await this.loadOrder(message.order_id);
       this.server.to(`inbox:unit:${order.unit_id}`).emit('chat:inbox:updated', {
         unit_id: order.unit_id,
         order_id: order.id,
+        participant_type: message.participant_type,
+        reason: 'message',
       });
     } catch (error) {
       this.logger.warn(`Failed to refresh chat inbox: ${(error as Error).message}`);
@@ -163,6 +173,42 @@ export class ChatGateway implements OnGatewayConnection {
 
   emitReadReceipt(receipt: ChatReadResponseDto): void {
     this.server.to(roomName(receipt.order_id, receipt.participant_type)).emit('chat:read', receipt);
+    void this.emitInboxRead(receipt);
+  }
+
+  private async emitInboxRead(receipt: ChatReadResponseDto): Promise<void> {
+    try {
+      const order = await this.orderRepository.findOne({
+        where: { id: receipt.order_id },
+        relations: { delivery_person: true, unit: true },
+      });
+      if (!order) return;
+      const event = {
+        order_id: order.id,
+        participant_type: receipt.participant_type,
+        reason: 'read',
+      };
+      const recipients =
+        receipt.participant_type === ChatParticipantType.UNIT
+          ? [order.client_id, order.unit.admin_id]
+          : receipt.participant_type === ChatParticipantType.DELIVERY_PERSON
+            ? [order.client_id, order.delivery_person?.user_id]
+            : [order.unit.admin_id, order.delivery_person?.user_id];
+      this.server
+        .to([
+          ...new Set(
+            [...recipients, receipt.reader_id].filter(Boolean).map((id) => `inbox:user:${id}`),
+          ),
+        ])
+        .emit('chat:inbox:updated', event);
+      if (receipt.participant_type !== ChatParticipantType.DELIVERY_PERSON) {
+        this.server
+          .to(`inbox:unit:${order.unit_id}`)
+          .emit('chat:inbox:updated', { ...event, unit_id: order.unit_id });
+      }
+    } catch (error) {
+      this.logger.warn(`Failed to refresh inbox read counts: ${(error as Error).message}`);
+    }
   }
 
   @SubscribeMessage('chat:send')

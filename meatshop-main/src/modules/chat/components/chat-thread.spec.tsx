@@ -9,6 +9,31 @@ jest.mock('@/shared/lib/api', () => ({ API_URL: '', apiGet: jest.fn(), apiPatch:
 jest.mock('@/shared/lib/toast', () => ({ toast: { error: jest.fn() } }));
 jest.mock('socket.io-client', () => ({ io: jest.fn() }));
 
+it('does not mark a background browser tab as read until the loaded chat becomes visible', async () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  Element.prototype.scrollIntoView = jest.fn();
+  jest.clearAllMocks();
+  const descriptor = Object.getOwnPropertyDescriptor(document, 'visibilityState');
+  Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+  jest.mocked(apiGet).mockResolvedValueOnce({items: [], has_more: false, next_before_id: null});
+  jest.mocked(apiPatch).mockResolvedValue({});
+  jest.mocked(io).mockReturnValue({ on: jest.fn(), emit: jest.fn(), disconnect: jest.fn() } as never);
+  const container = document.createElement('div'); document.body.append(container);
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<ChatThread orderId={10} participantType='UNIT' participantLabel='Ana' currentUserId={1} closed={true} />));
+    expect(apiPatch).not.toHaveBeenCalled();
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+    await act(async () => document.dispatchEvent(new Event('visibilitychange')));
+    expect(apiPatch).toHaveBeenCalledTimes(1);
+    expect(apiPatch).toHaveBeenCalledWith('/orders/10/chat/read?participant_type=UNIT', {}, expect.anything());
+  } finally {
+    await act(async () => root.unmount()); container.remove();
+    if (descriptor) Object.defineProperty(document, 'visibilityState', descriptor);
+    else Reflect.deleteProperty(document, 'visibilityState');
+  }
+});
+
 it('loads older batches with a cursor, preserves realtime messages and retries failures', async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   Element.prototype.scrollIntoView = jest.fn();
