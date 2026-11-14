@@ -41,19 +41,27 @@ export class CreateProductUseCase {
     );
     await this.ensureCategoryBelongsToUnit(dto.category_id, dto.unit_id);
 
-    const product = this.productRepository.create({
-      ...dto,
-      description: dto.description?.trim() || null,
+    return this.productRepository.manager.transaction(async (manager) => {
+      const { initial_quantity: initialQuantity, min_quantity: minQuantity, ...fields } = dto;
+      const product = manager.create(Product, {
+        ...fields,
+        description: dto.description?.trim() || null,
+      });
+      const savedProduct = await manager.save(Product, product);
+
+      await manager.save(
+        Stock,
+        manager.create(Stock, {
+          product_id: savedProduct.id,
+          quantity: initialQuantity ?? 0,
+          min_quantity: minQuantity ?? 0,
+        }),
+      );
+
+      this.logger.log(`Product ${savedProduct.id} created by user ${currentUser.id}`);
+
+      return savedProduct;
     });
-    await this.productRepository.save(product);
-
-    await this.stockRepository.save(
-      this.stockRepository.create({ product_id: product.id, quantity: 0 }),
-    );
-
-    this.logger.log(`Product ${product.id} created by user ${currentUser.id}`);
-
-    return product;
   }
 
   private async ensureCategoryBelongsToUnit(categoryId: number, unitId: number): Promise<void> {

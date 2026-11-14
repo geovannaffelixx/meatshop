@@ -21,7 +21,10 @@ type ChatThreadProps = {
   participantLabel: string;
   currentUserId: number;
   closed: boolean;
+  onRead?: (orderId: number, channel: ChatParticipantType) => void;
 };
+
+type MessagePage = { items: ChatMessage[]; has_more: boolean; next_before_id: number | null };
 
 type TypingEvent = {
   order_id: number;
@@ -33,13 +36,20 @@ type TypingEvent = {
 function mergeMessage(current: ChatMessage[], incoming: ChatMessage): ChatMessage[] {
   if (current.some((item) => item.id === incoming.id)) return current;
   return [...current, incoming].sort(
-    (a, b) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime(),
+    (a, b) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime() || a.id - b.id,
   );
 }
 
 
-export function ChatThread({ orderId, participantType, participantLabel, currentUserId, closed }: ChatThreadProps) {
+export function ChatThread({ orderId, participantType, participantLabel, currentUserId, closed, onRead }: ChatThreadProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [olderCursor, setOlderCursor] = useState<number | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const previousHeight = useRef<number | null>(null);
+  const pinnedToBottom = useRef(true);
+  const historyController = useRef<AbortController | null>(null);
   const [draft, setDraft] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -50,35 +60,50 @@ export function ChatThread({ orderId, participantType, participantLabel, current
   const lastTypingRef = useRef<number | null>(null);
   const otherTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const historyLoaded = useRef(false);
 
   const markRead = useCallback(async () => {
+    if (document.visibilityState !== 'visible' || !historyLoaded.current) return;
     try {
       await apiPatch(`/orders/${orderId}/chat/read?participant_type=${participantType}`, {}, { silent: true });
+      onRead?.(orderId, participantType);
     } catch {
       return;
     }
-  }, [orderId, participantType]);
+  }, [orderId, participantType, onRead]);
 
   useEffect(() => {
     const controller = new AbortController();
+    historyLoaded.current = false;
     lastTypingRef.current = null;
     setOtherIsTyping(false);
     setLoading(true);
     setMessages([]);
+    setHasMore(false);
+    setOlderCursor(null);
+    setLoadingOlder(false);
+    previousHeight.current = null;
+    pinnedToBottom.current = true;
     void apiGet(
-      `/orders/${orderId}/chat?participant_type=${participantType}&page=1&limit=100`,
+      `/orders/${orderId}/chat?participant_type=${participantType}&paginated=true&limit=30`,
       { signal: controller.signal, silent: true },
     )
       .then((data: unknown) => {
-        if (Array.isArray(data)) {
-          setMessages(data as ChatMessage[]);
+        if (!controller.signal.aborted && !Array.isArray(data)) {
+          const batch = data as MessagePage;
+          setMessages(current => batch.items.reduce(mergeMessage, current));
+          setHasMore(batch.has_more);
+          setOlderCursor(batch.next_before_id);
+          historyLoaded.current = true;
           void markRead();
         }
       })
-      .catch(() => toast.error('Falha ao carregar a conversa.'))
+      .catch(() => { if (!controller.signal.aborted) toast.error('Falha ao carregar a conversa.'); })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
+    const onVisible = () => { if (document.visibilityState === 'visible') void markRead(); };
+    document.addEventListener('visibilitychange', onVisible);
     const { url, ...endpoint } = socketEndpoint('/chat');
     const socket = io(url, {
       ...endpoint,
@@ -88,6 +113,9 @@ export function ChatThread({ orderId, participantType, participantLabel, current
     socketRef.current = socket;
     const room = { order_id: orderId, participant_type: participantType };
     socket.on('connect', () => {
+      setConnected(true);
+    });
+    socket.on('chat:ready', () => {
       setConnected(true);
       socket.emit('chat:join', room);
     });
@@ -116,6 +144,8 @@ export function ChatThread({ orderId, participantType, participantLabel, current
     socket.on('chat:error', () => toast.error('Não foi possível conectar à conversa.'));
     return () => {
       controller.abort();
+      document.removeEventListener('visibilitychange', onVisible);
+      historyController.current?.abort();
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       if (otherTypingTimeoutRef.current) clearTimeout(otherTypingTimeoutRef.current);
       socket.emit('chat:leave', room);
@@ -125,7 +155,12 @@ export function ChatThread({ orderId, participantType, participantLabel, current
   }, [currentUserId, markRead, orderId, participantType]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    if (previousHeight.current !== null && scrollRef.current) {
+      scrollRef.current.scrollTop += scrollRef.current.scrollHeight - previousHeight.current;
+      previousHeight.current = null;
+    } else if (pinnedToBottom.current) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
   }, [messages, otherIsTyping]);
 
   function handleDraftChange(value: string) {
@@ -145,6 +180,28 @@ export function ChatThread({ orderId, participantType, participantLabel, current
     }, 1200);
   }
 
+  async function loadOlder() {
+    if (loadingOlder || !hasMore || olderCursor === null) return;
+    setLoadingOlder(true);
+    const controller = new AbortController();
+    historyController.current = controller;
+    try {
+      const batch = await apiGet(
+        '/orders/' + orderId + '/chat?participant_type=' + participantType + '&paginated=true&limit=30&before_id=' + olderCursor,
+        { signal: controller.signal, silent: true },
+      ) as MessagePage;
+      if (controller.signal.aborted) return;
+      previousHeight.current = scrollRef.current?.scrollHeight ?? null;
+      setMessages(current => batch.items.reduce(mergeMessage, current));
+      setHasMore(batch.has_more);
+      setOlderCursor(batch.next_before_id);
+    } catch {
+      if (!controller.signal.aborted) toast.error('Não foi possível carregar mensagens anteriores. Tente novamente.');
+    } finally {
+      if (!controller.signal.aborted) setLoadingOlder(false);
+    }
+  }
+
   async function sendMessage() {
     const message = draft.trim();
     if (!message || sending || closed) return;
@@ -153,6 +210,7 @@ export function ChatThread({ orderId, participantType, participantLabel, current
       const sent = (await apiPost(`/orders/${orderId}/chat`, {
         participant_type: participantType, message,
       })) as ChatMessage;
+      pinnedToBottom.current = true;
       setMessages((current) => mergeMessage(current, sent));
       setDraft('');
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
@@ -166,10 +224,10 @@ export function ChatThread({ orderId, participantType, participantLabel, current
   }
 
   return (
-    <section className='flex min-h-0 flex-1 flex-col bg-slate-50'>
-      <header className='flex items-center justify-between border-b bg-white px-5 py-3'>
-        <div>
-          <h2 className='font-semibold text-slate-900'>{participantLabel}</h2>
+    <section className='flex min-h-0 min-w-0 flex-1 flex-col bg-slate-50'>
+      <header className='flex shrink-0 flex-wrap items-center justify-between gap-2 border-b bg-white px-5 py-3'>
+        <div className='min-w-0'>
+          <h2 className='break-words font-semibold text-slate-900'>{participantLabel}</h2>
           <p className='text-xs text-slate-500'>Pedido #{orderId}</p>
         </div>
         <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${connected ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
@@ -177,7 +235,8 @@ export function ChatThread({ orderId, participantType, participantLabel, current
           {connected ? 'Tempo real conectado' : 'Reconectando...'}
         </span>
       </header>
-      <div className='min-h-0 flex-1 space-y-3 overflow-y-auto p-5' aria-live='polite'>
+      <div ref={scrollRef} onScroll={() => { const el = scrollRef.current; if (el) pinnedToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80; }} className='min-h-0 flex-1 space-y-3 overflow-y-auto p-5' aria-live='polite'>
+        {hasMore && <div className='text-center'><Button type='button' variant='outline' disabled={loadingOlder} onClick={() => void loadOlder()}>{loadingOlder ? 'Carregando...' : 'Carregar mensagens anteriores'}</Button></div>}
         {loading ? (
           <DataSkeleton label="Carregando conversa..." />
         ) : messages.length === 0 ? (
@@ -210,7 +269,7 @@ export function ChatThread({ orderId, participantType, participantLabel, current
         {otherIsTyping && <p className='text-xs italic text-slate-500'>{participantLabel} está digitando...</p>}
         <div ref={bottomRef} />
       </div>
-      <footer className='border-t bg-white p-4'>
+      <footer className='shrink-0 border-t bg-white p-4'>
         {closed ? (
           <p className='rounded-lg bg-slate-100 px-4 py-3 text-center text-sm text-slate-600'>
             Esta conversa foi encerrada junto com o pedido. O histórico continua disponível.

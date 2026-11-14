@@ -38,3 +38,4 @@ INSERT INTO coupon_redemptions VALUES (3,1,5,'REDEEMED'),(3,2,999,'REDEEMED');
 INSERT INTO promotions VALUES (1,1,1,'Promoção',NOW()-INTERVAL '1 day',NOW()+INTERVAL '1 day',10,45,true,NOW()),(2,2,2,'Outra',NOW()-INTERVAL '1 day',NOW()+INTERVAL '1 day',10,90,true,NOW());
 INSERT INTO support_tickets VALUES (1,1,1,'Ajuda','OTHER','NORMAL','OPEN',NOW(),NULL),(2,2,2,'Outro','OTHER','NORMAL','OPEN',NOW(),NULL),(3,1,2,'Outro solicitante da mesma unidade','OTHER','NORMAL','OPEN',NOW(),NULL);
 INSERT INTO reviews VALUES (1,1,1,NULL,5,'Ótimo',NOW()),(2,2,2,NULL,1,'Outra unidade',NOW()),(3,1,1,1,4,'Produto bom',NOW());
+ALTER TABLE orders ADD COLUMN delivery_type text DEFAULT 'DELIVERY';

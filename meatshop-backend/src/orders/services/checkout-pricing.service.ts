@@ -98,6 +98,13 @@ export class CheckoutPricingService {
   }
 
   private deliveryDistance(unit: Unit, address: Address | null): number {
+    if (unit.latitude == null || unit.longitude == null || unit.coordinate_source !== 'USER_PIN') {
+      throw new BadRequestException({
+        code: 'UNIT_LOCATION_CONFIRMATION_REQUIRED',
+        message:
+          'A unidade precisa confirmar sua localização no mapa para oferecer entrega. Entre em contato com o açougue ou escolha retirada no balcão.',
+      });
+    }
     const rawCoordinates = [unit.latitude, unit.longitude, address?.latitude, address?.longitude];
     if (rawCoordinates.some((value) => value === null || value === undefined)) {
       throw new BadRequestException({

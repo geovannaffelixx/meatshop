@@ -43,3 +43,7 @@ export function peekApiData<T>(path: string): T | undefined {
   if (!state || state.isInvalidated || Date.now() - state.dataUpdatedAt >= API_CACHE_STALE_TIME) return;
   return state.data;
 }
+
+export function refreshOrderQueries() {
+  return panelQueryClient.invalidateQueries({ predicate: query => String(query.queryKey[2] ?? '').startsWith('/orders'), refetchType: 'active' });
+}

@@ -15,14 +15,15 @@ export async function ordersReport(manager: EntityManager, filters: ExportReport
         c('id', 'Pedido'),
         c('order_date', 'Data', 'date'),
         c('client', 'Cliente'),
-        c('status', 'Situação'),
+        c('status', 'Situação', 'label'),
+        c('delivery_type', 'Modalidade', 'label'),
         c('scheduled', 'Agendamento', 'date'),
         c('subtotal', 'Subtotal', 'money'),
         c('discount', 'Desconto', 'money'),
         c('fee', 'Frete', 'money'),
         c('total', 'Total', 'money'),
       ],
-      `SELECT o.id,o.order_date,u.name AS client,o.status,o.scheduled_delivery_date AS scheduled,o.subtotal,o.discount_amount AS discount,o.delivery_fee AS fee,o.total_amount AS total FROM orders o JOIN users u ON u.id=o.client_id WHERE o.unit_id=$1`,
+      `SELECT o.id,o.order_date,u.name AS client,CASE WHEN o.delivery_type='PICKUP' AND o.status='READY' THEN 'READY_FOR_PICKUP' WHEN o.delivery_type='PICKUP' AND o.status='DELIVERED' THEN 'COLLECTED' ELSE o.status::text END AS status,o.delivery_type,o.scheduled_delivery_date AS scheduled,o.subtotal,o.discount_amount AS discount,o.delivery_fee AS fee,o.total_amount AS total FROM orders o JOIN users u ON u.id=o.client_id WHERE o.unit_id=$1`,
       'ORDER BY o.order_date DESC,o.id DESC',
     );
 }

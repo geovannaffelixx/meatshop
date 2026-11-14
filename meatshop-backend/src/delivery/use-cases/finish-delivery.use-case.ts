@@ -9,7 +9,6 @@ import { OrderStatusService } from '../../orders/services/order-status.service';
 import { User } from '../../users/entities/user.entity';
 import { DeliveryGateway } from '../delivery.gateway';
 import { VerifyDeliveryCodeDto } from '../dtos/verify-delivery-code.dto';
-import { DeliveryCodeService } from '../../orders/services/delivery-code.service';
 
 @Injectable()
 export class FinishDeliveryUseCase {
@@ -19,7 +18,6 @@ export class FinishDeliveryUseCase {
     private readonly orderAuthorizationService: OrderAuthorizationService,
     private readonly orderStatusService: OrderStatusService,
     private readonly deliveryGateway: DeliveryGateway,
-    private readonly deliveryCodeService: DeliveryCodeService,
   ) {}
 
   async execute(orderId: number, dto: VerifyDeliveryCodeDto, currentUser: User): Promise<Order> {
@@ -40,16 +38,11 @@ export class FinishDeliveryUseCase {
       throw new BadRequestException('Order is not currently out for delivery');
     }
 
-    await this.deliveryCodeService.verify(order, 'DELIVERY', dto.code);
-    order.tracking_session_id = null;
-    order.tracking_revoked_at = new Date();
-    order.delivery_status = DeliveryStatus.DELIVERED;
-    order.delivery_step = null;
-
     const savedOrder = await this.orderStatusService.transition(
       order,
       OrderStatus.DELIVERED,
       currentUser.id,
+      dto.code,
     );
     this.deliveryGateway.emitDeliveryChanged(savedOrder);
     return savedOrder;

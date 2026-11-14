@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  HttpException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { createHmac, randomInt, timingSafeEqual } from 'crypto';
@@ -12,6 +7,7 @@ import { Repository } from 'typeorm';
 import { AesGcmCipher } from '../../common/security/aes-gcm-cipher';
 import { Order } from '../entities/order.entity';
 import { OrderStatus } from '../enums/order-status.enum';
+import { DeliveryType } from '../enums/delivery-type.enum';
 
 export type DeliveryCodePurpose = 'PICKUP' | 'DELIVERY';
 
@@ -55,7 +51,12 @@ export class DeliveryCodeService {
     return code;
   }
 
-  async verify(order: Order, purpose: DeliveryCodePurpose, code: string): Promise<void> {
+  async verify(
+    order: Order,
+    purpose: DeliveryCodePurpose,
+    code: string,
+    repository: Repository<Order> = this.orderRepository,
+  ): Promise<void> {
     const fields = this.fields(order, purpose);
     const now = new Date();
 
@@ -64,8 +65,8 @@ export class DeliveryCodeService {
     const received = Buffer.from(this.hash(order.id, purpose, code), 'hex');
     if (expected.length !== received.length || !timingSafeEqual(expected, received)) {
       this.applyFailedAttempt(order, purpose, fields.attempts + 1);
-      await this.orderRepository.save(order);
-      throw new UnauthorizedException({
+      await repository.save(order);
+      throw new BadRequestException({
         code: 'INVALID_DELIVERY_CODE',
         message: 'Invalid security code.',
       });
@@ -80,7 +81,7 @@ export class DeliveryCodeService {
       order.delivery_code_attempts = 0;
       order.delivery_code_locked_until = null;
     }
-    await this.orderRepository.save(order);
+    await repository.save(order);
   }
 
   private assertCodeUsable(order: Order, purpose: DeliveryCodePurpose, now: Date) {
@@ -121,6 +122,8 @@ export class DeliveryCodeService {
   }
 
   revealDeliveryCode(order: Order): string | null {
+    if (order.delivery_type === DeliveryType.PICKUP && order.status !== OrderStatus.READY)
+      return null;
     if (!order.delivery_code_ciphertext || order.delivery_verified_at) return null;
     if ([OrderStatus.CANCELLED, OrderStatus.DELIVERED].includes(order.status)) return null;
     if (order.delivery_code_expires_at && order.delivery_code_expires_at <= new Date()) return null;

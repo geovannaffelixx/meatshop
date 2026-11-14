@@ -9,7 +9,6 @@ import { Order } from '../entities/order.entity';
 import { OrderAuthorizationService } from '../services/order-authorization.service';
 import { OrderStatusService } from '../services/order-status.service';
 import { OrderStatusTransitionValidator } from '../validators/order-status-transition.validator';
-import { DeliveryCodeService } from '../services/delivery-code.service';
 
 @Injectable()
 export class UpdateOrderStatusUseCase {
@@ -19,7 +18,6 @@ export class UpdateOrderStatusUseCase {
     private readonly orderAuthorizationService: OrderAuthorizationService,
     private readonly orderStatusService: OrderStatusService,
     private readonly transitionValidator: OrderStatusTransitionValidator,
-    private readonly codes: DeliveryCodeService,
   ) {}
 
   async execute(orderId: number, dto: UpdateOrderStatusDto, currentUser: User): Promise<Order> {
@@ -38,23 +36,6 @@ export class UpdateOrderStatusUseCase {
       throw new BadRequestException('Use a validação dos códigos de retirada e entrega.');
     }
     this.transitionValidator.assertValid(order.status, dto.status, order.delivery_type);
-    await this.verifyCounterPickup(order, dto);
-
-    return this.orderStatusService.transition(order, dto.status, currentUser.id);
-  }
-
-  private async verifyCounterPickup(order: Order, dto: UpdateOrderStatusDto): Promise<void> {
-    if (order.delivery_type !== DeliveryType.PICKUP || dto.status !== OrderStatus.DELIVERED) return;
-    if (!dto.code)
-      throw new BadRequestException({
-        code: 'PICKUP_CODE_REQUIRED',
-        message: 'Ask the customer for the pickup code.',
-      });
-    const secured = await this.orderRepository
-      .createQueryBuilder('order')
-      .addSelect('order.delivery_code_hash')
-      .where('order.id = :id', { id: order.id })
-      .getOneOrFail();
-    await this.codes.verify(secured, 'DELIVERY', dto.code);
+    return this.orderStatusService.transition(order, dto.status, currentUser.id, dto.code);
   }
 }

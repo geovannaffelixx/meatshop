@@ -60,6 +60,12 @@ function setup() {
 }
 
 describe('DeliveryAssignmentService', () => {
+  it('never assigns a courier to a counter pickup order', async () => {
+    const { service, order, manager } = setup();
+    order.delivery_type = 'PICKUP';
+    await expect(service.assign(9, 5)).rejects.toBeInstanceOf(ConflictException);
+    expect(manager.save).not.toHaveBeenCalled();
+  });
   it('locks the courier and order inside the same transaction before assigning', async () => {
     const { service, manager, query } = setup();
     const result = await service.assign(9, 5);
@@ -68,7 +74,10 @@ describe('DeliveryAssignmentService', () => {
       lock: { mode: 'pessimistic_write' },
     });
     expect(query.setLock).toHaveBeenCalledWith('pessimistic_write');
-    expect(result.order).toMatchObject({ delivery_person_id: 5, delivery_status: 'PICKUP' });
+    expect(result.order).toMatchObject({
+      delivery_person_id: 5,
+      delivery_status: 'PICKUP',
+    });
     expect(result.pickupCode).toBe('123456');
   });
   it('rejects a second active delivery before saving another assignment', async () => {

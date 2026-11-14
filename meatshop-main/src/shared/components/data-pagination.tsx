@@ -9,9 +9,10 @@ type DataPaginationProps = {
   onPageChange: (page: number) => void;
   isLoading?: boolean;
   maxVisiblePages?: number;
+  compact?: boolean;
 };
 
-export function DataPagination({ page, pageSize, totalItems, totalPages, onPageChange, isLoading = false, maxVisiblePages = 5 }: DataPaginationProps) {
+export function DataPagination({ page, pageSize, totalItems, totalPages, onPageChange, isLoading = false, maxVisiblePages = 5, compact = false }: DataPaginationProps) {
   const lastPage = Math.max(1, Math.floor(totalPages) || 1);
   const current = Math.min(Math.max(Math.floor(page) || 1, 1), lastPage);
   const windowSize = Math.min(9, Math.max(1, Math.floor(maxVisiblePages) || 5));
@@ -24,6 +25,17 @@ export function DataPagination({ page, pageSize, totalItems, totalPages, onPageC
   function goTo(next: number) {
     if (!isLoading && next !== current && next >= 1 && next <= lastPage) onPageChange(next);
   }
+
+  if (compact) return (
+    <nav aria-label="Paginação" aria-busy={isLoading} className="shrink-0 border-t border-slate-200 bg-white px-4 py-3 text-xs text-slate-600">
+      <div className="flex items-center justify-between gap-2">
+        <Button type="button" variant="outline" size="icon" className="size-9 shrink-0 rounded-lg" aria-label="Página anterior" disabled={current === 1 || isLoading} onClick={() => goTo(current - 1)}><ChevronLeft className="size-4" /></Button>
+        <span className="text-center" aria-live="polite">Página <strong className="text-slate-900">{current}</strong> de {lastPage}</span>
+        <Button type="button" variant="outline" size="icon" className="size-9 shrink-0 rounded-lg" aria-label="Próxima página" disabled={current === lastPage || isLoading} onClick={() => goTo(current + 1)}><ChevronRight className="size-4" /></Button>
+      </div>
+      <p className="mt-2 text-center text-slate-500">{firstItem}–{lastItem} de {totalItems} pedidos</p>
+    </nav>
+  );
 
   return (
     <nav aria-label="Paginação" aria-busy={isLoading} className="flex flex-col gap-3 border-t border-slate-200 px-4 py-3 text-sm text-slate-600 lg:flex-row lg:items-center lg:justify-between">

@@ -8,6 +8,7 @@ import { SendMessageDto } from './dtos/send-message.dto';
 import { SendMessageUseCase } from './use-cases/send-message.use-case';
 import { MarkChatReadUseCase } from './use-cases/mark-chat-read.use-case';
 import { ChatGateway } from './chat.gateway';
+import { GetChatParticipantUseCase } from './use-cases/get-chat-participant.use-case';
 
 @ApiTags('Chat')
 @ApiBearerAuth('access-token')
@@ -18,7 +19,21 @@ export class ChatController {
     private readonly sendMessageUseCase: SendMessageUseCase,
     private readonly markChatReadUseCase: MarkChatReadUseCase,
     private readonly chatGateway: ChatGateway,
+    private readonly getChatParticipant: GetChatParticipantUseCase,
   ) {}
+
+  @Get('participant')
+  @ApiOperation({
+    summary:
+      'Returns the authorized conversation participant and current profile photo, even before the first message',
+  })
+  participant(
+    @Param('orderId', ParseIntPipe) orderId: number,
+    @Query() query: ListChatMessagesDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.getChatParticipant.execute(orderId, query.participant_type, user);
+  }
 
   @ApiOperation({
     summary: 'Lists an order message history in one of the three available private channels',

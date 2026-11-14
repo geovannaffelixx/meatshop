@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import { socketEndpoint } from "@/shared/config/api-url";
+import { refreshOrderQueries } from "@/shared/lib/query-cache";
 import { apiGet, apiPatch } from "@/shared/lib/api";
 import { toast } from "@/shared/lib/toast";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
@@ -44,8 +45,10 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
 
     const { url, ...endpoint } = socketEndpoint("/notifications");
     const socket: Socket = io(url, { ...endpoint, withCredentials: true });
+    socket.on("connect", () => { void refreshOrderQueries(); });
     socket.on("notification:new", (notification: PanelNotification) => {
       if (notification.unit_id && notification.unit_id !== unitId) return;
+      if (notification.type === "ORDER" || notification.type === "DELIVERY") void refreshOrderQueries();
       setNotifications((current) => [notification, ...current.filter(({ id }) => id !== notification.id)]);
       toast.show({
         title: notification.title,

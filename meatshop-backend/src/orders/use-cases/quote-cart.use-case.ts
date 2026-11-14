@@ -162,7 +162,7 @@ export class QuoteCartUseCase {
         ),
       ),
     };
-    this.assertChange(dto, group.unitId, quoted.total_amount, groupCount);
+    this.assertChange(dto, group.unitId, groupCount);
     return quoted;
   }
 
@@ -180,13 +180,11 @@ export class QuoteCartUseCase {
     }));
   }
 
-  private assertChange(dto: CreateOrderDto, unitId: number, total: number, groupCount: number) {
+  private assertChange(dto: CreateOrderDto, unitId: number, groupCount: number) {
     const selection = paymentForUnit(dto, unitId);
     if (
       selection.change_for != null &&
-      (selection.method !== 'Cash' ||
-        selection.change_for < total ||
-        (dto.change_for != null && groupCount > 1))
+      (selection.method !== 'Cash' || (dto.change_for != null && groupCount > 1))
     )
       throw new BadRequestException({
         code: 'INVALID_CHANGE_AMOUNT',

@@ -10,6 +10,7 @@ import { couponsReport, promotionsReport } from './marketing-report.query';
 import { deliveriesReport, reviewsReport, supportReport } from './service-report.query';
 import { financeDetails } from './finance-report.query';
 import { validateReportDates } from './report-query';
+import { reportLabel } from '../report-labels';
 
 describe('Unit report SQL with isolated PostgreSQL', () => {
   let db: PGlite;
@@ -41,10 +42,32 @@ describe('Unit report SQL with isolated PostgreSQL', () => {
   });
   it('exports catalog stock and applies literal search and availability filters', async () => {
     expect(
-      (await catalogReport(manager, { ...filters, stock: 'low', active: 'true' })).rows,
+      (
+        await catalogReport(manager, {
+          ...filters,
+          stock: 'low',
+          active: 'true',
+        })
+      ).rows,
     ).toEqual([expect.objectContaining({ id: 1, quantity: 2.5, minimum: 3 })]);
     expect((await catalogReport(manager, { ...filters, search: '%' })).rows).toEqual([]);
     expect((await catalogReport(manager, { ...filters, search: "' OR 1=1 --" })).rows).toEqual([]);
+  });
+  it('distinguishes ready and completed counter pickups in exported orders', async () => {
+    await db.exec("BEGIN; UPDATE orders SET delivery_type='PICKUP',status='READY' WHERE id=1");
+    try {
+      let result = await ordersReport(manager, filters);
+      expect(result.rows.find((row) => row.id === 1)).toMatchObject({
+        status: 'READY_FOR_PICKUP',
+        delivery_type: 'PICKUP',
+      });
+      expect(reportLabel('READY_FOR_PICKUP')).toBe('Pronto para retirada');
+      await db.exec("UPDATE orders SET status='DELIVERED' WHERE id=1");
+      result = await ordersReport(manager, filters);
+      expect(reportLabel(String(result.rows.find((row) => row.id === 1)?.status))).toBe('Retirado');
+    } finally {
+      await db.exec('ROLLBACK');
+    }
   });
   it('counts only delivered and received orders, excluding pending payments and other units', async () => {
     expect((await performanceReport(manager, filters)).rows).toEqual([
@@ -82,7 +105,11 @@ describe('Unit report SQL with isolated PostgreSQL', () => {
   it('rejects invalid and reversed periods', () => {
     expect(() => validateReportDates({ ...filters, date_from: '2026-02-30' })).toThrow();
     expect(() =>
-      validateReportDates({ ...filters, date_from: '2026-11-02', date_to: '2026-11-01' }),
+      validateReportDates({
+        ...filters,
+        date_from: '2026-11-02',
+        date_to: '2026-11-01',
+      }),
     ).toThrow();
   });
 });

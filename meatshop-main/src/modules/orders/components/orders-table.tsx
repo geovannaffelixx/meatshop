@@ -9,7 +9,7 @@ import { DataSkeleton } from "@/shared/components/data-skeleton";
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { apiPatch } from "@/shared/lib/api"
-import { ORDER_STATUS_LABELS } from "@/modules/orders/utils/status-labels"
+import { orderStatusLabel, DELIVERY_TYPE_LABELS } from "@/modules/orders/utils/status-labels"
 import { Spinner } from "@/shared/components/ui/spinner"
 import { DataPagination } from "@/shared/components/data-pagination"
 import { formatCurrency, formatDate } from "@/shared/lib/formatters"
@@ -52,7 +52,7 @@ export function OrdersTable({ filters, currentPage, onPageChange }: OrdersTableP
     status: filters.status, order_from: filters.orderDate.from, order_to: filters.orderDate.to,
     scheduled_from: filters.scheduledDate.from, scheduled_to: filters.scheduledDate.to };
   Object.entries(values).forEach(([key, value]) => { if (value) params.set(key, value); });
-  const query = useApiQuery<PageResult<Order>>(unitId ? `/orders?${params}` : null);
+  const query = useApiQuery<PageResult<Order>>(unitId ? `/orders?${params}` : null, { refetchInterval: 10000 });
   const pageData = query.data?.data ?? [];
   const loading = query.isPending;
   const error = query.error?.message;
@@ -101,7 +101,7 @@ export function OrdersTable({ filters, currentPage, onPageChange }: OrdersTableP
             <th scope="col">Data agendada</th>
             <th scope="col">Status</th>
             <th scope="col">Valor</th>
-            <th scope="col">Entrega</th>
+            <th scope="col">Modalidade</th>
             <th scope="col" className="text-right">Ações</th>
           </tr>
         </thead>
@@ -115,11 +115,11 @@ export function OrdersTable({ filters, currentPage, onPageChange }: OrdersTableP
                 <td className="whitespace-nowrap">{formatDate(o.scheduled_delivery_date)}</td>
                 <td>
                   <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                    {ORDER_STATUS_LABELS[o.status] ?? o.status}
+                    {orderStatusLabel(o.status, o.delivery_type)}
                   </span>
                 </td>
                 <td className="whitespace-nowrap font-medium">{formatCurrency(o.total_amount)}</td>
-                <td>{o.delivery_type === "DELIVERY" ? "Entrega" : "Retirada"}</td>
+                <td>{DELIVERY_TYPE_LABELS[o.delivery_type] ?? o.delivery_type}</td>
                 <td className="space-x-3 whitespace-nowrap text-right">
                   {o.status === "PENDING" && (["PAID","PARTIALLY_REFUNDED"].includes(o.payment_status) || (o.payment_status==="PENDING" && ["Cash", "Card on Delivery"].includes(o.payment_method ?? ""))) && (
                     <button

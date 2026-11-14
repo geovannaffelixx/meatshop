@@ -26,4 +26,23 @@ describe('Order management', () => {
     cy.get('[role="dialog"]').contains('button', /Confirmar|Cancelar pedido/).click();
     cy.wait('@cancel');
   });
+  it('keeps the cancellation dialog and reason after a server failure, allowing retry', () => {
+    cy.intercept('GET', 'http://localhost:3001/orders/7', order);
+    let attempts = 0;
+    cy.intercept('PATCH', 'http://localhost:3001/orders/7/cancel', (req) => {
+      expect(req.body.reason).to.eq('Sem estoque na unidade');
+      attempts += 1;
+      req.reply(attempts === 1 ? { statusCode: 503, body: { message: 'Tente novamente.' } } : {});
+    }).as('cancel');
+    cy.visit('/orders/7');
+    cy.contains('button', /Cancelar pedido/i).click();
+    cy.get('[role="dialog"] textarea').type('Sem estoque na unidade');
+    cy.get('[role="dialog"]').contains('button', /Confirmar|Cancelar pedido/).click();
+    cy.wait('@cancel');
+    cy.get('[role="dialog"]').should('be.visible');
+    cy.get('[role="dialog"] textarea').should('have.value', 'Sem estoque na unidade');
+    cy.get('[role="dialog"]').contains('button', /Confirmar|Cancelar pedido/).click();
+    cy.wait('@cancel');
+    cy.get('[role="dialog"]').should('not.exist');
+  });
 });

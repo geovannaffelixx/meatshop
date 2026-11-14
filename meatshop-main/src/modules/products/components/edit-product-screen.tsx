@@ -44,6 +44,7 @@ export function EditProductScreen() {
   const cached = peekApiData<{ product: Product; stock: Stock | null; images?: ProductImage[] }>(`/products/manage/${productId}`);
   const [product, setProduct] = useState<Product | null>(() => cached?.product ?? null)
   const [stock, setStock] = useState<Stock>(() => cached?.stock ?? { quantity: 0, min_quantity: 0 })
+  const [savedStock, setSavedStock] = useState<Stock | null>(() => cached?.stock ?? null)
   const [categories, setCategories] = useState<Category[]>(() => cached ? peekApiData<Category[]>(`/categories/manage?unit_id=${cached.product.unit_id}`) ?? [] : [])
   const [images, setImages] = useState<ProductImage[]>(() => cached?.images ?? [])
   const [saved, setSaved] = useState(false)
@@ -57,6 +58,7 @@ export function EditProductScreen() {
       .then((res: { product: Product; stock: Stock | null; images?: ProductImage[] }) => {
         setProduct(res.product)
         setStock(res.stock ?? { quantity: 0, min_quantity: 0 })
+        setSavedStock(res.stock ?? { quantity: 0, min_quantity: 0 })
         setImages(res.images ?? [])
         return apiGet(`/categories/manage?unit_id=${res.product.unit_id}`)
       })
@@ -114,10 +116,16 @@ export function EditProductScreen() {
         brand: product.brand || undefined,
       })
 
-      await apiPatch(`/products/${product.id}/stock`, {
-        quantity: stock.quantity,
-        min_quantity: stock.min_quantity,
-      })
+      const quantityChanged = savedStock && Number(stock.quantity) !== Number(savedStock.quantity)
+      const minimumChanged = savedStock && Number(stock.min_quantity) !== Number(savedStock.min_quantity)
+      if (quantityChanged || minimumChanged) {
+        const updated = await apiPatch(`/products/${product.id}/stock`, {
+          ...(quantityChanged ? { quantity: stock.quantity, expected_quantity: Number(savedStock.quantity) } : {}),
+          ...(minimumChanged ? { min_quantity: stock.min_quantity } : {}),
+        })
+        setStock(updated)
+        setSavedStock(updated)
+      }
 
       setSaved(true)
       setError(null)

@@ -9,6 +9,13 @@ type ApiErrorPayload = {
 const SECONDS_PER_MINUTE = 60;
 
 const ERROR_CODE_MESSAGES: Record<string, string> = {
+  STOCK_CHANGED: "O estoque mudou enquanto você editava. Atualize a página antes de ajustar a quantidade.",
+  UNIT_LOCATION_CONFIRMATION_REQUIRED: "A unidade precisa confirmar sua localização no mapa para oferecer entrega. Entre em contato com o açougue ou escolha retirada no balcão.",
+  PICKUP_PAYMENT_REQUIRED: "Registre o recebimento do pagamento antes de confirmar a retirada.",
+  PICKUP_CODE_REQUIRED: "Solicite ao cliente o código de retirada de seis dígitos.",
+  INVALID_DELIVERY_CODE: "Código incorreto. Confira os seis dígitos no aplicativo do cliente e tente novamente.",
+  DELIVERY_CODE_EXPIRED: "O código expirou. Peça ao cliente para gerar um novo código no aplicativo.",
+  DELIVERY_CODE_LOCKED: "Muitas tentativas incorretas. Aguarde 15 minutos antes de tentar novamente.",
   ACCOUNT_LOCKED: "Conta bloqueada temporariamente por excesso de tentativas. Tente novamente mais tarde.",
   CSRF_TOKEN_INVALID: "Sua sessão de segurança expirou. Recarregue a página e tente novamente.",
   UNIT_INACTIVE: "Esta unidade está inativa no momento.",

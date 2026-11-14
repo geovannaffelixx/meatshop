@@ -7,6 +7,9 @@ import { OrderStatus } from '../enums/order-status.enum';
 import { Order } from '../entities/order.entity';
 import { OrderAuthorizationService } from '../services/order-authorization.service';
 import { SchedulingAvailabilityService } from '../services/scheduling-availability.service';
+import { Payment } from '../entities/payment.entity';
+import { isOfflinePayment } from '../../payments/payment-policy';
+import { PaymentStatus } from '../enums/payment-status.enum';
 
 const SCHEDULABLE_STATUSES = [OrderStatus.PENDING, OrderStatus.CONFIRMED];
 
@@ -55,6 +58,21 @@ export class ScheduleOrderUseCase {
       );
       lockedOrder.is_scheduled = true;
       lockedOrder.scheduled_delivery_date = scheduledDate;
+      const payment = await manager.findOne(Payment, { where: { order_id: lockedOrder.id } });
+      if (
+        isOfflinePayment(payment?.method) &&
+        lockedOrder.payment_status === PaymentStatus.PENDING
+      ) {
+        lockedOrder.payment_due_at = scheduledDate;
+      }
+      if (!lockedOrder.delivery_verified_at) {
+        lockedOrder.delivery_code_expires_at = new Date(
+          Math.max(
+            lockedOrder.delivery_code_expires_at?.getTime() ?? 0,
+            scheduledDate.getTime() + 48 * 60 * 60_000,
+          ),
+        );
+      }
       return manager.save(Order, lockedOrder);
     });
   }

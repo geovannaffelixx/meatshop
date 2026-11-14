@@ -17,6 +17,7 @@ import { User } from '../users/entities/user.entity';
 import { SendSupportMessageDto } from './dtos/send-support-message.dto';
 import { SendSupportMessageUseCase } from './use-cases/send-support-message.use-case';
 import { MediaStorageService } from '../storage/media-storage.service';
+import { SupportResponseInterceptor } from './support-response.interceptor';
 
 const allowedMimeTypes = new Map([
   ['image/jpeg', '.jpg'],
@@ -50,6 +51,7 @@ async function hasValidImageSignature(file: Express.Multer.File): Promise<boolea
 @ApiTags('Support')
 @ApiBearerAuth('access-token')
 @Controller('support-tickets')
+@UseInterceptors(SupportResponseInterceptor)
 export class SupportUploadController {
   constructor(
     private readonly sendMessage: SendSupportMessageUseCase,

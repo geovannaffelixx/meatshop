@@ -76,4 +76,34 @@ describe('CheckoutPricingService', () => {
 
     expect(service.deliveryFee(unit, address, DeliveryType.DELIVERY, weekday)).toBe(4.9);
   });
+
+  it('identifies a store pin problem without asking the customer to reconfirm a valid address', () => {
+    const address = {
+      latitude: -16.32,
+      longitude: -48.95,
+      coordinate_source: 'USER_PIN',
+    } as Address;
+    const unit = { latitude: -16.32, longitude: -48.95, coordinate_source: 'POSTAL_CODE' } as Unit;
+    try {
+      service.deliveryFee(unit, address, DeliveryType.DELIVERY);
+      throw new Error('Expected location validation');
+    } catch (error) {
+      expect((error as BadRequestException).getResponse()).toMatchObject({
+        code: 'UNIT_LOCATION_CONFIRMATION_REQUIRED',
+      });
+    }
+    expect(service.deliveryFee(unit, address, DeliveryType.PICKUP)).toBe(0);
+  });
+
+  it('still blocks an unconfirmed customer pin when the store is confirmed', () => {
+    const unit = { latitude: -16.32, longitude: -48.95, coordinate_source: 'USER_PIN' } as Unit;
+    const address = {
+      latitude: -16.32,
+      longitude: -48.95,
+      coordinate_source: 'POSTAL_CODE',
+    } as Address;
+    expect(() => service.deliveryFee(unit, address, DeliveryType.DELIVERY)).toThrow(
+      BadRequestException,
+    );
+  });
 });

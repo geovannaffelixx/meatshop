@@ -1,10 +1,24 @@
 import { Type } from 'class-transformer';
-import { IsDateString, IsEnum, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PanelListQueryDto } from '../../common/dtos/panel-list-query.dto';
 import { OrderStatus } from '../enums/order-status.enum';
 
 export class FilterPanelOrdersDto extends PanelListQueryDto {
+  @ApiPropertyOptional({ enum: ['chat_activity'] })
+  @IsOptional()
+  @IsIn(['chat_activity'])
+  sort?: 'chat_activity';
+
   @ApiPropertyOptional() @IsOptional() @Type(() => Number) @IsInt() @Min(1) unit_id?: number;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(20) order_id?: string;
   @ApiPropertyOptional() @IsOptional() @IsEnum(OrderStatus) status?: OrderStatus;

@@ -1,9 +1,23 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsEnum, IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
 import { ChatParticipantType } from '../enums/chat-participant-type.enum';
 
 export class ListChatMessagesDto {
+  @ApiPropertyOptional({
+    description: 'Return pagination metadata while preserving the legacy array response by default',
+  })
+  @IsOptional()
+  @IsIn(['true'])
+  paginated?: 'true';
+
+  @ApiPropertyOptional({ description: 'Load messages older than this message ID' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  before_id?: number;
+
   @ApiProperty({
     description: 'Canal da conversa a ser consultado',
     enum: ChatParticipantType,

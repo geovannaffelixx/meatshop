@@ -10,6 +10,7 @@ import { Repository } from 'typeorm';
 import { DeliveryPerson } from '../../delivery/entities/delivery-person.entity';
 import { LocalRole } from '../../common/enums/local-role.enum';
 import { UserUnitStatus } from '../../common/enums/user-unit-status.enum';
+import { GlobalRole } from '../../common/enums/global-role.enum';
 import { Order } from '../../orders/entities/order.entity';
 import { OrderStatus } from '../../orders/enums/order-status.enum';
 import { Unit } from '../../units/entities/unit.entity';
@@ -35,6 +36,14 @@ export class ChatAuthorizationService {
     @InjectRepository(UserUnit)
     private readonly userUnitRepository: Repository<UserUnit>,
   ) {}
+
+  async assertCanAccessInbox(unitId: number, user: User): Promise<void> {
+    await this.legal.assertUser(user.id);
+    const unit = await this.unitRepository.findOne({ where: { id: unitId } });
+    if (!unit) throw new NotFoundException('Unidade não encontrada.');
+    if (user.global_role === GlobalRole.SUPER_ADMIN) return;
+    await this.assertUnitRepresentative(unitId, user.id, unit.admin_id);
+  }
 
   async assertCanParticipate(
     order: Order,

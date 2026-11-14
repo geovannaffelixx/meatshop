@@ -15,6 +15,8 @@ import { OrderItem } from '../entities/order-item.entity';
 import { OrderResponseDto } from '../dtos/order-response.dto';
 import { DeliveryCodeService } from '../services/delivery-code.service';
 import { Review } from '../../reviews/entities/review.entity';
+import { Chat } from '../../chat/entities/chat.entity';
+import { ChatParticipantType } from '../../chat/enums/chat-participant-type.enum';
 
 @Injectable()
 export class ListOrderHistoryUseCase {
@@ -52,8 +54,28 @@ export class ListOrderHistoryUseCase {
       });
     }
     this.applyPanelFilters(query, filters);
+    if (filters.sort === 'chat_activity') {
+      query
+        .leftJoin(
+          (subquery) =>
+            subquery
+              .select('chat.order_id', 'order_id')
+              .addSelect('MAX(chat.sent_at)', 'last_message_at')
+              .from(Chat, 'chat')
+              .where('chat.participant_type IN (:...inboxChannels)', {
+                inboxChannels: [ChatParticipantType.UNIT, ChatParticipantType.UNIT_DELIVERY_PERSON],
+              })
+              .groupBy('chat.order_id'),
+          'chat_activity',
+          'chat_activity.order_id = orders.id',
+        )
+        .addSelect('chat_activity.last_message_at', 'chat_last_message_at')
+        .orderBy('chat_last_message_at', 'DESC', 'NULLS LAST')
+        .addOrderBy('orders.order_date', 'DESC');
+    } else {
+      query.orderBy('orders.order_date', 'DESC');
+    }
     const [orders, total] = await query
-      .orderBy('orders.order_date', 'DESC')
       .addOrderBy('orders.id', 'DESC')
       .skip((filters.page - 1) * filters.limit)
       .take(filters.limit)
@@ -64,9 +86,50 @@ export class ListOrderHistoryUseCase {
         })
       : [];
     const methods = new Map(payments.map((payment) => [payment.order_id, payment.method]));
+    const activity =
+      filters.sort === 'chat_activity' && orders.length
+        ? await this.orderRepository.manager
+            .createQueryBuilder(Chat, 'chat')
+            .select('chat.order_id', 'order_id')
+            .addSelect('MAX(chat.sent_at)', 'last_message_at')
+            .addSelect(
+              "COUNT(*) FILTER (WHERE chat.read_at IS NULL AND chat.participant_type = 'UNIT' AND chat.sender_id = chat_order.client_id)",
+              'client_unread',
+            )
+            .addSelect(
+              "COUNT(*) FILTER (WHERE chat.read_at IS NULL AND chat.participant_type = 'UNIT_DELIVERY_PERSON' AND chat.sender_id = chat_delivery.user_id)",
+              'delivery_unread',
+            )
+            .innerJoin('chat.order', 'chat_order')
+            .leftJoin('chat_order.delivery_person', 'chat_delivery')
+            .where('chat.order_id IN (:...ids)', { ids: orders.map((order) => order.id) })
+            .andWhere('chat.participant_type IN (:...channels)', {
+              channels: [ChatParticipantType.UNIT, ChatParticipantType.UNIT_DELIVERY_PERSON],
+            })
+            .groupBy('chat.order_id')
+            .getRawMany<{
+              order_id: number;
+              last_message_at: Date;
+              client_unread: string;
+              delivery_unread: string;
+            }>()
+        : [];
+    const lastMessages = new Map(activity.map((row) => [row.order_id, row.last_message_at]));
+    const unread = new Map(
+      activity.map((row) => [
+        row.order_id,
+        { client: Number(row.client_unread), delivery: Number(row.delivery_unread) },
+      ]),
+    );
     return paginatedResult(
       orders.map((order) =>
-        Object.assign(order, { payment_method: methods.get(order.id) ?? null }),
+        Object.assign(order, {
+          payment_method: methods.get(order.id) ?? null,
+          chat_last_message_at: lastMessages.get(order.id) ?? null,
+          ...(filters.sort === 'chat_activity'
+            ? { chat_unread: unread.get(order.id) ?? { client: 0, delivery: 0 } }
+            : {}),
+        }),
       ),
       total,
       filters,
