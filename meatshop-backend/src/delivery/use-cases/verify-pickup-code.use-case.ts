@@ -4,9 +4,7 @@ import { Repository } from 'typeorm';
 import { UnitPermission } from '../../common/enums/unit-permission.enum';
 import { Order } from '../../orders/entities/order.entity';
 import { DeliveryStatus } from '../../orders/enums/delivery-status.enum';
-import { DeliveryStep } from '../../orders/enums/delivery-step.enum';
 import { OrderStatus } from '../../orders/enums/order-status.enum';
-import { DeliveryCodeService } from '../../orders/services/delivery-code.service';
 import { OrderStatusService } from '../../orders/services/order-status.service';
 import { UnitAuthorizationService } from '../../units/services/unit-authorization.service';
 import { User } from '../../users/entities/user.entity';
@@ -19,7 +17,6 @@ export class VerifyPickupCodeUseCase {
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
     private readonly unitAuthorizationService: UnitAuthorizationService,
-    private readonly deliveryCodeService: DeliveryCodeService,
     private readonly orderStatusService: OrderStatusService,
     private readonly deliveryGateway: DeliveryGateway,
   ) {}
@@ -52,13 +49,11 @@ export class VerifyPickupCodeUseCase {
       throw new BadRequestException('Order is not waiting for pickup verification');
     }
 
-    await this.deliveryCodeService.verify(order, 'PICKUP', dto.code);
-    order.delivery_status = DeliveryStatus.ON_THE_WAY;
-    order.delivery_step = DeliveryStep.DELIVERING;
     const savedOrder = await this.orderStatusService.transition(
       order,
       OrderStatus.OUT_FOR_DELIVERY,
       currentUser.id,
+      dto.code,
     );
     this.deliveryGateway.emitDeliveryChanged(savedOrder);
     return savedOrder;

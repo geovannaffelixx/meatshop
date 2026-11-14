@@ -16,6 +16,7 @@ export type SupportTicket = {
   priority: SupportPriority; created_at: string; updated_at: string; last_message_at: string;
   closed_at: string | null; contact?: string | null; user?: { id: number; name: string; email: string };
   unit?: { id: number; name: string } | null; messages?: SupportMessage[];
+  messages_has_more?: boolean; messages_next_before_id?: number | null;
 };
 
 export const categoryLabels: Record<SupportCategory, string> = {

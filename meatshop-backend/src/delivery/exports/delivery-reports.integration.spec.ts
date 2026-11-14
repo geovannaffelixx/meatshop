@@ -31,7 +31,7 @@ describe('Delivery personal reports with isolated PostgreSQL', () => {
     );
     await db.exec(`CREATE TABLE units(id int PRIMARY KEY,name text);
       INSERT INTO units VALUES(1,'Centro'),(2,'Filial');
-      ALTER TABLE orders ADD COLUMN delivery_status text, ADD COLUMN delivery_verified_at timestamptz, ADD COLUMN updated_at timestamptz, ADD COLUMN delivery_type text DEFAULT 'DELIVERY', ADD COLUMN is_scheduled boolean DEFAULT false, ADD COLUMN pickup_verified_at timestamptz;
+      ALTER TABLE orders ADD COLUMN delivery_status text, ADD COLUMN delivery_verified_at timestamptz, ADD COLUMN updated_at timestamptz, ADD COLUMN is_scheduled boolean DEFAULT false, ADD COLUMN pickup_verified_at timestamptz;
       UPDATE orders SET delivery_status=CASE WHEN status='DELIVERED' THEN 'DELIVERED' END,delivery_verified_at=order_date,updated_at=order_date,pickup_verified_at=order_date - INTERVAL '20 minutes';
       UPDATE orders SET updated_at='2026-12-15 12:00Z' WHERE id=1;
       INSERT INTO orders(id,unit_id,client_id,order_date,status,delivery_status,delivery_fee,delivery_person_id,updated_at,delivery_verified_at) VALUES(7,2,2,'2026-11-02 12:00Z','DELIVERED','DELIVERED',8,1,'2026-11-02 12:00Z','2026-11-02 12:00Z');

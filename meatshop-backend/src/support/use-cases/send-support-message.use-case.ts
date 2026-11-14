@@ -98,8 +98,8 @@ export class SendSupportMessageUseCase {
         this.sendNotification.execute({
           user_id: userId,
           unit_id: isAdmin ? (ticket.unit_id ?? undefined) : undefined,
-          title: isAdmin ? 'MeatShop support response' : 'New support message',
-          message: `Support ticket #${ticket.id}: ${ticket.subject}`,
+          title: isAdmin ? 'Resposta do suporte MeatShop' : 'Nova mensagem no chamado',
+          message: `Chamado #${ticket.id}: ${ticket.subject}`,
           action_url: `/support/${ticket.id}`,
           type: NotificationType.SYSTEM,
         }),

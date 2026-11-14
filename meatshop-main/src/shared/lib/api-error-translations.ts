@@ -9,6 +9,7 @@ type ApiErrorPayload = {
 const SECONDS_PER_MINUTE = 60;
 
 const ERROR_CODE_MESSAGES: Record<string, string> = {
+  STOCK_CHANGED: "O estoque mudou enquanto você editava. Atualize a página antes de ajustar a quantidade.",
   UNIT_LOCATION_CONFIRMATION_REQUIRED: "A unidade precisa confirmar sua localização no mapa para oferecer entrega. Entre em contato com o açougue ou escolha retirada no balcão.",
   PICKUP_PAYMENT_REQUIRED: "Registre o recebimento do pagamento antes de confirmar a retirada.",
   PICKUP_CODE_REQUIRED: "Solicite ao cliente o código de retirada de seis dígitos.",

@@ -1,4 +1,16 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+  UseInterceptors,
+} from '@nestjs/common';
+import { SupportResponseInterceptor } from './support-response.interceptor';
+import { SupportMessagesQueryDto } from './dtos/support-messages-query.dto';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -20,6 +32,7 @@ import { ReopenSupportTicketUseCase } from './use-cases/reopen-support-ticket.us
 @ApiTags('Support')
 @ApiBearerAuth('access-token')
 @Controller('support-tickets')
+@UseInterceptors(SupportResponseInterceptor)
 export class SupportController {
   constructor(
     private readonly createSupportTicketUseCase: CreateSupportTicketUseCase,
@@ -71,6 +84,15 @@ export class SupportController {
   @Get(':id')
   getOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: User) {
     return this.getSupportTicketUseCase.execute(id, currentUser);
+  }
+
+  @Get(':id/messages')
+  messages(
+    @Param('id', ParseIntPipe) id: number,
+    @Query() query: SupportMessagesQueryDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.getSupportTicketUseCase.messages(id, user, query.before_id, query.limit);
   }
 
   @ApiOperation({

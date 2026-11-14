@@ -16,6 +16,8 @@ import { OrderStatusHistory } from '../entities/order-status-history.entity';
 import { DeliveryType } from '../enums/delivery-type.enum';
 import { PaymentStatus } from '../enums/payment-status.enum';
 import { DeliveryCodeService } from './delivery-code.service';
+import { DeliveryStatus } from '../enums/delivery-status.enum';
+import { DeliveryStep } from '../enums/delivery-step.enum';
 
 @Injectable()
 export class OrderStatusService {
@@ -42,6 +44,7 @@ export class OrderStatusService {
         .createQueryBuilder('order')
         .addSelect('order.tracking_session_id')
         .addSelect('order.delivery_code_hash')
+        .addSelect('order.pickup_code_hash')
         .setLock('pessimistic_write')
         .where('order.id = :id', { id: order.id })
         .getOne();
@@ -59,6 +62,37 @@ export class OrderStatusService {
       assertPaymentAllowsPreparation(current.payment_status, payment?.method);
       if (status === OrderStatus.CANCELLED) {
         throw new BadRequestException('Use the cancellation endpoint');
+      }
+      const courierPickup =
+        current.delivery_type === DeliveryType.DELIVERY && status === OrderStatus.OUT_FOR_DELIVERY;
+      const customerDelivery =
+        current.delivery_type === DeliveryType.DELIVERY && status === OrderStatus.DELIVERED;
+      if (courierPickup || customerDelivery) {
+        const expectedStatus = courierPickup ? OrderStatus.READY : OrderStatus.OUT_FOR_DELIVERY;
+        const expectedDelivery = courierPickup ? DeliveryStatus.PICKUP : DeliveryStatus.ON_THE_WAY;
+        if (
+          current.status !== expectedStatus ||
+          current.delivery_status !== expectedDelivery ||
+          !current.delivery_person_id
+        ) {
+          throw new ConflictException('O pedido mudou. Atualize a entrega antes de continuar.');
+        }
+        if (!counterPickupCode)
+          throw new BadRequestException({
+            code: 'DELIVERY_CODE_REQUIRED',
+            message: 'Informe o código de seis dígitos.',
+          });
+        try {
+          await this.codes.verify(
+            current,
+            courierPickup ? 'PICKUP' : 'DELIVERY',
+            counterPickupCode,
+            manager.getRepository(Order),
+          );
+        } catch (error) {
+          if (error instanceof HttpException) return { error };
+          throw error;
+        }
       }
       if (current.delivery_type === DeliveryType.PICKUP && status === OrderStatus.DELIVERED) {
         if (current.status !== OrderStatus.READY) {
@@ -96,6 +130,11 @@ export class OrderStatusService {
       current.status = status;
       current.delivery_status = order.delivery_status;
       current.delivery_step = order.delivery_step;
+      if (courierPickup) {
+        current.delivery_status = DeliveryStatus.ON_THE_WAY;
+        current.delivery_step = DeliveryStep.DELIVERING;
+      }
+      if (customerDelivery) current.delivery_status = DeliveryStatus.DELIVERED;
       if (status === OrderStatus.DELIVERED) {
         current.tracking_session_id = null;
         current.tracking_revoked_at = new Date();

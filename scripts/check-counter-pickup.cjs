@@ -55,6 +55,33 @@ async function main() {
     assert.equal((await runner.query('SELECT * FROM order_status_history')).length, 1);
     await assert.rejects(service.transition(await get(), 'DELIVERED', null, code));
     console.log('PASS: pending receipt, invalid code, persisted attempt, atomic rollback, successful counter pickup and replay protection on PostgreSQL.');
+
+    await runner.query('DELETE FROM order_status_history');
+    await runner.query("UPDATE orders SET status='READY',delivery_type='DELIVERY',delivery_person_id=21,delivery_status='PICKUP',delivery_step=NULL");
+    for (const purpose of ['PICKUP', 'DELIVERY']) {
+      const nextStatus = purpose === 'PICKUP' ? 'OUT_FOR_DELIVERY' : 'DELIVERED';
+      const verifiedField = purpose === 'PICKUP' ? 'pickup_verified_at' : 'delivery_verified_at';
+      const attemptField = purpose === 'PICKUP' ? 'pickup_code_attempts' : 'delivery_code_attempts';
+      const current = await get();
+      const handoffCode = codes.issue(current, purpose);
+      await repository.save(current);
+      const previousStatus = current.status;
+      await assert.rejects(service.transition(await get(), nextStatus, null,
+        handoffCode === '000000' ? '000001' : '000000'));
+      assert.equal((await get())[attemptField], 1);
+      await runner.query('ALTER TABLE order_status_history ADD CONSTRAINT handoff_save_failure CHECK (false) NOT VALID');
+      await assert.rejects(service.transition(await get(), nextStatus, null, handoffCode));
+      assert.equal((await get()).status, previousStatus);
+      assert.equal((await get())[verifiedField], null);
+      await runner.query('ALTER TABLE order_status_history DROP CONSTRAINT handoff_save_failure');
+      const result = await service.transition(await get(), nextStatus, null, handoffCode);
+      assert.equal(result.status, nextStatus);
+      assert.ok(result[verifiedField]);
+      if (purpose === 'PICKUP') assert.equal(result.delivery_status, 'ON_THE_WAY');
+      else assert.equal(result.delivery_status, 'DELIVERED');
+      await assert.rejects(service.transition(await get(), nextStatus, null, handoffCode));
+    }
+    console.log('PASS: both delivery handoffs retain their code after a PostgreSQL rollback, persist invalid attempts, and reject replay.');
   } finally {
     await runner.rollbackTransaction(); await runner.release(); await source.destroy();
   }

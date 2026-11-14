@@ -52,7 +52,7 @@ export function OrdersTable({ filters, currentPage, onPageChange }: OrdersTableP
     status: filters.status, order_from: filters.orderDate.from, order_to: filters.orderDate.to,
     scheduled_from: filters.scheduledDate.from, scheduled_to: filters.scheduledDate.to };
   Object.entries(values).forEach(([key, value]) => { if (value) params.set(key, value); });
-  const query = useApiQuery<PageResult<Order>>(unitId ? `/orders?${params}` : null);
+  const query = useApiQuery<PageResult<Order>>(unitId ? `/orders?${params}` : null, { refetchInterval: 10000 });
   const pageData = query.data?.data ?? [];
   const loading = query.isPending;
   const error = query.error?.message;

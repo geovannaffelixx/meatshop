@@ -12,6 +12,18 @@ import {
 } from 'class-validator';
 
 export class CreateProductDto {
+  @ApiPropertyOptional({ description: 'Initial available stock' })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 3 })
+  @Min(0)
+  initial_quantity?: number;
+
+  @ApiPropertyOptional({ description: 'Minimum stock alert quantity' })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 3 })
+  @Min(0)
+  min_quantity?: number;
+
   @ApiProperty({
     description: 'Product name',
     example: 'Picanha',

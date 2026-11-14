@@ -1,6 +1,7 @@
 "use client";
 
 import { PageHeader } from "@/shared/components/page-header";
+import { Button } from "@/shared/components/ui/button";
 import { formatDateTime } from "@/shared/lib/formatters";
 
 import { useApiQuery } from "@/shared/hooks/use-api-query";
@@ -9,10 +10,10 @@ import { DataSkeleton } from "@/shared/components/data-skeleton";
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ImagePlus, LockKeyhole, Send, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { apiPatch, apiUpload, resolveAssetUrl } from "@/shared/lib/api";
+import { apiGet, apiPatch, apiUpload, resolveAssetUrl } from "@/shared/lib/api";
 import { Spinner } from "@/shared/components/ui/spinner";
 import { toast } from "@/shared/lib/toast";
 import { usePanelAccess } from "@/shared/providers/panel-access-provider";
@@ -21,6 +22,7 @@ import {
   priorityLabels,
   statusLabels,
   type SupportTicket,
+  type SupportMessage,
 } from "./types";
 
 export function SupportDetailScreen({ ticketId }: { ticketId: number }) {
@@ -30,7 +32,31 @@ export function SupportDetailScreen({ ticketId }: { ticketId: number }) {
   const [images, setImages] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
 
-  const { data: ticket, isPending: loading, refetch: load } = useApiQuery<SupportTicket>(`/support-tickets/${ticketId}`);
+  const { data: ticket, isPending: loading, refetch: load } = useApiQuery<SupportTicket>(`/support-tickets/${ticketId}`, { refetchInterval: 10000 });
+
+  const [history, setHistory] = useState<SupportMessage[]>([]);
+  const [cursor, setCursor] = useState<number | null>(null);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [historyError, setHistoryError] = useState('');
+  const initialized = useRef<number | null>(null);
+  useEffect(() => {
+    if (!ticket || ticket.id !== ticketId) return;
+    if (initialized.current !== ticketId) {
+      initialized.current = ticketId;
+      setHistory(ticket.messages ?? []);
+      setCursor(ticket.messages_has_more ? ticket.messages_next_before_id ?? null : null);
+    } else setHistory(current => mergeMessages(current, ticket.messages ?? []));
+  }, [ticket, ticketId]);
+  async function loadEarlier() {
+    if (!cursor || loadingHistory) return;
+    setLoadingHistory(true); setHistoryError('');
+    try {
+      const page = await apiGet(`/support-tickets/${ticketId}/messages?before_id=${cursor}&limit=30`, { cache: false });
+      setHistory(current => mergeMessages(current, page.items));
+      setCursor(page.has_more ? page.next_before_id : null);
+    } catch { setHistoryError('Não foi possível carregar as mensagens anteriores. Tente novamente.'); }
+    finally { setLoadingHistory(false); }
+  }
 
   async function sendMessage(event: React.FormEvent) {
     event.preventDefault();
@@ -106,7 +132,9 @@ export function SupportDetailScreen({ ticketId }: { ticketId: number }) {
             )}
           </header>
           <div className="max-h-[55vh] space-y-4 overflow-y-auto bg-slate-50 p-5">
-            {ticket.messages?.map((item) => {
+            {cursor && <div className="text-center"><Button variant="outline" disabled={loadingHistory} onClick={loadEarlier}>{loadingHistory ? 'Carregando...' : 'Carregar mensagens anteriores'}</Button></div>}
+            {historyError && <p role="alert" className="text-sm text-red-700">{historyError}</p>}
+            {history.map((item) => {
               const mine = item.sender_id === user?.id;
               return (
                 <article
@@ -277,4 +305,8 @@ export function SupportDetailScreen({ ticketId }: { ticketId: number }) {
     </section>
     </div>
   );
+}
+
+function mergeMessages(current: SupportMessage[], incoming: SupportMessage[]) {
+  return [...new Map([...current, ...incoming].map(item => [item.id, item])).values()].sort((a,b) => a.id-b.id);
 }

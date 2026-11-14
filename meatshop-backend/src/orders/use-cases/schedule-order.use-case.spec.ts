@@ -3,8 +3,15 @@ import { ScheduleOrderUseCase } from './schedule-order.use-case';
 import { OrderStatus } from '../enums/order-status.enum';
 
 describe('ScheduleOrderUseCase', () => {
-  function setup(status = OrderStatus.PENDING) {
-    const order = { id: 12, client_id: 4, unit_id: 6, status };
+  function setup(status = OrderStatus.PENDING, method = 'Cash') {
+    const order = {
+      id: 12,
+      client_id: 4,
+      unit_id: 6,
+      status,
+      payment_status: 'PENDING',
+      payment_due_at: new Date('2099-10-20T12:00:00Z'),
+    };
     const query = {
       setLock: jest.fn(),
       where: jest.fn(),
@@ -13,6 +20,7 @@ describe('ScheduleOrderUseCase', () => {
     query.setLock.mockReturnValue(query);
     query.where.mockReturnValue(query);
     const manager = {
+      findOne: jest.fn(async () => ({ method })),
       getRepository: jest.fn(() => ({ createQueryBuilder: () => query })),
       save: jest.fn(async (_entity: unknown, value: unknown) => value),
     };
@@ -74,5 +82,18 @@ describe('ScheduleOrderUseCase', () => {
       'SCHEDULE_SLOT_FULL',
     );
     expect(manager.save).not.toHaveBeenCalled();
+  });
+  it('moves the offline deadline and extends code validity when rescheduling', async () => {
+    const { useCase, dto } = setup();
+    const order = await useCase.execute(12, dto, { id: 4 } as never);
+    expect(order.payment_due_at).toEqual(new Date(dto.scheduled_delivery_date));
+    expect(order.delivery_code_expires_at!.getTime()).toBeGreaterThan(
+      new Date(dto.scheduled_delivery_date).getTime(),
+    );
+  });
+  it('does not extend the deadline of an unpaid online charge', async () => {
+    const { useCase, dto } = setup(OrderStatus.PENDING, 'Pix');
+    const order = await useCase.execute(12, dto, { id: 4 } as never);
+    expect(order.payment_due_at).toEqual(new Date('2099-10-20T12:00:00Z'));
   });
 });

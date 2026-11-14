@@ -1,5 +1,6 @@
 "use client"
 import { CounterPickupPanel } from "./counter-pickup-panel"
+import { useApiQuery } from "@/shared/hooks/use-api-query"
 import { usePanelAccess } from "@/shared/providers/panel-access-provider"
 
 import { PageHeader } from "@/shared/components/page-header";
@@ -11,7 +12,7 @@ import { PaymentActions } from "@/modules/finance/components/payment-management"
 import React, { useEffect, useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, MessageSquare } from "lucide-react"
-import { apiGet, apiPatch } from "@/shared/lib/api"
+import { apiPatch } from "@/shared/lib/api"
 import {
   DELIVERY_TYPE_LABELS,
   orderStatusLabel,
@@ -74,8 +75,9 @@ interface OrderDetailScreenProps {
 export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
   const { hasPermission } = usePanelAccess()
   const [receiptRequest, setReceiptRequest] = useState(0)
-  const [order, setOrder] = useState<Order | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const query = useApiQuery<Order>(`/orders/${orderId}`, { refetchInterval: 10000 })
+  const order = query.data ?? null
+  const error = query.error?.message
   const [actionError, setActionError] = useState<string | null>(null)
   const [working, setWorking] = useState(false)
   const [pickupCode, setPickupCode] = useState("")
@@ -86,21 +88,11 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
   const [scheduleOpen, setScheduleOpen] = useState(false)
   const [scheduleDate, setScheduleDate] = useState("")
 
-  const loadOrder = () => {
-    return apiGet(`/orders/${orderId}`)
-      .then((data) => {
-        setOrder(data)
-        setError(null)
-      })
-      .catch((err) => setError(err.message))
+  const loadOrder = async () => {
+    const result = await query.refetch()
+    if (result.error) throw result.error
   }
-
-  useEffect(() => {
-    setPickupCode("")
-    setActionError(null)
-    loadOrder()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderId])
+  useEffect(() => { setPickupCode(""); setActionError(null); setReceiptRequest(0) }, [orderId])
 
   const runAction = async (action: () => Promise<unknown>) => {
     setWorking(true)
@@ -108,8 +100,10 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
     try {
       await action()
       await loadOrder()
+      return true
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "Erro ao atualizar o pedido.")
+      return false
     } finally {
       setWorking(false)
     }
@@ -135,24 +129,24 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
     )
   }
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
     if (!order || !cancelReason.trim()) return
-    runAction(() => apiPatch(`/orders/${order.id}/cancel`, { reason: cancelReason })).then(() => {
+    if (await runAction(() => apiPatch(`/orders/${order.id}/cancel`, { reason: cancelReason }))) {
       setCancelOpen(false)
       setCancelReason("")
-    })
+    }
   }
 
-  const handleReschedule = () => {
+  const handleReschedule = async () => {
     if (!order || !scheduleDate) return
-    if (!isValidDateTime(scheduleDate)) { setError('Informe data e hora válidas.'); return; }
+    if (!isValidDateTime(scheduleDate)) { setActionError('Informe data e hora válidas.'); return; }
     const iso = datetimeLocalToISO(scheduleDate)
-    runAction(() => apiPatch(`/orders/${order.id}/schedule`, { scheduled_delivery_date: iso })).then(() => {
+    if (await runAction(() => apiPatch(`/orders/${order.id}/schedule`, { scheduled_delivery_date: iso }))) {
       setScheduleOpen(false)
-    })
+    }
   }
 
-  if (error) {
+  if (error && !order) {
     return (
       <div className="page-surface flex min-h-[calc(100dvh-5rem)] items-center justify-center px-4">
         <p className="text-red-600 font-semibold">Erro ao carregar pedido: {error}</p>
@@ -351,6 +345,7 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
             <DialogTitle>Cancelar pedido #{order.id}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
+            {actionError && <p role="alert" className="text-sm text-red-700">{actionError}</p>}
             <label htmlFor="cancellation-reason" className="text-sm font-medium text-gray-700">Motivo do cancelamento</label>
             <Textarea
               id="cancellation-reason"

@@ -8,18 +8,19 @@ import { DeliveryCodeService } from './delivery-code.service';
 import { OrderStatusService } from './order-status.service';
 import { OrderStatusHistory } from '../entities/order-status-history.entity';
 
-function setup() {
+function setup(mode: 'counter' | 'pickup' | 'delivery' = 'counter') {
   const order = Object.assign(new Order(), {
     id: 9,
     client_id: 1,
     unit_id: 2,
-    status: OrderStatus.READY,
-    delivery_type: DeliveryType.PICKUP,
+    status: mode === 'delivery' ? OrderStatus.OUT_FOR_DELIVERY : OrderStatus.READY,
+    delivery_type: mode === 'counter' ? DeliveryType.PICKUP : DeliveryType.DELIVERY,
     payment_status: PaymentStatus.PAID,
-    delivery_status: null,
+    delivery_status: mode === 'pickup' ? 'PICKUP' : mode === 'delivery' ? 'ON_THE_WAY' : null,
     delivery_step: null,
-    delivery_person_id: null,
+    delivery_person_id: mode === 'counter' ? null : 5,
     delivery_code_attempts: 0,
+    pickup_code_attempts: 0,
   });
   const secured = { save: jest.fn(async (value: Order) => value) };
   const query = {
@@ -61,7 +62,7 @@ function setup() {
     { notifyCustomerOfStatusChange } as never,
     codes,
   );
-  const code = codes.issue(order, 'DELIVERY');
+  const code = codes.issue(order, mode === 'pickup' ? 'PICKUP' : 'DELIVERY');
   return {
     service,
     order,
@@ -144,5 +145,38 @@ describe('Counter pickup completion', () => {
     await expect(
       service.transition(Object.assign(new Order(), order), OrderStatus.DELIVERED, 3, code),
     ).rejects.toBeInstanceOf(BadRequestException);
+  });
+});
+
+describe.each(['pickup', 'delivery'] as const)('Atomic normal delivery: %s', (mode) => {
+  it('rolls code verification back after persistence failure, then permits a single successful retry', async () => {
+    const { service, order, code, manager } = setup(mode);
+    const target = mode === 'pickup' ? OrderStatus.OUT_FOR_DELIVERY : OrderStatus.DELIVERED;
+    const before = Object.assign(new Order(), order);
+    manager.save.mockRejectedValueOnce(new Error('save failed'));
+    await expect(service.transition(before, target, 3, code)).rejects.toThrow('save failed');
+    expect(mode === 'pickup' ? order.pickup_verified_at : order.delivery_verified_at).toBeNull();
+    expect(order.status).toBe(before.status);
+    await service.transition(before, target, 3, code);
+    expect(order.status).toBe(target);
+    expect(order.delivery_status).toBe(mode === 'pickup' ? 'ON_THE_WAY' : 'DELIVERED');
+    await expect(service.transition(before, target, 3, code)).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+  });
+  it('retains invalid attempt counters without advancing the order', async () => {
+    const { service, order, code } = setup(mode);
+    const target = mode === 'pickup' ? OrderStatus.OUT_FOR_DELIVERY : OrderStatus.DELIVERED;
+    const before = order.status;
+    await expect(
+      service.transition(
+        Object.assign(new Order(), order),
+        target,
+        3,
+        code === '000000' ? '000001' : '000000',
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(order.status).toBe(before);
+    expect(mode === 'pickup' ? order.pickup_code_attempts : order.delivery_code_attempts).toBe(1);
   });
 });

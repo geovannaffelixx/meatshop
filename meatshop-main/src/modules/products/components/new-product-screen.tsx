@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { ArrowLeft, ImagePlus, X } from "lucide-react"
-import { apiPatch, apiPost, apiUpload } from "@/shared/lib/api"
+import { apiPost, apiUpload } from "@/shared/lib/api"
 import { useManagedUnits } from "@/shared/hooks/use-managed-units"
 import { Spinner } from "@/shared/components/ui/spinner"
 import { toast } from "@/shared/lib/toast"
@@ -27,13 +27,13 @@ export function NewProductScreen() {
   const [form, setForm] = useState({
     name: "",
     description: "",
-    price: 0,
+    price: "",
     unit_of_measure: "KG",
     brand: "",
     category_id: 0,
     active: true,
-    initialQuantity: 0,
-    initialMinimumQuantity: 0,
+    initialQuantity: "",
+    initialMinimumQuantity: "",
   })
 
   const [saving, setSaving] = useState(false)
@@ -85,7 +85,7 @@ export function NewProductScreen() {
   }
 
   const handleSave = async () => {
-    if (!form.name.trim() || !form.category_id || form.price <= 0) {
+    if (!form.name.trim() || !form.category_id || Number(form.price) <= 0) {
       setError("Preencha pelo menos o nome, categoria e valor do produto.")
       return
     }
@@ -101,19 +101,14 @@ export function NewProductScreen() {
         unit_id: unitId,
         name: form.name,
         description: form.description.trim() || undefined,
-        price: form.price,
+        price: Number(form.price),
         unit_of_measure: form.unit_of_measure,
         brand: form.brand || undefined,
         category_id: form.category_id,
         active: form.active,
+        initial_quantity: Number(form.initialQuantity),
+        min_quantity: Number(form.initialMinimumQuantity),
       })
-
-      if (form.initialQuantity > 0) {
-        await apiPatch(`/products/${created.id}/stock`, {
-          quantity: form.initialQuantity,
-          min_quantity: form.initialMinimumQuantity,
-        })
-      }
 
       await uploadStagedImages(created.id)
 
@@ -247,7 +242,7 @@ export function NewProductScreen() {
               value={form.initialQuantity}
               min={0}
               step="0.001"
-              onChange={(e) => handleChange("initialQuantity", Number(e.target.value) || 0)}
+              onChange={(e) => handleChange("initialQuantity", e.target.value)}
               className="input"
               placeholder="Ex.: 25"
             />
@@ -260,7 +255,7 @@ export function NewProductScreen() {
               min={0}
               step="0.001"
               value={form.initialMinimumQuantity}
-              onChange={(e) => handleChange("initialMinimumQuantity", Number(e.target.value) || 0)}
+              onChange={(e) => handleChange("initialMinimumQuantity", e.target.value)}
               className="input"
               placeholder="Ex.: 5"
             />
@@ -275,7 +270,7 @@ export function NewProductScreen() {
               min={0.01}
               step="0.01"
               value={form.price}
-              onChange={(e) => handleChange("price", parseFloat(e.target.value) || 0)}
+              onChange={(e) => handleChange("price", e.target.value)}
               className="input"
               placeholder="Ex.: 89,90"
               required
